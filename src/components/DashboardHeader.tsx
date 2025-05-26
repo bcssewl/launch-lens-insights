@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { format } from 'date-fns';
 import { MessageCircle, Settings, LogOut, UserCircle } from 'lucide-react';
@@ -15,13 +14,17 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Link } from 'react-router-dom';
 
-const DashboardHeader: React.FC = () => {
+interface DashboardHeaderProps {
+  children?: React.ReactNode;
+}
+
+const DashboardHeader: React.FC<DashboardHeaderProps> = ({ children }) => {
   const currentDate = format(new Date(), "PPP"); // e.g., May 26th, 2025
 
   return (
     <header className="flex items-center justify-between p-4 border-b bg-card">
       <div className="flex flex-col">
-        <h1 className="text-2xl font-semibold text-foreground">Welcome back, John</h1>
+        <h1 className="text-2xl font-semibold text-foreground">{children}</h1>
         <p className="text-sm text-muted-foreground">{currentDate}</p>
       </div>
       <div className="flex items-center space-x-4">

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage } from '@/components/ui/form';
@@ -6,16 +5,12 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 // import { Label } from '@/components/ui/label'; // Label was imported but not used, can be removed
-import {
-  IdeaValidationFormData,
-  geographicFocusOptions as projectGeographicFocusOptions, // Import the constant to derive its type
-  targetCustomerOptions as projectTargetCustomerOptions // Import the constant to derive its type
-} from '../IdeaValidationForm';
+import { IdeaValidationFormData, geographicFocusOptions, targetCustomerOptions } from '../IdeaValidationForm';
 
 interface Step2MarketDetailsProps {
   form: UseFormReturn<IdeaValidationFormData>;
-  targetCustomerOptions: typeof projectTargetCustomerOptions;
-  geographicFocusOptions: typeof projectGeographicFocusOptions;
+  targetCustomerOptions: typeof targetCustomerOptions;
+  geographicFocusOptions: typeof geographicFocusOptions;
 }
 
 const Step2MarketDetails: React.FC<Step2MarketDetailsProps> = ({ form, targetCustomerOptions, geographicFocusOptions }) => {
@@ -81,7 +76,7 @@ const Step2MarketDetails: React.FC<Step2MarketDetailsProps> = ({ form, targetCus
                           <Checkbox
                             checked={currentValue.includes(item)}
                             onCheckedChange={(checked) => {
-                              let newValue: (typeof projectGeographicFocusOptions[number])[];
+                              let newValue: (typeof geographicFocusOptions[number])[];
                               if (checked) {
                                 newValue = [...currentValue, item];
                               } else {

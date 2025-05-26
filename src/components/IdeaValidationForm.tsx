@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -19,6 +18,7 @@ const revenueModelOptions = ["Subscription", "One-time Purchase", "Commission", 
 const primaryGoalOptions = ["Validate Market Demand", "Understand Competition", "Market Sizing", "All of the Above"] as const;
 const timelineOptions = ["Building this month", "In 3 months", "In 6+ months", "Just exploring"] as const;
 
+export { geographicFocusOptions, targetCustomerOptions, revenueModelOptions, primaryGoalOptions, timelineOptions };
 
 const ideaValidationSchema = z.object({
   // Step 1
