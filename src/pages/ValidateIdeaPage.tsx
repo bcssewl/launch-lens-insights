@@ -7,7 +7,7 @@ import DashboardHeader from '@/components/DashboardHeader';
 const ValidateIdeaPage: React.FC = () => {
   return (
     <DashboardLayout>
-      <DashboardHeader title="Idea Validation" />
+      <DashboardHeader>Idea Validation</DashboardHeader>
       <div className="p-4 sm:p-6 lg:p-8">
         <IdeaValidationForm />
       </div>
@@ -16,4 +16,3 @@ const ValidateIdeaPage: React.FC = () => {
 };
 
 export default ValidateIdeaPage;
-
