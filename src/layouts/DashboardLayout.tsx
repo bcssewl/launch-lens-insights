@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from '@/components/AppSidebar';
@@ -19,11 +18,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
           <div className="flex flex-col h-full w-full">
             {/* Mobile Sidebar Trigger - Placed inside SidebarInset for proper positioning relative to main content */}
             <div className="p-2 md:hidden sticky top-0 bg-background z-10 border-b">
-               <SidebarTrigger asChild>
-                  <Button variant="ghost" size="icon" aria-label="Toggle Sidebar">
-                    <PanelLeft className="h-5 w-5" />
-                  </Button>
+              <Button variant="ghost" size="icon" aria-label="Toggle Sidebar" asChild>
+                <SidebarTrigger>
+                  <PanelLeft className="h-5 w-5" />
                 </SidebarTrigger>
+              </Button>
             </div>
             <main className="flex-1 overflow-y-auto">
               {children}
