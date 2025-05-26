@@ -4,9 +4,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
 import { Form } from '@/components/ui/form';
+import { useNavigate } from 'react-router-dom';
 
 import Step1BasicInfo from './form-steps/Step1BasicInfo';
 import Step2MarketDetails from './form-steps/Step2MarketDetails';
@@ -33,7 +34,7 @@ const ideaValidationSchema = z.object({
   geographicFocus: z.array(z.enum(geographicFocusOptions)).min(1, "Select at least one geographic focus"),
   // Step 3
   revenueModel: z.enum(revenueModelOptions, { required_error: "Revenue model is required" }),
-  expectedPricing: z.number().min(1, "Pricing must be at least $1").max(1000, "Pricing must be $1000 or less"),
+  expectedPricing: z.coerce.number().min(1, "Pricing must be at least $1").max(1000, "Pricing must be $1000 or less"),
   knownCompetitors: z.string().max(500, "Competitors list must be 500 characters or less").optional(),
   // Step 4
   primaryGoal: z.enum(primaryGoalOptions, { required_error: "Primary goal is required" }),
@@ -52,6 +53,7 @@ const steps = [
 
 const IdeaValidationForm: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(0);
+  const navigate = useNavigate();
 
   const form = useForm<IdeaValidationFormData>({
     resolver: zodResolver(ideaValidationSchema),
@@ -75,18 +77,22 @@ const IdeaValidationForm: React.FC = () => {
     console.log('Form Data:', data);
     toast({
       title: "Idea Submitted!",
-      description: "Your idea has been submitted for validation. We'll process it shortly.",
+      description: "Your idea is now being analyzed. Please wait...",
     });
-    // Here you would typically send data to a backend
-    // For now, just reset and go to first step
-    form.reset();
-    setCurrentStep(0);
+    navigate('/analyzing');
   };
 
   const nextStep = async () => {
     const currentFields = steps[currentStep].fields as (keyof IdeaValidationFormData)[];
-    const output = await form.trigger(currentFields);
-    if (!output) return;
+    const output = await form.trigger(currentFields, { shouldFocus: true });
+    if (!output) {
+      console.log("Validation errors:", form.formState.errors);
+      const firstErrorField = currentFields.find(field => form.formState.errors[field]);
+      if (firstErrorField) {
+         form.setFocus(firstErrorField);
+      }
+      return;
+    }
 
     if (currentStep < steps.length - 1) {
       setCurrentStep(step => step + 1);
@@ -116,24 +122,24 @@ const IdeaValidationForm: React.FC = () => {
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(processForm)} className="space-y-6">
-            {currentStep === 0 && <Step1BasicInfo form={form} />}
-            {currentStep === 1 && <Step2MarketDetails form={form} geographicFocusOptions={geographicFocusOptions} targetCustomerOptions={targetCustomerOptions} />}
-            {currentStep === 2 && <Step3BusinessModel form={form} revenueModelOptions={revenueModelOptions}/>}
-            {currentStep === 3 && <Step4ValidationGoals form={form} primaryGoalOptions={primaryGoalOptions} timelineOptions={timelineOptions}/>}
-
-            <div className="flex justify-between pt-4">
+            {currentStep === 0 && <Step1BasicInfo />}
+            {currentStep === 1 && <Step2MarketDetails geographicFocusOptions={geographicFocusOptions} targetCustomerOptions={targetCustomerOptions} />}
+            {currentStep === 2 && <Step3BusinessModel revenueModelOptions={revenueModelOptions}/>}
+            {currentStep === 3 && <Step4ValidationGoals primaryGoalOptions={primaryGoalOptions} timelineOptions={timelineOptions}/>}
+            
+            <div className="flex justify-between pt-6">
               {currentStep > 0 && (
                 <Button type="button" variant="outline" onClick={prevStep}>
                   Back
                 </Button>
               )}
-              <div className="flex-grow"></div> {/* Spacer */}
-              {currentStep < steps.length - 1 && (
+              {currentStep === 0 && <div className="flex-grow"></div>}
+              
+              {currentStep < steps.length - 1 ? (
                 <Button type="button" onClick={nextStep}>
                   Continue
                 </Button>
-              )}
-              {currentStep === steps.length - 1 && (
+              ) : (
                 <Button type="submit" className="gradient-button">
                   Analyze My Idea
                 </Button>

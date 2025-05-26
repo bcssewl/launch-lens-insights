@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,7 +9,8 @@ import { ThemeProvider } from "./components/ThemeProvider";
 import SignUpPage from "./pages/SignUpPage";
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
-import ValidateIdeaPage from "./pages/ValidateIdeaPage"; // Updated import
+import ValidateIdeaPage from "./pages/ValidateIdeaPage";
+import AnalyzingIdeaPage from "./pages/AnalyzingIdeaPage";
 
 // Placeholder pages for now
 const ForgotPasswordPage = () => <div className="h-screen flex items-center justify-center">Forgot Password Page Placeholder - Coming Soon!</div>;
@@ -42,15 +42,14 @@ const App = () => (
             
             {/* Dashboard Routes */}
             <Route path="/dashboard" element={<DashboardPage />} />
-            {/* Example sub-routes for dashboard - can be expanded later */}
             <Route path="/dashboard/validate" element={<ValidateIdeaPage />} />
+            <Route path="/analyzing" element={<AnalyzingIdeaPage />} />
             <Route path="/dashboard/reports" element={<MyReportsPage />} />
             <Route path="/dashboard/assistant" element={<AIAssistantPage />} />
             <Route path="/dashboard/experiments" element={<ExperimentsPage />} />
             <Route path="/dashboard/settings" element={<SettingsPage />} />
             <Route path="/dashboard/profile" element={<ProfilePage />} />
             <Route path="/dashboard/billing" element={<BillingPage />} />
-
 
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/terms" element={<TermsPage />} />
@@ -65,4 +64,3 @@ const App = () => (
 );
 
 export default App;
-
