@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { useForm } from 'react-hook-form'; // Controller removed as it's not used directly here
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
+import { Form } from '@/components/ui/form';
 
 import Step1BasicInfo from './form-steps/Step1BasicInfo';
 import Step2MarketDetails from './form-steps/Step2MarketDetails';
@@ -18,7 +19,7 @@ import {
   revenueModelOptions,
   primaryGoalOptions,
   timelineOptions
-} from '@/lib/validation-constants'; // Updated import path
+} from '@/lib/validation-constants';
 
 const ideaValidationSchema = z.object({
   // Step 1
@@ -32,7 +33,7 @@ const ideaValidationSchema = z.object({
   geographicFocus: z.array(z.enum(geographicFocusOptions)).min(1, "Select at least one geographic focus"),
   // Step 3
   revenueModel: z.enum(revenueModelOptions, { required_error: "Revenue model is required" }),
-  expectedPricing: z.number().min(1, "Pricing must be at least $1").max(1000, "Pricing must be $1000 or less"), // z.coerce.number() might be better if input can be string
+  expectedPricing: z.number().min(1, "Pricing must be at least $1").max(1000, "Pricing must be $1000 or less"),
   knownCompetitors: z.string().max(500, "Competitors list must be 500 characters or less").optional(),
   // Step 4
   primaryGoal: z.enum(primaryGoalOptions, { required_error: "Primary goal is required" }),
@@ -54,7 +55,7 @@ const IdeaValidationForm: React.FC = () => {
 
   const form = useForm<IdeaValidationFormData>({
     resolver: zodResolver(ideaValidationSchema),
-    mode: 'onChange', // Validate on change for better UX
+    mode: 'onChange',
     defaultValues: {
       ideaName: '',
       oneLineDescription: '',
@@ -62,7 +63,7 @@ const IdeaValidationForm: React.FC = () => {
       solutionDescription: '',
       customerSegment: '',
       geographicFocus: [],
-      expectedPricing: 50, // Default pricing
+      expectedPricing: 50,
       knownCompetitors: '',
       additionalContext: '',
     },
@@ -84,13 +85,13 @@ const IdeaValidationForm: React.FC = () => {
 
   const nextStep = async () => {
     const currentFields = steps[currentStep].fields as (keyof IdeaValidationFormData)[];
-    const output = await trigger(currentFields);
+    const output = await form.trigger(currentFields);
     if (!output) return;
 
     if (currentStep < steps.length - 1) {
       setCurrentStep(step => step + 1);
     } else {
-      handleSubmit(processForm)();
+      form.handleSubmit(processForm)();
     }
   };
 
@@ -113,31 +114,33 @@ const IdeaValidationForm: React.FC = () => {
         </div>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit(processForm)} className="space-y-6">
-          {currentStep === 0 && <Step1BasicInfo form={form} />}
-          {currentStep === 1 && <Step2MarketDetails form={form} geographicFocusOptions={geographicFocusOptions} targetCustomerOptions={targetCustomerOptions} />}
-          {currentStep === 2 && <Step3BusinessModel form={form} revenueModelOptions={revenueModelOptions}/>}
-          {currentStep === 3 && <Step4ValidationGoals form={form} primaryGoalOptions={primaryGoalOptions} timelineOptions={timelineOptions}/>}
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(processForm)} className="space-y-6">
+            {currentStep === 0 && <Step1BasicInfo form={form} />}
+            {currentStep === 1 && <Step2MarketDetails form={form} geographicFocusOptions={geographicFocusOptions} targetCustomerOptions={targetCustomerOptions} />}
+            {currentStep === 2 && <Step3BusinessModel form={form} revenueModelOptions={revenueModelOptions}/>}
+            {currentStep === 3 && <Step4ValidationGoals form={form} primaryGoalOptions={primaryGoalOptions} timelineOptions={timelineOptions}/>}
 
-          <div className="flex justify-between pt-4">
-            {currentStep > 0 && (
-              <Button type="button" variant="outline" onClick={prevStep}>
-                Back
-              </Button>
-            )}
-            <div className="flex-grow"></div> {/* Spacer */}
-            {currentStep < steps.length - 1 && (
-              <Button type="button" onClick={nextStep}>
-                Continue
-              </Button>
-            )}
-            {currentStep === steps.length - 1 && (
-              <Button type="submit" className="gradient-button">
-                Analyze My Idea
-              </Button>
-            )}
-          </div>
-        </form>
+            <div className="flex justify-between pt-4">
+              {currentStep > 0 && (
+                <Button type="button" variant="outline" onClick={prevStep}>
+                  Back
+                </Button>
+              )}
+              <div className="flex-grow"></div> {/* Spacer */}
+              {currentStep < steps.length - 1 && (
+                <Button type="button" onClick={nextStep}>
+                  Continue
+                </Button>
+              )}
+              {currentStep === steps.length - 1 && (
+                <Button type="submit" className="gradient-button">
+                  Analyze My Idea
+                </Button>
+              )}
+            </div>
+          </form>
+        </Form>
       </CardContent>
     </Card>
   );
