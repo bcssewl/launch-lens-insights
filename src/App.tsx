@@ -9,14 +9,15 @@ import NotFound from "./pages/NotFound";
 import { ThemeProvider } from "./components/ThemeProvider";
 import SignUpPage from "./pages/SignUpPage";
 import LoginPage from "./pages/LoginPage";
-import DashboardPage from "./pages/DashboardPage"; // Added import
+import DashboardPage from "./pages/DashboardPage";
+import ValidateIdeaPage from "./pages/ValidateIdeaPage"; // Updated import
 
 // Placeholder pages for now
 const ForgotPasswordPage = () => <div className="h-screen flex items-center justify-center">Forgot Password Page Placeholder - Coming Soon!</div>;
 const TermsPage = () => <div className="h-screen flex items-center justify-center">Terms of Service - Coming Soon!</div>;
 const PrivacyPage = () => <div className="h-screen flex items-center justify-center">Privacy Policy - Coming Soon!</div>;
 // Placeholder for other dashboard sub-pages if needed
-const ValidateIdeaPage = () => <div className="h-screen flex items-center justify-center">Validate Idea Page - Coming Soon!</div>;
+// const ValidateIdeaPage = () => <div className="h-screen flex items-center justify-center">Validate Idea Page - Coming Soon!</div>; // Removed placeholder
 const MyReportsPage = () => <div className="h-screen flex items-center justify-center">My Reports Page - Coming Soon!</div>;
 const AIAssistantPage = () => <div className="h-screen flex items-center justify-center">AI Assistant Page - Coming Soon!</div>;
 const ExperimentsPage = () => <div className="h-screen flex items-center justify-center">Experiments Page - Coming Soon!</div>;
@@ -64,3 +65,4 @@ const App = () => (
 );
 
 export default App;
+

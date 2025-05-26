@@ -1,4 +1,3 @@
-
 import React from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import DashboardHeader from '@/components/DashboardHeader';
@@ -8,7 +7,7 @@ import { Lightbulb, BarChart3, FlaskConical, Target, PlayCircle, Briefcase, User
 import ActivityItem from '@/components/ActivityItem';
 import InsightCard from '@/components/InsightCard';
 import { Card as ShadcnCard, CardContent as ShadcnCardContent, CardHeader as ShadcnCardHeader, CardTitle as ShadcnCardTitle } from '@/components/ui/card';
-
+import { Link } from 'react-router-dom';
 
 const recentActivities = [
   { id: 1, ideaName: "SaaS for Pet Owners", score: 8.2, timestamp: "3 days ago", statusText: "High Potential", statusColor: 'green' as 'green' | 'yellow' | 'red' },
@@ -31,9 +30,11 @@ const DashboardPage: React.FC = () => {
       <div className="p-6 space-y-6">
         {/* Quick Action Section */}
         <section className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-4">
-          <Button size="lg" className="w-full sm:w-auto gradient-button">
-            <Lightbulb className="mr-2 h-5 w-5" />
-            Validate New Idea
+          <Button size="lg" className="w-full sm:w-auto gradient-button" asChild>
+            <Link to="/dashboard/validate">
+              <Lightbulb className="mr-2 h-5 w-5" />
+              Validate New Idea
+            </Link>
           </Button>
           <Button variant="outline" size="lg" className="w-full sm:w-auto">
             <PlayCircle className="mr-2 h-5 w-5" />
