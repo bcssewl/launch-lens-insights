@@ -107,8 +107,8 @@ export default function LandingPage() {
               <Button size="lg" className="gradient-button px-8 py-3 text-lg" asChild>
                 <Link to="/signup">Validate My Idea</Link>
               </Button>
-              <Button size="lg" variant="outline" className="px-8 py-3 text-lg border-2 border-primary text-primary hover:bg-primary/10 hover:text-primary">
-                See How It Works
+              <Button size="lg" variant="outline" className="px-8 py-3 text-lg border-2 border-primary text-primary hover:bg-primary/10 hover:text-primary" asChild>
+                <Link to="/dashboard">See How It Works</Link>
               </Button>
             </div>
             <div className="mt-16 animate-pulse-glow">
