@@ -16,3 +16,4 @@ const ValidateIdeaPage: React.FC = () => {
 };
 
 export default ValidateIdeaPage;
+

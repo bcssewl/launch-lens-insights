@@ -1,16 +1,17 @@
+
 import React from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-// import { Label } from '@/components/ui/label'; // Label was imported but not used, can be removed
-import { IdeaValidationFormData, geographicFocusOptions, targetCustomerOptions } from '../IdeaValidationForm';
+import { IdeaValidationFormData } from '../IdeaValidationForm'; // This type import is still needed
+import { geographicFocusOptions as geographicFocusOptionsData, targetCustomerOptions as targetCustomerOptionsData } from '@/lib/validation-constants'; // Import constants with new path
 
 interface Step2MarketDetailsProps {
   form: UseFormReturn<IdeaValidationFormData>;
-  targetCustomerOptions: typeof targetCustomerOptions;
-  geographicFocusOptions: typeof geographicFocusOptions;
+  targetCustomerOptions: typeof targetCustomerOptionsData; // Use typeof with the imported constant
+  geographicFocusOptions: typeof geographicFocusOptionsData; // Use typeof with the imported constant
 }
 
 const Step2MarketDetails: React.FC<Step2MarketDetailsProps> = ({ form, targetCustomerOptions, geographicFocusOptions }) => {
@@ -57,7 +58,7 @@ const Step2MarketDetails: React.FC<Step2MarketDetailsProps> = ({ form, targetCus
       <FormField
         control={control}
         name="geographicFocus"
-        render={() => ( // Removed field from render prop as it's accessed within the map
+        render={() => (
           <FormItem>
             <FormLabel>Geographic Focus</FormLabel>
             <FormDescription>Where will you primarily operate or target customers?</FormDescription>
@@ -66,9 +67,8 @@ const Step2MarketDetails: React.FC<Step2MarketDetailsProps> = ({ form, targetCus
                 <FormField
                   key={item}
                   control={control}
-                  name="geographicFocus" // This name should match the outer FormField for react-hook-form to correctly manage array fields with checkboxes
+                  name="geographicFocus"
                   render={({ field }) => {
-                    // Ensure field.value is an array before calling includes or filter
                     const currentValue = Array.isArray(field.value) ? field.value : [];
                     return (
                       <FormItem className="flex flex-row items-start space-x-3 space-y-0">
@@ -106,3 +106,4 @@ const Step2MarketDetails: React.FC<Step2MarketDetailsProps> = ({ form, targetCus
 };
 
 export default Step2MarketDetails;
+

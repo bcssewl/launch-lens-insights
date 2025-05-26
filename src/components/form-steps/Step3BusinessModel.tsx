@@ -1,15 +1,16 @@
 
 import React from 'react';
-import { UseFormReturn, Controller } from 'react-hook-form';
+import { UseFormReturn } from 'react-hook-form'; // Controller removed as it's not used
 import { FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { Textarea } from '@/components/ui/textarea';
 import { IdeaValidationFormData } from '../IdeaValidationForm';
+import { revenueModelOptions as revenueModelOptionsData } from '@/lib/validation-constants'; // Import constants with new path
 
 interface Step3BusinessModelProps {
   form: UseFormReturn<IdeaValidationFormData>;
-  revenueModelOptions: readonly string[];
+  revenueModelOptions: typeof revenueModelOptionsData; // Use typeof with the imported constant
 }
 
 const Step3BusinessModel: React.FC<Step3BusinessModelProps> = ({ form, revenueModelOptions }) => {
@@ -48,15 +49,16 @@ const Step3BusinessModel: React.FC<Step3BusinessModelProps> = ({ form, revenueMo
             <FormLabel>Expected Pricing</FormLabel>
             <FormControl>
               <Slider
-                defaultValue={[field.value || 50]}
+                defaultValue={[field.value ?? 50]} // Use nullish coalescing for default
                 onValueChange={(value) => field.onChange(value[0])}
                 max={1000}
                 min={1}
                 step={1}
+                value={[field.value ?? 50]} // Ensure slider is controlled
               />
             </FormControl>
             <FormDescription>
-              Estimated price point: ${expectedPricingValue === 1000 ? '1000+' : expectedPricingValue}
+              Estimated price point: ${expectedPricingValue === 1000 ? '1000+' : (expectedPricingValue ?? 50)}
             </FormDescription>
             <FormMessage />
           </FormItem>
@@ -69,7 +71,7 @@ const Step3BusinessModel: React.FC<Step3BusinessModelProps> = ({ form, revenueMo
           <FormItem>
             <FormLabel>Known Competitors (Optional)</FormLabel>
             <FormControl>
-              <Textarea placeholder="List any competitors you're aware of (e.g., Company A, Product B)" {...field} rows={3}/>
+              <Textarea placeholder="List any competitors you're aware of (e.g., Company A, Product B)" {...field} value={field.value ?? ''} rows={3}/>
             </FormControl>
             <FormMessage />
           </FormItem>

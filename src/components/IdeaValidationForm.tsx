@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form'; // Controller removed as it's not used directly here
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
@@ -12,13 +12,13 @@ import Step2MarketDetails from './form-steps/Step2MarketDetails';
 import Step3BusinessModel from './form-steps/Step3BusinessModel';
 import Step4ValidationGoals from './form-steps/Step4ValidationGoals';
 
-const geographicFocusOptions = ["United States", "Europe", "Asia", "Global", "Other"] as const;
-const targetCustomerOptions = ["B2B", "B2C", "Marketplace", "Platform"] as const;
-const revenueModelOptions = ["Subscription", "One-time Purchase", "Commission", "Advertising", "Freemium"] as const;
-const primaryGoalOptions = ["Validate Market Demand", "Understand Competition", "Market Sizing", "All of the Above"] as const;
-const timelineOptions = ["Building this month", "In 3 months", "In 6+ months", "Just exploring"] as const;
-
-export { geographicFocusOptions, targetCustomerOptions, revenueModelOptions, primaryGoalOptions, timelineOptions };
+import {
+  geographicFocusOptions,
+  targetCustomerOptions,
+  revenueModelOptions,
+  primaryGoalOptions,
+  timelineOptions
+} from '@/lib/validation-constants'; // Updated import path
 
 const ideaValidationSchema = z.object({
   // Step 1
@@ -32,7 +32,7 @@ const ideaValidationSchema = z.object({
   geographicFocus: z.array(z.enum(geographicFocusOptions)).min(1, "Select at least one geographic focus"),
   // Step 3
   revenueModel: z.enum(revenueModelOptions, { required_error: "Revenue model is required" }),
-  expectedPricing: z.number().min(1, "Pricing must be at least $1").max(1000, "Pricing must be $1000 or less"),
+  expectedPricing: z.number().min(1, "Pricing must be at least $1").max(1000, "Pricing must be $1000 or less"), // z.coerce.number() might be better if input can be string
   knownCompetitors: z.string().max(500, "Competitors list must be 500 characters or less").optional(),
   // Step 4
   primaryGoal: z.enum(primaryGoalOptions, { required_error: "Primary goal is required" }),
@@ -144,4 +144,3 @@ const IdeaValidationForm: React.FC = () => {
 };
 
 export default IdeaValidationForm;
-
