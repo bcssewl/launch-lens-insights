@@ -16,14 +16,14 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         <AppSidebar />
         <SidebarInset className="flex-1 flex flex-col">
           {/* Wrap the children of SidebarInset in a single div */}
-          <div className="flex flex-col h-full w-full"> {/* Added w-full for safety */}
+          <div className="flex flex-col h-full w-full">
             {/* Mobile Sidebar Trigger - Placed inside SidebarInset for proper positioning relative to main content */}
             <div className="p-2 md:hidden sticky top-0 bg-background z-10 border-b">
                <SidebarTrigger asChild>
                   <Button variant="ghost" size="icon">
-                    {/* Wrap PanelLeft and span in another span to ensure Button has one child element */}
-                    <span>
-                      <PanelLeft />
+                    {/* Important: Button with asChild must have exactly ONE child element */}
+                    <span className="flex items-center justify-center">
+                      <PanelLeft className="h-5 w-5" />
                       <span className="sr-only">Toggle Sidebar</span>
                     </span>
                   </Button>
