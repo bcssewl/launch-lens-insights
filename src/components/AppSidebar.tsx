@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
@@ -13,9 +12,17 @@ import {
   SidebarGroupLabel,
   SidebarGroupContent
 } from "@/components/ui/sidebar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Logo } from '@/components/icons';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Home, Lightbulb, FileText, Bot, FlaskConical, Settings as SettingsIcon } from 'lucide-react'; // Renamed Settings to SettingsIcon to avoid conflict
+import { Home, Lightbulb, FileText, Bot, FlaskConical, Settings as SettingsIcon, UserCircle, LogOut } from 'lucide-react';
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
