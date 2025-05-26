@@ -103,9 +103,11 @@ export const AppSidebar: React.FC = () => {
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>Log out</span>
+            <DropdownMenuItem asChild>
+              <button className="flex w-full items-center">
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Log out</span>
+              </button>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
