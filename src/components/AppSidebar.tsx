@@ -56,7 +56,7 @@ export const AppSidebar: React.FC = () => {
                     isActive={location.pathname === item.href || (item.href === "/dashboard" && location.pathname.startsWith("/dashboard") && location.pathname.split('/').length <= 2)}
                     tooltip={{children: item.label, side: "right", align: "center"}}
                   >
-                    <Link to={item.href}>
+                    <Link to={item.href} className="flex items-center gap-2">
                       <item.icon className="h-5 w-5" />
                       <span>{item.label}</span>
                     </Link>
@@ -87,19 +87,19 @@ export const AppSidebar: React.FC = () => {
             <DropdownMenuLabel>John Doe</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link to="/dashboard/profile">
+              <Link to="/dashboard/profile" className="flex items-center">
                 <UserCircle className="mr-2 h-4 w-4" />
                 <span>Profile</span>
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link to="/dashboard/settings">
+              <Link to="/dashboard/settings" className="flex items-center">
                 <SettingsIcon className="mr-2 h-4 w-4" />
                 <span>Settings</span>
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link to="/dashboard/billing">
+              <Link to="/dashboard/billing" className="flex items-center">
                 <Lightbulb className="mr-2 h-4 w-4" />
                 <span>Billing / Upgrade</span>
               </Link>
