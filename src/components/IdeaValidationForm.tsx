@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -75,28 +76,36 @@ const IdeaValidationForm: React.FC = () => {
 
   const processForm = (data: IdeaValidationFormData) => {
     console.log('Form Data:', data);
+    // Store data in localStorage or send to an API
+    // For now, just navigate
     toast({
       title: "Idea Submitted!",
       description: "Your idea is now being analyzed. Please wait...",
     });
-    navigate('/analyzing');
+    navigate('/analyzing'); // Navigate to the new analyzing page
   };
 
   const nextStep = async () => {
     const currentFields = steps[currentStep].fields as (keyof IdeaValidationFormData)[];
+    // Trigger validation for current step fields
     const output = await form.trigger(currentFields, { shouldFocus: true });
+    
+    console.log("Validation output for step", currentStep, output);
+    console.log("Errors:", form.formState.errors);
+
     if (!output) {
-      console.log("Validation errors:", form.formState.errors);
+      // If validation fails, find the first field with an error and focus it
       const firstErrorField = currentFields.find(field => form.formState.errors[field]);
       if (firstErrorField) {
          form.setFocus(firstErrorField);
       }
-      return;
+      return; // Don't proceed to next step
     }
 
     if (currentStep < steps.length - 1) {
       setCurrentStep(step => step + 1);
     } else {
+      // Last step, submit form
       form.handleSubmit(processForm)();
     }
   };
@@ -106,8 +115,9 @@ const IdeaValidationForm: React.FC = () => {
       setCurrentStep(step => step - 1);
     }
   };
-
+  
   const progressValue = ((currentStep + 1) / steps.length) * 100;
+
 
   return (
     <Card className="w-full max-w-2xl mx-auto">
@@ -122,10 +132,10 @@ const IdeaValidationForm: React.FC = () => {
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(processForm)} className="space-y-6">
-            {currentStep === 0 && <Step1BasicInfo />}
-            {currentStep === 1 && <Step2MarketDetails geographicFocusOptions={geographicFocusOptions} targetCustomerOptions={targetCustomerOptions} />}
-            {currentStep === 2 && <Step3BusinessModel revenueModelOptions={revenueModelOptions}/>}
-            {currentStep === 3 && <Step4ValidationGoals primaryGoalOptions={primaryGoalOptions} timelineOptions={timelineOptions}/>}
+            {currentStep === 0 && <Step1BasicInfo form={form} />}
+            {currentStep === 1 && <Step2MarketDetails form={form} geographicFocusOptions={geographicFocusOptions} targetCustomerOptions={targetCustomerOptions} />}
+            {currentStep === 2 && <Step3BusinessModel form={form} revenueModelOptions={revenueModelOptions}/>}
+            {currentStep === 3 && <Step4ValidationGoals form={form} primaryGoalOptions={primaryGoalOptions} timelineOptions={timelineOptions}/>}
             
             <div className="flex justify-between pt-6">
               {currentStep > 0 && (
@@ -133,14 +143,15 @@ const IdeaValidationForm: React.FC = () => {
                   Back
                 </Button>
               )}
-              {currentStep === 0 && <div className="flex-grow"></div>}
+              {/* This div ensures the "Continue" or "Analyze" button is pushed to the right when "Back" is not visible */}
+              {currentStep === 0 && <div className="flex-grow"></div>} 
               
               {currentStep < steps.length - 1 ? (
                 <Button type="button" onClick={nextStep}>
                   Continue
                 </Button>
               ) : (
-                <Button type="submit" className="gradient-button">
+                <Button type="submit" className="gradient-button"> {/* Ensure this button also triggers form submission if nextStep logic is bypassed on last step */}
                   Analyze My Idea
                 </Button>
               )}
