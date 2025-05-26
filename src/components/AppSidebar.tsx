@@ -117,4 +117,3 @@ export const AppSidebar: React.FC = () => {
     </Sidebar>
   );
 };
-
