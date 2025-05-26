@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
@@ -67,38 +68,37 @@ export const AppSidebar: React.FC = () => {
       <SidebarFooter className="p-2 border-t">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-             <div className="flex items-center space-x-3 p-2 rounded-md hover:bg-accent cursor-pointer group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:size-8">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src="/placeholder.svg" alt="User Avatar" />
-                  <AvatarFallback>JD</AvatarFallback>
-                </Avatar>
-                <div className="group-data-[collapsible=icon]:hidden">
-                  <p className="text-sm font-medium text-foreground">John Doe</p>
-                  <Link to="/dashboard/billing" className="text-xs text-primary hover:underline"> {/* Placeholder link */}
-                    Upgrade Plan
-                  </Link>
-                </div>
+            <button className="flex items-center space-x-3 p-2 rounded-md hover:bg-accent w-full text-left group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:h-8">
+              <Avatar className="h-8 w-8">
+                <AvatarImage src="/placeholder.svg" alt="User Avatar" />
+                <AvatarFallback>JD</AvatarFallback>
+              </Avatar>
+              <div className="group-data-[collapsible=icon]:hidden">
+                <p className="text-sm font-medium text-foreground">John Doe</p>
+                <Link to="/dashboard/billing" className="text-xs text-primary hover:underline">
+                  Upgrade Plan
+                </Link>
               </div>
+            </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent side="top" align="start" className="w-56 mb-2 ml-1 group-data-[collapsible=icon]:ml-10">
             <DropdownMenuLabel>John Doe</DropdownMenuLabel>
             <DropdownMenuSeparator />
-             <DropdownMenuItem asChild>
-              <Link to="/dashboard/profile"> {/* Placeholder link */}
+            <DropdownMenuItem asChild>
+              <Link to="/dashboard/profile">
                 <UserCircle className="mr-2 h-4 w-4" />
                 <span>Profile</span>
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link to="/dashboard/settings"> {/* Placeholder link */}
+              <Link to="/dashboard/settings">
                 <SettingsIcon className="mr-2 h-4 w-4" />
                 <span>Settings</span>
               </Link>
             </DropdownMenuItem>
-             <DropdownMenuItem asChild>
-              <Link to="/dashboard/billing"> {/* Placeholder link */}
-                {/* Placeholder for billing icon, using CreditCard or similar if available */}
-                <Lightbulb className="mr-2 h-4 w-4" /> 
+            <DropdownMenuItem asChild>
+              <Link to="/dashboard/billing">
+                <Lightbulb className="mr-2 h-4 w-4" />
                 <span>Billing / Upgrade</span>
               </Link>
             </DropdownMenuItem>
