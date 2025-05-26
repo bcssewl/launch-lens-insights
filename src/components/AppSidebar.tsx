@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
@@ -40,10 +39,11 @@ export const AppSidebar: React.FC = () => {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="p-2 flex justify-center group-data-[collapsible=icon]:justify-start">
-        <>
+        {/* Wrapped Logo and Lightbulb in a div */}
+        <div className="flex items-center justify-center group-data-[collapsible=icon]:justify-start">
           <Logo className="group-data-[collapsible=icon]:hidden"/>
           <Lightbulb className="h-7 w-7 text-primary hidden group-data-[collapsible=icon]:block"/>
-        </>
+        </div>
       </SidebarHeader>
       <SidebarContent className="flex-grow">
         <SidebarGroup>
