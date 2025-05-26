@@ -13,15 +13,14 @@ import DashboardPage from "./pages/DashboardPage";
 import ValidateIdeaPage from "./pages/ValidateIdeaPage";
 import AnalyzingIdeaPage from "./pages/AnalyzingIdeaPage";
 import ResultsPage from "./pages/ResultsPage";
-import MyReportsPage from "./pages/MyReportsPage"; // Updated import
+import MyReportsPage from "./pages/MyReportsPage";
+import AIAssistantPage from "./pages/AIAssistantPage"; // Updated import
 
 // Placeholder pages for now
 const ForgotPasswordPage = () => <div className="h-screen flex items-center justify-center">Forgot Password Page Placeholder - Coming Soon!</div>;
 const TermsPage = () => <div className="h-screen flex items-center justify-center">Terms of Service - Coming Soon!</div>;
 const PrivacyPage = () => <div className="h-screen flex items-center justify-center">Privacy Policy - Coming Soon!</div>;
 // Placeholder for other dashboard sub-pages if needed
-// const MyReportsPage = () => <div className="h-screen flex items-center justify-center">My Reports Page - Coming Soon!</div>; // Removed placeholder
-const AIAssistantPage = () => <div className="h-screen flex items-center justify-center">AI Assistant Page - Coming Soon!</div>;
 const ExperimentsPage = () => <div className="h-screen flex items-center justify-center">Experiments Page - Coming Soon!</div>;
 const SettingsPage = () => <div className="h-screen flex items-center justify-center">Settings Page - Coming Soon!</div>;
 const ProfilePage = () => <div className="h-screen flex items-center justify-center">Profile Page - Coming Soon!</div>;
@@ -47,8 +46,8 @@ const App = () => (
             <Route path="/dashboard/validate" element={<ValidateIdeaPage />} />
             <Route path="/analyzing" element={<AnalyzingIdeaPage />} />
             <Route path="/results" element={<ResultsPage />} />
-            <Route path="/dashboard/reports" element={<MyReportsPage />} /> {/* Uses the new component */}
-            <Route path="/dashboard/assistant" element={<AIAssistantPage />} />
+            <Route path="/dashboard/reports" element={<MyReportsPage />} />
+            <Route path="/dashboard/assistant" element={<AIAssistantPage />} /> {/* Uses the new component */}
             <Route path="/dashboard/experiments" element={<ExperimentsPage />} />
             <Route path="/dashboard/settings" element={<SettingsPage />} />
             <Route path="/dashboard/profile" element={<ProfilePage />} />
