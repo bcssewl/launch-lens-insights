@@ -20,12 +20,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
             {/* Mobile Sidebar Trigger - Placed inside SidebarInset for proper positioning relative to main content */}
             <div className="p-2 md:hidden sticky top-0 bg-background z-10 border-b">
                <SidebarTrigger asChild>
-                  <Button variant="ghost" size="icon">
-                    {/* Important: Button with asChild must have exactly ONE child element */}
-                    <span className="flex items-center justify-center">
-                      <PanelLeft className="h-5 w-5" />
-                      <span className="sr-only">Toggle Sidebar</span>
-                    </span>
+                  <Button variant="ghost" size="icon" aria-label="Toggle Sidebar">
+                    <PanelLeft className="h-5 w-5" />
                   </Button>
                 </SidebarTrigger>
             </div>
