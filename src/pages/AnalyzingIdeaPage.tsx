@@ -1,11 +1,11 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Loader2, BarChart3, Search, Calculator, Lightbulb, FileText, Brain } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress'; // Assuming you have a Progress component
+import { Loader2, BarChart3, Search, Calculator, Lightbulb, FileText } from 'lucide-react'; // Replaced Document with FileText for consistency
+import { Progress } from '@/components/ui/progress';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 
-const analysisStages = [
+const stages = [
   { text: "Researching market size...", icon: BarChart3 },
   { text: "Analyzing competition...", icon: Search },
   { text: "Calculating viability score...", icon: Calculator },
@@ -17,95 +17,89 @@ const tips = [
   "Did you know? 42% of startups fail due to lack of market need.",
   "We analyze over 50 data points to score your idea.",
   "Our AI considers market size, competition, and feasibility.",
-  "A strong problem-solution fit is key to startup success.",
-  "Validation helps refine your idea before significant investment."
+  "Clear problem definition is key to a successful idea.",
+  "Understanding your target customer is crucial."
 ];
-
-const TOTAL_DURATION = 6000; // 6 seconds
-const STAGE_CHANGE_INTERVAL = TOTAL_DURATION / analysisStages.length;
-const TIP_CHANGE_INTERVAL = 3000; // Change tip every 3 seconds
 
 const AnalyzingIdeaPage: React.FC = () => {
   const navigate = useNavigate();
-  const [currentStageIndex, setCurrentStageIndex] = useState(0);
-  const [progressPercentage, setProgressPercentage] = useState(0);
-  const [currentTipIndex, setCurrentTipIndex] = useState(0);
+  const [currentStage, setCurrentStage] = useState(0);
+  const [progress, setProgress] = useState(0);
+  const [currentTip, setCurrentTip] = useState(tips[0]);
+  const totalDuration = 6000; // 6 seconds total for loading simulation
+  const stageDuration = totalDuration / stages.length;
 
   useEffect(() => {
-    // Animate progress stages
     const stageInterval = setInterval(() => {
-      setCurrentStageIndex(prevIndex => (prevIndex + 1) % analysisStages.length);
-    }, STAGE_CHANGE_INTERVAL);
+      setCurrentStage((prevStage) => {
+        if (prevStage < stages.length - 1) {
+          return prevStage + 1;
+        }
+        return prevStage;
+      });
+    }, stageDuration);
 
-    // Animate progress percentage
     const progressInterval = setInterval(() => {
-      setProgressPercentage(prev => {
-        const newProgress = prev + (100 / (TOTAL_DURATION / 100)); // Increment to reach 100% in TOTAL_DURATION
-        return Math.min(newProgress, 100);
+      setProgress((prevProgress) => {
+        const newProgress = prevProgress + (100 / (totalDuration / 100));
+        return newProgress >= 100 ? 100 : newProgress;
       });
     }, 100);
     
-    // Animate tips
     const tipInterval = setInterval(() => {
-      setCurrentTipIndex(prevIndex => (prevIndex + 1) % tips.length);
-    }, TIP_CHANGE_INTERVAL);
+      setCurrentTip(tips[Math.floor(Math.random() * tips.length)]);
+    }, 3000);
 
-    // Redirect after total duration
-    const redirectTimeout = setTimeout(() => {
-      navigate('/dashboard/reports');
-    }, TOTAL_DURATION);
+
+    const timer = setTimeout(() => {
+      navigate('/results'); // Navigate to the new results page
+    }, totalDuration);
 
     return () => {
+      clearTimeout(timer);
       clearInterval(stageInterval);
       clearInterval(progressInterval);
       clearInterval(tipInterval);
-      clearTimeout(redirectTimeout);
     };
-  }, [navigate]);
-  
-  // Ensure progress reaches 100% just before redirect if intervals are not perfect
-  useEffect(() => {
-    if (progressPercentage >= 100) {
-      const finalRedirectTimeout = setTimeout(() => {
-        navigate('/dashboard/reports');
-      }, 300); // Short delay to show 100%
-      return () => clearTimeout(finalRedirectTimeout);
-    }
-  }, [progressPercentage, navigate]);
+  }, [navigate, stageDuration]);
 
-
-  const CurrentStageIcon = analysisStages[currentStageIndex].icon;
+  const IconComponent = stages[currentStage].icon;
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground p-4 relative overflow-hidden">
-      <Brain className="absolute inset-0 w-full h-full text-primary/5 opacity-30 animate-pulse " style={{ transform: 'scale(2.5)' }} strokeWidth={0.5}/>
-      
-      <div className="z-10 flex flex-col items-center text-center max-w-xl">
-        <Loader2 className="w-20 h-20 text-primary animate-spin mb-8" />
-        
-        <h1 className="text-4xl font-bold text-primary mb-4">Analyzing Your Idea...</h1>
-        
-        <div className="w-full max-w-md mb-6">
-          <Progress value={progressPercentage} className="h-3 bg-primary/20" />
-          <p className="text-sm text-muted-foreground mt-1">{Math.round(progressPercentage)}% Complete</p>
-        </div>
-
-        <div className="flex items-center justify-center space-x-3 text-lg text-muted-foreground mb-8 h-8">
-          <CurrentStageIcon className="w-6 h-6 text-primary" />
-          <span>{analysisStages[currentStageIndex].text}</span>
-        </div>
-
-        <p className="text-sm text-muted-foreground mb-10">
-          This usually takes 60-90 seconds. For this demo, it's much faster!
-        </p>
-
-        <Card className="w-full max-w-sm bg-card/80 backdrop-blur-sm">
-          <CardContent className="p-4">
-            <p className="text-sm text-card-foreground font-semibold">Quick Tip:</p>
-            <p className="text-xs text-muted-foreground">{tips[currentTipIndex]}</p>
-          </CardContent>
-        </Card>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-primary/10 via-background to-background p-4 selection:bg-primary/20">
+      {/* Background Animation - Placeholder for complex visuals */}
+      <div className="absolute inset-0 overflow-hidden z-0">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full filter blur-3xl animate-pulse opacity-50"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-accent/20 rounded-full filter blur-3xl animate-pulse animation-delay-2000 opacity-50"></div>
       </div>
+      
+      <Card className="w-full max-w-lg text-center shadow-2xl z-10 glassmorphism-card">
+        <CardHeader>
+          <div className="mx-auto mb-6">
+            <Loader2 className="w-16 h-16 text-primary animate-spin" />
+          </div>
+          <CardTitle className="text-3xl font-bold text-foreground">Analyzing Your Idea...</CardTitle>
+          <CardDescription className="text-muted-foreground">
+            Please wait while we process your startup concept.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="flex items-center justify-center space-x-3 text-lg text-primary">
+            <IconComponent className="w-6 h-6 animate-fade-in" />
+            <span className="animate-fade-in">{stages[currentStage].text}</span>
+          </div>
+          <Progress value={progress} className="w-full h-3 [&>div]:bg-gradient-to-r [&>div]:from-primary [&>div]:to-accent" />
+          <p className="text-sm text-muted-foreground">{Math.round(progress)}% Complete</p>
+          
+          <div className="mt-4 p-3 bg-muted/50 rounded-lg text-sm text-muted-foreground animate-fade-in">
+            💡 {currentTip}
+          </div>
+        </CardContent>
+        <CardFooter className="flex flex-col items-center justify-center pt-4">
+          <p className="text-xs text-muted-foreground">This usually takes 60-90 seconds in a real analysis.</p>
+          <p className="text-xs text-muted-foreground">(Demo completes in {totalDuration/1000} seconds)</p>
+        </CardFooter>
+      </Card>
     </div>
   );
 };

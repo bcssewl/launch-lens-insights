@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -11,13 +12,13 @@ import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import ValidateIdeaPage from "./pages/ValidateIdeaPage";
 import AnalyzingIdeaPage from "./pages/AnalyzingIdeaPage";
+import ResultsPage from "./pages/ResultsPage"; // New import
 
 // Placeholder pages for now
 const ForgotPasswordPage = () => <div className="h-screen flex items-center justify-center">Forgot Password Page Placeholder - Coming Soon!</div>;
 const TermsPage = () => <div className="h-screen flex items-center justify-center">Terms of Service - Coming Soon!</div>;
 const PrivacyPage = () => <div className="h-screen flex items-center justify-center">Privacy Policy - Coming Soon!</div>;
 // Placeholder for other dashboard sub-pages if needed
-// const ValidateIdeaPage = () => <div className="h-screen flex items-center justify-center">Validate Idea Page - Coming Soon!</div>; // Removed placeholder
 const MyReportsPage = () => <div className="h-screen flex items-center justify-center">My Reports Page - Coming Soon!</div>;
 const AIAssistantPage = () => <div className="h-screen flex items-center justify-center">AI Assistant Page - Coming Soon!</div>;
 const ExperimentsPage = () => <div className="h-screen flex items-center justify-center">Experiments Page - Coming Soon!</div>;
@@ -44,6 +45,7 @@ const App = () => (
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/dashboard/validate" element={<ValidateIdeaPage />} />
             <Route path="/analyzing" element={<AnalyzingIdeaPage />} />
+            <Route path="/results" element={<ResultsPage />} /> {/* New Route */}
             <Route path="/dashboard/reports" element={<MyReportsPage />} />
             <Route path="/dashboard/assistant" element={<AIAssistantPage />} />
             <Route path="/dashboard/experiments" element={<ExperimentsPage />} />
