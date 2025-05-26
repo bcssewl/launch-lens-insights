@@ -1,12 +1,13 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ArrowRight, Brain, Download, FileText, MessageSquare, Loader2 } from 'lucide-react';
+import { ArrowRight, Loader2 } from 'lucide-react';
 import AIAvatar from '@/components/assistant/AIAvatar';
-import UserAvatar from '@/components/assistant/UserAvatar'; // Corrected path
+import UserAvatar from '@/components/assistant/UserAvatar';
 import ChatMessage from '@/components/assistant/ChatMessage';
 import SuggestedPrompts from '@/components/assistant/SuggestedPrompts';
 import ChatSidebar from '@/components/assistant/ChatSidebar';
@@ -15,9 +16,14 @@ interface Message {
   id: string;
   text: string;
   sender: 'ai' | 'user';
-  timestamp: Date;
+  timestamp: Date; // Keep as Date for internal state
   avatar?: React.ReactNode;
 }
+
+// ChatMessage expects timestamp as string, so we'll format it before passing
+const formatTimestamp = (date: Date): string => {
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+};
 
 const initialMessages: Message[] = [
   {
@@ -102,6 +108,15 @@ const AIAssistantPage: React.FC = () => {
     setMessages([initialMessages[0]]); // Keep only the initial AI greeting
   };
 
+  const handleDownloadChat = () => {
+    // Placeholder for download functionality
+    console.log("Download chat requested");
+    alert("Download chat functionality not yet implemented.");
+  };
+
+  // Map suggestedPromptsData to an array of strings for the SuggestedPrompts component
+  const suggestedPromptsStrings = suggestedPromptsData.map(p => p.text);
+
   return (
     <DashboardLayout>
       <div className="flex h-[calc(100vh-var(--header-height))]"> {/* Adjust height if you have a fixed header in DashboardLayout */}
@@ -117,7 +132,7 @@ const AIAssistantPage: React.FC = () => {
              <ScrollArea className="h-full w-full" ref={scrollAreaRef} viewportRef={viewportRef}>
               <div className="pr-4 space-y-6"> {/* Added pr-4 to prevent scrollbar overlap */}
                 {messages.map((msg) => (
-                  <ChatMessage key={msg.id} message={msg} />
+                  <ChatMessage key={msg.id} message={{ ...msg, timestamp: formatTimestamp(msg.timestamp) }} />
                 ))}
                 {isTyping && (
                   <div className="flex items-start space-x-3">
@@ -133,7 +148,7 @@ const AIAssistantPage: React.FC = () => {
 
           {/* Input Area */}
           <div className="p-4 border-t bg-background">
-            <SuggestedPrompts prompts={suggestedPromptsData} onPromptClick={handleSendMessage} />
+            <SuggestedPrompts prompts={suggestedPromptsStrings} onPromptClick={handleSendMessage} />
             <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }} className="flex items-center space-x-2 mt-2">
               <Input
                 type="text"
@@ -151,7 +166,11 @@ const AIAssistantPage: React.FC = () => {
         </div>
 
         {/* Right Sidebar (Desktop Only) */}
-        <ChatSidebar onClearConversation={handleClearConversation} />
+        <ChatSidebar 
+          onClearConversation={handleClearConversation}
+          onDownloadChat={handleDownloadChat} // Added missing prop
+          recentTopics={[]} // Added missing prop with a default value
+        />
       </div>
     </DashboardLayout>
   );
