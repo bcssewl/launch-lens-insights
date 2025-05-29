@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
@@ -24,7 +25,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Logo } from '@/components/icons';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Home, Lightbulb, FileText, Bot, FlaskConical, Settings as SettingsIcon, UserCircle, LogOut, ChevronLeft } from 'lucide-react';
+import { Home, Lightbulb, FileText, Bot, FlaskConical, Settings as SettingsIcon, UserCircle, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -41,7 +42,7 @@ export const AppSidebar: React.FC = () => {
   const location = useLocation();
   const { user, signOut } = useAuth();
   const [profile, setProfile] = useState<any>(null);
-  const { setOpen, isMobile } = useSidebar();
+  const { setOpen, isMobile, state, toggleSidebar } = useSidebar();
 
   useEffect(() => {
     if (user) {
@@ -71,13 +72,13 @@ export const AppSidebar: React.FC = () => {
     await signOut();
   };
 
-  const handleCloseSidebar = () => {
-    setOpen(false);
+  const handleToggleSidebar = () => {
+    toggleSidebar();
   };
 
   return (
     <div className="relative">
-      <Sidebar collapsible="offcanvas" className="border-r">
+      <Sidebar collapsible="icon" className="border-r">
         <SidebarHeader className="p-4">
           <div className="flex items-center px-3">
             <Logo />
@@ -93,6 +94,7 @@ export const AppSidebar: React.FC = () => {
                     <SidebarMenuButton
                       asChild
                       isActive={location.pathname === item.href || (item.href === "/dashboard" && location.pathname.startsWith("/dashboard") && location.pathname.split('/').length <= 2)}
+                      tooltip={item.label}
                     >
                       <Link to={item.href} className="flex items-center gap-3 px-3 py-2">
                         <item.icon className="h-5 w-5" />
@@ -161,16 +163,20 @@ export const AppSidebar: React.FC = () => {
         <SidebarRail />
       </Sidebar>
       
-      {/* Collapse button positioned on the right edge, vertically centered - only visible on desktop */}
+      {/* Toggle button positioned on the right edge, vertically centered - only visible on desktop */}
       {!isMobile && (
         <Button
           variant="ghost"
           size="icon"
-          onClick={handleCloseSidebar}
+          onClick={handleToggleSidebar}
           className="absolute top-1/2 -right-4 transform -translate-y-1/2 h-8 w-8 rounded-full bg-background border border-border shadow-sm hover:bg-accent z-10"
-          aria-label="Close sidebar"
+          aria-label="Toggle sidebar"
         >
-          <ChevronLeft className="h-4 w-4" />
+          {state === "expanded" ? (
+            <ChevronLeft className="h-4 w-4" />
+          ) : (
+            <ChevronRight className="h-4 w-4" />
+          )}
         </Button>
       )}
     </div>
