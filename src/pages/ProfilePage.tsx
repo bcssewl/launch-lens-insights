@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { Button } from "@/components/ui/button";
@@ -85,9 +86,14 @@ const ProfilePage: React.FC = () => {
   };
 
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!event.target.files || !event.target.files[0]) return;
+    console.log('handleImageSelect called');
+    if (!event.target.files || !event.target.files[0]) {
+      console.log('No file selected');
+      return;
+    }
 
     const file = event.target.files[0];
+    console.log('File selected:', file.name, file.size, file.type);
     
     // Check file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
@@ -109,11 +115,16 @@ const ProfilePage: React.FC = () => {
       return;
     }
 
+    console.log('Setting selected image and showing cropper');
     setSelectedImage(file);
     setShowCropper(true);
+    
+    // Reset the input value so the same file can be selected again if needed
+    event.target.value = '';
   };
 
   const handleCropComplete = async (croppedFile: File) => {
+    console.log('handleCropComplete called with file:', croppedFile.size);
     if (!user) return;
 
     setShowCropper(false);
@@ -157,9 +168,12 @@ const ProfilePage: React.FC = () => {
   };
 
   const handleCropCancel = () => {
+    console.log('handleCropCancel called');
     setShowCropper(false);
     setSelectedImage(null);
   };
+
+  console.log('ProfilePage render - showCropper:', showCropper, 'selectedImage:', !!selectedImage);
 
   return (
     <DashboardLayout>

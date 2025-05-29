@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Crop, Check, X } from 'lucide-react';
@@ -27,6 +27,14 @@ const ImageCropper: React.FC<ImageCropperProps> = ({
     isImageLoaded,
     loadImage
   } = useImageLoader({ imageFile, isOpen });
+
+  // Reset crop area when dialog opens with new image
+  useEffect(() => {
+    if (isOpen && imageFile) {
+      console.log('Dialog opened with image file:', imageFile.name);
+      setCropArea({ x: 0, y: 0, width: 0, height: 0 });
+    }
+  }, [isOpen, imageFile]);
 
   const handleCrop = async () => {
     if (!imageFile || !loadedImage) {
@@ -64,6 +72,7 @@ const ImageCropper: React.FC<ImageCropperProps> = ({
 
   // Reset crop area when dialog closes
   const handleClose = () => {
+    console.log('ImageCropper handleClose called');
     setCropArea({ x: 0, y: 0, width: 0, height: 0 });
     onClose();
   };
