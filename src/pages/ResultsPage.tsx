@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import DashboardLayout from '@/layouts/DashboardLayout';
@@ -25,7 +24,7 @@ const ResultsPage: React.FC = () => {
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="p-4 md:p-6 space-y-6 max-w-full overflow-hidden">
+        <div className="w-full max-w-7xl mx-auto px-4 py-6 space-y-6">
           <Skeleton className="h-32 w-full" />
           <Skeleton className="h-12 w-full" />
           <div className="space-y-4">
@@ -40,7 +39,7 @@ const ResultsPage: React.FC = () => {
   if (error || !report) {
     return (
       <DashboardLayout>
-        <div className="p-4 md:p-6 max-w-full overflow-hidden">
+        <div className="w-full max-w-7xl mx-auto px-4 py-6">
           <Alert variant="destructive">
             <AlertDescription>
               {error || 'Report not found'}
@@ -92,72 +91,65 @@ const ResultsPage: React.FC = () => {
 
   return (
     <DashboardLayout>
-      <div className="w-full max-w-full overflow-hidden">
-        <div className="p-4 md:p-6 space-y-6 max-w-full">
-          <div className="w-full max-w-full overflow-hidden">
-            <ResultsHeader 
-              ideaName={ideaName}
-              score={score}
-              recommendationText={recommendation}
-              analysisDate={analysisDate}
-            />
-          </div>
+      <div className="w-full max-w-7xl mx-auto px-4 py-6 space-y-6">
+        <ResultsHeader 
+          ideaName={ideaName}
+          score={score}
+          recommendationText={recommendation}
+          analysisDate={analysisDate}
+        />
 
-          <div className="w-full max-w-full overflow-hidden">
-            <Tabs defaultValue="overview" className="w-full max-w-full">
-              <div className="w-full overflow-x-auto">
-                <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-6 min-w-fit">
-                  <TabsTrigger value="overview" className="text-xs sm:text-sm">Overview</TabsTrigger>
-                  <TabsTrigger value="market" className="text-xs sm:text-sm">Market</TabsTrigger>
-                  <TabsTrigger value="competition" className="text-xs sm:text-sm">Competition</TabsTrigger>
-                  <TabsTrigger value="swot" className="text-xs sm:text-sm">SWOT</TabsTrigger>
-                  <TabsTrigger value="scores" className="text-xs sm:text-sm">Scores</TabsTrigger>
-                  <TabsTrigger value="actions" className="text-xs sm:text-sm">Actions</TabsTrigger>
-                </TabsList>
-              </div>
-              <div className="w-full max-w-full overflow-hidden">
-                <TabsContent value="overview" className="mt-4 w-full max-w-full overflow-hidden">
-                  <OverviewTabContent 
-                    summary={executiveSummary}
-                    metrics={keyMetrics}
-                  />
-                </TabsContent>
-                <TabsContent value="market" className="mt-4 w-full max-w-full overflow-hidden">
-                  <MarketAnalysisTabContent data={marketAnalysis} />
-                </TabsContent>
-                <TabsContent value="competition" className="mt-4 w-full max-w-full overflow-hidden">
-                  <CompetitionTabContent data={competition} />
-                </TabsContent>
-                <TabsContent value="swot" className="mt-4 w-full max-w-full overflow-hidden">
-                  <SWOTAnalysisTabContent data={swot} />
-                </TabsContent>
-                <TabsContent value="scores" className="mt-4 w-full max-w-full overflow-hidden">
-                  <DetailedScoresTabContent scores={detailedScores} />
-                </TabsContent>
-                <TabsContent value="actions" className="mt-4 w-full max-w-full overflow-hidden">
-                  <ActionItemsTabContent items={actionItems} />
-                </TabsContent>
-              </div>
-            </Tabs>
+        <Tabs defaultValue="overview" className="w-full">
+          <div className="w-full overflow-x-auto mb-4">
+            <TabsList className="w-full grid grid-cols-6 min-w-fit">
+              <TabsTrigger value="overview" className="text-xs sm:text-sm px-2">Overview</TabsTrigger>
+              <TabsTrigger value="market" className="text-xs sm:text-sm px-2">Market</TabsTrigger>
+              <TabsTrigger value="competition" className="text-xs sm:text-sm px-2">Competition</TabsTrigger>
+              <TabsTrigger value="swot" className="text-xs sm:text-sm px-2">SWOT</TabsTrigger>
+              <TabsTrigger value="scores" className="text-xs sm:text-sm px-2">Scores</TabsTrigger>
+              <TabsTrigger value="actions" className="text-xs sm:text-sm px-2">Actions</TabsTrigger>
+            </TabsList>
           </div>
+          
+          <div className="w-full">
+            <TabsContent value="overview" className="mt-4 w-full">
+              <OverviewTabContent 
+                summary={executiveSummary}
+                metrics={keyMetrics}
+              />
+            </TabsContent>
+            <TabsContent value="market" className="mt-4 w-full">
+              <MarketAnalysisTabContent data={marketAnalysis} />
+            </TabsContent>
+            <TabsContent value="competition" className="mt-4 w-full">
+              <CompetitionTabContent data={competition} />
+            </TabsContent>
+            <TabsContent value="swot" className="mt-4 w-full">
+              <SWOTAnalysisTabContent data={swot} />
+            </TabsContent>
+            <TabsContent value="scores" className="mt-4 w-full">
+              <DetailedScoresTabContent scores={detailedScores} />
+            </TabsContent>
+            <TabsContent value="actions" className="mt-4 w-full">
+              <ActionItemsTabContent items={actionItems} />
+            </TabsContent>
+          </div>
+        </Tabs>
 
-          <div className="w-full max-w-full overflow-hidden">
-            <div className="flex flex-col sm:flex-row gap-2 justify-end pt-6 border-t mt-6">
-              <div className="flex flex-wrap gap-2 justify-end">
-                <Button variant="outline" className="text-xs sm:text-sm whitespace-nowrap">
-                  <Download className="mr-2 h-4 w-4" /> Download PDF
-                </Button>
-                <Button variant="outline" className="text-xs sm:text-sm whitespace-nowrap">
-                  <MessageSquare className="mr-2 h-4 w-4" /> Ask AI Follow-up
-                </Button>
-                <Button className="text-xs sm:text-sm whitespace-nowrap">
-                  <Save className="mr-2 h-4 w-4" /> Save to My Reports
-                </Button>
-                <Button variant="secondary" className="text-xs sm:text-sm whitespace-nowrap">
-                  <PlusCircle className="mr-2 h-4 w-4" /> Start New Analysis
-                </Button>
-              </div>
-            </div>
+        <div className="w-full border-t pt-6 mt-6">
+          <div className="flex flex-col sm:flex-row gap-3 justify-end">
+            <Button variant="outline" size="sm" className="w-full sm:w-auto">
+              <Download className="mr-2 h-4 w-4" /> Download PDF
+            </Button>
+            <Button variant="outline" size="sm" className="w-full sm:w-auto">
+              <MessageSquare className="mr-2 h-4 w-4" /> Ask AI Follow-up
+            </Button>
+            <Button size="sm" className="w-full sm:w-auto">
+              <Save className="mr-2 h-4 w-4" /> Save to My Reports
+            </Button>
+            <Button variant="secondary" size="sm" className="w-full sm:w-auto">
+              <PlusCircle className="mr-2 h-4 w-4" /> Start New Analysis
+            </Button>
           </div>
         </div>
       </div>
