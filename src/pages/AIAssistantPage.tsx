@@ -11,6 +11,7 @@ import UserAvatar from '@/components/assistant/UserAvatar';
 import ChatMessage from '@/components/assistant/ChatMessage';
 import SuggestedPrompts from '@/components/assistant/SuggestedPrompts';
 import ChatSidebar from '@/components/assistant/ChatSidebar';
+import { useN8nWebhook } from '@/hooks/useN8nWebhook';
 
 interface Message {
   id: string;
@@ -64,6 +65,7 @@ const AIAssistantPage: React.FC = () => {
   const [isTyping, setIsTyping] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
+  const { webhookUrl, updateWebhookUrl, sendToN8n, isConfigured } = useN8nWebhook();
 
   const scrollToBottom = () => {
     if (viewportRef.current) {
@@ -86,8 +88,14 @@ const AIAssistantPage: React.FC = () => {
       timestamp: new Date(),
       avatar: <UserAvatar className="w-8 h-8" />
     };
+    
     setMessages(prev => [...prev, newUserMessage]);
     if (!text) setInputValue(''); // Clear input only if not from suggested prompt
+
+    // Send user message to n8n if configured
+    if (isConfigured) {
+      sendToN8n(newUserMessage);
+    }
 
     setIsTyping(true);
     // Simulate AI response
@@ -100,6 +108,12 @@ const AIAssistantPage: React.FC = () => {
         avatar: <AIAvatar className="w-8 h-8" />
       };
       setMessages(prev => [...prev, aiResponse]);
+      
+      // Send AI response to n8n if configured
+      if (isConfigured) {
+        sendToN8n(aiResponse);
+      }
+      
       setIsTyping(false);
     }, 1500 + Math.random() * 1000);
   };
@@ -168,8 +182,10 @@ const AIAssistantPage: React.FC = () => {
         {/* Right Sidebar (Desktop Only) */}
         <ChatSidebar 
           onClearConversation={handleClearConversation}
-          onDownloadChat={handleDownloadChat} // Added missing prop
-          recentTopics={[]} // Added missing prop with a default value
+          onDownloadChat={handleDownloadChat}
+          recentTopics={[]}
+          webhookUrl={webhookUrl}
+          onWebhookUrlChange={updateWebhookUrl}
         />
       </div>
     </DashboardLayout>

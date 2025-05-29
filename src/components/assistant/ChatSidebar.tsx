@@ -5,14 +5,23 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Link } from 'react-router-dom';
 import { Lightbulb, FileText, Download, Trash2 } from 'lucide-react';
+import N8nWebhookSettings from './N8nWebhookSettings';
 
 interface ChatSidebarProps {
-  recentTopics: string[]; // For now, just strings
+  recentTopics: string[];
   onDownloadChat: () => void;
   onClearConversation: () => void;
+  webhookUrl: string;
+  onWebhookUrlChange: (url: string) => void;
 }
 
-const ChatSidebar: React.FC<ChatSidebarProps> = ({ recentTopics, onDownloadChat, onClearConversation }) => {
+const ChatSidebar: React.FC<ChatSidebarProps> = ({ 
+  recentTopics, 
+  onDownloadChat, 
+  onClearConversation,
+  webhookUrl,
+  onWebhookUrlChange 
+}) => {
   return (
     <aside className="w-full md:w-72 lg:w-80 p-4 space-y-6 border-l bg-card hidden md:flex md:flex-col h-full">
       <Card>
@@ -38,6 +47,11 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ recentTopics, onDownloadChat,
           </Button>
         </CardContent>
       </Card>
+
+      <N8nWebhookSettings 
+        webhookUrl={webhookUrl}
+        onWebhookUrlChange={onWebhookUrlChange}
+      />
 
       <Card className="flex-grow flex flex-col min-h-0">
         <CardHeader>
