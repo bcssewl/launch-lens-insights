@@ -1,8 +1,11 @@
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Crop, RotateCcw, Check, X } from 'lucide-react';
+import { Crop, Check, X } from 'lucide-react';
+import { useImageLoader } from '@/hooks/useImageLoader';
+import { CropArea, cropImageToCanvas } from '@/utils/cropUtils';
+import ImageCropperCanvas from './ImageCropperCanvas';
 
 interface ImageCropperProps {
   isOpen: boolean;
@@ -17,232 +20,34 @@ const ImageCropper: React.FC<ImageCropperProps> = ({
   imageFile,
   onCropComplete
 }) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [isImageLoaded, setIsImageLoaded] = useState(false);
-  const [cropArea, setCropArea] = useState({ x: 0, y: 0, width: 0, height: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [loadedImage, setLoadedImage] = useState<HTMLImageElement | null>(null);
-
-  // Create and manage image URL
-  React.useEffect(() => {
-    if (imageFile && isOpen) {
-      const url = URL.createObjectURL(imageFile);
-      setImageUrl(url);
-      
-      return () => {
-        URL.revokeObjectURL(url);
-        setImageUrl(null);
-      };
-    } else {
-      setImageUrl(null);
-    }
-  }, [imageFile, isOpen]);
-
-  // Reset state when dialog closes
-  React.useEffect(() => {
-    if (!isOpen) {
-      setIsImageLoaded(false);
-      setCropArea({ x: 0, y: 0, width: 0, height: 0 });
-      setIsDragging(false);
-      setLoadedImage(null);
-    }
-  }, [isOpen]);
-
-  const loadImage = useCallback(() => {
-    if (!imageUrl || !canvasRef.current) return;
-
-    console.log('Loading image:', imageUrl);
-    const img = new Image();
-    
-    img.onload = () => {
-      console.log('Image loaded successfully');
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-
-      // Set canvas size to fit the image while maintaining aspect ratio
-      const maxSize = 500;
-      let { naturalWidth: width, naturalHeight: height } = img;
-      
-      // Calculate scale factor to fit image in canvas while maintaining aspect ratio
-      const scale = Math.min(maxSize / width, maxSize / height);
-      width = width * scale;
-      height = height * scale;
-
-      canvas.width = width;
-      canvas.height = height;
-      
-      // Clear canvas and draw image
-      ctx.clearRect(0, 0, width, height);
-      ctx.drawImage(img, 0, 0, width, height);
-
-      // Set initial crop area to a smaller square in the center (50% of smallest dimension)
-      const cropSize = Math.min(width, height) * 0.5;
-      setCropArea({
-        x: (width - cropSize) / 2,
-        y: (height - cropSize) / 2,
-        width: cropSize,
-        height: cropSize
-      });
-
-      setLoadedImage(img);
-      setIsImageLoaded(true);
-    };
-
-    img.onerror = (error) => {
-      console.error('Failed to load image:', error);
-      setIsImageLoaded(false);
-      setLoadedImage(null);
-    };
-
-    img.src = imageUrl;
-  }, [imageUrl]);
-
-  // Load image when URL is available
-  React.useEffect(() => {
-    if (imageUrl && isOpen) {
-      setIsImageLoaded(false);
-      loadImage();
-    }
-  }, [imageUrl, loadImage, isOpen]);
-
-  const drawCropOverlay = useCallback(() => {
-    if (!canvasRef.current || !isImageLoaded || !loadedImage) return;
-
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // Clear and redraw the original image
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(loadedImage, 0, 0, canvas.width, canvas.height);
-
-    // Draw dark overlay
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Clear the crop area to show the original image
-    ctx.globalCompositeOperation = 'destination-out';
-    ctx.fillRect(cropArea.x, cropArea.y, cropArea.width, cropArea.height);
-    
-    // Reset composite operation and redraw the crop area with original image
-    ctx.globalCompositeOperation = 'source-over';
-    ctx.drawImage(loadedImage, 
-      cropArea.x, cropArea.y, cropArea.width, cropArea.height,
-      cropArea.x, cropArea.y, cropArea.width, cropArea.height
-    );
-
-    // Draw crop border
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(cropArea.x, cropArea.y, cropArea.width, cropArea.height);
-
-    // Draw corner handles
-    const handleSize = 10;
-    ctx.fillStyle = '#fff';
-    ctx.strokeStyle = '#333';
-    ctx.lineWidth = 1;
-    
-    const handles = [
-      [cropArea.x - handleSize/2, cropArea.y - handleSize/2],
-      [cropArea.x + cropArea.width - handleSize/2, cropArea.y - handleSize/2],
-      [cropArea.x - handleSize/2, cropArea.y + cropArea.height - handleSize/2],
-      [cropArea.x + cropArea.width - handleSize/2, cropArea.y + cropArea.height - handleSize/2]
-    ];
-    
-    handles.forEach(([x, y]) => {
-      ctx.fillRect(x, y, handleSize, handleSize);
-      ctx.strokeRect(x, y, handleSize, handleSize);
-    });
-  }, [cropArea, loadedImage, isImageLoaded]);
-
-  React.useEffect(() => {
-    if (isImageLoaded && loadedImage) {
-      drawCropOverlay();
-    }
-  }, [drawCropOverlay, isImageLoaded, loadedImage]);
-
-  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    // Check if click is inside crop area
-    if (x >= cropArea.x && x <= cropArea.x + cropArea.width &&
-        y >= cropArea.y && y <= cropArea.y + cropArea.height) {
-      setIsDragging(true);
-      setDragStart({ x: x - cropArea.x, y: y - cropArea.y });
-    }
-  };
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDragging || !canvasRef.current) return;
-
-    const canvas = canvasRef.current;
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    const newX = Math.max(0, Math.min(x - dragStart.x, canvas.width - cropArea.width));
-    const newY = Math.max(0, Math.min(y - dragStart.y, canvas.height - cropArea.height));
-
-    setCropArea(prev => ({ ...prev, x: newX, y: newY }));
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
+  const [cropArea, setCropArea] = useState<CropArea>({ x: 0, y: 0, width: 0, height: 0 });
+  
+  const {
+    loadedImage,
+    isImageLoaded,
+    loadImage
+  } = useImageLoader({ imageFile, isOpen });
 
   const handleCrop = async () => {
-    if (!canvasRef.current || !imageFile || !loadedImage) return;
+    if (!imageFile || !loadedImage) return;
 
-    const canvas = canvasRef.current;
-    const cropCanvas = document.createElement('canvas');
-    const cropCtx = cropCanvas.getContext('2d');
-    if (!cropCtx) return;
-
-    // Set crop canvas to square dimensions
-    const size = 300;
-    cropCanvas.width = size;
-    cropCanvas.height = size;
-
-    // Calculate the scale factor between displayed image and original image
-    const scaleX = loadedImage.naturalWidth / canvas.width;
-    const scaleY = loadedImage.naturalHeight / canvas.height;
-
-    // Crop from original image coordinates
-    cropCtx.drawImage(
+    const blob = await cropImageToCanvas(
       loadedImage,
-      cropArea.x * scaleX,
-      cropArea.y * scaleY,
-      cropArea.width * scaleX,
-      cropArea.height * scaleY,
-      0,
-      0,
-      size,
-      size
+      cropArea,
+      loadedImage.naturalWidth,
+      loadedImage.naturalHeight
     );
 
-    // Convert to blob and create file
-    cropCanvas.toBlob((blob) => {
-      if (blob) {
-        const croppedFile = new File([blob], imageFile.name, {
-          type: 'image/jpeg',
-          lastModified: Date.now()
-        });
-        onCropComplete(croppedFile);
-      }
-    }, 'image/jpeg', 0.9);
+    if (blob) {
+      const croppedFile = new File([blob], imageFile.name, {
+        type: 'image/jpeg',
+        lastModified: Date.now()
+      });
+      onCropComplete(croppedFile);
+    }
   };
 
-  console.log('ImageCropper render - isOpen:', isOpen, 'imageFile:', !!imageFile, 'imageUrl:', !!imageUrl);
+  console.log('ImageCropper render - isOpen:', isOpen, 'imageFile:', !!imageFile);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -256,21 +61,13 @@ const ImageCropper: React.FC<ImageCropperProps> = ({
         
         <div className="flex flex-col items-center space-y-4">
           {imageFile && (
-            <div className="relative">
-              <canvas
-                ref={canvasRef}
-                className="border border-border rounded-lg cursor-move max-w-full"
-                onMouseDown={handleMouseDown}
-                onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseUp}
-              />
-              {!isImageLoaded && (
-                <div className="absolute inset-0 flex items-center justify-center bg-muted rounded-lg">
-                  <p className="text-sm text-muted-foreground">Loading image...</p>
-                </div>
-              )}
-            </div>
+            <ImageCropperCanvas
+              loadedImage={loadedImage}
+              isImageLoaded={isImageLoaded}
+              onImageLoad={loadImage}
+              onCropAreaChange={setCropArea}
+              cropArea={cropArea}
+            />
           )}
           
           <p className="text-sm text-muted-foreground text-center">
