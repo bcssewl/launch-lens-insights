@@ -19,18 +19,22 @@ const ResultsHeader: React.FC<ResultsHeaderProps> = ({
   analysisDate,
 }) => {
   return (
-    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-4 bg-card rounded-lg shadow">
-      <div className="flex-1">
-        <h1 className="text-3xl font-bold text-primary">{ideaName}</h1>
-        <p className="text-sm text-muted-foreground">Analysis Date: {analysisDate}</p>
+    <div className="w-full p-4 bg-card rounded-lg shadow space-y-4">
+      <div className="w-full">
+        <h1 className="text-2xl md:text-3xl font-bold text-primary break-words">{ideaName}</h1>
+        <p className="text-sm text-muted-foreground mt-1">Analysis Date: {analysisDate}</p>
       </div>
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-        <ScoreDisplay score={score} maxScore={10} />
-        <RecommendationBadge recommendation={recommendationText} />
-        <Button variant="outline" size="sm">
-          <Share2 className="mr-2 h-4 w-4" />
-          Share Report
-        </Button>
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 flex-wrap">
+          <ScoreDisplay score={score} maxScore={10} />
+          <RecommendationBadge recommendation={recommendationText} />
+        </div>
+        <div className="flex justify-start">
+          <Button variant="outline" size="sm" className="w-fit">
+            <Share2 className="mr-2 h-4 w-4" />
+            Share Report
+          </Button>
+        </div>
       </div>
     </div>
   );
