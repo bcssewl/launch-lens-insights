@@ -17,11 +17,10 @@ interface Message {
   id: string;
   text: string;
   sender: 'ai' | 'user';
-  timestamp: Date; // Keep as Date for internal state
+  timestamp: Date;
   avatar?: React.ReactNode;
 }
 
-// ChatMessage expects timestamp as string, so we'll format it before passing
 const formatTimestamp = (date: Date): string => {
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
@@ -31,21 +30,7 @@ const initialMessages: Message[] = [
     id: uuidv4(),
     text: "Hi! I'm your AI startup advisor. I can help you refine ideas, suggest validation methods, or answer questions about your analyses. What would you like to discuss?",
     sender: 'ai',
-    timestamp: new Date(Date.now() - 120000), // 2 minutes ago
-    avatar: <AIAvatar className="w-8 h-8" />
-  },
-  {
-    id: uuidv4(),
-    text: "How can I improve my SaaS idea's validation score?",
-    sender: 'user',
-    timestamp: new Date(Date.now() - 60000), // 1 minute ago
-    avatar: <UserAvatar className="w-8 h-8" />
-  },
-  {
-    id: uuidv4(),
-    text: "Great question! Based on your recent analysis, here are 3 ways to improve your score: 1) Narrow your target market to a specific niche, 2) Research and differentiate from the 24 competitors identified, 3) Test pricing with a landing page experiment. Would you like me to elaborate on any of these?",
-    sender: 'ai',
-    timestamp: new Date(),
+    timestamp: new Date(Date.now() - 120000),
     avatar: <AIAvatar className="w-8 h-8" />
   },
 ];
@@ -65,7 +50,7 @@ const AIAssistantPage: React.FC = () => {
   const [isTyping, setIsTyping] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
-  const { webhookUrl, updateWebhookUrl, sendToN8n, isConfigured } = useN8nWebhook();
+  const { webhookUrl, updateWebhookUrl, sendMessageToN8n, isConfigured } = useN8nWebhook();
 
   const scrollToBottom = () => {
     if (viewportRef.current) {
@@ -77,7 +62,7 @@ const AIAssistantPage: React.FC = () => {
     scrollToBottom();
   }, [messages]);
 
-  const handleSendMessage = (text?: string) => {
+  const handleSendMessage = async (text?: string) => {
     const messageText = text || inputValue;
     if (messageText.trim() === '') return;
 
@@ -90,61 +75,86 @@ const AIAssistantPage: React.FC = () => {
     };
     
     setMessages(prev => [...prev, newUserMessage]);
-    if (!text) setInputValue(''); // Clear input only if not from suggested prompt
+    if (!text) setInputValue('');
 
-    // Send user message to n8n if configured
-    if (isConfigured) {
-      sendToN8n(newUserMessage);
-    }
-
-    setIsTyping(true);
-    // Simulate AI response
-    setTimeout(() => {
-      const aiResponse: Message = {
+    if (!isConfigured) {
+      const fallbackResponse: Message = {
         id: uuidv4(),
-        text: `I'm processing your query about: "${messageText.substring(0, 30)}...". Let me think... Ah, yes! Here's a generic insightful response about that. For more specific help, I might need more context or for my human overlords to actually implement real AI logic.`,
+        text: "Please configure the n8n webhook URL in the sidebar to enable AI responses.",
         sender: 'ai',
         timestamp: new Date(),
         avatar: <AIAvatar className="w-8 h-8" />
       };
+      setMessages(prev => [...prev, fallbackResponse]);
+      return;
+    }
+
+    setIsTyping(true);
+    
+    try {
+      const aiResponseText = await sendMessageToN8n(messageText);
+      
+      const aiResponse: Message = {
+        id: uuidv4(),
+        text: aiResponseText,
+        sender: 'ai',
+        timestamp: new Date(),
+        avatar: <AIAvatar className="w-8 h-8" />
+      };
+      
       setMessages(prev => [...prev, aiResponse]);
-      
-      // Send AI response to n8n if configured
-      if (isConfigured) {
-        sendToN8n(aiResponse);
-      }
-      
+    } catch (error) {
+      const errorResponse: Message = {
+        id: uuidv4(),
+        text: "Sorry, I'm having trouble connecting to the AI service. Please check your n8n webhook configuration and try again.",
+        sender: 'ai',
+        timestamp: new Date(),
+        avatar: <AIAvatar className="w-8 h-8" />
+      };
+      setMessages(prev => [...prev, errorResponse]);
+    } finally {
       setIsTyping(false);
-    }, 1500 + Math.random() * 1000);
+    }
   };
 
   const handleClearConversation = () => {
-    setMessages([initialMessages[0]]); // Keep only the initial AI greeting
+    setMessages([initialMessages[0]]);
   };
 
   const handleDownloadChat = () => {
-    // Placeholder for download functionality
-    console.log("Download chat requested");
-    alert("Download chat functionality not yet implemented.");
+    const chatContent = messages.map(msg => 
+      `[${formatTimestamp(msg.timestamp)}] ${msg.sender.toUpperCase()}: ${msg.text}`
+    ).join('\n\n');
+    
+    const blob = new Blob([chatContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ai-chat-${new Date().toISOString().split('T')[0]}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
-  // Map suggestedPromptsData to an array of strings for the SuggestedPrompts component
   const suggestedPromptsStrings = suggestedPromptsData.map(p => p.text);
 
   return (
     <DashboardLayout>
-      <div className="flex h-[calc(100vh-var(--header-height))]"> {/* Adjust height if you have a fixed header in DashboardLayout */}
+      <div className="flex h-[calc(100vh-var(--header-height))]">
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Header */}
           <header className="p-4 border-b bg-background">
             <h1 className="text-xl font-semibold font-heading">AI Assistant</h1>
-            <p className="text-sm text-muted-foreground">Get personalized advice for your startup ideas</p>
+            <p className="text-sm text-muted-foreground">
+              {isConfigured ? 'Powered by your n8n workflow' : 'Configure n8n webhook to enable AI responses'}
+            </p>
           </header>
 
           {/* Chat Area */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted/20">
              <ScrollArea className="h-full w-full" ref={scrollAreaRef} viewportRef={viewportRef}>
-              <div className="pr-4 space-y-6"> {/* Added pr-4 to prevent scrollbar overlap */}
+              <div className="pr-4 space-y-6">
                 {messages.map((msg) => (
                   <ChatMessage key={msg.id} message={{ ...msg, timestamp: formatTimestamp(msg.timestamp) }} />
                 ))}

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Webhook, CheckCircle, XCircle } from 'lucide-react';
+import { Webhook, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface N8nWebhookSettingsProps {
@@ -23,9 +23,9 @@ const N8nWebhookSettings: React.FC<N8nWebhookSettingsProps> = ({
   const validateUrl = (url: string) => {
     try {
       new URL(url);
-      const isN8nUrl = url.includes('webhook') || url.includes('n8n');
-      setIsValidUrl(url.length > 0 && isN8nUrl);
-      return url.length > 0 && isN8nUrl;
+      const isValid = url.length > 0 && (url.includes('webhook') || url.includes('n8n') || url.startsWith('http'));
+      setIsValidUrl(isValid);
+      return isValid;
     } catch {
       setIsValidUrl(false);
       return false;
@@ -47,7 +47,6 @@ const N8nWebhookSettings: React.FC<N8nWebhookSettingsProps> = ({
         headers: {
           'Content-Type': 'application/json',
         },
-        mode: 'no-cors',
         body: JSON.stringify({
           type: 'test',
           message: 'Test connection from AI Assistant',
@@ -55,15 +54,19 @@ const N8nWebhookSettings: React.FC<N8nWebhookSettingsProps> = ({
         }),
       });
 
-      toast({
-        title: "Test Sent",
-        description: "Test message sent to n8n webhook. Check your workflow for confirmation.",
-      });
+      if (response.ok) {
+        toast({
+          title: "Connection Successful",
+          description: "Successfully connected to your n8n webhook!",
+        });
+      } else {
+        throw new Error(`HTTP ${response.status}`);
+      }
     } catch (error) {
       console.error('Webhook test error:', error);
       toast({
-        title: "Test Failed",
-        description: "Failed to send test message to webhook.",
+        title: "Connection Failed",
+        description: "Could not connect to the webhook. Please check the URL and your n8n workflow.",
         variant: "destructive",
       });
     } finally {
@@ -76,7 +79,7 @@ const N8nWebhookSettings: React.FC<N8nWebhookSettingsProps> = ({
       <CardHeader>
         <CardTitle className="text-sm flex items-center gap-2">
           <Webhook className="h-4 w-4" />
-          n8n Integration
+          n8n Chat Backend
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -94,12 +97,12 @@ const N8nWebhookSettings: React.FC<N8nWebhookSettingsProps> = ({
                 {isValidUrl ? (
                   <>
                     <CheckCircle className="h-3 w-3 mr-1" />
-                    Valid
+                    Valid URL
                   </>
                 ) : (
                   <>
                     <XCircle className="h-3 w-3 mr-1" />
-                    Invalid
+                    Invalid URL
                   </>
                 )}
               </Badge>
@@ -119,9 +122,15 @@ const N8nWebhookSettings: React.FC<N8nWebhookSettingsProps> = ({
           </Button>
         )}
         
-        <p className="text-xs text-muted-foreground">
-          Messages will be sent to this webhook when you chat with the AI.
-        </p>
+        <div className="p-2 bg-blue-50 rounded-md border border-blue-200">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+            <div className="text-xs text-blue-700">
+              <p className="font-medium mb-1">Setup Instructions:</p>
+              <p>Your n8n workflow should return a JSON response with a "response" or "message" field containing the AI's reply.</p>
+            </div>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

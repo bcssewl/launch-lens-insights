@@ -24,26 +24,23 @@ export const useN8nWebhook = () => {
     }
   }, []);
 
-  const sendToN8n = useCallback(async (message: ChatMessage) => {
-    if (!webhookUrl) return;
+  const sendMessageToN8n = useCallback(async (message: string): Promise<string> => {
+    if (!webhookUrl) {
+      throw new Error('Webhook URL not configured');
+    }
 
     try {
       console.log('Sending message to n8n webhook:', webhookUrl);
       
-      await fetch(webhookUrl, {
+      const response = await fetch(webhookUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        mode: 'no-cors',
         body: JSON.stringify({
           type: 'chat_message',
-          message: {
-            id: message.id,
-            text: message.text,
-            sender: message.sender,
-            timestamp: message.timestamp.toISOString(),
-          },
+          message: message,
+          timestamp: new Date().toISOString(),
           metadata: {
             source: 'ai_assistant',
             user_agent: navigator.userAgent,
@@ -52,21 +49,33 @@ export const useN8nWebhook = () => {
         }),
       });
 
-      console.log('Message sent to n8n successfully');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Received response from n8n:', data);
+
+      // Extract the AI response from the n8n response
+      // Adjust this based on your n8n workflow's response structure
+      return data.response || data.message || 'I received your message but couldn\'t generate a response.';
     } catch (error) {
       console.error('Failed to send message to n8n:', error);
       toast({
         title: "n8n Integration Error",
-        description: "Failed to send message to n8n webhook.",
+        description: "Failed to communicate with n8n webhook. Using fallback response.",
         variant: "destructive",
       });
+      
+      // Fallback response when n8n is unavailable
+      throw error;
     }
   }, [webhookUrl, toast]);
 
   return {
     webhookUrl,
     updateWebhookUrl,
-    sendToN8n,
+    sendMessageToN8n,
     isConfigured: !!webhookUrl,
   };
 };
