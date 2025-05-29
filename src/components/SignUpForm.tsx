@@ -26,7 +26,7 @@ const signUpSchema = z.object({
   agreeToTerms: z.boolean().refine(val => val === true, { message: "You must agree to the terms and privacy policy." }),
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords don't match.",
-  path: ["confirmPassword"], // path to field that will display the error
+  path: ["confirmPassword"],
 });
 
 type SignUpFormValues = z.infer<typeof signUpSchema>;
@@ -57,7 +57,7 @@ export const SignUpForm: React.FC = () => {
     console.log('Sign Up submitted', values);
     
     try {
-      const { error } = await signUp(values.email, values.password, values.fullName);
+      const { error, needsVerification } = await signUp(values.email, values.password, values.fullName);
       
       if (error) {
         console.error('Sign up error:', error);
@@ -66,10 +66,16 @@ export const SignUpForm: React.FC = () => {
           description: error.message,
           variant: "destructive",
         });
+      } else if (needsVerification) {
+        toast({
+          title: "Check your email!",
+          description: "We've sent you a verification link. Please check your email to activate your account.",
+        });
+        // Don't navigate to dashboard if email verification is required
       } else {
         toast({
           title: "Success!",
-          description: "Account created successfully. Please check your email to verify your account.",
+          description: "Account created successfully.",
         });
         navigate('/dashboard');
       }
@@ -196,8 +202,6 @@ export const SignUpForm: React.FC = () => {
         </div>
         <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
           <Button variant="outline" className="w-full">
-            {/* Google icon is not in the allowed lucide-react icons. Using text instead. */}
-            <span className="sr-only">Continue with Google</span>
             Google
           </Button>
           <Button variant="outline" className="w-full">
