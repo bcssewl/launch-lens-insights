@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
@@ -76,97 +77,101 @@ export const AppSidebar: React.FC = () => {
   };
 
   return (
-    <Sidebar collapsible="offcanvas" className="border-r">
-      <SidebarHeader className="p-4">
-        <div className="flex items-center justify-between px-3">
-          <Logo />
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleCloseSidebar}
-            className="h-8 w-8 rounded-full hover:bg-accent"
-            aria-label="Close sidebar"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-      </SidebarHeader>
-      
-      <SidebarContent className="flex-grow">
-        <SidebarGroup>
-          <SidebarGroupContent className="px-4">
-            <SidebarMenu>
-              {navItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={location.pathname === item.href || (item.href === "/dashboard" && location.pathname.startsWith("/dashboard") && location.pathname.split('/').length <= 2)}
-                  >
-                    <Link to={item.href} className="flex items-center gap-3 px-3 py-2">
-                      <item.icon className="h-5 w-5" />
-                      <span>{item.label}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-      
-      <SidebarFooter className="p-4 border-t">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="flex items-center space-x-3 p-2 rounded-md hover:bg-accent w-full text-left">
-              <Avatar className="h-8 w-8">
-                <AvatarImage src={profile?.avatar_url} alt="User Avatar" />
-                <AvatarFallback>
-                  {user?.email?.charAt(0).toUpperCase() || 'U'}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <p className="text-sm font-medium text-foreground">
-                  {profile?.full_name || user?.email || 'User'}
-                </p>
-                <Link to="/dashboard/billing" className="text-xs text-primary hover:underline">
-                  Upgrade Plan
+    <div className="relative">
+      <Sidebar collapsible="offcanvas" className="border-r">
+        <SidebarHeader className="p-4">
+          <div className="flex items-center px-3">
+            <Logo />
+          </div>
+        </SidebarHeader>
+        
+        <SidebarContent className="flex-grow">
+          <SidebarGroup>
+            <SidebarGroupContent className="px-4">
+              <SidebarMenu>
+                {navItems.map((item) => (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={location.pathname === item.href || (item.href === "/dashboard" && location.pathname.startsWith("/dashboard") && location.pathname.split('/').length <= 2)}
+                    >
+                      <Link to={item.href} className="flex items-center gap-3 px-3 py-2">
+                        <item.icon className="h-5 w-5" />
+                        <span>{item.label}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
+        
+        <SidebarFooter className="p-4 border-t">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center space-x-3 p-2 rounded-md hover:bg-accent w-full text-left">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={profile?.avatar_url} alt="User Avatar" />
+                  <AvatarFallback>
+                    {user?.email?.charAt(0).toUpperCase() || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="text-sm font-medium text-foreground">
+                    {profile?.full_name || user?.email || 'User'}
+                  </p>
+                  <Link to="/dashboard/billing" className="text-xs text-primary hover:underline">
+                    Upgrade Plan
+                  </Link>
+                </div>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent side="top" align="start" className="w-56 mb-2 ml-1">
+              <DropdownMenuLabel>
+                {profile?.full_name || user?.email || 'User'}
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link to="/dashboard/profile" className="flex items-center">
+                  <UserCircle className="mr-2 h-4 w-4" />
+                  <span>Profile</span>
                 </Link>
-              </div>
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent side="top" align="start" className="w-56 mb-2 ml-1">
-            <DropdownMenuLabel>
-              {profile?.full_name || user?.email || 'User'}
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link to="/dashboard/profile" className="flex items-center">
-                <UserCircle className="mr-2 h-4 w-4" />
-                <span>Profile</span>
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link to="/dashboard/settings" className="flex items-center">
-                <SettingsIcon className="mr-2 h-4 w-4" />
-                <span>Settings</span>
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link to="/dashboard/billing" className="flex items-center">
-                <Lightbulb className="mr-2 h-4 w-4" />
-                <span>Billing / Upgrade</span>
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout}>
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>Log out</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </SidebarFooter>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link to="/dashboard/settings" className="flex items-center">
+                  <SettingsIcon className="mr-2 h-4 w-4" />
+                  <span>Settings</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link to="/dashboard/billing" className="flex items-center">
+                  <Lightbulb className="mr-2 h-4 w-4" />
+                  <span>Billing / Upgrade</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Log out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </SidebarFooter>
+        
+        <SidebarRail />
+      </Sidebar>
       
-      <SidebarRail />
-    </Sidebar>
+      {/* Collapse button positioned on the right edge, vertically centered */}
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={handleCloseSidebar}
+        className="absolute top-1/2 -right-4 transform -translate-y-1/2 h-8 w-8 rounded-full bg-background border border-border shadow-sm hover:bg-accent z-10"
+        aria-label="Close sidebar"
+      >
+        <X className="h-4 w-4" />
+      </Button>
+    </div>
   );
 };
