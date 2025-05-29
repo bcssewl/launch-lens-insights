@@ -59,9 +59,10 @@ export const useValidationReports = () => {
         return;
       }
 
-      // Transform the data to include idea details at the top level
-      const transformedReports = data?.map(report => ({
+      // Transform the data to include idea details at the top level and ensure proper typing
+      const transformedReports: ValidationReport[] = data?.map(report => ({
         ...report,
+        status: report.status as 'generating' | 'completed' | 'failed' | 'archived',
         idea_name: report.idea_validations?.idea_name,
         one_line_description: report.idea_validations?.one_line_description,
       })) || [];
