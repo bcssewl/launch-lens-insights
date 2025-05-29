@@ -50,7 +50,7 @@ const AIAssistantPage: React.FC = () => {
   const [isTyping, setIsTyping] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
-  const { webhookUrl, updateWebhookUrl, sendMessageToN8n, isConfigured } = useN8nWebhook();
+  const { sendMessageToN8n, isConfigured } = useN8nWebhook();
 
   const scrollToBottom = () => {
     if (viewportRef.current) {
@@ -80,7 +80,7 @@ const AIAssistantPage: React.FC = () => {
     if (!isConfigured) {
       const fallbackResponse: Message = {
         id: uuidv4(),
-        text: "Please configure the n8n webhook URL in the sidebar to enable AI responses.",
+        text: "N8N webhook URL is not configured. Please set the VITE_N8N_WEBHOOK_URL environment variable.",
         sender: 'ai',
         timestamp: new Date(),
         avatar: <AIAvatar className="w-8 h-8" />
@@ -147,7 +147,7 @@ const AIAssistantPage: React.FC = () => {
           <header className="p-4 border-b bg-background">
             <h1 className="text-xl font-semibold font-heading">AI Assistant</h1>
             <p className="text-sm text-muted-foreground">
-              {isConfigured ? 'Powered by your n8n workflow' : 'Configure n8n webhook to enable AI responses'}
+              {isConfigured ? 'Powered by your n8n workflow' : 'N8N webhook not configured'}
             </p>
           </header>
 
@@ -194,8 +194,6 @@ const AIAssistantPage: React.FC = () => {
           onClearConversation={handleClearConversation}
           onDownloadChat={handleDownloadChat}
           recentTopics={[]}
-          webhookUrl={webhookUrl}
-          onWebhookUrlChange={updateWebhookUrl}
         />
       </div>
     </DashboardLayout>

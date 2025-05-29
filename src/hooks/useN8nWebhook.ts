@@ -10,23 +10,12 @@ export interface ChatMessage {
 }
 
 export const useN8nWebhook = () => {
-  const [webhookUrl, setWebhookUrl] = useState(() => {
-    return localStorage.getItem('n8n-webhook-url') || '';
-  });
+  const webhookUrl = import.meta.env.VITE_N8N_WEBHOOK_URL || '';
   const { toast } = useToast();
-
-  const updateWebhookUrl = useCallback((url: string) => {
-    setWebhookUrl(url);
-    if (url) {
-      localStorage.setItem('n8n-webhook-url', url);
-    } else {
-      localStorage.removeItem('n8n-webhook-url');
-    }
-  }, []);
 
   const sendMessageToN8n = useCallback(async (message: string): Promise<string> => {
     if (!webhookUrl) {
-      throw new Error('Webhook URL not configured');
+      throw new Error('N8N webhook URL not configured in environment variables');
     }
 
     try {
@@ -73,8 +62,6 @@ export const useN8nWebhook = () => {
   }, [webhookUrl, toast]);
 
   return {
-    webhookUrl,
-    updateWebhookUrl,
     sendMessageToN8n,
     isConfigured: !!webhookUrl,
   };
