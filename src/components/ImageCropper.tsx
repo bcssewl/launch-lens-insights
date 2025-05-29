@@ -23,105 +23,149 @@ const ImageCropper: React.FC<ImageCropperProps> = ({
   const [cropArea, setCropArea] = useState({ x: 0, y: 0, width: 0, height: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+
+  // Create and manage image URL
+  React.useEffect(() => {
+    if (imageFile && isOpen) {
+      const url = URL.createObjectURL(imageFile);
+      setImageUrl(url);
+      
+      return () => {
+        URL.revokeObjectURL(url);
+      };
+    } else {
+      setImageUrl(null);
+    }
+  }, [imageFile, isOpen]);
+
+  // Reset state when dialog closes
+  React.useEffect(() => {
+    if (!isOpen) {
+      setIsImageLoaded(false);
+      setCropArea({ x: 0, y: 0, width: 0, height: 0 });
+      setIsDragging(false);
+    }
+  }, [isOpen]);
 
   const loadImage = useCallback(() => {
-    if (!imageFile) return;
+    if (!imageUrl || !canvasRef.current) return;
 
     const img = new Image();
     img.onload = () => {
-      if (imageRef.current && canvasRef.current) {
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
 
-        // Set canvas size to fit the image while maintaining aspect ratio
-        const maxSize = 400;
-        let { width, height } = img;
-        
-        if (width > height) {
-          if (width > maxSize) {
-            height = (height * maxSize) / width;
-            width = maxSize;
-          }
-        } else {
-          if (height > maxSize) {
-            width = (width * maxSize) / height;
-            height = maxSize;
-          }
+      // Set canvas size to fit the image while maintaining aspect ratio
+      const maxSize = 400;
+      let { naturalWidth: width, naturalHeight: height } = img;
+      
+      if (width > height) {
+        if (width > maxSize) {
+          height = (height * maxSize) / width;
+          width = maxSize;
         }
-
-        canvas.width = width;
-        canvas.height = height;
-        
-        ctx.drawImage(img, 0, 0, width, height);
-
-        // Set initial crop area to a square in the center
-        const cropSize = Math.min(width, height) * 0.8;
-        setCropArea({
-          x: (width - cropSize) / 2,
-          y: (height - cropSize) / 2,
-          width: cropSize,
-          height: cropSize
-        });
-
-        setIsImageLoaded(true);
+      } else {
+        if (height > maxSize) {
+          width = (width * maxSize) / height;
+          height = maxSize;
+        }
       }
-    };
-    img.src = URL.createObjectURL(imageFile);
-  }, [imageFile]);
 
+      canvas.width = width;
+      canvas.height = height;
+      
+      // Clear canvas and draw image
+      ctx.clearRect(0, 0, width, height);
+      ctx.drawImage(img, 0, 0, width, height);
+
+      // Set initial crop area to a square in the center
+      const cropSize = Math.min(width, height) * 0.8;
+      setCropArea({
+        x: (width - cropSize) / 2,
+        y: (height - cropSize) / 2,
+        width: cropSize,
+        height: cropSize
+      });
+
+      setIsImageLoaded(true);
+    };
+
+    img.onerror = () => {
+      console.error('Failed to load image');
+      setIsImageLoaded(false);
+    };
+
+    img.src = imageUrl;
+  }, [imageUrl]);
+
+  // Load image when URL is available
   React.useEffect(() => {
-    if (isOpen && imageFile) {
+    if (imageUrl) {
       setIsImageLoaded(false);
       loadImage();
     }
-  }, [isOpen, imageFile, loadImage]);
+  }, [imageUrl, loadImage]);
 
   const drawCropOverlay = useCallback(() => {
-    if (!canvasRef.current || !isImageLoaded) return;
+    if (!canvasRef.current || !isImageLoaded || !imageUrl) return;
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Redraw the original image
-    if (imageFile) {
-      const img = new Image();
-      img.onload = () => {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    const img = new Image();
+    img.onload = () => {
+      // Clear and redraw the original image
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-        // Draw dark overlay
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // Draw dark overlay
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Clear the crop area
-        ctx.clearRect(cropArea.x, cropArea.y, cropArea.width, cropArea.height);
-        ctx.drawImage(img, 
-          cropArea.x, cropArea.y, cropArea.width, cropArea.height,
-          cropArea.x, cropArea.y, cropArea.width, cropArea.height
-        );
+      // Clear the crop area to show the original image
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.fillRect(cropArea.x, cropArea.y, cropArea.width, cropArea.height);
+      
+      // Reset composite operation and redraw the crop area with original image
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.drawImage(img, 
+        cropArea.x, cropArea.y, cropArea.width, cropArea.height,
+        cropArea.x, cropArea.y, cropArea.width, cropArea.height
+      );
 
-        // Draw crop border
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(cropArea.x, cropArea.y, cropArea.width, cropArea.height);
+      // Draw crop border
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(cropArea.x, cropArea.y, cropArea.width, cropArea.height);
 
-        // Draw corner handles
-        const handleSize = 8;
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(cropArea.x - handleSize/2, cropArea.y - handleSize/2, handleSize, handleSize);
-        ctx.fillRect(cropArea.x + cropArea.width - handleSize/2, cropArea.y - handleSize/2, handleSize, handleSize);
-        ctx.fillRect(cropArea.x - handleSize/2, cropArea.y + cropArea.height - handleSize/2, handleSize, handleSize);
-        ctx.fillRect(cropArea.x + cropArea.width - handleSize/2, cropArea.y + cropArea.height - handleSize/2, handleSize, handleSize);
-      };
-      img.src = URL.createObjectURL(imageFile);
-    }
-  }, [cropArea, imageFile, isImageLoaded]);
+      // Draw corner handles
+      const handleSize = 8;
+      ctx.fillStyle = '#fff';
+      const handles = [
+        [cropArea.x - handleSize/2, cropArea.y - handleSize/2],
+        [cropArea.x + cropArea.width - handleSize/2, cropArea.y - handleSize/2],
+        [cropArea.x - handleSize/2, cropArea.y + cropArea.height - handleSize/2],
+        [cropArea.x + cropArea.width - handleSize/2, cropArea.y + cropArea.height - handleSize/2]
+      ];
+      
+      handles.forEach(([x, y]) => {
+        ctx.fillRect(x, y, handleSize, handleSize);
+      });
+    };
+    
+    img.src = imageUrl;
+  }, [cropArea, imageUrl, isImageLoaded]);
 
   React.useEffect(() => {
-    drawCropOverlay();
-  }, [drawCropOverlay]);
+    if (isImageLoaded) {
+      drawCropOverlay();
+    }
+  }, [drawCropOverlay, isImageLoaded]);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -158,7 +202,7 @@ const ImageCropper: React.FC<ImageCropperProps> = ({
   };
 
   const handleCrop = async () => {
-    if (!canvasRef.current || !imageFile) return;
+    if (!canvasRef.current || !imageFile || !imageUrl) return;
 
     const canvas = canvasRef.current;
     const cropCanvas = document.createElement('canvas');
@@ -166,16 +210,15 @@ const ImageCropper: React.FC<ImageCropperProps> = ({
     if (!cropCtx) return;
 
     // Set crop canvas to square dimensions
-    const size = 300; // Final size for profile picture
+    const size = 300;
     cropCanvas.width = size;
     cropCanvas.height = size;
 
-    // Load original image and crop it
     const img = new Image();
     img.onload = () => {
       // Calculate the scale factor between displayed image and original image
-      const scaleX = img.width / canvas.width;
-      const scaleY = img.height / canvas.height;
+      const scaleX = img.naturalWidth / canvas.width;
+      const scaleY = img.naturalHeight / canvas.height;
 
       // Crop from original image coordinates
       cropCtx.drawImage(
@@ -201,7 +244,8 @@ const ImageCropper: React.FC<ImageCropperProps> = ({
         }
       }, 'image/jpeg', 0.9);
     };
-    img.src = URL.createObjectURL(imageFile);
+    
+    img.src = imageUrl;
   };
 
   return (
