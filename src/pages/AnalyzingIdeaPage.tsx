@@ -1,105 +1,156 @@
 
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Loader2, BarChart3, Search, Calculator, Lightbulb, FileText } from 'lucide-react'; // Replaced Document with FileText for consistency
+import React, { useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-
-const stages = [
-  { text: "Researching market size...", icon: BarChart3 },
-  { text: "Analyzing competition...", icon: Search },
-  { text: "Calculating viability score...", icon: Calculator },
-  { text: "Generating recommendations...", icon: Lightbulb },
-  { text: "Preparing your report...", icon: FileText },
-];
-
-const tips = [
-  "Did you know? 42% of startups fail due to lack of market need.",
-  "We analyze over 50 data points to score your idea.",
-  "Our AI considers market size, competition, and feasibility.",
-  "Clear problem definition is key to a successful idea.",
-  "Understanding your target customer is crucial."
-];
+import { Button } from '@/components/ui/button';
+import { ArrowLeft, RefreshCw } from 'lucide-react';
+import DashboardHeader from '@/components/DashboardHeader';
+import { useReportStatus } from '@/hooks/useReportStatus';
+import ReportSectionProgress from '@/components/ReportSectionProgress';
+import { toast } from '@/hooks/use-toast';
 
 const AnalyzingIdeaPage: React.FC = () => {
+  const location = useLocation();
   const navigate = useNavigate();
-  const [currentStage, setCurrentStage] = useState(0);
-  const [progress, setProgress] = useState(0);
-  const [currentTip, setCurrentTip] = useState(tips[0]);
-  const totalDuration = 6000; // 6 seconds total for loading simulation
-  const stageDuration = totalDuration / stages.length;
+  const { reportId, validationId } = location.state || {};
+
+  const { reportStatus, loading, error } = useReportStatus(reportId);
 
   useEffect(() => {
-    const stageInterval = setInterval(() => {
-      setCurrentStage((prevStage) => {
-        if (prevStage < stages.length - 1) {
-          return prevStage + 1;
-        }
-        return prevStage;
+    if (!reportId || !validationId) {
+      toast({
+        title: "Invalid Request",
+        description: "No report information found. Redirecting to dashboard.",
+        variant: "destructive",
       });
-    }, stageDuration);
+      navigate('/dashboard');
+      return;
+    }
+  }, [reportId, validationId, navigate]);
 
-    const progressInterval = setInterval(() => {
-      setProgress((prevProgress) => {
-        const newProgress = prevProgress + (100 / (totalDuration / 100));
-        return newProgress >= 100 ? 100 : newProgress;
+  useEffect(() => {
+    if (reportStatus?.status === 'completed') {
+      toast({
+        title: "Analysis Complete!",
+        description: "Your startup idea analysis is ready to view.",
       });
-    }, 100);
-    
-    const tipInterval = setInterval(() => {
-      setCurrentTip(tips[Math.floor(Math.random() * tips.length)]);
-    }, 3000);
+      navigate(`/results/${reportId}`);
+    } else if (reportStatus?.status === 'failed') {
+      toast({
+        title: "Analysis Failed",
+        description: "There was an error analyzing your idea. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }, [reportStatus?.status, navigate, reportId]);
 
+  const handleRetry = () => {
+    // In a real implementation, this would trigger the n8n workflow again
+    toast({
+      title: "Retrying Analysis",
+      description: "Starting a new analysis of your idea...",
+    });
+  };
 
-    const timer = setTimeout(() => {
-      navigate('/results'); // Navigate to the new results page
-    }, totalDuration);
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <DashboardHeader>Analyzing Your Idea</DashboardHeader>
+        <div className="container mx-auto p-6">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4" />
+              <p>Loading analysis status...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-    return () => {
-      clearTimeout(timer);
-      clearInterval(stageInterval);
-      clearInterval(progressInterval);
-      clearInterval(tipInterval);
-    };
-  }, [navigate, stageDuration]);
-
-  const IconComponent = stages[currentStage].icon;
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background">
+        <DashboardHeader>Analysis Error</DashboardHeader>
+        <div className="container mx-auto p-6">
+          <Card className="max-w-2xl mx-auto">
+            <CardHeader>
+              <CardTitle className="text-red-600">Error Loading Analysis</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-muted-foreground">
+                There was an error loading your analysis status: {error}
+              </p>
+              <div className="flex space-x-4">
+                <Button onClick={() => navigate('/dashboard')} variant="outline">
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to Dashboard
+                </Button>
+                <Button onClick={handleRetry}>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Retry Analysis
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-primary/10 via-background to-background p-4 selection:bg-primary/20">
-      {/* Background Animation - Placeholder for complex visuals */}
-      <div className="absolute inset-0 overflow-hidden z-0">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full filter blur-3xl animate-pulse opacity-50"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-accent/20 rounded-full filter blur-3xl animate-pulse animation-delay-2000 opacity-50"></div>
+    <div className="min-h-screen bg-background">
+      <DashboardHeader>Analyzing Your Idea</DashboardHeader>
+      <div className="container mx-auto p-6">
+        <div className="max-w-4xl mx-auto space-y-6">
+          <Card>
+            <CardHeader className="text-center">
+              <CardTitle className="text-2xl font-bold text-primary">
+                🔍 AI Analysis in Progress
+              </CardTitle>
+              <p className="text-muted-foreground">
+                Our multi-agent AI system is analyzing your startup idea across multiple dimensions.
+                This usually takes 2-5 minutes.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                <div className="text-center">
+                  <div className="inline-flex items-center space-x-2 bg-blue-50 dark:bg-blue-900/20 px-4 py-2 rounded-full">
+                    <RefreshCw className="h-4 w-4 animate-spin text-blue-600" />
+                    <span className="text-sm font-medium text-blue-600">
+                      Status: {reportStatus?.status?.charAt(0).toUpperCase() + reportStatus?.status?.slice(1)}
+                    </span>
+                  </div>
+                </div>
+
+                {reportStatus?.sections && (
+                  <ReportSectionProgress sections={reportStatus.sections} />
+                )}
+
+                <div className="bg-muted/50 p-4 rounded-lg">
+                  <h3 className="font-semibold mb-2">What's happening now:</h3>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• Market research agents are gathering industry data</li>
+                    <li>• Competition analysis is identifying key competitors</li>
+                    <li>• Financial models are calculating market opportunity</li>
+                    <li>• SWOT analysis is evaluating strengths and risks</li>
+                    <li>• Comprehensive scoring across multiple factors</li>
+                  </ul>
+                </div>
+
+                <div className="flex justify-center">
+                  <Button onClick={() => navigate('/dashboard')} variant="outline">
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Back to Dashboard
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-      
-      <Card className="w-full max-w-lg text-center shadow-2xl z-10 glassmorphism-card">
-        <CardHeader>
-          <div className="mx-auto mb-6">
-            <Loader2 className="w-16 h-16 text-primary animate-spin" />
-          </div>
-          <CardTitle className="text-3xl font-bold text-foreground">Analyzing Your Idea...</CardTitle>
-          <CardDescription className="text-muted-foreground">
-            Please wait while we process your startup concept.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center justify-center space-x-3 text-lg text-primary">
-            <IconComponent className="w-6 h-6 animate-fade-in" />
-            <span className="animate-fade-in">{stages[currentStage].text}</span>
-          </div>
-          <Progress value={progress} className="w-full h-3 [&>div]:bg-gradient-to-r [&>div]:from-primary [&>div]:to-accent" />
-          <p className="text-sm text-muted-foreground">{Math.round(progress)}% Complete</p>
-          
-          <div className="mt-4 p-3 bg-muted/50 rounded-lg text-sm text-muted-foreground animate-fade-in">
-            💡 {currentTip}
-          </div>
-        </CardContent>
-        <CardFooter className="flex flex-col items-center justify-center pt-4">
-          <p className="text-xs text-muted-foreground">This usually takes 60-90 seconds in a real analysis.</p>
-          <p className="text-xs text-muted-foreground">(Demo completes in {totalDuration/1000} seconds)</p>
-        </CardFooter>
-      </Card>
     </div>
   );
 };

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -92,7 +91,7 @@ const IdeaValidationForm: React.FC = () => {
 
     try {
       // Insert the idea validation data into Supabase
-      const { data: submission, error } = await supabase
+      const { data: submission, error: validationError } = await supabase
         .from('idea_validations')
         .insert({
           user_id: user.id,
@@ -100,14 +99,14 @@ const IdeaValidationForm: React.FC = () => {
           one_line_description: data.oneLineDescription,
           problem_statement: data.problemStatement,
           solution_description: data.solutionDescription,
-          form_data: data, // Store complete form data as JSON
+          form_data: data,
           status: 'pending'
         })
         .select()
         .single();
 
-      if (error) {
-        console.error('Error submitting idea validation:', error);
+      if (validationError) {
+        console.error('Error submitting idea validation:', validationError);
         toast({
           title: "Submission Failed",
           description: "There was an error submitting your idea. Please try again.",
@@ -117,14 +116,40 @@ const IdeaValidationForm: React.FC = () => {
       }
 
       console.log('Idea validation submitted successfully:', submission);
+
+      // Create the validation report
+      const { data: report, error: reportError } = await supabase
+        .from('validation_reports')
+        .insert({
+          validation_id: submission.id,
+          status: 'generating',
+          report_data: {
+            form_data: data,
+            submission_timestamp: new Date().toISOString()
+          }
+        })
+        .select()
+        .single();
+
+      if (reportError) {
+        console.error('Error creating validation report:', reportError);
+        toast({
+          title: "Report Creation Failed",
+          description: "Your idea was submitted but we couldn't start the analysis. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('Validation report created successfully:', report);
       
       toast({
         title: "Idea Submitted!",
         description: "Your idea is now being analyzed. Please wait...",
       });
 
-      // Navigate to analyzing page with submission ID
-      navigate('/analyzing', { state: { submissionId: submission.id } });
+      // Navigate to analyzing page with report ID
+      navigate('/analyzing', { state: { reportId: report.id, validationId: submission.id } });
     } catch (error) {
       console.error('Unexpected error:', error);
       toast({
@@ -139,25 +164,22 @@ const IdeaValidationForm: React.FC = () => {
 
   const nextStep = async () => {
     const currentFields = steps[currentStep].fields as (keyof IdeaValidationFormData)[];
-    // Trigger validation for current step fields
     const output = await form.trigger(currentFields, { shouldFocus: true });
     
     console.log("Validation output for step", currentStep, output);
     console.log("Errors:", form.formState.errors);
 
     if (!output) {
-      // If validation fails, find the first field with an error and focus it
       const firstErrorField = currentFields.find(field => form.formState.errors[field]);
       if (firstErrorField) {
          form.setFocus(firstErrorField);
       }
-      return; // Don't proceed to next step
+      return;
     }
 
     if (currentStep < steps.length - 1) {
       setCurrentStep(step => step + 1);
     } else {
-      // Last step, submit form
       form.handleSubmit(processForm)();
     }
   };
@@ -194,7 +216,6 @@ const IdeaValidationForm: React.FC = () => {
                   Back
                 </Button>
               )}
-              {/* This div ensures the "Continue" or "Analyze" button is pushed to the right when "Back" is not visible */}
               {currentStep === 0 && <div className="flex-grow"></div>} 
               
               {currentStep < steps.length - 1 ? (

@@ -9,6 +9,112 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      competitors: {
+        Row: {
+          competitor_data: Json | null
+          created_at: string
+          description: string | null
+          funding_amount: number | null
+          funding_stage: string | null
+          id: string
+          market_position: string | null
+          name: string
+          report_id: string
+          similarity_score: number | null
+          strengths: string[] | null
+          weaknesses: string[] | null
+          website: string | null
+        }
+        Insert: {
+          competitor_data?: Json | null
+          created_at?: string
+          description?: string | null
+          funding_amount?: number | null
+          funding_stage?: string | null
+          id?: string
+          market_position?: string | null
+          name: string
+          report_id: string
+          similarity_score?: number | null
+          strengths?: string[] | null
+          weaknesses?: string[] | null
+          website?: string | null
+        }
+        Update: {
+          competitor_data?: Json | null
+          created_at?: string
+          description?: string | null
+          funding_amount?: number | null
+          funding_stage?: string | null
+          id?: string
+          market_position?: string | null
+          name?: string
+          report_id?: string
+          similarity_score?: number | null
+          strengths?: string[] | null
+          weaknesses?: string[] | null
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competitors_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "validation_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      data_sources: {
+        Row: {
+          created_at: string
+          endpoint_url: string | null
+          error_message: string | null
+          fetched_at: string | null
+          id: string
+          query_parameters: Json | null
+          report_id: string
+          response_data: Json | null
+          source_name: string
+          source_type: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          endpoint_url?: string | null
+          error_message?: string | null
+          fetched_at?: string | null
+          id?: string
+          query_parameters?: Json | null
+          report_id: string
+          response_data?: Json | null
+          source_name: string
+          source_type: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          endpoint_url?: string | null
+          error_message?: string | null
+          fetched_at?: string | null
+          id?: string
+          query_parameters?: Json | null
+          report_id?: string
+          response_data?: Json | null
+          source_name?: string
+          source_type?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "data_sources_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "validation_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       idea_validations: {
         Row: {
           created_at: string
@@ -51,6 +157,109 @@ export type Database = {
         }
         Relationships: []
       }
+      market_metrics: {
+        Row: {
+          confidence_level: number | null
+          created_at: string
+          data_source: string | null
+          geographic_scope: string[] | null
+          id: string
+          metric_type: string
+          metric_unit: string | null
+          metric_value: number | null
+          raw_data: Json | null
+          report_id: string
+          time_period: string | null
+        }
+        Insert: {
+          confidence_level?: number | null
+          created_at?: string
+          data_source?: string | null
+          geographic_scope?: string[] | null
+          id?: string
+          metric_type: string
+          metric_unit?: string | null
+          metric_value?: number | null
+          raw_data?: Json | null
+          report_id: string
+          time_period?: string | null
+        }
+        Update: {
+          confidence_level?: number | null
+          created_at?: string
+          data_source?: string | null
+          geographic_scope?: string[] | null
+          id?: string
+          metric_type?: string
+          metric_unit?: string | null
+          metric_value?: number | null
+          raw_data?: Json | null
+          report_id?: string
+          time_period?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "market_metrics_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "validation_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      processing_logs: {
+        Row: {
+          agent_name: string
+          created_at: string
+          error_details: Json | null
+          execution_id: string | null
+          execution_time_ms: number | null
+          id: string
+          input_data: Json | null
+          output_data: Json | null
+          report_id: string
+          status: string
+          step_name: string
+          workflow_id: string | null
+        }
+        Insert: {
+          agent_name: string
+          created_at?: string
+          error_details?: Json | null
+          execution_id?: string | null
+          execution_time_ms?: number | null
+          id?: string
+          input_data?: Json | null
+          output_data?: Json | null
+          report_id: string
+          status: string
+          step_name: string
+          workflow_id?: string | null
+        }
+        Update: {
+          agent_name?: string
+          created_at?: string
+          error_details?: Json | null
+          execution_id?: string | null
+          execution_time_ms?: number | null
+          id?: string
+          input_data?: Json | null
+          output_data?: Json | null
+          report_id?: string
+          status?: string
+          step_name?: string
+          workflow_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "processing_logs_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "validation_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -77,6 +286,100 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      report_sections: {
+        Row: {
+          agent_name: string | null
+          created_at: string
+          id: string
+          processing_time_ms: number | null
+          report_id: string
+          section_data: Json
+          section_type: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          agent_name?: string | null
+          created_at?: string
+          id?: string
+          processing_time_ms?: number | null
+          report_id: string
+          section_data?: Json
+          section_type: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          agent_name?: string | null
+          created_at?: string
+          id?: string
+          processing_time_ms?: number | null
+          report_id?: string
+          section_data?: Json
+          section_type?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_sections_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "validation_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      validation_reports: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          generated_at: string | null
+          id: string
+          overall_score: number | null
+          recommendation: string | null
+          report_data: Json
+          report_version: number
+          status: string
+          updated_at: string
+          validation_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          generated_at?: string | null
+          id?: string
+          overall_score?: number | null
+          recommendation?: string | null
+          report_data?: Json
+          report_version?: number
+          status?: string
+          updated_at?: string
+          validation_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          generated_at?: string | null
+          id?: string
+          overall_score?: number | null
+          recommendation?: string | null
+          report_data?: Json
+          report_version?: number
+          status?: string
+          updated_at?: string
+          validation_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "validation_reports_validation_id_fkey"
+            columns: ["validation_id"]
+            isOneToOne: false
+            referencedRelation: "idea_validations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
