@@ -66,7 +66,7 @@ const ReportCard: React.FC<ReportCardProps> = ({ report }) => {
       
       <div className="absolute inset-0 bg-background/80 dark:bg-background/90 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center p-4 space-y-2">
         <Button size="sm" className="w-full" asChild>
-          <Link to={`/results?id=${report.id}`}> {/* Assuming /results can take an ID */}
+          <Link to={`/results/${report.id}`}>
             <FileText className="mr-2 h-4 w-4" />View Report
           </Link>
         </Button>
