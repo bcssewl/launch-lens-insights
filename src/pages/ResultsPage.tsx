@@ -25,7 +25,7 @@ const ResultsPage: React.FC = () => {
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="p-4 md:p-6 space-y-6">
+        <div className="p-4 md:p-6 space-y-6 max-w-full overflow-x-hidden">
           <Skeleton className="h-32 w-full" />
           <Skeleton className="h-12 w-full" />
           <div className="space-y-4">
@@ -40,7 +40,7 @@ const ResultsPage: React.FC = () => {
   if (error || !report) {
     return (
       <DashboardLayout>
-        <div className="p-4 md:p-6">
+        <div className="p-4 md:p-6 max-w-full overflow-x-hidden">
           <Alert variant="destructive">
             <AlertDescription>
               {error || 'Report not found'}
@@ -92,51 +92,61 @@ const ResultsPage: React.FC = () => {
 
   return (
     <DashboardLayout>
-      <div className="p-4 md:p-6 space-y-6">
-        <ResultsHeader 
-          ideaName={ideaName}
-          score={score}
-          recommendationText={recommendation}
-          analysisDate={analysisDate}
-        />
+      <div className="p-4 md:p-6 space-y-6 max-w-full overflow-x-hidden">
+        <div className="w-full min-w-0">
+          <ResultsHeader 
+            ideaName={ideaName}
+            score={score}
+            recommendationText={recommendation}
+            analysisDate={analysisDate}
+          />
+        </div>
 
-        <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-6">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="market">Market</TabsTrigger>
-            <TabsTrigger value="competition">Competition</TabsTrigger>
-            <TabsTrigger value="swot">SWOT</TabsTrigger>
-            <TabsTrigger value="scores">Scores</TabsTrigger>
-            <TabsTrigger value="actions">Actions</TabsTrigger>
-          </TabsList>
-          <TabsContent value="overview" className="mt-4">
-            <OverviewTabContent 
-              summary={executiveSummary}
-              metrics={keyMetrics}
-            />
-          </TabsContent>
-          <TabsContent value="market" className="mt-4">
-            <MarketAnalysisTabContent data={marketAnalysis} />
-          </TabsContent>
-          <TabsContent value="competition" className="mt-4">
-            <CompetitionTabContent data={competition} />
-          </TabsContent>
-          <TabsContent value="swot" className="mt-4">
-            <SWOTAnalysisTabContent data={swot} />
-          </TabsContent>
-          <TabsContent value="scores" className="mt-4">
-            <DetailedScoresTabContent scores={detailedScores} />
-          </TabsContent>
-          <TabsContent value="actions" className="mt-4">
-            <ActionItemsTabContent items={actionItems} />
-          </TabsContent>
-        </Tabs>
+        <div className="w-full min-w-0">
+          <Tabs defaultValue="overview" className="w-full">
+            <div className="overflow-x-auto">
+              <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-6 min-w-max">
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="market">Market</TabsTrigger>
+                <TabsTrigger value="competition">Competition</TabsTrigger>
+                <TabsTrigger value="swot">SWOT</TabsTrigger>
+                <TabsTrigger value="scores">Scores</TabsTrigger>
+                <TabsTrigger value="actions">Actions</TabsTrigger>
+              </TabsList>
+            </div>
+            <TabsContent value="overview" className="mt-4">
+              <OverviewTabContent 
+                summary={executiveSummary}
+                metrics={keyMetrics}
+              />
+            </TabsContent>
+            <TabsContent value="market" className="mt-4">
+              <MarketAnalysisTabContent data={marketAnalysis} />
+            </TabsContent>
+            <TabsContent value="competition" className="mt-4">
+              <CompetitionTabContent data={competition} />
+            </TabsContent>
+            <TabsContent value="swot" className="mt-4">
+              <SWOTAnalysisTabContent data={swot} />
+            </TabsContent>
+            <TabsContent value="scores" className="mt-4">
+              <DetailedScoresTabContent scores={detailedScores} />
+            </TabsContent>
+            <TabsContent value="actions" className="mt-4">
+              <ActionItemsTabContent items={actionItems} />
+            </TabsContent>
+          </Tabs>
+        </div>
 
-        <div className="flex flex-col sm:flex-row gap-2 justify-end pt-6 border-t mt-6">
-          <Button variant="outline"><Download className="mr-2" /> Download PDF</Button>
-          <Button variant="outline"><MessageSquare className="mr-2" /> Ask AI Follow-up</Button>
-          <Button><Save className="mr-2" /> Save to My Reports</Button>
-          <Button variant="secondary"><PlusCircle className="mr-2" /> Start New Analysis</Button>
+        <div className="w-full min-w-0">
+          <div className="flex flex-col sm:flex-row gap-2 justify-end pt-6 border-t mt-6 overflow-x-auto">
+            <div className="flex flex-wrap gap-2 justify-end">
+              <Button variant="outline" className="whitespace-nowrap"><Download className="mr-2 h-4 w-4" /> Download PDF</Button>
+              <Button variant="outline" className="whitespace-nowrap"><MessageSquare className="mr-2 h-4 w-4" /> Ask AI Follow-up</Button>
+              <Button className="whitespace-nowrap"><Save className="mr-2 h-4 w-4" /> Save to My Reports</Button>
+              <Button variant="secondary" className="whitespace-nowrap"><PlusCircle className="mr-2 h-4 w-4" /> Start New Analysis</Button>
+            </div>
+          </div>
         </div>
       </div>
     </DashboardLayout>
