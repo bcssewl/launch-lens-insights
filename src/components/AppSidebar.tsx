@@ -164,13 +164,16 @@ export const AppSidebar: React.FC = () => {
         <SidebarRail />
       </Sidebar>
       
-      {/* Toggle button positioned on the right edge, vertically centered - only visible on desktop */}
+      {/* Toggle button positioned fixed on the right edge, vertically centered - only visible on desktop */}
       {!isMobile && (
         <Button
           variant="ghost"
           size="icon"
           onClick={handleToggleSidebar}
-          className="absolute top-1/2 -right-4 transform -translate-y-1/2 h-8 w-8 rounded-full bg-background border border-border shadow-sm hover:bg-accent z-10"
+          className="fixed top-1/2 left-[var(--sidebar-width)] transform -translate-y-1/2 -translate-x-4 h-8 w-8 rounded-full bg-background border border-border shadow-sm hover:bg-accent z-50 transition-all duration-200"
+          style={{
+            left: state === "expanded" ? "var(--sidebar-width)" : "var(--sidebar-width-icon)",
+          }}
           aria-label="Toggle sidebar"
         >
           {state === "expanded" ? (
