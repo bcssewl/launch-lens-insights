@@ -43,36 +43,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+    }).catch((error) => {
+      console.error('Error getting session:', error);
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: fullName,
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+          },
         },
-      },
-    });
+      });
 
-    // Check if email confirmation is required
-    if (!error && data.user && !data.session) {
-      return { error: null, needsVerification: true };
+      // Check if email confirmation is required
+      if (!error && data.user && !data.session) {
+        return { error: null, needsVerification: true };
+      }
+
+      return { error };
+    } catch (error) {
+      console.error('Sign up error:', error);
+      return { error };
     }
-
-    return { error };
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { error };
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      return { error };
+    } catch (error) {
+      console.error('Sign in error:', error);
+      return { error };
+    }
   };
 
   const signOut = async () => {
@@ -82,8 +95,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       // If server-side logout fails, still clear local state
       console.log('Server logout failed, clearing local state:', error);
-      setSession(null);
-      setUser(null);
     }
     // Always clear local state regardless of server response
     setSession(null);

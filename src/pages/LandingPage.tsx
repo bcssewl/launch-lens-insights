@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle, TrendingUp, Zap, Brain, BarChart3, Rocket, FlaskConical, FileText, Users, Award, DollarSign } from "lucide-react";
@@ -92,9 +93,15 @@ export default function LandingPage() {
   const navigate = useNavigate();
 
   const handleSeeHowItWorks = () => {
-    if (user) {
-      navigate('/dashboard');
-    } else {
+    try {
+      if (user) {
+        navigate('/dashboard');
+      } else {
+        navigate('/login');
+      }
+    } catch (error) {
+      console.error('Navigation error:', error);
+      // Fallback to login page if there's any error
       navigate('/login');
     }
   };
