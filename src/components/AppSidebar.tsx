@@ -10,7 +10,8 @@ import {
   SidebarMenuButton,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarRail
+  SidebarRail,
+  useSidebar
 } from "@/components/ui/sidebar";
 import {
   DropdownMenu,
@@ -20,9 +21,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 import { Logo } from '@/components/icons';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Home, Lightbulb, FileText, Bot, FlaskConical, Settings as SettingsIcon, UserCircle, LogOut } from 'lucide-react';
+import { Home, Lightbulb, FileText, Bot, FlaskConical, Settings as SettingsIcon, UserCircle, LogOut, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -39,6 +41,7 @@ export const AppSidebar: React.FC = () => {
   const location = useLocation();
   const { user, signOut } = useAuth();
   const [profile, setProfile] = useState<any>(null);
+  const { setOpen } = useSidebar();
 
   useEffect(() => {
     if (user) {
@@ -68,11 +71,24 @@ export const AppSidebar: React.FC = () => {
     await signOut();
   };
 
+  const handleCloseSidebar = () => {
+    setOpen(false);
+  };
+
   return (
     <Sidebar collapsible="offcanvas" className="border-r">
       <SidebarHeader className="p-4">
-        <div className="flex items-center px-3">
+        <div className="flex items-center justify-between px-3">
           <Logo />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleCloseSidebar}
+            className="h-8 w-8 rounded-full hover:bg-accent"
+            aria-label="Close sidebar"
+          >
+            <X className="h-4 w-4" />
+          </Button>
         </div>
       </SidebarHeader>
       
