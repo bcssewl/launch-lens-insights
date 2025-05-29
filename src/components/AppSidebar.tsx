@@ -97,7 +97,7 @@ export const AppSidebar: React.FC = () => {
                       tooltip={item.label}
                       className="group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-2"
                     >
-                      <Link to={item.href} className="flex items-center gap-3 px-3 py-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-2">
+                      <Link to={item.href} className="flex items-center gap-3 px-3 py-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-2 group-data-[collapsible=icon]:gap-0">
                         <item.icon className="h-5 w-5 flex-shrink-0" />
                         <span className="group-data-[collapsible=icon]:sr-only">{item.label}</span>
                       </Link>
@@ -112,7 +112,7 @@ export const AppSidebar: React.FC = () => {
         <SidebarFooter className="p-4 border-t">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex items-center space-x-3 p-2 rounded-md hover:bg-accent w-full text-left group-data-[collapsible=icon]:justify-center">
+              <button className="flex items-center space-x-3 p-2 rounded-md hover:bg-accent w-full text-left group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:space-x-0">
                 <Avatar className="h-8 w-8 flex-shrink-0">
                   <AvatarImage src={profile?.avatar_url} alt="User Avatar" />
                   <AvatarFallback>
