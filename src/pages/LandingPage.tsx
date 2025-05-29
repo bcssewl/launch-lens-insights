@@ -2,10 +2,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle, TrendingUp, Zap, Brain, BarChart3, Rocket, FlaskConical, FileText, Users, Award, DollarSign } from "lucide-react";
 import { LandingNavbar } from "@/components/LandingNavbar";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { TestimonialCard } from "@/components/TestimonialCard";
 import { PricingCard } from "@/components/PricingCard";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAuth } from "@/contexts/AuthContext";
 
 const FeatureCard = ({ icon: Icon, title, description }: { icon: React.ElementType, title: string, description: string }) => (
   <Card className="text-center glassmorphism-card p-6 hover-scale transition-transform duration-300 h-full flex flex-col">
@@ -87,6 +88,17 @@ const pricingTiers = [
 ];
 
 export default function LandingPage() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSeeHowItWorks = () => {
+    if (user) {
+      navigate('/dashboard');
+    } else {
+      navigate('/login');
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-background via-background to-accent/10 dark:to-accent/5">
       <LandingNavbar />
@@ -107,8 +119,13 @@ export default function LandingPage() {
               <Button size="lg" className="gradient-button px-8 py-3 text-lg" asChild>
                 <Link to="/signup">Validate My Idea</Link>
               </Button>
-              <Button size="lg" variant="outline" className="px-8 py-3 text-lg border-2 border-primary text-primary hover:bg-primary/10 hover:text-primary" asChild>
-                <Link to="/dashboard">See How It Works</Link>
+              <Button 
+                size="lg" 
+                variant="outline" 
+                className="px-8 py-3 text-lg border-2 border-primary text-primary hover:bg-primary/10 hover:text-primary" 
+                onClick={handleSeeHowItWorks}
+              >
+                See How It Works
               </Button>
             </div>
             <div className="mt-16 animate-pulse-glow">
