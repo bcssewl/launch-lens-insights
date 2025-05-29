@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
@@ -70,26 +69,24 @@ export const AppSidebar: React.FC = () => {
   };
 
   return (
-    <Sidebar collapsible="icon" className="border-r">
-      <SidebarHeader className="p-2 flex justify-center group-data-[collapsible=icon]:justify-start">
-        <div className="flex items-center justify-center group-data-[collapsible=icon]:justify-start">
-          <Logo className="group-data-[collapsible=icon]:hidden"/>
-          <Lightbulb className="h-7 w-7 text-primary hidden group-data-[collapsible=icon]:block"/>
+    <Sidebar collapsible="offcanvas" className="border-r">
+      <SidebarHeader className="p-4 flex justify-center">
+        <div className="flex items-center justify-center">
+          <Logo />
         </div>
       </SidebarHeader>
       
       <SidebarContent className="flex-grow">
         <SidebarGroup>
-          <SidebarGroupContent>
+          <SidebarGroupContent className="px-4">
             <SidebarMenu>
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
                     asChild
                     isActive={location.pathname === item.href || (item.href === "/dashboard" && location.pathname.startsWith("/dashboard") && location.pathname.split('/').length <= 2)}
-                    tooltip={{children: item.label, side: "right", align: "center"}}
                   >
-                    <Link to={item.href} className="flex items-center gap-2">
+                    <Link to={item.href} className="flex items-center gap-3 px-3 py-2">
                       <item.icon className="h-5 w-5" />
                       <span>{item.label}</span>
                     </Link>
@@ -101,17 +98,17 @@ export const AppSidebar: React.FC = () => {
         </SidebarGroup>
       </SidebarContent>
       
-      <SidebarFooter className="p-2 border-t">
+      <SidebarFooter className="p-4 border-t">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center space-x-3 p-2 rounded-md hover:bg-accent w-full text-left group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:h-8">
+            <button className="flex items-center space-x-3 p-2 rounded-md hover:bg-accent w-full text-left">
               <Avatar className="h-8 w-8">
                 <AvatarImage src={profile?.avatar_url} alt="User Avatar" />
                 <AvatarFallback>
                   {user?.email?.charAt(0).toUpperCase() || 'U'}
                 </AvatarFallback>
               </Avatar>
-              <div className="group-data-[collapsible=icon]:hidden">
+              <div>
                 <p className="text-sm font-medium text-foreground">
                   {profile?.full_name || user?.email || 'User'}
                 </p>
@@ -121,7 +118,7 @@ export const AppSidebar: React.FC = () => {
               </div>
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent side="top" align="start" className="w-56 mb-2 ml-1 group-data-[collapsible=icon]:ml-10">
+          <DropdownMenuContent side="top" align="start" className="w-56 mb-2 ml-1">
             <DropdownMenuLabel>
               {profile?.full_name || user?.email || 'User'}
             </DropdownMenuLabel>
