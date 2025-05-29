@@ -60,20 +60,14 @@ const ImageCropper: React.FC<ImageCropperProps> = ({
       if (!ctx) return;
 
       // Set canvas size to fit the image while maintaining aspect ratio
-      const maxSize = 400;
+      // Use a larger max size and less aggressive scaling
+      const maxSize = 500;
       let { naturalWidth: width, naturalHeight: height } = img;
       
-      if (width > height) {
-        if (width > maxSize) {
-          height = (height * maxSize) / width;
-          width = maxSize;
-        }
-      } else {
-        if (height > maxSize) {
-          width = (width * maxSize) / height;
-          height = maxSize;
-        }
-      }
+      // Calculate scale factor to fit image in canvas while maintaining aspect ratio
+      const scale = Math.min(maxSize / width, maxSize / height);
+      width = width * scale;
+      height = height * scale;
 
       canvas.width = width;
       canvas.height = height;
@@ -82,8 +76,8 @@ const ImageCropper: React.FC<ImageCropperProps> = ({
       ctx.clearRect(0, 0, width, height);
       ctx.drawImage(img, 0, 0, width, height);
 
-      // Set initial crop area to a square in the center
-      const cropSize = Math.min(width, height) * 0.8;
+      // Set initial crop area to a smaller square in the center (50% of smallest dimension)
+      const cropSize = Math.min(width, height) * 0.5;
       setCropArea({
         x: (width - cropSize) / 2,
         y: (height - cropSize) / 2,
@@ -144,8 +138,11 @@ const ImageCropper: React.FC<ImageCropperProps> = ({
       ctx.strokeRect(cropArea.x, cropArea.y, cropArea.width, cropArea.height);
 
       // Draw corner handles
-      const handleSize = 8;
+      const handleSize = 10;
       ctx.fillStyle = '#fff';
+      ctx.strokeStyle = '#333';
+      ctx.lineWidth = 1;
+      
       const handles = [
         [cropArea.x - handleSize/2, cropArea.y - handleSize/2],
         [cropArea.x + cropArea.width - handleSize/2, cropArea.y - handleSize/2],
@@ -155,6 +152,7 @@ const ImageCropper: React.FC<ImageCropperProps> = ({
       
       handles.forEach(([x, y]) => {
         ctx.fillRect(x, y, handleSize, handleSize);
+        ctx.strokeRect(x, y, handleSize, handleSize);
       });
     };
     
@@ -250,7 +248,7 @@ const ImageCropper: React.FC<ImageCropperProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Crop className="h-5 w-5" />
@@ -263,7 +261,7 @@ const ImageCropper: React.FC<ImageCropperProps> = ({
             <div className="relative">
               <canvas
                 ref={canvasRef}
-                className="border border-border rounded-lg cursor-move"
+                className="border border-border rounded-lg cursor-move max-w-full"
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
