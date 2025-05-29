@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
@@ -32,7 +33,6 @@ const navItems = [
   { href: "/dashboard/reports", label: "My Reports", icon: FileText },
   { href: "/dashboard/assistant", label: "AI Assistant", icon: Bot },
   { href: "/dashboard/experiments", label: "Experiments", icon: FlaskConical },
-  { href: "/dashboard/settings", label: "Settings", icon: SettingsIcon },
 ];
 
 export const AppSidebar: React.FC = () => {
