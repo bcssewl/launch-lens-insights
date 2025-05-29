@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import DashboardLayout from '@/layouts/DashboardLayout';
+import DashboardHeader from '@/components/DashboardHeader';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -141,15 +142,15 @@ const AIAssistantPage: React.FC = () => {
 
   return (
     <DashboardLayout>
+      <DashboardHeader>AI Assistant</DashboardHeader>
       <div className="flex h-[calc(100vh-var(--header-height))]">
         <div className="flex-1 flex flex-col">
-          {/* Header */}
-          <header className="p-4 border-b bg-background flex-shrink-0">
-            <h1 className="text-xl font-semibold font-heading">AI Assistant</h1>
+          {/* Subheader */}
+          <div className="p-4 border-b bg-background flex-shrink-0">
             <p className="text-sm text-muted-foreground">
               {isConfigured ? 'Powered by your n8n workflow' : 'N8N webhook not configured'}
             </p>
-          </header>
+          </div>
 
           {/* Chat Area - takes remaining space */}
           <div className="flex-1 overflow-hidden">
