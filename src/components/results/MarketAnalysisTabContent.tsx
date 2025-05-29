@@ -64,6 +64,12 @@ const MarketAnalysisTabContent: React.FC<MarketAnalysisTabContentProps> = ({ dat
     fill: item.fill || getChartColors(data.customerSegments.length)[index]
   }));
 
+  // Assign colors to geographic opportunity data
+  const geographicOpportunityWithColors = data.geographicOpportunity.map((item, index) => ({
+    ...item,
+    fill: getChartColors(data.geographicOpportunity.length)[index]
+  }));
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <Card>
@@ -127,12 +133,16 @@ const MarketAnalysisTabContent: React.FC<MarketAnalysisTabContentProps> = ({ dat
         </CardHeader>
         <CardContent>
           <ChartContainer config={chartConfigGeo} className="mx-auto aspect-video max-h-[300px]">
-            <BarChart data={data.geographicOpportunity} layout="vertical">
+            <BarChart data={geographicOpportunityWithColors} layout="vertical">
               <XAxis type="number" />
               <YAxis dataKey="name" type="category" width={80} />
               <ChartTooltipContent />
               <Legend />
-              <Bar dataKey="value" fill="var(--color-opportunity)" radius={4} />
+              <Bar dataKey="value" radius={4}>
+                {geographicOpportunityWithColors.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.fill} />
+                ))}
+              </Bar>
             </BarChart>
           </ChartContainer>
         </CardContent>
