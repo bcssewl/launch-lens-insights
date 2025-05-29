@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
@@ -14,11 +13,6 @@ import {
   SidebarRail
 } from "@/components/ui/sidebar";
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -28,7 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Logo } from '@/components/icons';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Home, Lightbulb, FileText, Bot, FlaskConical, Settings as SettingsIcon, UserCircle, LogOut, ChevronDown } from 'lucide-react';
+import { Home, Lightbulb, FileText, Bot, FlaskConical, Settings as SettingsIcon, UserCircle, LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -45,7 +39,6 @@ export const AppSidebar: React.FC = () => {
   const location = useLocation();
   const { user, signOut } = useAuth();
   const [profile, setProfile] = useState<any>(null);
-  const [isNavigationOpen, setIsNavigationOpen] = useState(true);
 
   useEffect(() => {
     if (user) {
@@ -86,32 +79,24 @@ export const AppSidebar: React.FC = () => {
       
       <SidebarContent className="flex-grow">
         <SidebarGroup>
-          <Collapsible open={isNavigationOpen} onOpenChange={setIsNavigationOpen}>
-            <CollapsibleTrigger className="flex items-center justify-between w-full p-2 text-sm font-medium hover:bg-accent rounded-md group-data-[collapsible=icon]:justify-center">
-              <span className="group-data-[collapsible=icon]:hidden">Navigation</span>
-              <ChevronDown className={`h-4 w-4 transition-transform duration-200 group-data-[collapsible=icon]:hidden ${isNavigationOpen ? 'rotate-180' : ''}`} />
-            </CollapsibleTrigger>
-            <CollapsibleContent className="space-y-1">
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {navItems.map((item) => (
-                    <SidebarMenuItem key={item.href}>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={location.pathname === item.href || (item.href === "/dashboard" && location.pathname.startsWith("/dashboard") && location.pathname.split('/').length <= 2)}
-                        tooltip={{children: item.label, side: "right", align: "center"}}
-                      >
-                        <Link to={item.href} className="flex items-center gap-2">
-                          <item.icon className="h-5 w-5" />
-                          <span>{item.label}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </CollapsibleContent>
-          </Collapsible>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {navItems.map((item) => (
+                <SidebarMenuItem key={item.href}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={location.pathname === item.href || (item.href === "/dashboard" && location.pathname.startsWith("/dashboard") && location.pathname.split('/').length <= 2)}
+                    tooltip={{children: item.label, side: "right", align: "center"}}
+                  >
+                    <Link to={item.href} className="flex items-center gap-2">
+                      <item.icon className="h-5 w-5" />
+                      <span>{item.label}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
       
