@@ -28,7 +28,7 @@ const OverviewTabContent: React.FC<OverviewTabContentProps> = ({ summary, metric
         <CardHeader>
           <CardTitle>Key Metrics</CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <CardContent className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
           <KeyMetricDisplay title="Market Size" value={metrics.marketSize.value} label={metrics.marketSize.label} />
           <KeyMetricDisplay title="Competition Level" value={metrics.competitionLevel.value} subValue={metrics.competitionLevel.subValue} />
           <KeyMetricDisplay title="Problem Clarity" value={metrics.problemClarity.value} />
