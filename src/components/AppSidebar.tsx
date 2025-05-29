@@ -70,8 +70,8 @@ export const AppSidebar: React.FC = () => {
 
   return (
     <Sidebar collapsible="offcanvas" className="border-r">
-      <SidebarHeader className="p-4 flex justify-center">
-        <div className="flex items-center justify-center">
+      <SidebarHeader className="p-4">
+        <div className="flex items-center px-3">
           <Logo />
         </div>
       </SidebarHeader>
