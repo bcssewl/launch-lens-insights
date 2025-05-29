@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { MessageCircle, Settings, LogOut, UserCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -15,15 +15,41 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 interface DashboardHeaderProps {
   children?: React.ReactNode;
 }
 
 const DashboardHeader: React.FC<DashboardHeaderProps> = ({ children }) => {
-  const currentDate = format(new Date(), "PPP"); // e.g., May 26th, 2025
+  const currentDate = format(new Date(), "PPP");
   const { signOut, user } = useAuth();
   const navigate = useNavigate();
+  const [profile, setProfile] = useState<any>(null);
+
+  useEffect(() => {
+    if (user) {
+      loadProfile();
+    }
+  }, [user]);
+
+  const loadProfile = async () => {
+    if (!user) return;
+    
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      
+      if (data) {
+        setProfile(data);
+      }
+    } catch (error) {
+      console.error('Error loading profile:', error);
+    }
+  };
 
   const handleLogout = async () => {
     await signOut();
@@ -46,7 +72,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ children }) => {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-8 w-8 rounded-full">
               <Avatar className="h-8 w-8">
-                <AvatarImage src="/placeholder.svg" alt="User Avatar" />
+                <AvatarImage src={profile?.avatar_url} alt="User Avatar" />
                 <AvatarFallback>
                   {user?.email?.charAt(0).toUpperCase() || 'U'}
                 </AvatarFallback>

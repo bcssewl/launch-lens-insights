@@ -1,4 +1,5 @@
-import React from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   Sidebar,
@@ -23,6 +24,8 @@ import {
 import { Logo } from '@/components/icons';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Home, Lightbulb, FileText, Bot, FlaskConical, Settings as SettingsIcon, UserCircle, LogOut } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
@@ -35,11 +38,40 @@ const navItems = [
 
 export const AppSidebar: React.FC = () => {
   const location = useLocation();
+  const { user, signOut } = useAuth();
+  const [profile, setProfile] = useState<any>(null);
+
+  useEffect(() => {
+    if (user) {
+      loadProfile();
+    }
+  }, [user]);
+
+  const loadProfile = async () => {
+    if (!user) return;
+    
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      
+      if (data) {
+        setProfile(data);
+      }
+    } catch (error) {
+      console.error('Error loading profile:', error);
+    }
+  };
+
+  const handleLogout = async () => {
+    await signOut();
+  };
 
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="p-2 flex justify-center group-data-[collapsible=icon]:justify-start">
-        {/* Wrapped Logo and Lightbulb in a div */}
         <div className="flex items-center justify-center group-data-[collapsible=icon]:justify-start">
           <Logo className="group-data-[collapsible=icon]:hidden"/>
           <Lightbulb className="h-7 w-7 text-primary hidden group-data-[collapsible=icon]:block"/>
@@ -72,11 +104,15 @@ export const AppSidebar: React.FC = () => {
           <DropdownMenuTrigger asChild>
             <button className="flex items-center space-x-3 p-2 rounded-md hover:bg-accent w-full text-left group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:h-8">
               <Avatar className="h-8 w-8">
-                <AvatarImage src="/placeholder.svg" alt="User Avatar" />
-                <AvatarFallback>JD</AvatarFallback>
+                <AvatarImage src={profile?.avatar_url} alt="User Avatar" />
+                <AvatarFallback>
+                  {user?.email?.charAt(0).toUpperCase() || 'U'}
+                </AvatarFallback>
               </Avatar>
               <div className="group-data-[collapsible=icon]:hidden">
-                <p className="text-sm font-medium text-foreground">John Doe</p>
+                <p className="text-sm font-medium text-foreground">
+                  {profile?.full_name || user?.email || 'User'}
+                </p>
                 <Link to="/dashboard/billing" className="text-xs text-primary hover:underline">
                   Upgrade Plan
                 </Link>
@@ -84,7 +120,9 @@ export const AppSidebar: React.FC = () => {
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent side="top" align="start" className="w-56 mb-2 ml-1 group-data-[collapsible=icon]:ml-10">
-            <DropdownMenuLabel>John Doe</DropdownMenuLabel>
+            <DropdownMenuLabel>
+              {profile?.full_name || user?.email || 'User'}
+            </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <Link to="/dashboard/profile" className="flex items-center">
@@ -105,11 +143,9 @@ export const AppSidebar: React.FC = () => {
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <button className="flex w-full items-center">
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Log out</span>
-              </button>
+            <DropdownMenuItem onClick={handleLogout}>
+              <LogOut className="mr-2 h-4 w-4" />
+              <span>Log out</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -16,6 +17,7 @@ import ResultsPage from "./pages/ResultsPage";
 import MyReportsPage from "./pages/MyReportsPage";
 import AIAssistantPage from "./pages/AIAssistantPage";
 import SettingsPage from "./pages/SettingsPage";
+import ProfilePage from "./pages/ProfilePage";
 
 // Placeholder pages for now
 const ForgotPasswordPage = () => <div className="h-screen flex items-center justify-center">Forgot Password Page Placeholder - Coming Soon!</div>;
@@ -23,9 +25,7 @@ const TermsPage = () => <div className="h-screen flex items-center justify-cente
 const PrivacyPage = () => <div className="h-screen flex items-center justify-center">Privacy Policy - Coming Soon!</div>;
 // Placeholder for other dashboard sub-pages if needed
 const ExperimentsPage = () => <div className="h-screen flex items-center justify-center">Experiments Page - Coming Soon!</div>;
-const ProfilePage = () => <div className="h-screen flex items-center justify-center">Profile Page - Coming Soon!</div>;
 const BillingPage = () => <div className="h-screen flex items-center justify-center">Billing Page - Coming Soon!</div>;
-
 
 const queryClient = new QueryClient();
 

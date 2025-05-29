@@ -10,6 +10,7 @@ import { Camera } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { Link } from 'react-router-dom';
 
 const AccountSettingsTab: React.FC = () => {
   const { user } = useAuth();
@@ -17,27 +18,30 @@ const AccountSettingsTab: React.FC = () => {
   const [fullName, setFullName] = useState('');
   const [company, setCompany] = useState('');
   const [bio, setBio] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (user) {
-      // Load profile data
-      const loadProfile = async () => {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-        
-        if (data && !error) {
-          setFullName(data.full_name || '');
-          // Note: company and bio would need to be added to the profiles table if needed
-        }
-      };
-      
       loadProfile();
     }
   }, [user]);
+
+  const loadProfile = async () => {
+    if (!user) return;
+    
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+    
+    if (data && !error) {
+      setFullName(data.full_name || '');
+      setAvatarUrl(data.avatar_url || '');
+      // Note: company and bio would need to be added to the profiles table if needed
+    }
+  };
 
   const handleUpdateProfile = async () => {
     if (!user) return;
@@ -81,16 +85,24 @@ const AccountSettingsTab: React.FC = () => {
         <div className="flex flex-col items-center space-y-4 sm:flex-row sm:space-y-0 sm:space-x-6">
           <div className="relative group">
             <Avatar className="h-24 w-24">
-              <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
-              <AvatarFallback>JD</AvatarFallback>
+              <AvatarImage src={avatarUrl} alt="Profile picture" />
+              <AvatarFallback>
+                {user?.email?.charAt(0).toUpperCase() || 'U'}
+              </AvatarFallback>
             </Avatar>
-            <Button variant="ghost" size="icon" className="absolute bottom-0 right-0 rounded-full bg-background/70 group-hover:bg-background transition-colors">
-              <Camera className="h-5 w-5" />
-              <span className="sr-only">Upload new photo</span>
-            </Button>
+            <Link to="/dashboard/profile">
+              <Button variant="ghost" size="icon" className="absolute bottom-0 right-0 rounded-full bg-background/70 group-hover:bg-background transition-colors">
+                <Camera className="h-5 w-5" />
+                <span className="sr-only">Upload new photo</span>
+              </Button>
+            </Link>
           </div>
           <div className="text-center sm:text-left">
-            <p className="text-sm text-muted-foreground">Click the camera to upload a new photo.</p>
+            <p className="text-sm text-muted-foreground">
+              <Link to="/dashboard/profile" className="text-primary hover:underline">
+                Go to Profile page
+              </Link> to upload a new photo.
+            </p>
             <p className="text-xs text-muted-foreground">Recommended size: 200x200px, JPG or PNG.</p>
           </div>
         </div>
