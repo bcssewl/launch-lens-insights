@@ -3,8 +3,15 @@ import { Lightbulb } from "lucide-react"; // Or Brain
 import { useSidebar } from "@/components/ui/sidebar";
 
 export const Logo = ({ className }: { className?: string }) => {
-  const { state } = useSidebar();
-  const isCollapsed = state === "collapsed";
+  // Safely handle the case where useSidebar might not be available
+  let isCollapsed = false;
+  try {
+    const { state } = useSidebar();
+    isCollapsed = state === "collapsed";
+  } catch (error) {
+    // If useSidebar is not available, default to expanded state
+    console.log("useSidebar not available, defaulting to expanded state");
+  }
 
   return (
     <div className={`flex items-center space-x-2 ${className}`}>
