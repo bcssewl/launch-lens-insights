@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import DashboardLayout from '@/layouts/DashboardLayout';
@@ -143,7 +144,7 @@ const AIAssistantPage: React.FC = () => {
     <DashboardLayout>
       <DashboardHeader>AI Assistant</DashboardHeader>
       <div className="flex h-[calc(100vh-120px)]">
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-h-0">
           {/* Subheader */}
           <div className="p-4 border-b bg-background flex-shrink-0">
             <p className="text-sm text-muted-foreground">
@@ -151,8 +152,8 @@ const AIAssistantPage: React.FC = () => {
             </p>
           </div>
 
-          {/* Chat Area - Fixed height with internal scrolling */}
-          <div className="flex-1 min-h-0">
+          {/* Chat Area - Takes remaining space */}
+          <div className="flex-1 min-h-0 overflow-hidden">
             <ScrollArea className="h-full w-full" ref={scrollAreaRef} viewportRef={viewportRef}>
               <div className="p-6 space-y-4">
                 {messages.map((msg) => (
@@ -173,8 +174,8 @@ const AIAssistantPage: React.FC = () => {
             </ScrollArea>
           </div>
 
-          {/* Input Area - Fixed at bottom */}
-          <div className="border-t bg-background p-4 flex-shrink-0">
+          {/* Input Area - Sticky at bottom */}
+          <div className="border-t bg-background p-4 flex-shrink-0 mt-auto">
             <SuggestedPrompts prompts={suggestedPromptsStrings} onPromptClick={handleSendMessage} />
             <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }} className="flex items-center space-x-2 mt-2">
               <Input
