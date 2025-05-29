@@ -142,19 +142,19 @@ const AIAssistantPage: React.FC = () => {
   return (
     <DashboardLayout>
       <div className="flex h-[calc(100vh-var(--header-height))]">
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col">
           {/* Header */}
-          <header className="p-4 border-b bg-background">
+          <header className="p-4 border-b bg-background flex-shrink-0">
             <h1 className="text-xl font-semibold font-heading">AI Assistant</h1>
             <p className="text-sm text-muted-foreground">
               {isConfigured ? 'Powered by your n8n workflow' : 'N8N webhook not configured'}
             </p>
           </header>
 
-          {/* Chat Area */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted/20">
-             <ScrollArea className="h-full w-full" ref={scrollAreaRef} viewportRef={viewportRef}>
-              <div className="pr-4 space-y-6">
+          {/* Chat Area - takes remaining space */}
+          <div className="flex-1 overflow-hidden">
+            <ScrollArea className="h-full w-full" ref={scrollAreaRef} viewportRef={viewportRef}>
+              <div className="p-4 space-y-6">
                 {messages.map((msg) => (
                   <ChatMessage key={msg.id} message={{ ...msg, timestamp: formatTimestamp(msg.timestamp) }} />
                 ))}
@@ -166,12 +166,14 @@ const AIAssistantPage: React.FC = () => {
                     </div>
                   </div>
                 )}
+                {/* Add padding at bottom to prevent input overlap */}
+                <div className="h-32"></div>
               </div>
             </ScrollArea>
           </div>
 
-          {/* Input Area */}
-          <div className="p-4 border-t bg-background">
+          {/* Input Area - Fixed at bottom */}
+          <div className="absolute bottom-0 left-0 right-0 md:right-72 lg:right-80 p-4 border-t bg-background">
             <SuggestedPrompts prompts={suggestedPromptsStrings} onPromptClick={handleSendMessage} />
             <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }} className="flex items-center space-x-2 mt-2">
               <Input
