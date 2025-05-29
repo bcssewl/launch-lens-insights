@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 interface SuggestedPromptsProps {
   prompts: string[];
@@ -14,22 +13,19 @@ const SuggestedPrompts: React.FC<SuggestedPromptsProps> = ({ prompts, onPromptCl
   return (
     <div className="py-2">
       <p className="text-xs text-muted-foreground mb-2 px-1">Suggested Prompts:</p>
-      <ScrollArea className="w-full whitespace-nowrap">
-        <div className="flex space-x-2 pb-2 px-1">
-          {prompts.map((prompt, index) => (
-            <Button
-              key={index}
-              variant="outline"
-              size="sm"
-              className="text-xs h-auto py-1 px-2 whitespace-nowrap shrink-0"
-              onClick={() => onPromptClick(prompt)}
-            >
-              {prompt}
-            </Button>
-          ))}
-        </div>
-        <ScrollBar orientation="horizontal" />
-      </ScrollArea>
+      <div className="flex flex-wrap gap-2 px-1">
+        {prompts.map((prompt, index) => (
+          <Button
+            key={index}
+            variant="outline"
+            size="sm"
+            className="text-xs h-auto py-1 px-2 whitespace-nowrap shrink-0"
+            onClick={() => onPromptClick(prompt)}
+          >
+            {prompt}
+          </Button>
+        ))}
+      </div>
     </div>
   );
 };
