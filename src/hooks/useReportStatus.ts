@@ -32,7 +32,13 @@ export const useReportStatus = (reportId: string) => {
           return;
         }
 
-        setReportStatus(report);
+        // Ensure status is properly typed
+        const typedReport: ReportStatus = {
+          ...report,
+          status: report.status as 'generating' | 'completed' | 'failed' | 'archived'
+        };
+
+        setReportStatus(typedReport);
       } catch (err) {
         setError('Failed to fetch report status');
         console.error('Error fetching report status:', err);
