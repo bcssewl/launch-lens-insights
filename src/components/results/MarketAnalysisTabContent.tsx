@@ -102,7 +102,7 @@ const MarketAnalysisTabContent: React.FC<MarketAnalysisTabContentProps> = ({ dat
               <YAxis />
               <ChartTooltipContent />
               <Legend />
-              <Line type="monotone" dataKey="growth" stroke="var(--color-growth)" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="growth" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={false} />
             </LineChart>
           </ChartContainer>
         </CardContent>
