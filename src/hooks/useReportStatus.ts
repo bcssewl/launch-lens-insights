@@ -8,11 +8,7 @@ interface ReportStatus {
   overall_score?: number;
   recommendation?: string;
   completed_at?: string;
-  sections?: Array<{
-    section_type: string;
-    status: string;
-    agent_name?: string;
-  }>;
+  report_data?: any;
 }
 
 export const useReportStatus = (reportId: string) => {
@@ -27,18 +23,7 @@ export const useReportStatus = (reportId: string) => {
       try {
         const { data: report, error: reportError } = await supabase
           .from('validation_reports')
-          .select(`
-            id,
-            status,
-            overall_score,
-            recommendation,
-            completed_at,
-            report_sections (
-              section_type,
-              status,
-              agent_name
-            )
-          `)
+          .select('*')
           .eq('id', reportId)
           .single();
 
@@ -47,10 +32,7 @@ export const useReportStatus = (reportId: string) => {
           return;
         }
 
-        setReportStatus({
-          ...report,
-          sections: report.report_sections || []
-        });
+        setReportStatus(report);
       } catch (err) {
         setError('Failed to fetch report status');
         console.error('Error fetching report status:', err);
@@ -75,18 +57,6 @@ export const useReportStatus = (reportId: string) => {
           schema: 'public',
           table: 'validation_reports',
           filter: `id=eq.${reportId}`
-        },
-        () => {
-          fetchReportStatus();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'report_sections',
-          filter: `report_id=eq.${reportId}`
         },
         () => {
           fetchReportStatus();

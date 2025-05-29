@@ -2,12 +2,11 @@
 import React, { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, RefreshCw } from 'lucide-react';
 import DashboardHeader from '@/components/DashboardHeader';
 import { useReportStatus } from '@/hooks/useReportStatus';
-import ReportSectionProgress from '@/components/ReportSectionProgress';
+import SimpleReportProgress from '@/components/SimpleReportProgress';
 import { toast } from '@/hooks/use-toast';
 
 const AnalyzingIdeaPage: React.FC = () => {
@@ -46,7 +45,6 @@ const AnalyzingIdeaPage: React.FC = () => {
   }, [reportStatus?.status, navigate, reportId]);
 
   const handleRetry = () => {
-    // In a real implementation, this would trigger the n8n workflow again
     toast({
       title: "Retrying Analysis",
       description: "Starting a new analysis of your idea...",
@@ -110,23 +108,14 @@ const AnalyzingIdeaPage: React.FC = () => {
                 🔍 AI Analysis in Progress
               </CardTitle>
               <p className="text-muted-foreground">
-                Our multi-agent AI system is analyzing your startup idea across multiple dimensions.
+                Our AI system is analyzing your startup idea across multiple dimensions.
                 This usually takes 2-5 minutes.
               </p>
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
-                <div className="text-center">
-                  <div className="inline-flex items-center space-x-2 bg-blue-50 dark:bg-blue-900/20 px-4 py-2 rounded-full">
-                    <RefreshCw className="h-4 w-4 animate-spin text-blue-600" />
-                    <span className="text-sm font-medium text-blue-600">
-                      Status: {reportStatus?.status?.charAt(0).toUpperCase() + reportStatus?.status?.slice(1)}
-                    </span>
-                  </div>
-                </div>
-
-                {reportStatus?.sections && (
-                  <ReportSectionProgress sections={reportStatus.sections} />
+                {reportStatus && (
+                  <SimpleReportProgress status={reportStatus.status} />
                 )}
 
                 <div className="bg-muted/50 p-4 rounded-lg">
