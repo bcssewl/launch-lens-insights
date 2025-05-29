@@ -29,7 +29,7 @@ const RecommendationBadge: React.FC<RecommendationBadgeProps> = ({ recommendatio
   }
 
   return (
-    <Badge variant={badgeVariant} className={cn("text-sm px-3 py-1.5 whitespace-nowrap", textColor)}>
+    <Badge variant={badgeVariant} className={cn("text-xs sm:text-sm px-3 py-1.5 break-words whitespace-normal text-center max-w-full", textColor)}>
       {badgeText}
     </Badge>
   );

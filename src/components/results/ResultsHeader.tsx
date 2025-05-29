@@ -24,10 +24,12 @@ const ResultsHeader: React.FC<ResultsHeaderProps> = ({
         <h1 className="text-2xl md:text-3xl font-bold text-primary break-words">{ideaName}</h1>
         <p className="text-sm text-muted-foreground mt-1">Analysis Date: {analysisDate}</p>
       </div>
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 flex-wrap">
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4">
           <ScoreDisplay score={score} maxScore={10} />
-          <RecommendationBadge recommendation={recommendationText} />
+          <div className="w-full lg:flex-1">
+            <RecommendationBadge recommendation={recommendationText} />
+          </div>
         </div>
         <div className="flex justify-start">
           <Button variant="outline" size="sm" className="w-fit">
