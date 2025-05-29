@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
@@ -25,7 +24,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Logo } from '@/components/icons';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Home, Lightbulb, FileText, Bot, FlaskConical, Settings as SettingsIcon, UserCircle, LogOut, X } from 'lucide-react';
+import { Home, Lightbulb, FileText, Bot, FlaskConical, Settings as SettingsIcon, UserCircle, LogOut, ChevronLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -42,7 +41,7 @@ export const AppSidebar: React.FC = () => {
   const location = useLocation();
   const { user, signOut } = useAuth();
   const [profile, setProfile] = useState<any>(null);
-  const { setOpen } = useSidebar();
+  const { setOpen, isMobile } = useSidebar();
 
   useEffect(() => {
     if (user) {
@@ -162,16 +161,18 @@ export const AppSidebar: React.FC = () => {
         <SidebarRail />
       </Sidebar>
       
-      {/* Collapse button positioned on the right edge, vertically centered */}
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={handleCloseSidebar}
-        className="absolute top-1/2 -right-4 transform -translate-y-1/2 h-8 w-8 rounded-full bg-background border border-border shadow-sm hover:bg-accent z-10"
-        aria-label="Close sidebar"
-      >
-        <X className="h-4 w-4" />
-      </Button>
+      {/* Collapse button positioned on the right edge, vertically centered - only visible on desktop */}
+      {!isMobile && (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleCloseSidebar}
+          className="absolute top-1/2 -right-4 transform -translate-y-1/2 h-8 w-8 rounded-full bg-background border border-border shadow-sm hover:bg-accent z-10"
+          aria-label="Close sidebar"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+      )}
     </div>
   );
 };
