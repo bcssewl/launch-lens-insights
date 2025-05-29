@@ -9,6 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { toast } from '@/hooks/use-toast';
 import { Form } from '@/components/ui/form';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 import Step1BasicInfo from './form-steps/Step1BasicInfo';
 import Step2MarketDetails from './form-steps/Step2MarketDetails';
@@ -54,7 +56,9 @@ const steps = [
 
 const IdeaValidationForm: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const form = useForm<IdeaValidationFormData>({
     resolver: zodResolver(ideaValidationSchema),
@@ -74,15 +78,63 @@ const IdeaValidationForm: React.FC = () => {
 
   const { handleSubmit, trigger, control, watch } = form;
 
-  const processForm = (data: IdeaValidationFormData) => {
-    console.log('Form Data:', data);
-    // Store data in localStorage or send to an API
-    // For now, just navigate
-    toast({
-      title: "Idea Submitted!",
-      description: "Your idea is now being analyzed. Please wait...",
-    });
-    navigate('/analyzing'); // Navigate to the new analyzing page
+  const processForm = async (data: IdeaValidationFormData) => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to submit your idea for validation.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Insert the idea validation data into Supabase
+      const { data: submission, error } = await supabase
+        .from('idea_validations')
+        .insert({
+          user_id: user.id,
+          idea_name: data.ideaName,
+          one_line_description: data.oneLineDescription,
+          problem_statement: data.problemStatement,
+          solution_description: data.solutionDescription,
+          form_data: data, // Store complete form data as JSON
+          status: 'pending'
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error submitting idea validation:', error);
+        toast({
+          title: "Submission Failed",
+          description: "There was an error submitting your idea. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('Idea validation submitted successfully:', submission);
+      
+      toast({
+        title: "Idea Submitted!",
+        description: "Your idea is now being analyzed. Please wait...",
+      });
+
+      // Navigate to analyzing page with submission ID
+      navigate('/analyzing', { state: { submissionId: submission.id } });
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      toast({
+        title: "Submission Failed",
+        description: "There was an unexpected error. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const nextStep = async () => {
@@ -118,7 +170,6 @@ const IdeaValidationForm: React.FC = () => {
   
   const progressValue = ((currentStep + 1) / steps.length) * 100;
 
-
   return (
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader className="text-center">
@@ -139,7 +190,7 @@ const IdeaValidationForm: React.FC = () => {
             
             <div className="flex justify-between pt-6">
               {currentStep > 0 && (
-                <Button type="button" variant="outline" onClick={prevStep}>
+                <Button type="button" variant="outline" onClick={prevStep} disabled={isSubmitting}>
                   Back
                 </Button>
               )}
@@ -147,12 +198,12 @@ const IdeaValidationForm: React.FC = () => {
               {currentStep === 0 && <div className="flex-grow"></div>} 
               
               {currentStep < steps.length - 1 ? (
-                <Button type="button" onClick={nextStep}>
+                <Button type="button" onClick={nextStep} disabled={isSubmitting}>
                   Continue
                 </Button>
               ) : (
-                <Button type="submit" className="gradient-button"> {/* Ensure this button also triggers form submission if nextStep logic is bypassed on last step */}
-                  Analyze My Idea
+                <Button type="submit" className="gradient-button" disabled={isSubmitting}>
+                  {isSubmitting ? 'Submitting...' : 'Analyze My Idea'}
                 </Button>
               )}
             </div>

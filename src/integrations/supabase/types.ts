@@ -9,6 +9,48 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      idea_validations: {
+        Row: {
+          created_at: string
+          form_data: Json
+          id: string
+          idea_name: string
+          one_line_description: string
+          problem_statement: string
+          processed_at: string | null
+          solution_description: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          form_data: Json
+          id?: string
+          idea_name: string
+          one_line_description: string
+          problem_statement: string
+          processed_at?: string | null
+          solution_description: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          form_data?: Json
+          id?: string
+          idea_name?: string
+          one_line_description?: string
+          problem_statement?: string
+          processed_at?: string | null
+          solution_description?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
