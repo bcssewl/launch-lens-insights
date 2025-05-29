@@ -2,7 +2,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import AIAvatar from './AIAvatar';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'; // For user avatar in future
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export interface ChatMessageData {
   id: string;
@@ -19,25 +19,31 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   const isAi = message.sender === 'ai';
 
   return (
-    <div className={cn("flex items-end space-x-3 py-2", isAi ? "justify-start" : "justify-end")}>
-      {isAi && <AIAvatar className="self-start" />}
-      <div
-        className={cn(
-          "max-w-xs md:max-w-md lg:max-w-lg xl:max-w-xl p-3 rounded-xl shadow-md",
-          isAi ? "bg-primary text-primary-foreground rounded-bl-none" : "bg-muted text-foreground rounded-br-none"
-        )}
-      >
-        <p className="text-sm whitespace-pre-wrap">{message.text}</p>
-        <p className={cn("text-xs mt-1", isAi ? "text-primary-foreground/70" : "text-muted-foreground/70")}>
-          {message.timestamp}
-        </p>
-      </div>
-      {!isAi && (
-        <Avatar className="h-10 w-10 self-start">
+    <div className={cn("flex items-end space-x-3", isAi ? "justify-start" : "justify-end flex-row-reverse space-x-reverse")}>
+      {isAi ? (
+        <AIAvatar className="w-8 h-8 flex-shrink-0" />
+      ) : (
+        <Avatar className="h-8 w-8 flex-shrink-0">
           <AvatarImage src="/placeholder.svg" alt="User Avatar" />
           <AvatarFallback>U</AvatarFallback>
         </Avatar>
       )}
+      <div
+        className={cn(
+          "max-w-xs md:max-w-md lg:max-w-lg p-3 rounded-2xl shadow-sm",
+          isAi 
+            ? "bg-muted text-foreground rounded-bl-sm" 
+            : "bg-primary text-primary-foreground rounded-br-sm"
+        )}
+      >
+        <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.text}</p>
+        <p className={cn(
+          "text-xs mt-2 opacity-70",
+          isAi ? "text-muted-foreground" : "text-primary-foreground"
+        )}>
+          {message.timestamp}
+        </p>
+      </div>
     </div>
   );
 };

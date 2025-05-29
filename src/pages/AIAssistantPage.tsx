@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import DashboardLayout from '@/layouts/DashboardLayout';
@@ -61,7 +60,7 @@ const AIAssistantPage: React.FC = () => {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, isTyping]);
 
   const handleSendMessage = async (text?: string) => {
     const messageText = text || inputValue;
@@ -143,7 +142,7 @@ const AIAssistantPage: React.FC = () => {
   return (
     <DashboardLayout>
       <DashboardHeader>AI Assistant</DashboardHeader>
-      <div className="flex h-[calc(100vh-var(--header-height))]">
+      <div className="flex h-[calc(100vh-120px)]">
         <div className="flex-1 flex flex-col">
           {/* Subheader */}
           <div className="p-4 border-b bg-background flex-shrink-0">
@@ -152,29 +151,30 @@ const AIAssistantPage: React.FC = () => {
             </p>
           </div>
 
-          {/* Chat Area - takes remaining space */}
-          <div className="flex-1 overflow-hidden">
+          {/* Chat Area - Fixed height with internal scrolling */}
+          <div className="flex-1 min-h-0">
             <ScrollArea className="h-full w-full" ref={scrollAreaRef} viewportRef={viewportRef}>
-              <div className="p-4 space-y-6">
+              <div className="p-6 space-y-4">
                 {messages.map((msg) => (
                   <ChatMessage key={msg.id} message={{ ...msg, timestamp: formatTimestamp(msg.timestamp) }} />
                 ))}
                 {isTyping && (
                   <div className="flex items-start space-x-3">
                     <AIAvatar className="w-8 h-8" />
-                    <div className="bg-primary/10 text-primary-foreground p-3 rounded-lg max-w-xl animate-pulse">
-                      <Loader2 className="w-5 h-5 animate-spin mr-2 inline-block" /> Thinking...
+                    <div className="bg-muted text-muted-foreground p-3 rounded-2xl rounded-bl-sm max-w-xs md:max-w-md lg:max-w-lg animate-pulse">
+                      <div className="flex items-center space-x-2">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span className="text-sm">Thinking...</span>
+                      </div>
                     </div>
                   </div>
                 )}
-                {/* Add padding at bottom to prevent input overlap */}
-                <div className="h-32"></div>
               </div>
             </ScrollArea>
           </div>
 
           {/* Input Area - Fixed at bottom */}
-          <div className="absolute bottom-0 left-0 right-0 md:right-72 lg:right-80 p-4 border-t bg-background">
+          <div className="border-t bg-background p-4 flex-shrink-0">
             <SuggestedPrompts prompts={suggestedPromptsStrings} onPromptClick={handleSendMessage} />
             <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }} className="flex items-center space-x-2 mt-2">
               <Input
