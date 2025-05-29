@@ -18,7 +18,8 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
 }) => {
   return (
     <aside className="w-full md:w-72 lg:w-80 border-l bg-card hidden md:flex md:flex-col h-[calc(100vh-var(--header-height))]">
-      <div className="p-4 space-y-6 flex flex-col h-full">
+      <div className="p-4 space-y-6 flex flex-col h-[calc(100vh-var(--header-height))]">
+        
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Quick Actions</CardTitle>
@@ -43,6 +44,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
           </CardContent>
         </Card>
 
+        
         <Card className="flex-1 flex flex-col min-h-0">
           <CardHeader>
             <CardTitle className="text-lg">Recent Topics</CardTitle>
