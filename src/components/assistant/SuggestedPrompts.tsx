@@ -21,7 +21,7 @@ const SuggestedPrompts: React.FC<SuggestedPromptsProps> = ({ prompts, onPromptCl
               key={index}
               variant="outline"
               size="sm"
-              className="text-xs h-auto py-1 px-2 whitespace-normal text-left"
+              className="text-xs h-auto py-1 px-2 whitespace-nowrap shrink-0"
               onClick={() => onPromptClick(prompt)}
             >
               {prompt}
