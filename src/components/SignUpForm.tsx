@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -6,7 +5,6 @@ import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
 import {
   Form,
   FormControl,
@@ -16,6 +14,9 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Eye, EyeOff, Github, Linkedin } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
 
 const signUpSchema = z.object({
   fullName: z.string().min(2, { message: "Full name must be at least 2 characters." }),
@@ -33,6 +34,10 @@ type SignUpFormValues = z.infer<typeof signUpSchema>;
 export const SignUpForm: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const { signUp } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   const form = useForm<SignUpFormValues>({
     resolver: zodResolver(signUpSchema),
@@ -45,9 +50,39 @@ export const SignUpForm: React.FC = () => {
     },
   });
 
-  function onSubmit(values: SignUpFormValues) {
+  async function onSubmit(values: SignUpFormValues) {
+    if (isLoading) return;
+    
+    setIsLoading(true);
     console.log('Sign Up submitted', values);
-    // Handle submission logic here
+    
+    try {
+      const { error } = await signUp(values.email, values.password, values.fullName);
+      
+      if (error) {
+        console.error('Sign up error:', error);
+        toast({
+          title: "Sign up failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Success!",
+          description: "Account created successfully. Please check your email to verify your account.",
+        });
+        navigate('/dashboard');
+      }
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      toast({
+        title: "An error occurred",
+        description: "Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -144,8 +179,8 @@ export const SignUpForm: React.FC = () => {
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full gradient-button">
-          Create Account
+        <Button type="submit" className="w-full gradient-button" disabled={isLoading}>
+          {isLoading ? "Creating Account..." : "Create Account"}
         </Button>
       </form>
       <div className="mt-6">

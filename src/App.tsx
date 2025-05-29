@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
 import NotFound from "./pages/NotFound";
 import { ThemeProvider } from "./components/ThemeProvider";
+import { AuthProvider } from "./contexts/AuthContext";
 import SignUpPage from "./pages/SignUpPage";
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
@@ -31,35 +32,37 @@ const queryClient = new QueryClient();
 const App = () => (
   <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/signup" element={<SignUpPage />} />
-            
-            {/* Dashboard Routes */}
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/dashboard/validate" element={<ValidateIdeaPage />} />
-            <Route path="/analyzing" element={<AnalyzingIdeaPage />} />
-            <Route path="/results" element={<ResultsPage />} />
-            <Route path="/dashboard/reports" element={<MyReportsPage />} />
-            <Route path="/dashboard/assistant" element={<AIAssistantPage />} />
-            <Route path="/dashboard/experiments" element={<ExperimentsPage />} />
-            <Route path="/dashboard/settings" element={<SettingsPage />} />
-            <Route path="/dashboard/profile" element={<ProfilePage />} />
-            <Route path="/dashboard/billing" element={<BillingPage />} />
-
-            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-            <Route path="/terms" element={<TermsPage />} />
-            <Route path="/privacy" element={<PrivacyPage />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/signup" element={<SignUpPage />} />
+              
+              {/* Dashboard Routes */}
+              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/dashboard/validate" element={<ValidateIdeaPage />} />
+              <Route path="/analyzing" element={<AnalyzingIdeaPage />} />
+              <Route path="/results" element={<ResultsPage />} />
+              <Route path="/dashboard/reports" element={<MyReportsPage />} />
+              <Route path="/dashboard/assistant" element={<AIAssistantPage />} />
+              <Route path="/dashboard/experiments" element={<ExperimentsPage />} />
+              <Route path="/dashboard/settings" element={<SettingsPage />} />
+              <Route path="/dashboard/profile" element={<ProfilePage />} />
+              <Route path="/dashboard/billing" element={<BillingPage />} />
+              
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/terms" element={<TermsPage />} />
+              <Route path="/privacy" element={<PrivacyPage />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   </ThemeProvider>
 );

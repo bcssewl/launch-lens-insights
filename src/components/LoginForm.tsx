@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -6,7 +5,6 @@ import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
 import {
   Form,
   FormControl,
@@ -17,6 +15,9 @@ import {
 } from '@/components/ui/form';
 import { Link } from 'react-router-dom';
 import { Eye, EyeOff, Github, Linkedin } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { useToast } from '@/hooks/use-toast';
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
@@ -28,6 +29,10 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 export const LoginForm: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const { signIn } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -38,9 +43,39 @@ export const LoginForm: React.FC = () => {
     },
   });
 
-  function onSubmit(values: LoginFormValues) {
+  async function onSubmit(values: LoginFormValues) {
+    if (isLoading) return;
+    
+    setIsLoading(true);
     console.log('Login submitted', values);
-    // Handle submission logic here
+    
+    try {
+      const { error } = await signIn(values.email, values.password);
+      
+      if (error) {
+        console.error('Login error:', error);
+        toast({
+          title: "Login failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Welcome back!",
+          description: "You have successfully logged in.",
+        });
+        navigate('/dashboard');
+      }
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      toast({
+        title: "An error occurred",
+        description: "Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -104,8 +139,8 @@ export const LoginForm: React.FC = () => {
             </Link>
           </div>
         </div>
-        <Button type="submit" className="w-full gradient-button">
-          Sign In
+        <Button type="submit" className="w-full gradient-button" disabled={isLoading}>
+          {isLoading ? "Signing In..." : "Sign In"}
         </Button>
       </form>
       <div className="mt-6">
