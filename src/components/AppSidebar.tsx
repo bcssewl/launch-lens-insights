@@ -10,9 +10,14 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarGroup,
-  SidebarGroupLabel,
-  SidebarGroupContent
+  SidebarGroupContent,
+  SidebarRail
 } from "@/components/ui/sidebar";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,7 +28,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Logo } from '@/components/icons';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Home, Lightbulb, FileText, Bot, FlaskConical, Settings as SettingsIcon, UserCircle, LogOut } from 'lucide-react';
+import { Home, Lightbulb, FileText, Bot, FlaskConical, Settings as SettingsIcon, UserCircle, LogOut, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -40,6 +45,7 @@ export const AppSidebar: React.FC = () => {
   const location = useLocation();
   const { user, signOut } = useAuth();
   const [profile, setProfile] = useState<any>(null);
+  const [isNavigationOpen, setIsNavigationOpen] = useState(true);
 
   useEffect(() => {
     if (user) {
@@ -70,35 +76,45 @@ export const AppSidebar: React.FC = () => {
   };
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="icon" className="border-r">
       <SidebarHeader className="p-2 flex justify-center group-data-[collapsible=icon]:justify-start">
         <div className="flex items-center justify-center group-data-[collapsible=icon]:justify-start">
           <Logo className="group-data-[collapsible=icon]:hidden"/>
           <Lightbulb className="h-7 w-7 text-primary hidden group-data-[collapsible=icon]:block"/>
         </div>
       </SidebarHeader>
+      
       <SidebarContent className="flex-grow">
         <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {navItems.map((item) => (
-                <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={location.pathname === item.href || (item.href === "/dashboard" && location.pathname.startsWith("/dashboard") && location.pathname.split('/').length <= 2)}
-                    tooltip={{children: item.label, side: "right", align: "center"}}
-                  >
-                    <Link to={item.href} className="flex items-center gap-2">
-                      <item.icon className="h-5 w-5" />
-                      <span>{item.label}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
+          <Collapsible open={isNavigationOpen} onOpenChange={setIsNavigationOpen}>
+            <CollapsibleTrigger className="flex items-center justify-between w-full p-2 text-sm font-medium hover:bg-accent rounded-md group-data-[collapsible=icon]:justify-center">
+              <span className="group-data-[collapsible=icon]:hidden">Navigation</span>
+              <ChevronDown className={`h-4 w-4 transition-transform duration-200 group-data-[collapsible=icon]:hidden ${isNavigationOpen ? 'rotate-180' : ''}`} />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-1">
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {navItems.map((item) => (
+                    <SidebarMenuItem key={item.href}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={location.pathname === item.href || (item.href === "/dashboard" && location.pathname.startsWith("/dashboard") && location.pathname.split('/').length <= 2)}
+                        tooltip={{children: item.label, side: "right", align: "center"}}
+                      >
+                        <Link to={item.href} className="flex items-center gap-2">
+                          <item.icon className="h-5 w-5" />
+                          <span>{item.label}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </CollapsibleContent>
+          </Collapsible>
         </SidebarGroup>
       </SidebarContent>
+      
       <SidebarFooter className="p-2 border-t">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -150,6 +166,8 @@ export const AppSidebar: React.FC = () => {
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarFooter>
+      
+      <SidebarRail />
     </Sidebar>
   );
 };
