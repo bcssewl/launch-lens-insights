@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,8 +18,8 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   onClearConversation
 }) => {
   return (
-    <aside className="w-full md:w-72 lg:w-80 border-l bg-card hidden md:flex md:flex-col h-[calc(100vh-var(--header-height))]">
-      <div className="p-4 space-y-6 flex flex-col h-[calc(100vh-var(--header-height))]">
+    <aside className="w-full md:w-72 lg:w-80 border-l bg-card hidden md:flex md:flex-col h-screen">
+      <div className="p-4 space-y-6 flex flex-col h-full">
         
         <Card>
           <CardHeader>
