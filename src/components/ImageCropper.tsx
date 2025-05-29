@@ -29,13 +29,25 @@ const ImageCropper: React.FC<ImageCropperProps> = ({
   } = useImageLoader({ imageFile, isOpen });
 
   const handleCrop = async () => {
-    if (!imageFile || !loadedImage) return;
+    if (!imageFile || !loadedImage) {
+      console.error('Missing required data for cropping:', { imageFile: !!imageFile, loadedImage: !!loadedImage });
+      return;
+    }
+
+    console.log('Starting crop with area:', cropArea);
+    
+    // Get canvas dimensions for scaling calculation
+    const canvas = document.querySelector('canvas');
+    if (!canvas) {
+      console.error('Canvas not found');
+      return;
+    }
 
     const blob = await cropImageToCanvas(
       loadedImage,
       cropArea,
-      loadedImage.naturalWidth,
-      loadedImage.naturalHeight
+      canvas.width,
+      canvas.height
     );
 
     if (blob) {
@@ -43,14 +55,23 @@ const ImageCropper: React.FC<ImageCropperProps> = ({
         type: 'image/jpeg',
         lastModified: Date.now()
       });
+      console.log('Crop completed, file size:', croppedFile.size);
       onCropComplete(croppedFile);
+    } else {
+      console.error('Failed to create blob from crop');
     }
   };
 
-  console.log('ImageCropper render - isOpen:', isOpen, 'imageFile:', !!imageFile);
+  // Reset crop area when dialog closes
+  const handleClose = () => {
+    setCropArea({ x: 0, y: 0, width: 0, height: 0 });
+    onClose();
+  };
+
+  console.log('ImageCropper render - isOpen:', isOpen, 'imageFile:', !!imageFile, 'isImageLoaded:', isImageLoaded);
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -71,21 +92,24 @@ const ImageCropper: React.FC<ImageCropperProps> = ({
           )}
           
           <p className="text-sm text-muted-foreground text-center">
-            Drag the crop area to position your photo. The image will be resized to 300x300 pixels.
+            {isImageLoaded ? 
+              "Drag the crop area to position your photo. The image will be resized to 300x300 pixels." :
+              "Loading image..."
+            }
           </p>
         </div>
 
         <DialogFooter className="flex justify-between">
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={handleClose}>
             <X className="mr-2 h-4 w-4" />
             Cancel
           </Button>
-          <Button onClick={handleCrop} disabled={!isImageLoaded}>
+          <Button onClick={handleCrop} disabled={!isImageLoaded || cropArea.width === 0}>
             <Check className="mr-2 h-4 w-4" />
             Apply Crop
           </Button>
-        </DialogFooter>
-      </DialogContent>
+        </div>
+      </DialogFooter>
     </Dialog>
   );
 };

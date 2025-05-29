@@ -33,12 +33,13 @@ const ImageCropperCanvas: React.FC<ImageCropperCanvasProps> = ({
     if (isImageLoaded && canvasRef.current && cropArea.width === 0) {
       const canvas = canvasRef.current;
       const initialCropArea = getInitialCropArea(canvas.width, canvas.height);
+      console.log('Setting initial crop area:', initialCropArea);
       onCropAreaChange(initialCropArea);
     }
   }, [isImageLoaded, cropArea.width, onCropAreaChange]);
 
   const drawCropOverlay = useCallback(() => {
-    if (!canvasRef.current || !isImageLoaded || !loadedImage) return;
+    if (!canvasRef.current || !isImageLoaded || !loadedImage || cropArea.width === 0) return;
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
@@ -58,8 +59,14 @@ const ImageCropperCanvas: React.FC<ImageCropperCanvasProps> = ({
     
     // Reset composite operation and redraw the crop area with original image
     ctx.globalCompositeOperation = 'source-over';
-    ctx.drawImage(loadedImage, 
-      cropArea.x, cropArea.y, cropArea.width, cropArea.height,
+    const sourceX = (cropArea.x / canvas.width) * loadedImage.naturalWidth;
+    const sourceY = (cropArea.y / canvas.height) * loadedImage.naturalHeight;
+    const sourceWidth = (cropArea.width / canvas.width) * loadedImage.naturalWidth;
+    const sourceHeight = (cropArea.height / canvas.height) * loadedImage.naturalHeight;
+    
+    ctx.drawImage(
+      loadedImage,
+      sourceX, sourceY, sourceWidth, sourceHeight,
       cropArea.x, cropArea.y, cropArea.width, cropArea.height
     );
 
@@ -69,7 +76,7 @@ const ImageCropperCanvas: React.FC<ImageCropperCanvasProps> = ({
     ctx.strokeRect(cropArea.x, cropArea.y, cropArea.width, cropArea.height);
 
     // Draw corner handles
-    const handleSize = 10;
+    const handleSize = 8;
     ctx.fillStyle = '#fff';
     ctx.strokeStyle = '#333';
     ctx.lineWidth = 1;
@@ -88,14 +95,12 @@ const ImageCropperCanvas: React.FC<ImageCropperCanvasProps> = ({
   }, [cropArea, loadedImage, isImageLoaded]);
 
   useEffect(() => {
-    if (isImageLoaded && loadedImage && cropArea.width > 0) {
-      drawCropOverlay();
-    }
-  }, [drawCropOverlay, isImageLoaded, loadedImage, cropArea]);
+    drawCropOverlay();
+  }, [drawCropOverlay]);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || cropArea.width === 0) return;
 
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -142,7 +147,7 @@ const ImageCropperCanvas: React.FC<ImageCropperCanvasProps> = ({
         onMouseLeave={handleMouseUp}
       />
       {!isImageLoaded && (
-        <div className="absolute inset-0 flex items-center justify-center bg-muted rounded-lg">
+        <div className="absolute inset-0 flex items-center justify-center bg-muted rounded-lg min-h-[200px]">
           <p className="text-sm text-muted-foreground">Loading image...</p>
         </div>
       )}

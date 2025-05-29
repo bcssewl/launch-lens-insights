@@ -41,28 +41,36 @@ export const useImageLoader = ({ imageFile, isOpen }: UseImageLoaderProps) => {
     const img = new Image();
     
     img.onload = () => {
-      console.log('Image loaded successfully');
+      console.log('Image loaded successfully, dimensions:', img.naturalWidth, 'x', img.naturalHeight);
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
-      // Set canvas size to fit the image while maintaining aspect ratio
-      const maxSize = 600;
-      let { naturalWidth: width, naturalHeight: height } = img;
+      // Calculate display size while maintaining aspect ratio
+      const maxDisplaySize = 400;
+      const aspectRatio = img.naturalWidth / img.naturalHeight;
       
-      // Calculate scale factor to fit image in canvas while maintaining aspect ratio
-      const scale = Math.min(maxSize / width, maxSize / height);
-      width = width * scale;
-      height = height * scale;
+      let displayWidth, displayHeight;
+      if (aspectRatio > 1) {
+        // Landscape
+        displayWidth = Math.min(maxDisplaySize, img.naturalWidth);
+        displayHeight = displayWidth / aspectRatio;
+      } else {
+        // Portrait or square
+        displayHeight = Math.min(maxDisplaySize, img.naturalHeight);
+        displayWidth = displayHeight * aspectRatio;
+      }
 
-      canvas.width = width;
-      canvas.height = height;
+      // Set canvas size
+      canvas.width = displayWidth;
+      canvas.height = displayHeight;
       
-      // Clear canvas and draw image
-      ctx.clearRect(0, 0, width, height);
-      ctx.drawImage(img, 0, 0, width, height);
+      // Draw image
+      ctx.clearRect(0, 0, displayWidth, displayHeight);
+      ctx.drawImage(img, 0, 0, displayWidth, displayHeight);
 
       setLoadedImage(img);
       setIsImageLoaded(true);
+      console.log('Image loaded and drawn to canvas');
     };
 
     img.onerror = (error) => {
@@ -78,8 +86,6 @@ export const useImageLoader = ({ imageFile, isOpen }: UseImageLoaderProps) => {
     imageUrl,
     loadedImage,
     isImageLoaded,
-    loadImage,
-    setIsImageLoaded,
-    setLoadedImage
+    loadImage
   };
 };

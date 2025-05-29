@@ -7,8 +7,8 @@ export interface CropArea {
 }
 
 export const getInitialCropArea = (canvasWidth: number, canvasHeight: number): CropArea => {
-  // Set initial crop area to a smaller square in the center (30% of smallest dimension)
-  const cropSize = Math.min(canvasWidth, canvasHeight) * 0.3;
+  // Create a square crop area that's 60% of the smaller dimension
+  const cropSize = Math.min(canvasWidth, canvasHeight) * 0.6;
   return {
     x: (canvasWidth - cropSize) / 2,
     y: (canvasHeight - cropSize) / 2,
@@ -38,33 +38,33 @@ export const isPointInCropArea = (x: number, y: number, cropArea: CropArea): boo
 export const cropImageToCanvas = async (
   loadedImage: HTMLImageElement,
   cropArea: CropArea,
-  originalCanvasWidth: number,
-  originalCanvasHeight: number,
+  canvasWidth: number,
+  canvasHeight: number,
   outputSize: number = 300
 ): Promise<Blob | null> => {
   const cropCanvas = document.createElement('canvas');
   const cropCtx = cropCanvas.getContext('2d');
   if (!cropCtx) return null;
 
-  // Set crop canvas to square dimensions
+  // Set output canvas to square dimensions
   cropCanvas.width = outputSize;
   cropCanvas.height = outputSize;
 
-  // Calculate the scale factor between displayed image and original image
-  const scaleX = loadedImage.naturalWidth / originalCanvasWidth;
-  const scaleY = loadedImage.naturalHeight / originalCanvasHeight;
+  // Calculate the scale factors between displayed canvas and original image
+  const scaleX = loadedImage.naturalWidth / canvasWidth;
+  const scaleY = loadedImage.naturalHeight / canvasHeight;
 
-  // Crop from original image coordinates
+  // Calculate source coordinates in original image
+  const sourceX = cropArea.x * scaleX;
+  const sourceY = cropArea.y * scaleY;
+  const sourceWidth = cropArea.width * scaleX;
+  const sourceHeight = cropArea.height * scaleY;
+
+  // Draw the cropped portion to the output canvas
   cropCtx.drawImage(
     loadedImage,
-    cropArea.x * scaleX,
-    cropArea.y * scaleY,
-    cropArea.width * scaleX,
-    cropArea.height * scaleY,
-    0,
-    0,
-    outputSize,
-    outputSize
+    sourceX, sourceY, sourceWidth, sourceHeight,
+    0, 0, outputSize, outputSize
   );
 
   return new Promise((resolve) => {
