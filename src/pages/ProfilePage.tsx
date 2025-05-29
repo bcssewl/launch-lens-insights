@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { Button } from "@/components/ui/button";
@@ -10,6 +9,7 @@ import { Camera, Upload, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import ImageCropper from '@/components/ImageCropper';
 
 const ProfilePage: React.FC = () => {
   const { user } = useAuth();
@@ -18,6 +18,8 @@ const ProfilePage: React.FC = () => {
   const [avatarUrl, setAvatarUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [showCropper, setShowCropper] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -82,16 +84,16 @@ const ProfilePage: React.FC = () => {
     }
   };
 
-  const uploadAvatar = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!event.target.files || !event.target.files[0] || !user) return;
+  const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files || !event.target.files[0]) return;
 
     const file = event.target.files[0];
     
-    // Check file size (max 2MB)
-    if (file.size > 2 * 1024 * 1024) {
+    // Check file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
       toast({
         title: "File too large",
-        description: "Please select an image smaller than 2MB.",
+        description: "Please select an image smaller than 5MB.",
         variant: "destructive",
       });
       return;
@@ -107,16 +109,24 @@ const ProfilePage: React.FC = () => {
       return;
     }
 
+    setSelectedImage(file);
+    setShowCropper(true);
+  };
+
+  const handleCropComplete = async (croppedFile: File) => {
+    if (!user) return;
+
+    setShowCropper(false);
     setUploading(true);
 
     try {
-      const fileExt = file.name.split('.').pop();
+      const fileExt = 'jpg'; // Always save as JPG after cropping
       const fileName = `${user.id}/${Date.now()}.${fileExt}`;
 
       // Upload file to Supabase storage
       const { error: uploadError } = await supabase.storage
         .from('profile-pictures')
-        .upload(fileName, file);
+        .upload(fileName, croppedFile);
 
       if (uploadError) {
         throw uploadError;
@@ -142,7 +152,13 @@ const ProfilePage: React.FC = () => {
       });
     } finally {
       setUploading(false);
+      setSelectedImage(null);
     }
+  };
+
+  const handleCropCancel = () => {
+    setShowCropper(false);
+    setSelectedImage(null);
   };
 
   return (
@@ -174,6 +190,7 @@ const ProfilePage: React.FC = () => {
                     size="icon" 
                     className="rounded-full bg-background/70 group-hover:bg-background transition-colors"
                     asChild
+                    disabled={uploading}
                   >
                     <span>
                       {uploading ? (
@@ -189,14 +206,14 @@ const ProfilePage: React.FC = () => {
                   id="avatar-upload"
                   type="file"
                   accept="image/*"
-                  onChange={uploadAvatar}
+                  onChange={handleImageSelect}
                   className="hidden"
                   disabled={uploading}
                 />
               </div>
               <div className="text-center sm:text-left">
                 <p className="text-sm text-muted-foreground">Click the camera icon to upload a new photo.</p>
-                <p className="text-xs text-muted-foreground">Maximum size: 2MB. Supported formats: JPG, PNG, GIF.</p>
+                <p className="text-xs text-muted-foreground">Maximum size: 5MB. The image will be cropped to a square.</p>
               </div>
             </div>
             
@@ -242,6 +259,13 @@ const ProfilePage: React.FC = () => {
             </div>
           </CardContent>
         </Card>
+
+        <ImageCropper
+          isOpen={showCropper}
+          onClose={handleCropCancel}
+          imageFile={selectedImage}
+          onCropComplete={handleCropComplete}
+        />
       </div>
     </DashboardLayout>
   );
