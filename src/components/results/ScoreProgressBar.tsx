@@ -10,7 +10,9 @@ interface ScoreProgressBarProps {
 }
 
 const ScoreProgressBar: React.FC<ScoreProgressBarProps> = ({ label, score, maxScore }) => {
-  const percentage = (score / maxScore) * 100;
+  // Scale down scores that are between 10 and 100 by dividing by 10
+  const scaledScore = score > 10 && score < 100 ? score / 10 : score;
+  const percentage = (scaledScore / maxScore) * 100;
   
   // Determine color class based on percentage
   const getColorClass = (percent: number) => {
@@ -27,7 +29,7 @@ const ScoreProgressBar: React.FC<ScoreProgressBarProps> = ({ label, score, maxSc
     <div>
       <div className="flex justify-between items-center mb-1">
         <span className="text-sm font-medium text-foreground">{label}</span>
-        <span className="text-sm font-semibold text-primary">{score}/{maxScore}</span>
+        <span className="text-sm font-semibold text-primary">{scaledScore.toFixed(1)}/{maxScore}</span>
       </div>
       <div className="relative h-3 w-full overflow-hidden rounded-full bg-secondary">
         <div
