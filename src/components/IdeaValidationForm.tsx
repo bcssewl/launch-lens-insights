@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -7,9 +7,10 @@ import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
 import { Form } from '@/components/ui/form';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useValidationData } from '@/hooks/useValidationData';
 
 import Step1BasicInfo from './form-steps/Step1BasicInfo';
 import Step2MarketDetails from './form-steps/Step2MarketDetails';
@@ -56,8 +57,12 @@ const steps = [
 const IdeaValidationForm: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [searchParams] = useSearchParams();
+  const duplicateId = searchParams.get('duplicateId');
   const navigate = useNavigate();
   const { user } = useAuth();
+  
+  const { validationData, loading: loadingValidation } = useValidationData(duplicateId);
 
   const form = useForm<IdeaValidationFormData>({
     resolver: zodResolver(ideaValidationSchema),
@@ -75,7 +80,29 @@ const IdeaValidationForm: React.FC = () => {
     },
   });
 
-  const { handleSubmit, trigger, control, watch } = form;
+  const { handleSubmit, trigger, control, watch, reset } = form;
+
+  // Populate form with duplicated data
+  useEffect(() => {
+    if (validationData && validationData.form_data) {
+      const formData = validationData.form_data;
+      reset({
+        ideaName: formData.ideaName || validationData.idea_name || '',
+        oneLineDescription: formData.oneLineDescription || validationData.one_line_description || '',
+        problemStatement: formData.problemStatement || validationData.problem_statement || '',
+        solutionDescription: formData.solutionDescription || validationData.solution_description || '',
+        targetCustomer: formData.targetCustomer || undefined,
+        customerSegment: formData.customerSegment || '',
+        geographicFocus: formData.geographicFocus || [],
+        revenueModel: formData.revenueModel || undefined,
+        expectedPricing: formData.expectedPricing || 50,
+        knownCompetitors: formData.knownCompetitors || '',
+        primaryGoal: formData.primaryGoal || undefined,
+        timeline: formData.timeline || undefined,
+        additionalContext: formData.additionalContext || '',
+      });
+    }
+  }, [validationData, reset]);
 
   const processForm = async (data: IdeaValidationFormData) => {
     if (!user) {
@@ -144,7 +171,7 @@ const IdeaValidationForm: React.FC = () => {
       console.log('Validation report created successfully:', report);
       
       toast({
-        title: "Idea Submitted!",
+        title: duplicateId ? "Duplicated Idea Submitted!" : "Idea Submitted!",
         description: "Your idea is now being analyzed. Please wait...",
       });
 
@@ -192,11 +219,25 @@ const IdeaValidationForm: React.FC = () => {
   
   const progressValue = ((currentStep + 1) / steps.length) * 100;
 
+  if (loadingValidation) {
+    return (
+      <Card className="w-full max-w-2xl mx-auto">
+        <CardContent className="p-6">
+          <div className="text-center">Loading validation data...</div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader className="text-center">
-        <CardTitle className="text-3xl font-bold text-primary">Validate Your Startup Idea</CardTitle>
-        <CardDescription className="text-md text-muted-foreground">Get AI-powered insights in minutes</CardDescription>
+        <CardTitle className="text-3xl font-bold text-primary">
+          {duplicateId ? 'Edit & Resubmit Idea' : 'Validate Your Startup Idea'}
+        </CardTitle>
+        <CardDescription className="text-md text-muted-foreground">
+          {duplicateId ? 'Modify your idea and resubmit for analysis' : 'Get AI-powered insights in minutes'}
+        </CardDescription>
         <div className="mt-4">
           <Progress value={progressValue} className="w-full h-2" />
           <p className="text-sm text-muted-foreground mt-1">Step {currentStep + 1} of {steps.length}: {steps[currentStep].name}</p>
@@ -224,7 +265,7 @@ const IdeaValidationForm: React.FC = () => {
                 </Button>
               ) : (
                 <Button type="submit" className="gradient-button" disabled={isSubmitting}>
-                  {isSubmitting ? 'Submitting...' : 'Analyze My Idea'}
+                  {isSubmitting ? 'Submitting...' : (duplicateId ? 'Resubmit Analysis' : 'Analyze My Idea')}
                 </Button>
               )}
             </div>
