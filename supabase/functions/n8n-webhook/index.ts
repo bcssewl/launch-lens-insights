@@ -14,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    const { message } = await req.json();
+    const { message, user } = await req.json();
     
     if (!message) {
       return new Response(
@@ -40,6 +40,7 @@ serve(async (req) => {
     }
 
     console.log('Sending message to n8n webhook:', webhookUrl);
+    console.log('User info:', user);
     
     const response = await fetch(webhookUrl, {
       method: 'POST',
@@ -49,6 +50,7 @@ serve(async (req) => {
       body: JSON.stringify({
         type: 'chat_message',
         message: message,
+        user: user,
         timestamp: new Date().toISOString(),
         metadata: {
           source: 'ai_assistant',

@@ -2,6 +2,7 @@
 import { useState, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 export interface ChatMessage {
   id: string;
@@ -12,13 +13,22 @@ export interface ChatMessage {
 
 export const useN8nWebhook = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const sendMessageToN8n = useCallback(async (message: string): Promise<string> => {
     try {
       console.log('Sending message to n8n via Supabase Edge Function');
       
       const { data, error } = await supabase.functions.invoke('n8n-webhook', {
-        body: { message }
+        body: { 
+          message,
+          user: user ? {
+            id: user.id,
+            email: user.email,
+            full_name: user.user_metadata?.full_name || null,
+            created_at: user.created_at
+          } : null
+        }
       });
 
       if (error) {
@@ -42,7 +52,7 @@ export const useN8nWebhook = () => {
       // Fallback response when n8n is unavailable
       throw error;
     }
-  }, [toast]);
+  }, [toast, user]);
 
   return {
     sendMessageToN8n,
