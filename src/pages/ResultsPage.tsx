@@ -1,5 +1,5 @@
 import React from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from '@/components/ui/button';
@@ -19,7 +19,12 @@ import { format } from 'date-fns';
 
 const ResultsPage: React.FC = () => {
   const { reportId } = useParams<{ reportId: string }>();
+  const navigate = useNavigate();
   const { report, loading, error } = useValidationReport(reportId || '');
+
+  const handleAIFollowUp = () => {
+    navigate('/dashboard/assistant');
+  };
 
   if (loading) {
     return (
@@ -141,7 +146,7 @@ const ResultsPage: React.FC = () => {
             <Button variant="outline" size="sm" className="w-full sm:w-auto">
               <Download className="mr-2 h-4 w-4" /> Download PDF
             </Button>
-            <Button variant="outline" size="sm" className="w-full sm:w-auto">
+            <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={handleAIFollowUp}>
               <MessageSquare className="mr-2 h-4 w-4" /> Ask AI Follow-up
             </Button>
             <Button size="sm" className="w-full sm:w-auto">
