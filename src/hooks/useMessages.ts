@@ -25,13 +25,27 @@ export const useMessages = (currentSessionId: string | null) => {
   // Load messages from history when session changes
   useEffect(() => {
     if (currentSessionId && history.length > 0) {
-      // Convert history to messages format
-      const historyMessages: Message[] = history.map((item) => ({
-        id: item.id,
-        text: item.message,
-        sender: 'user', // We'll need to determine this based on message content or add sender back
-        timestamp: new Date(item.created_at),
-      }));
+      // Convert history to messages format, parsing out USER: and AI: prefixes
+      const historyMessages: Message[] = history.map((item) => {
+        let text = item.message;
+        let sender: 'user' | 'ai' = 'user';
+        
+        // Parse the message to determine sender and clean text
+        if (text.startsWith('USER: ')) {
+          sender = 'user';
+          text = text.substring(6); // Remove "USER: " prefix
+        } else if (text.startsWith('AI: ')) {
+          sender = 'ai';
+          text = text.substring(4); // Remove "AI: " prefix
+        }
+        
+        return {
+          id: item.id,
+          text: text,
+          sender: sender,
+          timestamp: new Date(item.created_at),
+        };
+      });
       
       setMessages([...initialMessages, ...historyMessages]);
     } else if (!currentSessionId) {
@@ -52,7 +66,7 @@ export const useMessages = (currentSessionId: string | null) => {
     
     setMessages(prev => [...prev, newUserMessage]);
 
-    // Save user message to history
+    // Save user message to history without prefix
     if (currentSessionId) {
       await addMessage(`USER: ${finalMessageText}`);
     }
@@ -82,7 +96,7 @@ export const useMessages = (currentSessionId: string | null) => {
       
       setMessages(prev => [...prev, aiResponse]);
       
-      // Save AI response to history
+      // Save AI response to history without showing prefix to user
       if (currentSessionId) {
         await addMessage(`AI: ${aiResponseText}`);
       }
