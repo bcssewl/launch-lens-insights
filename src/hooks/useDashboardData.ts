@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -17,6 +16,7 @@ interface RecentActivity {
   timestamp: string;
   statusText: string;
   statusColor: 'green' | 'yellow' | 'red';
+  reportId?: string;
 }
 
 export const useDashboardData = () => {
@@ -128,6 +128,7 @@ export const useDashboardData = () => {
           statusText,
           statusColor,
           created_at: report.created_at,
+          reportId: report.id,
         };
       });
 
@@ -145,6 +146,7 @@ export const useDashboardData = () => {
           statusText: validation.status === 'pending' ? 'Validation Queued' : 'Analysis in Progress',
           statusColor: 'yellow' as const,
           created_at: validation.created_at,
+          reportId: undefined,
         }));
 
       // Combine and sort all activities by creation date

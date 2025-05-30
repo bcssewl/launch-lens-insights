@@ -126,6 +126,7 @@ const DashboardPage: React.FC = () => {
                     timestamp={activity.timestamp}
                     statusText={activity.statusText}
                     statusColor={activity.statusColor}
+                    reportId={activity.reportId}
                   />
                 ))
               ) : (

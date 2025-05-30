@@ -1,8 +1,8 @@
-
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Clock } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface ActivityItemProps {
   ideaName: string;
@@ -10,6 +10,7 @@ interface ActivityItemProps {
   timestamp: string;
   statusText: string;
   statusColor: 'green' | 'yellow' | 'red';
+  reportId?: string;
 }
 
 const ActivityItem: React.FC<ActivityItemProps> = ({
@@ -18,8 +19,16 @@ const ActivityItem: React.FC<ActivityItemProps> = ({
   timestamp,
   statusText,
   statusColor,
+  reportId,
 }) => {
+  const navigate = useNavigate();
   const isRunningExperiment = score === 0 && (statusText === 'Validation Queued' || statusText === 'Analysis in Progress');
+
+  const handleViewReport = () => {
+    if (reportId) {
+      navigate(`/results/${reportId}`);
+    }
+  };
 
   const getScoreColorClasses = () => {
     if (score >= 7) return 'bg-green-500 border-green-600';
@@ -56,11 +65,12 @@ const ActivityItem: React.FC<ActivityItemProps> = ({
       </div>
       <div className="flex flex-col sm:flex-row items-start sm:items-end gap-2 mt-2 sm:mt-0">
          <Badge className={`${getBadgeClasses()} whitespace-nowrap`}>{statusText}</Badge>
-        {!isRunningExperiment && (
+        {!isRunningExperiment && reportId && (
           <Button
             variant="outline"
             size="sm"
             className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 mt-2 sm:mt-0"
+            onClick={handleViewReport}
           >
             View Report <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
