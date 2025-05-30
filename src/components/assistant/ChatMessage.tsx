@@ -2,6 +2,8 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import AIAvatar from './AIAvatar';
+import CopyButton from './CopyButton';
+import MarkdownRenderer from './MarkdownRenderer';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export interface ChatMessageData {
@@ -27,13 +29,25 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
       <div className={cn("flex flex-col", isAi ? "items-start" : "items-end")}>
         <div
           className={cn(
-            "max-w-xs md:max-w-md lg:max-w-lg p-3 rounded-2xl shadow-sm",
+            "group relative max-w-xs md:max-w-md lg:max-w-lg p-3 rounded-2xl shadow-sm",
             isAi 
               ? "bg-muted text-foreground rounded-tl-sm" 
               : "bg-primary text-primary-foreground rounded-tr-sm"
           )}
         >
-          <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.text}</p>
+          {isAi && (
+            <div className="absolute top-2 right-2">
+              <CopyButton content={message.text} />
+            </div>
+          )}
+          
+          <div className={cn("text-sm leading-relaxed", isAi && "pr-8")}>
+            {isAi ? (
+              <MarkdownRenderer content={message.text} />
+            ) : (
+              <p className="whitespace-pre-wrap">{message.text}</p>
+            )}
+          </div>
         </div>
         <p className={cn(
           "text-xs mt-1 opacity-70 px-1",
