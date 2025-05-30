@@ -19,31 +19,36 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   const isAi = message.sender === 'ai';
 
   return (
-    <div className={cn("flex items-end space-x-3", isAi ? "justify-start" : "justify-end flex-row-reverse space-x-reverse")}>
-      {isAi ? (
-        <AIAvatar className="w-8 h-8 flex-shrink-0" />
-      ) : (
-        <Avatar className="h-8 w-8 flex-shrink-0">
-          <AvatarImage src="/placeholder.svg" alt="User Avatar" />
-          <AvatarFallback>U</AvatarFallback>
-        </Avatar>
+    <div className={cn("flex items-start gap-3 w-full", isAi ? "justify-start" : "justify-end")}>
+      {isAi && (
+        <AIAvatar className="w-8 h-8 flex-shrink-0 mt-1" />
       )}
-      <div
-        className={cn(
-          "max-w-xs md:max-w-md lg:max-w-lg p-3 rounded-2xl shadow-sm",
-          isAi 
-            ? "bg-muted text-foreground rounded-bl-sm" 
-            : "bg-primary text-primary-foreground rounded-br-sm"
-        )}
-      >
-        <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.text}</p>
+      
+      <div className={cn("flex flex-col", isAi ? "items-start" : "items-end")}>
+        <div
+          className={cn(
+            "max-w-xs md:max-w-md lg:max-w-lg p-3 rounded-2xl shadow-sm",
+            isAi 
+              ? "bg-muted text-foreground rounded-tl-sm" 
+              : "bg-primary text-primary-foreground rounded-tr-sm"
+          )}
+        >
+          <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.text}</p>
+        </div>
         <p className={cn(
-          "text-xs mt-2 opacity-70",
-          isAi ? "text-muted-foreground" : "text-primary-foreground"
+          "text-xs mt-1 opacity-70 px-1",
+          isAi ? "text-muted-foreground" : "text-muted-foreground"
         )}>
           {message.timestamp}
         </p>
       </div>
+
+      {!isAi && (
+        <Avatar className="h-8 w-8 flex-shrink-0 mt-1">
+          <AvatarImage src="/placeholder.svg" alt="User Avatar" />
+          <AvatarFallback>U</AvatarFallback>
+        </Avatar>
+      )}
     </div>
   );
 };
