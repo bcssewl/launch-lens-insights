@@ -1,221 +1,57 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { v4 as uuidv4 } from 'uuid';
+
+import React from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import DashboardHeader from '@/components/DashboardHeader';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ArrowRight, Loader2 } from 'lucide-react';
-import AIAvatar from '@/components/assistant/AIAvatar';
-import UserAvatar from '@/components/assistant/UserAvatar';
 import ChatMessage from '@/components/assistant/ChatMessage';
-import SuggestedPrompts from '@/components/assistant/SuggestedPrompts';
 import ChatSidebar from '@/components/assistant/ChatSidebar';
-import { useN8nWebhook } from '@/hooks/useN8nWebhook';
+import ChatInput from '@/components/assistant/ChatInput';
+import TypingIndicator from '@/components/assistant/TypingIndicator';
 import { useChatSessions } from '@/hooks/useChatSessions';
 import { useChatHistory } from '@/hooks/useChatHistory';
-
-interface Message {
-  id: string;
-  text: string;
-  sender: 'ai' | 'user';
-  timestamp: Date;
-  avatar?: React.ReactNode;
-}
-
-const formatTimestamp = (date: Date): string => {
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-};
-
-const initialMessages: Message[] = [
-  {
-    id: uuidv4(),
-    text: "Hi! I'm your AI startup advisor. I can help you refine ideas, suggest validation methods, or answer questions about your analyses. What would you like to discuss?",
-    sender: 'ai',
-    timestamp: new Date(Date.now() - 120000),
-    avatar: <AIAvatar className="w-8 h-8" />
-  },
-];
-
-const suggestedPromptsData = [
-  { id: "sp1", text: "What's a good name for my startup?" },
-  { id: "sp2", text: "How do I validate B2B demand?" },
-  { id: "sp3", text: "What would investors ask about my idea?" },
-  { id: "sp4", text: "Help me design a landing page test" },
-  { id: "sp5", text: "What are similar successful startups?" },
-  { id: "sp6", text: "How can I reduce customer acquisition cost?" },
-];
+import { useMessages } from '@/hooks/useMessages';
+import { formatTimestamp } from '@/constants/aiAssistant';
 
 const AIAssistantPage: React.FC = () => {
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
-  const [inputValue, setInputValue] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const viewportRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const { sendMessageToN8n, isConfigured } = useN8nWebhook();
-  
-  // Session management
   const { 
     currentSessionId, 
     setCurrentSessionId, 
     createSession 
   } = useChatSessions();
   
-  const { 
-    history, 
-    addMessage, 
-    clearHistory 
-  } = useChatHistory(currentSessionId);
+  const { clearHistory } = useChatHistory(currentSessionId);
+  
+  const {
+    messages,
+    isTyping,
+    viewportRef,
+    handleSendMessage,
+    handleClearConversation,
+    handleDownloadChat,
+    isConfigured
+  } = useMessages(currentSessionId);
 
-  const scrollToBottom = () => {
-    if (viewportRef.current) {
-      viewportRef.current.scrollTo({ top: viewportRef.current.scrollHeight, behavior: 'smooth' });
-    }
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, isTyping]);
-
-  // Load messages from history when session changes
-  useEffect(() => {
-    if (currentSessionId && history.length > 0) {
-      // Convert history to messages format
-      const historyMessages: Message[] = history.map((item) => ({
-        id: item.id,
-        text: item.message,
-        sender: 'user', // We'll need to determine this based on message content or add sender back
-        timestamp: new Date(item.created_at),
-        avatar: <UserAvatar className="w-8 h-8" />
-      }));
-      
-      setMessages([...initialMessages, ...historyMessages]);
-    } else if (!currentSessionId) {
-      setMessages(initialMessages);
-    }
-  }, [currentSessionId, history]);
-
-  const handleSendMessage = async (text?: string) => {
-    const messageText = text || inputValue;
-    if (messageText.trim() === '') return;
-
+  const handleSendMessageWithSession = async (text: string) => {
     // Create session if none exists
     if (!currentSessionId) {
       const newSession = await createSession();
       if (!newSession) return;
       setCurrentSessionId(newSession.id);
     }
-
-    const newUserMessage: Message = {
-      id: uuidv4(),
-      text: messageText,
-      sender: 'user',
-      timestamp: new Date(),
-      avatar: <UserAvatar className="w-8 h-8" />
-    };
     
-    setMessages(prev => [...prev, newUserMessage]);
-    if (!text) setInputValue('');
-
-    // Save user message to history
-    if (currentSessionId) {
-      await addMessage(`USER: ${messageText}`);
-    }
-
-    if (!isConfigured) {
-      const fallbackResponse: Message = {
-        id: uuidv4(),
-        text: "The AI service is not configured properly. Please contact support for assistance.",
-        sender: 'ai',
-        timestamp: new Date(),
-        avatar: <AIAvatar className="w-8 h-8" />
-      };
-      setMessages(prev => [...prev, fallbackResponse]);
-      return;
-    }
-
-    setIsTyping(true);
-    
-    try {
-      const aiResponseText = await sendMessageToN8n(messageText);
-      
-      const aiResponse: Message = {
-        id: uuidv4(),
-        text: aiResponseText,
-        sender: 'ai',
-        timestamp: new Date(),
-        avatar: <AIAvatar className="w-8 h-8" />
-      };
-      
-      setMessages(prev => [...prev, aiResponse]);
-      
-      // Save AI response to history
-      if (currentSessionId) {
-        await addMessage(`AI: ${aiResponseText}`);
-      }
-    } catch (error) {
-      const errorResponse: Message = {
-        id: uuidv4(),
-        text: "I'm experiencing some technical difficulties right now. Please try sending your message again in a few moments.",
-        sender: 'ai',
-        timestamp: new Date(),
-        avatar: <AIAvatar className="w-8 h-8" />
-      };
-      setMessages(prev => [...prev, errorResponse]);
-    } finally {
-      setIsTyping(false);
-    }
+    handleSendMessage(text);
   };
 
-  const handleClearConversation = async () => {
-    setMessages([initialMessages[0]]);
+  const handleClearConversationWithHistory = async () => {
+    handleClearConversation();
     if (currentSessionId) {
       await clearHistory();
     }
   };
 
-  const handleDownloadChat = () => {
-    const chatContent = messages.map(msg => 
-      `[${formatTimestamp(msg.timestamp)}] ${msg.sender.toUpperCase()}: ${msg.text}`
-    ).join('\n\n');
-    
-    const blob = new Blob([chatContent], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `ai-chat-${new Date().toISOString().split('T')[0]}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
   const handleSessionSelect = (sessionId: string) => {
     setCurrentSessionId(sessionId);
   };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
-
-  const adjustTextareaHeight = () => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      const scrollHeight = textareaRef.current.scrollHeight;
-      const maxHeight = 120; // Maximum height before scrolling
-      textareaRef.current.style.height = `${Math.min(scrollHeight, maxHeight)}px`;
-    }
-  };
-
-  useEffect(() => {
-    adjustTextareaHeight();
-  }, [inputValue]);
-
-  const suggestedPromptsStrings = suggestedPromptsData.map(p => p.text);
 
   return (
     <DashboardLayout>
@@ -236,55 +72,23 @@ const AIAssistantPage: React.FC = () => {
 
           {/* Chat Area - Takes remaining space */}
           <div className="flex-1 min-h-0 overflow-hidden">
-            <ScrollArea className="h-full w-full" ref={scrollAreaRef} viewportRef={viewportRef}>
+            <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
               <div className="p-6 space-y-4">
                 {messages.map((msg) => (
                   <ChatMessage key={msg.id} message={{ ...msg, timestamp: formatTimestamp(msg.timestamp) }} />
                 ))}
-                {isTyping && (
-                  <div className="flex items-start space-x-3">
-                    <AIAvatar className="w-8 h-8" />
-                    <div className="bg-muted text-muted-foreground p-3 rounded-2xl rounded-bl-sm max-w-xs md:max-w-md lg:max-w-lg animate-pulse">
-                      <div className="flex items-center space-x-2">
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        <span className="text-sm">Thinking...</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                {isTyping && <TypingIndicator />}
               </div>
             </ScrollArea>
           </div>
 
           {/* Input Area - Sticky at bottom */}
-          <div className="border-t bg-background p-4 flex-shrink-0 mt-auto">
-            <SuggestedPrompts prompts={suggestedPromptsStrings} onPromptClick={handleSendMessage} />
-            <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }} className="flex items-end space-x-2 mt-2">
-              <Textarea
-                ref={textareaRef}
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Ask me anything about your startup ideas... (Press Shift+Enter for new line)"
-                className="flex-1 min-h-[40px] max-h-[120px] resize-none"
-                disabled={isTyping}
-                rows={1}
-              />
-              <Button 
-                type="submit" 
-                size="icon" 
-                disabled={isTyping || inputValue.trim() === ''} 
-                className="gradient-button flex-shrink-0"
-              >
-                <ArrowRight className="h-5 w-5" />
-              </Button>
-            </form>
-          </div>
+          <ChatInput onSendMessage={handleSendMessageWithSession} isTyping={isTyping} />
         </div>
 
         {/* Right Sidebar (Desktop Only) */}
         <ChatSidebar 
-          onClearConversation={handleClearConversation}
+          onClearConversation={handleClearConversationWithHistory}
           onDownloadChat={handleDownloadChat}
           recentTopics={[]}
           currentSessionId={currentSessionId}
