@@ -1,6 +1,7 @@
 
 import { useState, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface ChatMessage {
   id: string;
@@ -10,59 +11,41 @@ export interface ChatMessage {
 }
 
 export const useN8nWebhook = () => {
-  const webhookUrl = import.meta.env.VITE_N8N_WEBHOOK_URL || '';
   const { toast } = useToast();
 
   const sendMessageToN8n = useCallback(async (message: string): Promise<string> => {
-    if (!webhookUrl) {
-      throw new Error('N8N webhook URL not configured in environment variables');
-    }
-
     try {
-      console.log('Sending message to n8n webhook:', webhookUrl);
+      console.log('Sending message to n8n via Supabase Edge Function');
       
-      const response = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          type: 'chat_message',
-          message: message,
-          timestamp: new Date().toISOString(),
-          metadata: {
-            source: 'ai_assistant',
-            user_agent: navigator.userAgent,
-            page_url: window.location.href,
-          },
-        }),
+      const { data, error } = await supabase.functions.invoke('n8n-webhook', {
+        body: { message }
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      if (error) {
+        throw error;
       }
 
-      const data = await response.json();
-      console.log('Received response from n8n:', data);
+      if (!data || !data.response) {
+        throw new Error('Invalid response from N8N webhook');
+      }
 
-      // Extract the AI response from the n8n response
-      // Adjust this based on your n8n workflow's response structure
-      return data.response || data.message || 'I received your message but couldn\'t generate a response.';
+      console.log('Received response from n8n:', data);
+      return data.response;
     } catch (error) {
       console.error('Failed to send message to n8n:', error);
       toast({
-        title: "n8n Integration Error",
-        description: "Failed to communicate with n8n webhook. Using fallback response.",
+        title: "N8N Integration Error",
+        description: "Failed to communicate with N8N webhook. Please check your configuration.",
         variant: "destructive",
       });
       
       // Fallback response when n8n is unavailable
       throw error;
     }
-  }, [webhookUrl, toast]);
+  }, [toast]);
 
   return {
     sendMessageToN8n,
-    isConfigured: !!webhookUrl,
+    isConfigured: true, // Always true since we're using Supabase secrets
   };
 };
