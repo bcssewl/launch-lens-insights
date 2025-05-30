@@ -128,7 +128,7 @@ export type Database = {
     }
     Functions: {
       verify_user: {
-        Args: { user_id: string }
+        Args: { jwt_token: string } | { user_id: string }
         Returns: {
           id: string
           email: string

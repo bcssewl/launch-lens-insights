@@ -1,7 +1,6 @@
 
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -41,23 +40,30 @@ serve(async (req) => {
       );
     }
 
-    // Validate the auth token with Supabase
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // Validate the token using our new validate-token function
+    const validateResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/validate-token`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`,
+      },
+      body: JSON.stringify({ token: authToken }),
+    });
 
-    const { data: { user: authenticatedUser }, error: authError } = await supabase.auth.getUser(authToken);
+    const validationResult = await validateResponse.json();
 
-    if (authError || !authenticatedUser) {
-      console.error('Authentication failed:', authError);
+    if (!validationResult.is_valid) {
+      console.error('Token validation failed:', validationResult.error);
       return new Response(
-        JSON.stringify({ error: 'Invalid or expired authentication token' }), 
+        JSON.stringify({ error: validationResult.error || 'Invalid authentication token' }), 
         { 
           status: 401, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
     }
+
+    const authenticatedUser = validationResult.user;
 
     // Verify that the user info matches the authenticated user
     if (user && user.id !== authenticatedUser.id) {
@@ -97,7 +103,7 @@ serve(async (req) => {
         user: {
           id: authenticatedUser.id,
           email: authenticatedUser.email,
-          full_name: authenticatedUser.user_metadata?.full_name || null,
+          full_name: authenticatedUser.full_name,
           created_at: authenticatedUser.created_at
         },
         auth_token: authToken,

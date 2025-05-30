@@ -3,3 +3,6 @@ project_id = "jtnedstugyvkfthtsumh"
 
 [functions.n8n-webhook]
 verify_jwt = false
+
+[functions.validate-token]
+verify_jwt = false
