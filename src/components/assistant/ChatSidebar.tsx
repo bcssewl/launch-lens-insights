@@ -1,22 +1,64 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Input } from '@/components/ui/input';
 import { Link } from 'react-router-dom';
-import { Lightbulb, FileText, Download, Trash2 } from 'lucide-react';
+import { Lightbulb, FileText, Download, Trash2, Plus, Edit2, Check, X } from 'lucide-react';
+import { useChatSessions, ChatSession } from '@/hooks/useChatSessions';
+import { cn } from '@/lib/utils';
 
 interface ChatSidebarProps {
   recentTopics: string[];
   onDownloadChat: () => void;
   onClearConversation: () => void;
+  currentSessionId?: string | null;
+  onSessionSelect?: (sessionId: string) => void;
 }
 
 const ChatSidebar: React.FC<ChatSidebarProps> = ({ 
   recentTopics, 
   onDownloadChat, 
-  onClearConversation
+  onClearConversation,
+  currentSessionId,
+  onSessionSelect
 }) => {
+  const { sessions, createSession, updateSessionTitle, deleteSession } = useChatSessions();
+  const [editingSession, setEditingSession] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+
+  const handleCreateSession = async () => {
+    const newSession = await createSession();
+    if (newSession && onSessionSelect) {
+      onSessionSelect(newSession.id);
+    }
+  };
+
+  const handleEditStart = (session: ChatSession) => {
+    setEditingSession(session.id);
+    setEditTitle(session.title);
+  };
+
+  const handleEditSave = async () => {
+    if (editingSession && editTitle.trim()) {
+      await updateSessionTitle(editingSession, editTitle.trim());
+      setEditingSession(null);
+    }
+  };
+
+  const handleEditCancel = () => {
+    setEditingSession(null);
+    setEditTitle('');
+  };
+
+  const handleDeleteSession = async (sessionId: string) => {
+    await deleteSession(sessionId);
+    if (currentSessionId === sessionId && onSessionSelect) {
+      onSessionSelect('');
+    }
+  };
+
   return (
     <aside className="w-full md:w-72 lg:w-80 border-l bg-card hidden md:flex md:flex-col h-screen">
       <div className="p-4 space-y-6 flex flex-col h-full">
@@ -39,29 +81,92 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
             <Button variant="outline" className="w-full justify-start" onClick={onDownloadChat}>
               <Download className="mr-2" /> Download Chat
             </Button>
-             <Button variant="destructive" className="w-full justify-start sm:hidden" onClick={onClearConversation}>
-              <Trash2 className="mr-2" /> Clear Chat (Mobile)
+            <Button variant="destructive" className="w-full justify-start" onClick={onClearConversation}>
+              <Trash2 className="mr-2" /> Clear Current Chat
             </Button>
           </CardContent>
         </Card>
 
-        
         <Card className="flex-1 flex flex-col min-h-0">
-          <CardHeader>
-            <CardTitle className="text-lg">Recent Topics</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-lg">Chat Sessions</CardTitle>
+            <Button size="sm" onClick={handleCreateSession}>
+              <Plus className="h-4 w-4" />
+            </Button>
           </CardHeader>
           <CardContent className="flex-1 overflow-hidden p-0">
             <ScrollArea className="h-full p-6 pt-0">
-              {recentTopics.length > 0 ? (
-                <ul className="space-y-2">
-                  {recentTopics.map((topic, index) => (
-                    <li key={index} className="text-sm p-2 rounded-md hover:bg-accent cursor-pointer">
-                      {topic}
-                    </li>
+              {sessions.length > 0 ? (
+                <div className="space-y-2">
+                  {sessions.map((session) => (
+                    <div
+                      key={session.id}
+                      className={cn(
+                        "group p-2 rounded-md cursor-pointer border transition-colors",
+                        currentSessionId === session.id 
+                          ? "bg-primary/10 border-primary" 
+                          : "hover:bg-accent border-transparent"
+                      )}
+                      onClick={() => onSessionSelect?.(session.id)}
+                    >
+                      {editingSession === session.id ? (
+                        <div className="flex items-center space-x-1">
+                          <Input
+                            value={editTitle}
+                            onChange={(e) => setEditTitle(e.target.value)}
+                            className="h-6 text-xs"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleEditSave();
+                              if (e.key === 'Escape') handleEditCancel();
+                            }}
+                            autoFocus
+                          />
+                          <Button size="sm" variant="ghost" onClick={handleEditSave} className="h-6 w-6 p-0">
+                            <Check className="h-3 w-3" />
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={handleEditCancel} className="h-6 w-6 p-0">
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{session.title}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(session.created_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <div className="opacity-0 group-hover:opacity-100 flex items-center space-x-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditStart(session);
+                              }}
+                              className="h-6 w-6 p-0"
+                            >
+                              <Edit2 className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteSession(session.id);
+                              }}
+                              className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   ))}
-                </ul>
+                </div>
               ) : (
-                <p className="text-sm text-muted-foreground">No recent topics yet.</p>
+                <p className="text-sm text-muted-foreground">No chat sessions yet. Create one to get started!</p>
               )}
             </ScrollArea>
           </CardContent>

@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import DashboardLayout from '@/layouts/DashboardLayout';
@@ -12,6 +13,8 @@ import ChatMessage from '@/components/assistant/ChatMessage';
 import SuggestedPrompts from '@/components/assistant/SuggestedPrompts';
 import ChatSidebar from '@/components/assistant/ChatSidebar';
 import { useN8nWebhook } from '@/hooks/useN8nWebhook';
+import { useChatSessions } from '@/hooks/useChatSessions';
+import { useChatHistory } from '@/hooks/useChatHistory';
 
 interface Message {
   id: string;
@@ -51,6 +54,19 @@ const AIAssistantPage: React.FC = () => {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const { sendMessageToN8n, isConfigured } = useN8nWebhook();
+  
+  // Session management
+  const { 
+    currentSessionId, 
+    setCurrentSessionId, 
+    createSession 
+  } = useChatSessions();
+  
+  const { 
+    history, 
+    addMessage, 
+    clearHistory 
+  } = useChatHistory(currentSessionId);
 
   const scrollToBottom = () => {
     if (viewportRef.current) {
@@ -62,9 +78,34 @@ const AIAssistantPage: React.FC = () => {
     scrollToBottom();
   }, [messages, isTyping]);
 
+  // Load messages from history when session changes
+  useEffect(() => {
+    if (currentSessionId && history.length > 0) {
+      // Convert history to messages format
+      const historyMessages: Message[] = history.map((item) => ({
+        id: item.id,
+        text: item.message,
+        sender: 'user', // We'll need to determine this based on message content or add sender back
+        timestamp: new Date(item.created_at),
+        avatar: <UserAvatar className="w-8 h-8" />
+      }));
+      
+      setMessages([...initialMessages, ...historyMessages]);
+    } else if (!currentSessionId) {
+      setMessages(initialMessages);
+    }
+  }, [currentSessionId, history]);
+
   const handleSendMessage = async (text?: string) => {
     const messageText = text || inputValue;
     if (messageText.trim() === '') return;
+
+    // Create session if none exists
+    if (!currentSessionId) {
+      const newSession = await createSession();
+      if (!newSession) return;
+      setCurrentSessionId(newSession.id);
+    }
 
     const newUserMessage: Message = {
       id: uuidv4(),
@@ -76,6 +117,11 @@ const AIAssistantPage: React.FC = () => {
     
     setMessages(prev => [...prev, newUserMessage]);
     if (!text) setInputValue('');
+
+    // Save user message to history
+    if (currentSessionId) {
+      await addMessage(`USER: ${messageText}`);
+    }
 
     if (!isConfigured) {
       const fallbackResponse: Message = {
@@ -103,6 +149,11 @@ const AIAssistantPage: React.FC = () => {
       };
       
       setMessages(prev => [...prev, aiResponse]);
+      
+      // Save AI response to history
+      if (currentSessionId) {
+        await addMessage(`AI: ${aiResponseText}`);
+      }
     } catch (error) {
       const errorResponse: Message = {
         id: uuidv4(),
@@ -117,8 +168,11 @@ const AIAssistantPage: React.FC = () => {
     }
   };
 
-  const handleClearConversation = () => {
+  const handleClearConversation = async () => {
     setMessages([initialMessages[0]]);
+    if (currentSessionId) {
+      await clearHistory();
+    }
   };
 
   const handleDownloadChat = () => {
@@ -137,6 +191,10 @@ const AIAssistantPage: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
+  const handleSessionSelect = (sessionId: string) => {
+    setCurrentSessionId(sessionId);
+  };
+
   const suggestedPromptsStrings = suggestedPromptsData.map(p => p.text);
 
   return (
@@ -148,6 +206,11 @@ const AIAssistantPage: React.FC = () => {
           <div className="p-4 border-b bg-background flex-shrink-0">
             <p className="text-sm text-muted-foreground">
               {isConfigured ? 'AI-powered startup advisor' : 'AI service not configured'}
+              {currentSessionId && (
+                <span className="ml-2 px-2 py-1 bg-primary/10 text-primary text-xs rounded">
+                  Active Session
+                </span>
+              )}
             </p>
           </div>
 
@@ -197,6 +260,8 @@ const AIAssistantPage: React.FC = () => {
           onClearConversation={handleClearConversation}
           onDownloadChat={handleDownloadChat}
           recentTopics={[]}
+          currentSessionId={currentSessionId}
+          onSessionSelect={handleSessionSelect}
         />
       </div>
     </DashboardLayout>
