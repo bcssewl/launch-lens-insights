@@ -45,7 +45,7 @@ const CompetitionTabContent: React.FC<CompetitionTabContentProps> = ({ data }) =
                   <TableCell className="font-medium">{competitor.name}</TableCell>
                   <TableCell>{competitor.description}</TableCell>
                   <TableCell>{competitor.funding}</TableCell>
-                  <TableCell className="text-right">{competitor.similarity}%</TableCell>
+                  <TableCell className="text-right">{(competitor.similarity * 100).toFixed(0)}%</TableCell>
                 </TableRow>
               ))}
             </TableBody>
