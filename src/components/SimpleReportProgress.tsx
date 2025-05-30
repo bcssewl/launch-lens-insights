@@ -1,14 +1,47 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { CheckCircle, Clock, AlertCircle, Loader2 } from 'lucide-react';
 
 interface SimpleReportProgressProps {
   status: 'generating' | 'completed' | 'failed' | 'archived';
+  useAnimation?: boolean;
 }
 
-const SimpleReportProgress: React.FC<SimpleReportProgressProps> = ({ status }) => {
+const SimpleReportProgress: React.FC<SimpleReportProgressProps> = ({ status, useAnimation = false }) => {
+  const [animatedProgress, setAnimatedProgress] = useState(10);
+
+  useEffect(() => {
+    if (!useAnimation || status !== 'generating') {
+      return;
+    }
+
+    // 6 minute animation (360 seconds) from 10% to 95%
+    const totalDuration = 360000; // 6 minutes in milliseconds
+    const startProgress = 10;
+    const endProgress = 95;
+    const progressRange = endProgress - startProgress;
+    const startTime = Date.now();
+
+    const animateProgress = () => {
+      const elapsed = Date.now() - startTime;
+      const progressRatio = Math.min(elapsed / totalDuration, 1);
+      
+      // Smooth easing function for more realistic progress
+      const easeOutQuart = 1 - Math.pow(1 - progressRatio, 4);
+      const newProgress = startProgress + (progressRange * easeOutQuart);
+      
+      setAnimatedProgress(Math.round(newProgress));
+
+      if (progressRatio < 1) {
+        requestAnimationFrame(animateProgress);
+      }
+    };
+
+    animateProgress();
+  }, [status, useAnimation]);
+
   const getStatusInfo = () => {
     switch (status) {
       case 'completed':
@@ -22,7 +55,7 @@ const SimpleReportProgress: React.FC<SimpleReportProgressProps> = ({ status }) =
         return {
           icon: <Loader2 className="h-6 w-6 text-blue-500 animate-spin" />,
           text: 'Analyzing Your Idea',
-          progress: 60,
+          progress: useAnimation ? animatedProgress : 60,
           color: 'text-blue-600'
         };
       case 'failed':
@@ -62,7 +95,14 @@ const SimpleReportProgress: React.FC<SimpleReportProgressProps> = ({ status }) =
               </p>
             </div>
           </div>
-          <Progress value={statusInfo.progress} className="w-full" />
+          <div className="space-y-2">
+            <Progress value={statusInfo.progress} className="w-full" />
+            {useAnimation && status === 'generating' && (
+              <p className="text-xs text-muted-foreground text-center">
+                {statusInfo.progress}% complete
+              </p>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>

@@ -117,7 +117,10 @@ const AnalyzingIdeaPage: React.FC = () => {
             <CardContent>
               <div className="space-y-6">
                 {reportStatus && (
-                  <SimpleReportProgress status={reportStatus.status} />
+                  <SimpleReportProgress 
+                    status={reportStatus.status} 
+                    useAnimation={true}
+                  />
                 )}
 
                 <div className="bg-muted/50 p-4 rounded-lg">
