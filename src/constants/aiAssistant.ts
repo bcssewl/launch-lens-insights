@@ -1,13 +1,11 @@
 
 import { v4 as uuidv4 } from 'uuid';
-import AIAvatar from '@/components/assistant/AIAvatar';
 
 export interface Message {
   id: string;
   text: string;
   sender: 'ai' | 'user';
   timestamp: Date;
-  avatar?: React.ReactNode;
 }
 
 export const formatTimestamp = (date: Date): string => {
@@ -20,7 +18,6 @@ export const initialMessages: Message[] = [
     text: "Hi! I'm your AI startup advisor. I can help you refine ideas, suggest validation methods, or answer questions about your analyses. What would you like to discuss?",
     sender: 'ai',
     timestamp: new Date(Date.now() - 120000),
-    avatar: <AIAvatar className="w-8 h-8" />
   },
 ];
 

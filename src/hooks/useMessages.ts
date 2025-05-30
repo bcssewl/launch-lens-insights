@@ -4,8 +4,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { Message, initialMessages, formatTimestamp } from '@/constants/aiAssistant';
 import { useN8nWebhook } from '@/hooks/useN8nWebhook';
 import { useChatHistory } from '@/hooks/useChatHistory';
-import AIAvatar from '@/components/assistant/AIAvatar';
-import UserAvatar from '@/components/assistant/UserAvatar';
 
 export const useMessages = (currentSessionId: string | null) => {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
@@ -33,7 +31,6 @@ export const useMessages = (currentSessionId: string | null) => {
         text: item.message,
         sender: 'user', // We'll need to determine this based on message content or add sender back
         timestamp: new Date(item.created_at),
-        avatar: <UserAvatar className="w-8 h-8" />
       }));
       
       setMessages([...initialMessages, ...historyMessages]);
@@ -51,7 +48,6 @@ export const useMessages = (currentSessionId: string | null) => {
       text: finalMessageText,
       sender: 'user',
       timestamp: new Date(),
-      avatar: <UserAvatar className="w-8 h-8" />
     };
     
     setMessages(prev => [...prev, newUserMessage]);
@@ -67,7 +63,6 @@ export const useMessages = (currentSessionId: string | null) => {
         text: "The AI service is not configured properly. Please contact support for assistance.",
         sender: 'ai',
         timestamp: new Date(),
-        avatar: <AIAvatar className="w-8 h-8" />
       };
       setMessages(prev => [...prev, fallbackResponse]);
       return;
@@ -83,7 +78,6 @@ export const useMessages = (currentSessionId: string | null) => {
         text: aiResponseText,
         sender: 'ai',
         timestamp: new Date(),
-        avatar: <AIAvatar className="w-8 h-8" />
       };
       
       setMessages(prev => [...prev, aiResponse]);
@@ -98,7 +92,6 @@ export const useMessages = (currentSessionId: string | null) => {
         text: "I'm experiencing some technical difficulties right now. Please try sending your message again in a few moments.",
         sender: 'ai',
         timestamp: new Date(),
-        avatar: <AIAvatar className="w-8 h-8" />
       };
       setMessages(prev => [...prev, errorResponse]);
     } finally {
