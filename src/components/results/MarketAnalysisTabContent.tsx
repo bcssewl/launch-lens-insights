@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, Tooltip, Legend, BarChart, Bar } from 'recharts';
@@ -76,11 +75,20 @@ const MarketAnalysisTabContent: React.FC<MarketAnalysisTabContentProps> = ({ dat
         <CardHeader>
           <CardTitle>TAM/SAM/SOM</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-6">
           <ChartContainer config={chartConfigTam} className="w-full h-[400px]">
             <PieChart>
               <ChartTooltipContent nameKey="name" hideLabel />
-              <Pie data={tamSamSomWithColors} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={120} innerRadius={60} labelLine={false} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+              <Pie 
+                data={tamSamSomWithColors} 
+                dataKey="value" 
+                nameKey="name" 
+                cx="50%" 
+                cy="50%" 
+                outerRadius={120} 
+                innerRadius={60} 
+                labelLine={false}
+              >
                 {tamSamSomWithColors.map((entry, index) => (
                   <Cell key={`cell-${entry.name}`} fill={entry.fill} />
                 ))}
@@ -95,7 +103,7 @@ const MarketAnalysisTabContent: React.FC<MarketAnalysisTabContentProps> = ({ dat
         <CardHeader>
           <CardTitle>Market Growth Trend (YoY)</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-6">
           <ChartContainer config={chartConfigGrowth} className="w-full h-[400px]">
             <LineChart data={data.marketGrowth}>
               <XAxis dataKey="year" />
@@ -112,11 +120,19 @@ const MarketAnalysisTabContent: React.FC<MarketAnalysisTabContentProps> = ({ dat
         <CardHeader>
           <CardTitle>Customer Segment Breakdown</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-6">
            <ChartContainer config={chartConfigSegments} className="w-full h-[400px]">
             <PieChart>
               <ChartTooltipContent nameKey="name" hideLabel />
-              <Pie data={customerSegmentsWithColors} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={120} labelLine={false} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+              <Pie 
+                data={customerSegmentsWithColors} 
+                dataKey="value" 
+                nameKey="name" 
+                cx="50%" 
+                cy="50%" 
+                outerRadius={120} 
+                labelLine={false}
+              >
                 {customerSegmentsWithColors.map((entry, index) => (
                   <Cell key={`cell-${entry.name}`} fill={entry.fill} />
                 ))}
@@ -131,7 +147,7 @@ const MarketAnalysisTabContent: React.FC<MarketAnalysisTabContentProps> = ({ dat
         <CardHeader>
           <CardTitle>Geographic Opportunity</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-6">
           <ChartContainer config={chartConfigGeo} className="w-full h-[400px]">
             <BarChart data={geographicOpportunityWithColors} layout="vertical">
               <XAxis type="number" />
