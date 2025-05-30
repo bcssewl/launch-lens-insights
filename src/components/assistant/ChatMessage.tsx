@@ -2,9 +2,9 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import AIAvatar from './AIAvatar';
+import UserAvatar from './UserAvatar';
 import CopyButton from './CopyButton';
 import MarkdownRenderer from './MarkdownRenderer';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export interface ChatMessageData {
   id: string;
@@ -58,10 +58,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
       </div>
 
       {!isAi && (
-        <Avatar className="h-8 w-8 flex-shrink-0 mt-1">
-          <AvatarImage src="/placeholder.svg" alt="User Avatar" />
-          <AvatarFallback>U</AvatarFallback>
-        </Avatar>
+        <UserAvatar className="h-8 w-8 flex-shrink-0 mt-1" />
       )}
     </div>
   );
