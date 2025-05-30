@@ -42,6 +42,19 @@ export const useDashboardData = () => {
     try {
       setLoading(true);
 
+      // Fetch idea validations for experiments running count
+      const { data: validations, error: validationsError } = await supabase
+        .from('idea_validations')
+        .select('id, status')
+        .eq('user_id', user.id);
+
+      if (validationsError) throw validationsError;
+
+      // Count pending and processing validations as experiments running
+      const experimentsRunning = validations?.filter(v => 
+        v.status === 'pending' || v.status === 'processing'
+      ).length || 0;
+
       // Fetch validation reports
       const { data: reports, error: reportsError } = await supabase
         .from('validation_reports')
@@ -77,7 +90,7 @@ export const useDashboardData = () => {
       setStats({
         ideasValidated: totalReports,
         averageScore: Math.round(averageScore * 10) / 10,
-        experimentsRunning: reports?.filter(r => r.status === 'generating').length || 0,
+        experimentsRunning: experimentsRunning,
         successRate: Math.round(successRate),
       });
 
