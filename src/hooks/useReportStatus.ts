@@ -50,12 +50,12 @@ export const useReportStatus = (reportId: string) => {
     // Initial fetch
     fetchReportStatus();
 
-    // Set up polling for status updates
-    const interval = setInterval(fetchReportStatus, 3000);
+    // Set up more frequent polling for status updates
+    const interval = setInterval(fetchReportStatus, 2000); // Check every 2 seconds
 
     // Set up real-time subscription for report updates
     const reportChannel = supabase
-      .channel('report-status')
+      .channel('report-status-updates')
       .on(
         'postgres_changes',
         {
@@ -64,7 +64,8 @@ export const useReportStatus = (reportId: string) => {
           table: 'validation_reports',
           filter: `id=eq.${reportId}`
         },
-        () => {
+        (payload) => {
+          console.log('Report status update received:', payload);
           fetchReportStatus();
         }
       )

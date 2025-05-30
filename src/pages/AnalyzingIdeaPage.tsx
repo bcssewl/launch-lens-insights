@@ -49,6 +49,8 @@ const AnalyzingIdeaPage: React.FC = () => {
       title: "Retrying Analysis",
       description: "Starting a new analysis of your idea...",
     });
+    // Navigate back to validation form to retry
+    navigate('/dashboard/validate');
   };
 
   if (loading) {
@@ -129,11 +131,17 @@ const AnalyzingIdeaPage: React.FC = () => {
                   </ul>
                 </div>
 
-                <div className="flex justify-center">
+                <div className="flex justify-center space-x-4">
                   <Button onClick={() => navigate('/dashboard')} variant="outline">
                     <ArrowLeft className="h-4 w-4 mr-2" />
                     Back to Dashboard
                   </Button>
+                  {reportStatus?.status === 'failed' && (
+                    <Button onClick={handleRetry}>
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Retry Analysis
+                    </Button>
+                  )}
                 </div>
               </div>
             </CardContent>
