@@ -39,8 +39,13 @@ serve(async (req) => {
       );
     }
 
+    // Extract the auth token from the request headers
+    const authHeader = req.headers.get('authorization');
+    const authToken = authHeader?.replace('Bearer ', '') || null;
+
     console.log('Sending message to n8n webhook:', webhookUrl);
     console.log('User info:', user);
+    console.log('Auth token present:', !!authToken);
     
     const response = await fetch(webhookUrl, {
       method: 'POST',
@@ -51,6 +56,7 @@ serve(async (req) => {
         type: 'chat_message',
         message: message,
         user: user,
+        auth_token: authToken,
         timestamp: new Date().toISOString(),
         metadata: {
           source: 'ai_assistant',
