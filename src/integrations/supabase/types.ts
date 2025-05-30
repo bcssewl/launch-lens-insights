@@ -35,6 +35,7 @@ export type Database = {
       }
       idea_validations: {
         Row: {
+          archived_at: string | null
           created_at: string
           form_data: Json
           id: string
@@ -48,6 +49,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          archived_at?: string | null
           created_at?: string
           form_data: Json
           id?: string
@@ -61,6 +63,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          archived_at?: string | null
           created_at?: string
           form_data?: Json
           id?: string

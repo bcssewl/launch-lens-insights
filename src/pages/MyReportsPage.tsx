@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Checkbox } from '@/components/ui/checkbox';
 import { PlusCircle, FolderOpen, Search as SearchIcon, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useValidationReports } from '@/hooks/useValidationReports';
@@ -17,6 +18,7 @@ const MyReportsPage: React.FC = () => {
   const [sortBy, setSortBy] = useState('recent');
   const [filterScore, setFilterScore] = useState('all_scores');
   const [filterStatus, setFilterStatus] = useState('all_status');
+  const [includeArchived, setIncludeArchived] = useState(false);
   
   const { reports, loading, error, refreshReports } = useValidationReports();
 
@@ -63,7 +65,9 @@ const MyReportsPage: React.FC = () => {
     
     const matchesStatusFilter = filterStatus === 'all_status' || report.status === filterStatus;
     
-    return matchesSearch && matchesScoreFilter && matchesStatusFilter;
+    const matchesArchiveFilter = includeArchived || report.status !== 'Archived';
+    
+    return matchesSearch && matchesScoreFilter && matchesStatusFilter && matchesArchiveFilter;
   });
 
   // Apply sorting
@@ -199,11 +203,30 @@ const MyReportsPage: React.FC = () => {
           </Select>
         </div>
 
+        {/* Include Archived Checkbox */}
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="include-archived"
+            checked={includeArchived}
+            onCheckedChange={setIncludeArchived}
+          />
+          <label
+            htmlFor="include-archived"
+            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+          >
+            Include archived ideas
+          </label>
+        </div>
+
         {/* Reports Grid or Empty State */}
         {sortedReports.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {sortedReports.map(report => (
-              <ReportCard key={report.id} report={report} />
+              <ReportCard 
+                key={report.id} 
+                report={report} 
+                onReportUpdated={refreshReports}
+              />
             ))}
           </div>
         ) : (
