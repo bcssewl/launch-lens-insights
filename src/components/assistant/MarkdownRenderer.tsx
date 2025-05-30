@@ -47,15 +47,33 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className 
           ),
           
           // Inline code
-          code: ({ inline, children }) => {
-            if (inline) {
+          code: ({ children, className }) => {
+            const match = /language-(\w+)/.exec(className || '');
+            
+            if (!match) {
               return (
                 <code className="bg-muted px-1 py-0.5 rounded text-sm font-mono">
                   {children}
                 </code>
               );
             }
-            return <>{children}</>;
+            
+            return (
+              <SyntaxHighlighter
+                style={oneDark}
+                language={match[1]}
+                PreTag="div"
+                className="text-xs rounded-md"
+                customStyle={{
+                  margin: '8px 0',
+                  borderRadius: '0.375rem',
+                  fontSize: '0.75rem',
+                  lineHeight: '1rem'
+                }}
+              >
+                {String(children).replace(/\n$/, '')}
+              </SyntaxHighlighter>
+            );
           },
           
           // Code blocks
@@ -64,47 +82,6 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className 
               {children}
             </div>
           ),
-          
-          // Code blocks with syntax highlighting
-          // @ts-ignore
-          code: ({ node, inline, className, children, ...props }) => {
-            const match = /language-(\w+)/.exec(className || '');
-            const language = match ? match[1] : '';
-            
-            if (!inline && language) {
-              return (
-                <SyntaxHighlighter
-                  style={oneDark}
-                  language={language}
-                  PreTag="div"
-                  className="text-xs"
-                  customStyle={{
-                    margin: 0,
-                    borderRadius: '0.375rem',
-                    fontSize: '0.75rem',
-                    lineHeight: '1rem'
-                  }}
-                  {...props}
-                >
-                  {String(children).replace(/\n$/, '')}
-                </SyntaxHighlighter>
-              );
-            }
-            
-            if (inline) {
-              return (
-                <code className="bg-muted px-1 py-0.5 rounded text-sm font-mono" {...props}>
-                  {children}
-                </code>
-              );
-            }
-            
-            return (
-              <code className="block bg-muted p-2 rounded text-sm font-mono overflow-x-auto" {...props}>
-                {children}
-              </code>
-            );
-          },
           
           // Blockquotes
           blockquote: ({ children }) => (
