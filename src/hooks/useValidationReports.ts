@@ -15,6 +15,7 @@ interface ValidationReport {
   // Join data from idea_validations
   idea_name?: string;
   one_line_description?: string;
+  archived_at?: string;
 }
 
 export const useValidationReports = () => {
@@ -48,7 +49,8 @@ export const useValidationReports = () => {
             id,
             idea_name,
             one_line_description,
-            user_id
+            user_id,
+            archived_at
           )
         `)
         .eq('idea_validations.user_id', user.id)
@@ -60,12 +62,21 @@ export const useValidationReports = () => {
       }
 
       // Transform the data to include idea details at the top level and ensure proper typing
-      const transformedReports: ValidationReport[] = data?.map(report => ({
-        ...report,
-        status: report.status as 'generating' | 'completed' | 'failed' | 'archived',
-        idea_name: report.idea_validations?.idea_name,
-        one_line_description: report.idea_validations?.one_line_description,
-      })) || [];
+      const transformedReports: ValidationReport[] = data?.map(report => {
+        // Determine if the idea is archived based on archived_at field
+        const isArchived = report.idea_validations?.archived_at !== null;
+        
+        // Override status if the idea is archived
+        const finalStatus = isArchived ? 'archived' : report.status;
+
+        return {
+          ...report,
+          status: finalStatus as 'generating' | 'completed' | 'failed' | 'archived',
+          idea_name: report.idea_validations?.idea_name,
+          one_line_description: report.idea_validations?.one_line_description,
+          archived_at: report.idea_validations?.archived_at,
+        };
+      }) || [];
 
       setReports(transformedReports);
     } catch (err) {

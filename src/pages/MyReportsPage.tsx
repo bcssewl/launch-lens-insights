@@ -208,7 +208,7 @@ const MyReportsPage: React.FC = () => {
           <Checkbox
             id="include-archived"
             checked={includeArchived}
-            onCheckedChange={setIncludeArchived}
+            onCheckedChange={(checked) => setIncludeArchived(checked === true)}
           />
           <label
             htmlFor="include-archived"
