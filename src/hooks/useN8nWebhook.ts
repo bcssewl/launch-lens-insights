@@ -53,7 +53,7 @@ export const useN8nWebhook = () => {
     }
   }, [session]);
 
-  const sendMessageToN8n = useCallback(async (message: string): Promise<string> => {
+  const sendMessageToN8n = useCallback(async (message: string, sessionId?: string | null): Promise<string> => {
     let retryCount = 0;
     const maxRetries = 2;
 
@@ -68,16 +68,23 @@ export const useN8nWebhook = () => {
           throw new Error('No valid session available');
         }
 
+        const requestBody = { 
+          message,
+          user: user ? {
+            id: user.id,
+            email: user.email,
+            full_name: user.user_metadata?.full_name || null,
+            created_at: user.created_at
+          } : null
+        };
+
+        // Add session_id if provided
+        if (sessionId) {
+          requestBody.session_id = sessionId;
+        }
+
         const { data, error } = await supabase.functions.invoke('n8n-webhook', {
-          body: { 
-            message,
-            user: user ? {
-              id: user.id,
-              email: user.email,
-              full_name: user.user_metadata?.full_name || null,
-              created_at: user.created_at
-            } : null
-          }
+          body: requestBody
         });
 
         if (error) {

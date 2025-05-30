@@ -85,7 +85,7 @@ export const useMessages = (currentSessionId: string | null) => {
     setIsTyping(true);
     
     try {
-      const aiResponseText = await sendMessageToN8n(finalMessageText);
+      const aiResponseText = await sendMessageToN8n(finalMessageText, currentSessionId);
       
       const aiResponse: Message = {
         id: uuidv4(),
