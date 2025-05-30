@@ -2,7 +2,7 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Clock } from 'lucide-react';
 
 interface ActivityItemProps {
   ideaName: string;
@@ -19,6 +19,8 @@ const ActivityItem: React.FC<ActivityItemProps> = ({
   statusText,
   statusColor,
 }) => {
+  const isRunningExperiment = score === 0 && (statusText === 'Validation Queued' || statusText === 'Analysis in Progress');
+
   const getScoreColorClasses = () => {
     if (score >= 7) return 'bg-green-500 border-green-600';
     if (score >= 5) return 'bg-yellow-500 border-yellow-600';
@@ -34,11 +36,17 @@ const ActivityItem: React.FC<ActivityItemProps> = ({
   return (
     <div className="group flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 hover:bg-accent/50 rounded-lg transition-colors">
       <div className="flex items-center mb-2 sm:mb-0">
-        <div
-          className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 mr-4 ${getScoreColorClasses()}`}
-        >
-          {score.toFixed(1)}
-        </div>
+        {isRunningExperiment ? (
+          <div className="w-10 h-10 rounded-full flex items-center justify-center bg-blue-500 border-2 border-blue-600 mr-4">
+            <Clock className="w-5 h-5 text-white animate-pulse" />
+          </div>
+        ) : (
+          <div
+            className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 mr-4 ${getScoreColorClasses()}`}
+          >
+            {score.toFixed(1)}
+          </div>
+        )}
         <div>
           <a href="#" className="font-semibold text-primary hover:underline">
             {ideaName}
@@ -48,13 +56,15 @@ const ActivityItem: React.FC<ActivityItemProps> = ({
       </div>
       <div className="flex flex-col sm:flex-row items-start sm:items-end gap-2 mt-2 sm:mt-0">
          <Badge className={`${getBadgeClasses()} whitespace-nowrap`}>{statusText}</Badge>
-        <Button
-          variant="outline"
-          size="sm"
-          className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 mt-2 sm:mt-0"
-        >
-          View Report <ArrowRight className="ml-2 h-4 w-4" />
-        </Button>
+        {!isRunningExperiment && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 mt-2 sm:mt-0"
+          >
+            View Report <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        )}
       </div>
     </div>
   );
