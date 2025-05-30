@@ -1,6 +1,7 @@
 
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -26,6 +27,49 @@ serve(async (req) => {
       );
     }
 
+    // Extract the auth token from the request headers
+    const authHeader = req.headers.get('authorization');
+    const authToken = authHeader?.replace('Bearer ', '') || null;
+
+    if (!authToken) {
+      return new Response(
+        JSON.stringify({ error: 'Authentication token is required' }), 
+        { 
+          status: 401, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    // Validate the auth token with Supabase
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const { data: { user: authenticatedUser }, error: authError } = await supabase.auth.getUser(authToken);
+
+    if (authError || !authenticatedUser) {
+      console.error('Authentication failed:', authError);
+      return new Response(
+        JSON.stringify({ error: 'Invalid or expired authentication token' }), 
+        { 
+          status: 401, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    // Verify that the user info matches the authenticated user
+    if (user && user.id !== authenticatedUser.id) {
+      return new Response(
+        JSON.stringify({ error: 'User ID mismatch' }), 
+        { 
+          status: 403, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
     const webhookUrl = Deno.env.get('N8N_WEBHOOK_URL');
     
     if (!webhookUrl) {
@@ -39,13 +83,8 @@ serve(async (req) => {
       );
     }
 
-    // Extract the auth token from the request headers
-    const authHeader = req.headers.get('authorization');
-    const authToken = authHeader?.replace('Bearer ', '') || null;
-
     console.log('Sending message to n8n webhook:', webhookUrl);
-    console.log('User info:', user);
-    console.log('Auth token present:', !!authToken);
+    console.log('Authenticated user:', authenticatedUser.id, authenticatedUser.email);
     
     const response = await fetch(webhookUrl, {
       method: 'POST',
@@ -55,12 +94,18 @@ serve(async (req) => {
       body: JSON.stringify({
         type: 'chat_message',
         message: message,
-        user: user,
+        user: {
+          id: authenticatedUser.id,
+          email: authenticatedUser.email,
+          full_name: authenticatedUser.user_metadata?.full_name || null,
+          created_at: authenticatedUser.created_at
+        },
         auth_token: authToken,
         timestamp: new Date().toISOString(),
         metadata: {
           source: 'ai_assistant',
           function_origin: 'supabase_edge_function',
+          authenticated: true,
         },
       }),
     });
