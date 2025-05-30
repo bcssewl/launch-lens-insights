@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -23,6 +22,9 @@ interface CompetitionTabContentProps {
 }
 
 const CompetitionTabContent: React.FC<CompetitionTabContentProps> = ({ data }) => {
+  // Sort competitors by similarity in descending order (highest first)
+  const sortedCompetitors = [...data.competitors].sort((a, b) => b.similarity - a.similarity);
+
   return (
     <div className="space-y-6">
       <Card>
@@ -40,7 +42,7 @@ const CompetitionTabContent: React.FC<CompetitionTabContentProps> = ({ data }) =
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.competitors.map((competitor) => (
+              {sortedCompetitors.map((competitor) => (
                 <TableRow key={competitor.id}>
                   <TableCell className="font-medium">{competitor.name}</TableCell>
                   <TableCell>{competitor.description}</TableCell>
