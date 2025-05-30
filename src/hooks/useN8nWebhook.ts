@@ -17,7 +17,7 @@ export const useN8nWebhook = () => {
 
   const sendMessageToN8n = useCallback(async (message: string): Promise<string> => {
     try {
-      console.log('Sending message to n8n via Supabase Edge Function');
+      console.log('Sending message to AI service via Supabase Edge Function');
       
       const { data, error } = await supabase.functions.invoke('n8n-webhook', {
         body: { 
@@ -36,20 +36,20 @@ export const useN8nWebhook = () => {
       }
 
       if (!data || !data.response) {
-        throw new Error('Invalid response from N8N webhook');
+        throw new Error('Invalid response from AI service');
       }
 
-      console.log('Received response from n8n:', data);
+      console.log('Received response from AI service:', data);
       return data.response;
     } catch (error) {
-      console.error('Failed to send message to n8n:', error);
+      console.error('Failed to send message to AI service:', error);
       toast({
-        title: "N8N Integration Error",
-        description: "Failed to communicate with N8N webhook. Please check your configuration.",
+        title: "Connection Error",
+        description: "I'm having trouble connecting to the AI service right now. Please try again in a moment.",
         variant: "destructive",
       });
       
-      // Fallback response when n8n is unavailable
+      // Fallback response when AI service is unavailable
       throw error;
     }
   }, [toast, user]);

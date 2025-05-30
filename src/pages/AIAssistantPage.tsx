@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import DashboardLayout from '@/layouts/DashboardLayout';
@@ -81,7 +80,7 @@ const AIAssistantPage: React.FC = () => {
     if (!isConfigured) {
       const fallbackResponse: Message = {
         id: uuidv4(),
-        text: "N8N webhook URL is not configured. Please set the VITE_N8N_WEBHOOK_URL environment variable.",
+        text: "The AI service is not configured properly. Please contact support for assistance.",
         sender: 'ai',
         timestamp: new Date(),
         avatar: <AIAvatar className="w-8 h-8" />
@@ -107,7 +106,7 @@ const AIAssistantPage: React.FC = () => {
     } catch (error) {
       const errorResponse: Message = {
         id: uuidv4(),
-        text: "Sorry, I'm having trouble connecting to the AI service. Please check your n8n webhook configuration and try again.",
+        text: "I'm experiencing some technical difficulties right now. Please try sending your message again in a few moments.",
         sender: 'ai',
         timestamp: new Date(),
         avatar: <AIAvatar className="w-8 h-8" />
@@ -148,7 +147,7 @@ const AIAssistantPage: React.FC = () => {
           {/* Subheader */}
           <div className="p-4 border-b bg-background flex-shrink-0">
             <p className="text-sm text-muted-foreground">
-              {isConfigured ? 'Powered by your n8n workflow' : 'N8N webhook not configured'}
+              {isConfigured ? 'AI-powered startup advisor' : 'AI service not configured'}
             </p>
           </div>
 
