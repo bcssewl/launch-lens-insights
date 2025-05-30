@@ -1,7 +1,8 @@
+
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Clock } from 'lucide-react';
+import { Download, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface ActivityItemProps {
@@ -72,7 +73,7 @@ const ActivityItem: React.FC<ActivityItemProps> = ({
             className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 mt-2 sm:mt-0"
             onClick={handleViewReport}
           >
-            View Report <ArrowRight className="ml-2 h-4 w-4" />
+            <Download className="h-4 w-4" />
           </Button>
         )}
       </div>
