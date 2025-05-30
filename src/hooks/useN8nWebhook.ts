@@ -68,7 +68,16 @@ export const useN8nWebhook = () => {
           throw new Error('No valid session available');
         }
 
-        const requestBody = { 
+        const requestBody: {
+          message: string;
+          user: {
+            id: string;
+            email: string;
+            full_name: string | null;
+            created_at: string;
+          } | null;
+          session_id?: string;
+        } = { 
           message,
           user: user ? {
             id: user.id,
