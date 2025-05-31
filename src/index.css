@@ -106,7 +106,8 @@
 @layer components {
   /* Enhanced Glassmorphism Cards */
   .glassmorphism-card {
-    @apply bg-white/80 backdrop-filter backdrop-blur-xl border border-white/30 rounded-xl shadow-soft;
+    @apply bg-white/80 backdrop-filter backdrop-blur-xl border border-white/30 rounded-xl;
+    box-shadow: 0 2px 8px rgba(139, 92, 246, 0.1), 0 1px 3px rgba(139, 92, 246, 0.05);
   }
   
   .dark .glassmorphism-card {
@@ -115,7 +116,7 @@
   
   /* Light mode specific glassmorphism */
   .light .glassmorphism-card {
-    @apply bg-white/90 backdrop-filter backdrop-blur-xl border border-white/40 shadow-glass;
+    @apply bg-white/90 backdrop-filter backdrop-blur-xl border border-white/40;
     box-shadow: 0 8px 32px rgba(139, 92, 246, 0.1), 0 4px 16px rgba(139, 92, 246, 0.05);
   }
 
@@ -133,7 +134,8 @@
   }
   
   .light .enhanced-card {
-    @apply bg-white/95 border-white/50 shadow-soft-lg;
+    @apply bg-white/95 border-white/50;
+    box-shadow: 0 8px 24px rgba(139, 92, 246, 0.2), 0 4px 12px rgba(139, 92, 246, 0.15);
   }
   
   .enhanced-card:hover {
@@ -218,7 +220,11 @@
   }
   
   .hover-glow {
-    @apply transition-shadow duration-300 hover:shadow-soft-lg;
+    @apply transition-shadow duration-300;
+  }
+  
+  .hover-glow:hover {
+    box-shadow: 0 8px 24px rgba(139, 92, 246, 0.2), 0 4px 12px rgba(139, 92, 246, 0.15);
   }
   
   /* Background overlays for better glassmorphism */
