@@ -10,13 +10,13 @@ interface InsightCardProps {
 
 const InsightCard: React.FC<InsightCardProps> = ({ text, icon: Icon }) => {
   return (
-    <Card className="enhanced-card hover-lift hover-glow group cursor-pointer">
+    <Card className="glassmorphism-card border-white/10 hover-lift hover-glow group cursor-pointer">
       <CardContent className="p-4">
         <div className="flex items-start gap-3">
-          <div className="flex-shrink-0 p-2 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
+          <div className="flex-shrink-0 p-2 bg-white/10 backdrop-blur-sm rounded-lg group-hover:bg-white/20 transition-colors">
             <Icon className="h-5 w-5 text-primary group-hover:scale-110 transition-transform" />
           </div>
-          <p className="text-sm text-foreground leading-relaxed flex-1 group-hover:text-primary transition-colors">
+          <p className="text-sm text-white/90 leading-relaxed flex-1 group-hover:text-white transition-colors">
             {text}
           </p>
         </div>

@@ -57,46 +57,46 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ children }) => {
   };
 
   return (
-    <header className="border-b bg-background">
-      <div className="flex items-center justify-between p-4 bg-card border-b">
+    <header className="border-b border-white/10 glassmorphism-card">
+      <div className="flex items-center justify-between p-4">
         <div className="flex flex-col">
-          <h1 className="text-2xl font-bold text-foreground">{children || 'Dashboard'}</h1>
-          <p className="text-sm text-muted-foreground">{currentDate}</p>
+          <h1 className="text-2xl font-bold text-white">{children || 'Dashboard'}</h1>
+          <p className="text-sm text-white/60">{currentDate}</p>
         </div>
         <div className="flex items-center space-x-4">
           <ThemeToggle />
-          <Button variant="ghost" size="icon" aria-label="Notifications">
+          <Button variant="ghost" size="icon" className="text-white/70 hover:text-white hover:bg-white/10" aria-label="Notifications">
             <MessageCircle className="h-5 w-5" />
             <span className="sr-only">Notifications</span>
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+              <Button variant="ghost" className="relative h-8 w-8 rounded-full hover:bg-white/10">
                 <Avatar className="h-8 w-8">
                   <AvatarImage src={profile?.avatar_url} alt="User Avatar" />
-                  <AvatarFallback>
+                  <AvatarFallback className="bg-white/10 text-white border-white/20">
                     {user?.email?.charAt(0).toUpperCase() || 'U'}
                   </AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuContent align="end" className="w-56 glassmorphism-card border-white/10 text-white">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
+              <DropdownMenuSeparator className="bg-white/10" />
+              <DropdownMenuItem asChild className="hover:bg-white/10">
                 <Link to="/dashboard/profile">
                   <UserCircle className="mr-2 h-4 w-4" />
                   <span>Profile</span>
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem asChild>
+              <DropdownMenuItem asChild className="hover:bg-white/10">
                 <Link to="/dashboard/settings">
                   <Settings className="mr-2 h-4 w-4" />
                   <span>Settings</span>
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout}>
+              <DropdownMenuSeparator className="bg-white/10" />
+              <DropdownMenuItem onClick={handleLogout} className="hover:bg-white/10">
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log out</span>
               </DropdownMenuItem>

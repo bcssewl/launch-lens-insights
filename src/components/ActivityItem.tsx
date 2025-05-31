@@ -54,13 +54,13 @@ const ActivityItem: React.FC<ActivityItemProps> = ({
   const StatusIcon = getStatusIcon();
 
   return (
-    <div className="group p-4 hover:bg-accent/30 rounded-xl transition-all duration-200 border border-transparent hover:border-border/50 hover-lift">
+    <div className="group p-4 hover:bg-white/5 rounded-xl transition-all duration-200 border border-transparent hover:border-white/10 hover-lift">
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-4 flex-1 min-w-0">
           {/* Score Display */}
           <div className="flex-shrink-0">
             {isRunningExperiment ? (
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-primary/10 border border-primary/20">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center glassmorphism-card border-white/10">
                 <Clock className="w-5 h-5 text-primary animate-pulse" />
               </div>
             ) : (
@@ -73,10 +73,10 @@ const ActivityItem: React.FC<ActivityItemProps> = ({
           {/* Content */}
           <div className="flex-1 min-w-0 space-y-2">
             <div>
-              <h4 className="font-semibold text-foreground hover:text-primary transition-colors cursor-pointer truncate">
+              <h4 className="font-semibold text-white hover:text-primary transition-colors cursor-pointer truncate">
                 {ideaName}
               </h4>
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <p className="text-xs text-white/60 flex items-center gap-1">
                 <Clock className="w-3 h-3" />
                 {timestamp}
               </p>
@@ -97,7 +97,7 @@ const ActivityItem: React.FC<ActivityItemProps> = ({
           <Button
             variant="ghost"
             size="sm"
-            className="opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-primary/10 hover:text-primary"
+            className="opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-white/10 hover:text-primary text-white/70"
             onClick={handleViewReport}
           >
             <Download className="h-4 w-4" />
