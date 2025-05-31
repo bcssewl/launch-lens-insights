@@ -1,10 +1,9 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle, TrendingUp, Zap, Brain, BarChart3, Rocket, FlaskConical, FileText, Users, Award, DollarSign } from "lucide-react";
 import { LandingNavbar } from "@/components/LandingNavbar";
 import { Link, useNavigate } from "react-router-dom";
-import { TestimonialCard } from "@/components/TestimonialCard";
+import { TestimonialsSectionDemo } from "@/components/ui/testimonials-with-marquee";
 import { PricingCard } from "@/components/PricingCard";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
@@ -148,29 +147,8 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Social Proof Section - NEW */}
-        <section className="py-16 md:py-24 bg-background dark:bg-background">
-          <div className="container mx-auto px-6">
-            <h2 className="text-3xl md:text-4xl font-bold font-heading text-center mb-4">
-              Trusted by 1,000+ Founders Worldwide
-            </h2>
-            <p className="text-center text-muted-foreground mb-12 max-w-xl mx-auto">
-              Hear from entrepreneurs who've used Launch Lens to make smarter decisions and build with confidence.
-            </p>
-            <div className="grid md:grid-cols-3 gap-8">
-              {testimonials.map((testimonial, index) => (
-                <TestimonialCard
-                  key={index}
-                  imageInitials={testimonial.imageInitials}
-                  name={testimonial.name}
-                  title={testimonial.title}
-                  quote={testimonial.quote}
-                  // imageSrc={testimonial.imageSrc}
-                />
-              ))}
-            </div>
-          </div>
-        </section>
+        {/* Social Proof Section - UPDATED with Marquee */}
+        <TestimonialsSectionDemo />
 
         {/* Features Grid Section - UPDATED */}
         <section className="py-16 md:py-24 bg-surface">

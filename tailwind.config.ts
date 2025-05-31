@@ -23,6 +23,9 @@ export default {
         sans: ["Inter", "sans-serif"],
         heading: ["DM Sans", "sans-serif"],
       },
+      maxWidth: {
+        container: "1280px",
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -108,12 +111,17 @@ export default {
           "0%, 100%": { boxShadow: "0 0 5px hsl(var(--accent))", opacity: "1" },
           "50%": { boxShadow: "0 0 20px hsl(var(--accent)), 0 0 30px hsl(var(--accent))", opacity: "0.8" },
         },
+        marquee: {
+          from: { transform: 'translateX(0)' },
+          to: { transform: 'translateX(calc(-100% - var(--gap)))' }
+        }
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "gradient": "gradient-animation 15s ease infinite",
         "pulse-glow": "pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+        marquee: 'marquee var(--duration) linear infinite',
       },
     },
   },
