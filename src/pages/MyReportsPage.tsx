@@ -65,7 +65,8 @@ const MyReportsPage: React.FC = () => {
     
     const matchesStatusFilter = filterStatus === 'all_status' || report.status === filterStatus;
     
-    const matchesArchiveFilter = includeArchived || report.status !== 'Archived';
+    // Updated archive filter logic: if status filter is "Archived", show archived regardless of includeArchived checkbox
+    const matchesArchiveFilter = filterStatus === 'Archived' || includeArchived || report.status !== 'Archived';
     
     return matchesSearch && matchesScoreFilter && matchesStatusFilter && matchesArchiveFilter;
   });
