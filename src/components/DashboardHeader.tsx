@@ -57,15 +57,15 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ children }) => {
   };
 
   return (
-    <header className="border-b border-white/10 glassmorphism-card">
-      <div className="flex items-center justify-between p-4">
+    <header className="border-b border-white/5 bg-white/5 backdrop-blur-md">
+      <div className="flex items-center justify-between p-6">
         <div className="flex flex-col">
-          <h1 className="text-2xl font-bold text-white">{children || 'Dashboard'}</h1>
-          <p className="text-sm text-white/60">{currentDate}</p>
+          <h1 className="text-2xl font-bold text-foreground">{children || 'Dashboard'}</h1>
+          <p className="text-sm text-muted-foreground">{currentDate}</p>
         </div>
         <div className="flex items-center space-x-4">
           <ThemeToggle />
-          <Button variant="ghost" size="icon" className="text-white/70 hover:text-white hover:bg-white/10" aria-label="Notifications">
+          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground hover:bg-white/10" aria-label="Notifications">
             <MessageCircle className="h-5 w-5" />
             <span className="sr-only">Notifications</span>
           </Button>
@@ -74,13 +74,13 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ children }) => {
               <Button variant="ghost" className="relative h-8 w-8 rounded-full hover:bg-white/10">
                 <Avatar className="h-8 w-8">
                   <AvatarImage src={profile?.avatar_url} alt="User Avatar" />
-                  <AvatarFallback className="bg-white/10 text-white border-white/20">
+                  <AvatarFallback className="bg-white/10 text-foreground border-white/20">
                     {user?.email?.charAt(0).toUpperCase() || 'U'}
                   </AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 glassmorphism-card border-white/10 text-white">
+            <DropdownMenuContent align="end" className="w-56 glassmorphism-card border-white/10">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-white/10" />
               <DropdownMenuItem asChild className="hover:bg-white/10">

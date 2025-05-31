@@ -22,9 +22,11 @@ const MyReportsPage: React.FC = () => {
           <DashboardHeader>My Reports</DashboardHeader>
           <div className="p-4 md:p-6">
             <Tabs defaultValue="reports" className="w-full">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                <ReportsPageHeader />
-                <ReportsTabNavigation />
+              <div className="bg-white/5 backdrop-blur-sm border-b border-white/10 p-4 -mx-4 md:-mx-6 mb-6">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                  <ReportsPageHeader />
+                  <ReportsTabNavigation />
+                </div>
               </div>
               
               <TabsContent value="reports" className="mt-0">
