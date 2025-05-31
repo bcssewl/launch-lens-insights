@@ -43,15 +43,6 @@ export const useDashboardData = () => {
     try {
       setLoading(true);
 
-      // Fetch idea validations for experiments running count
-      const { data: validations, error: validationsError } = await supabase
-        .from('idea_validations')
-        .select('id, status, idea_name, created_at')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (validationsError) throw validationsError;
-
       // For now, business plans count is 0 since the feature isn't implemented yet
       const businessPlans = 0;
 
@@ -94,7 +85,7 @@ export const useDashboardData = () => {
         successRate: Math.round(successRate),
       });
 
-      // Combine reports and running experiments for recent activities
+      // Create recent activities from reports
       const reportActivities = (reports || []).map(report => {
         const score = report.overall_score || 0;
         let statusText = 'In Progress';
@@ -131,25 +122,8 @@ export const useDashboardData = () => {
         };
       });
 
-      // Add running experiments (validations without reports yet)
-      const runningExperiments = (validations || [])
-        .filter(validation => 
-          (validation.status === 'pending' || validation.status === 'processing') &&
-          !reports?.some(report => report.validation_id === validation.id)
-        )
-        .map(validation => ({
-          id: validation.id,
-          ideaName: validation.idea_name || 'Untitled Idea',
-          score: 0,
-          timestamp: getRelativeTime(new Date(validation.created_at)),
-          statusText: validation.status === 'pending' ? 'Validation Queued' : 'Analysis in Progress',
-          statusColor: 'yellow' as const,
-          created_at: validation.created_at,
-          reportId: undefined,
-        }));
-
-      // Combine and sort all activities by creation date
-      const allActivities = [...reportActivities, ...runningExperiments]
+      // Sort activities by creation date and take the most recent 5
+      const allActivities = reportActivities
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
         .slice(0, 5)
         .map(({ created_at, ...activity }) => activity);
