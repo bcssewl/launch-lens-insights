@@ -2,6 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, Tooltip, Legend, BarChart, Bar } from 'recharts';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
+import HoverInfoCard from '@/components/ui/hover-info-card';
 
 interface MarketAnalysisData {
   tamSamSom: { name: string; value: number; fill?: string }[];
@@ -50,6 +51,49 @@ const getChartColors = (count: number) => {
   return Array.from({ length: count }, (_, i) => colors[i % colors.length]);
 };
 
+// Custom tooltip components with enhanced information
+const EnhancedTamSomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    const data = payload[0];
+    const total = payload[0].payload.total || 1000000000; // Default total for calculation
+    const percentage = ((data.value / total) * 100).toFixed(1);
+    
+    return (
+      <div className="bg-background border border-border rounded-lg p-3 shadow-lg animate-fade-in">
+        <p className="font-medium text-foreground">{data.name}</p>
+        <p className="text-primary font-semibold">${(data.value / 1000000).toFixed(1)}M</p>
+        <p className="text-muted-foreground text-sm">{percentage}% of total market</p>
+        <div className="mt-2 pt-2 border-t border-border text-xs text-muted-foreground">
+          {data.name === 'TAM' && 'Total Addressable Market - Maximum market size'}
+          {data.name === 'SAM' && 'Serviceable Addressable Market - Realistic target'}  
+          {data.name === 'SOM' && 'Serviceable Obtainable Market - Initial market share'}
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
+const EnhancedGrowthTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    const data = payload[0];
+    const growthTrend = data.value > 0 ? 'Growing' : 'Declining';
+    const growthStrength = Math.abs(data.value) > 10 ? 'Strong' : Math.abs(data.value) > 5 ? 'Moderate' : 'Slow';
+    
+    return (
+      <div className="bg-background border border-border rounded-lg p-3 shadow-lg animate-fade-in">
+        <p className="font-medium text-foreground">{label}</p>
+        <p className="text-primary font-semibold">{data.value}% YoY Growth</p>
+        <p className="text-muted-foreground text-sm">{growthStrength} {growthTrend}</p>
+        <div className="mt-2 pt-2 border-t border-border text-xs text-muted-foreground">
+          Market momentum indicator for strategic planning
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
 const MarketAnalysisTabContent: React.FC<MarketAnalysisTabContentProps> = ({ data }) => {
   // Assign colors to TAM/SAM/SOM data
   const tamSamSomWithColors = data.tamSamSom.map((item, index) => ({
@@ -69,54 +113,106 @@ const MarketAnalysisTabContent: React.FC<MarketAnalysisTabContentProps> = ({ dat
     fill: getChartColors(data.geographicOpportunity.length)[index]
   }));
 
+  const tamSamSomHoverContent = (
+    <div className="space-y-3">
+      <div>
+        <h4 className="font-medium text-foreground mb-1">Market Size Analysis</h4>
+        <p className="text-muted-foreground">Understanding your addressable market at different levels helps prioritize resources and set realistic goals.</p>
+      </div>
+      <div className="grid grid-cols-1 gap-2 text-sm">
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">TAM:</span>
+          <span className="font-medium">Total market opportunity</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">SAM:</span>
+          <span className="font-medium">Realistic serviceable market</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-muted-foreground">SOM:</span>
+          <span className="font-medium">Initial obtainable share</span>
+        </div>
+      </div>
+    </div>
+  );
+
+  const marketGrowthHoverContent = (
+    <div className="space-y-3">
+      <div>
+        <h4 className="font-medium text-foreground mb-1">Growth Trend Analysis</h4>
+        <p className="text-muted-foreground">Year-over-year growth rates indicate market momentum and future opportunities.</p>
+      </div>
+      <div className="text-sm">
+        <p className="text-muted-foreground">
+          <strong>Interpretation:</strong> Higher growth rates suggest expanding market opportunities, 
+          while declining rates may indicate market saturation or economic factors.
+        </p>
+      </div>
+    </div>
+  );
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>TAM/SAM/SOM</CardTitle>
-        </CardHeader>
-        <CardContent className="p-6">
-          <ChartContainer config={chartConfigTam} className="w-full h-[400px]">
-            <PieChart>
-              <ChartTooltipContent nameKey="name" hideLabel />
-              <Pie 
-                data={tamSamSomWithColors} 
-                dataKey="value" 
-                nameKey="name" 
-                cx="50%" 
-                cy="50%" 
-                outerRadius={120} 
-                innerRadius={60} 
-                labelLine={false}
-              >
-                {tamSamSomWithColors.map((entry, index) => (
-                  <Cell key={`cell-${entry.name}`} fill={entry.fill} />
-                ))}
-              </Pie>
-              <Legend />
-            </PieChart>
-          </ChartContainer>
-        </CardContent>
-      </Card>
+      <HoverInfoCard
+        trigger={
+          <Card className="transition-all duration-200 hover:shadow-lg">
+            <CardHeader>
+              <CardTitle>TAM/SAM/SOM</CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <ChartContainer config={chartConfigTam} className="w-full h-[400px]">
+                <PieChart>
+                  <Tooltip content={<EnhancedTamSomTooltip />} />
+                  <Pie 
+                    data={tamSamSomWithColors} 
+                    dataKey="value" 
+                    nameKey="name" 
+                    cx="50%" 
+                    cy="50%" 
+                    outerRadius={120} 
+                    innerRadius={60} 
+                    labelLine={false}
+                  >
+                    {tamSamSomWithColors.map((entry, index) => (
+                      <Cell key={`cell-${entry.name}`} fill={entry.fill} />
+                    ))}
+                  </Pie>
+                  <Legend />
+                </PieChart>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+        }
+        title="Market Size Breakdown"
+        content={tamSamSomHoverContent}
+        side="right"
+      />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Market Growth Trend (YoY)</CardTitle>
-        </CardHeader>
-        <CardContent className="p-6">
-          <ChartContainer config={chartConfigGrowth} className="w-full h-[400px]">
-            <LineChart data={data.marketGrowth}>
-              <XAxis dataKey="year" />
-              <YAxis />
-              <ChartTooltipContent />
-              <Legend />
-              <Line type="monotone" dataKey="growth" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={false} />
-            </LineChart>
-          </ChartContainer>
-        </CardContent>
-      </Card>
+      <HoverInfoCard
+        trigger={
+          <Card className="transition-all duration-200 hover:shadow-lg">
+            <CardHeader>
+              <CardTitle>Market Growth Trend (YoY)</CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <ChartContainer config={chartConfigGrowth} className="w-full h-[400px]">
+                <LineChart data={data.marketGrowth}>
+                  <XAxis dataKey="year" />
+                  <YAxis />
+                  <Tooltip content={<EnhancedGrowthTooltip />} />
+                  <Legend />
+                  <Line type="monotone" dataKey="growth" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={false} />
+                </LineChart>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+        }
+        title="Growth Analysis"
+        content={marketGrowthHoverContent}
+        side="left"
+      />
 
-      <Card>
+      <Card className="transition-all duration-200 hover:shadow-lg">
         <CardHeader>
           <CardTitle>Customer Segment Breakdown</CardTitle>
         </CardHeader>
@@ -143,7 +239,7 @@ const MarketAnalysisTabContent: React.FC<MarketAnalysisTabContentProps> = ({ dat
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="transition-all duration-200 hover:shadow-lg">
         <CardHeader>
           <CardTitle>Geographic Opportunity</CardTitle>
         </CardHeader>
