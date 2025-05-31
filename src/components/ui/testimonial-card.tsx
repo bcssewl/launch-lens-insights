@@ -1,6 +1,6 @@
 
 import { cn } from "@/lib/utils"
-import { Avatar, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 
 export interface TestimonialAuthor {
   name: string
@@ -25,32 +25,36 @@ export function TestimonialCard({
   
   return (
     <Card
-      {...(href ? { href } : {})}
+      {...(href ? { href, target: "_blank", rel: "noopener noreferrer" } : {})}
       className={cn(
-        "flex flex-col rounded-lg border-t",
-        "bg-gradient-to-b from-muted/50 to-muted/10",
-        "p-4 text-start sm:p-6",
-        "hover:from-muted/60 hover:to-muted/20",
+        "glassmorphism-card hover-lift hover-glow",
+        "flex flex-col p-6 text-start",
         "max-w-[320px] sm:max-w-[320px]",
-        "transition-colors duration-300",
+        "transition-all duration-300",
+        "border border-border/20",
+        "bg-card/50 backdrop-blur-sm",
+        href && "cursor-pointer hover:bg-card/70",
         className
       )}
     >
-      <div className="flex items-center gap-3">
-        <Avatar className="h-12 w-12">
+      <div className="flex items-center gap-3 mb-4">
+        <Avatar className="h-12 w-12 border-2 border-primary/20">
           <AvatarImage src={author.avatar} alt={author.name} />
+          <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+            {author.name.split(' ').map(n => n[0]).join('')}
+          </AvatarFallback>
         </Avatar>
         <div className="flex flex-col items-start">
-          <h3 className="text-md font-semibold leading-none">
+          <h3 className="text-md font-semibold leading-none font-heading text-foreground">
             {author.name}
           </h3>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-primary">
             {author.handle}
           </p>
         </div>
       </div>
-      <p className="sm:text-md mt-4 text-sm text-muted-foreground">
-        {text}
+      <p className="text-sm text-muted-foreground italic leading-relaxed">
+        "{text}"
       </p>
     </Card>
   )
