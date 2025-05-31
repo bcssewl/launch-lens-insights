@@ -1,8 +1,9 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { TrendingUp, AlertTriangle, CheckCircle, BarChart3 } from 'lucide-react';
+import { TrendingUp, AlertTriangle, CheckCircle } from 'lucide-react';
 
 interface Competitor {
   id: number;
@@ -33,21 +34,21 @@ const CompetitionTabContent: React.FC<CompetitionTabContentProps> = ({ data }) =
     if (lowerSat.includes("high")) {
       return {
         icon: <AlertTriangle className="h-5 w-5 text-red-500" />,
-        status: "High Competition",
+        status: "🔴 High Competition",
         content: "Market shows high saturation with established players. Consider niche differentiation or unique value propositions to compete effectively.",
         badgeVariant: "destructive" as const
       };
     } else if (lowerSat.includes("medium") || lowerSat.includes("moderate")) {
       return {
         icon: <TrendingUp className="h-5 w-5 text-yellow-500" />,
-        status: "Moderate Competition",
+        status: "🟡 Moderate Competition",
         content: "Balanced market conditions with opportunities for strategic positioning and targeted customer acquisition.",
         badgeVariant: "secondary" as const
       };
     } else if (lowerSat.includes("low")) {
       return {
         icon: <CheckCircle className="h-5 w-5 text-green-500" />,
-        status: "Low Competition",
+        status: "🟢 Low Competition",
         content: "Favorable market conditions with limited competition. Strong opportunity for market entry and early positioning.",
         badgeVariant: "default" as const
       };
@@ -55,8 +56,8 @@ const CompetitionTabContent: React.FC<CompetitionTabContentProps> = ({ data }) =
     
     // Default fallback
     return {
-      icon: <BarChart3 className="h-5 w-5 text-blue-500" />,
-      status: "Market Analysis",
+      icon: <TrendingUp className="h-5 w-5 text-blue-500" />,
+      status: "📊 Market Analysis",
       content: saturation,
       badgeVariant: "outline" as const
     };
@@ -118,32 +119,30 @@ const CompetitionTabContent: React.FC<CompetitionTabContentProps> = ({ data }) =
       </div>
 
       {/* Enhanced Market Saturation Card */}
-      <Card>
-        <CardHeader>
+      <div className="w-full bg-gradient-to-br from-card via-card to-muted/20 border border-border/50 rounded-xl p-6 shadow-sm backdrop-blur-sm">
+        <div className="space-y-4">
+          {/* Header with Icon */}
           <div className="flex items-center gap-3">
             {marketSaturationInfo.icon}
-            <CardTitle>Market Saturation Analysis</CardTitle>
+            <h3 className="text-lg font-semibold text-foreground">Market Saturation Analysis</h3>
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {/* Main Content */}
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              {marketSaturationInfo.content}
-            </p>
-            
-            {/* Footer with Status */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-2 border-t border-border/30">
-              <span className="text-sm font-medium text-foreground">
-                Status: {marketSaturationInfo.status}
-              </span>
-              <Badge variant={marketSaturationInfo.badgeVariant}>
-                {data.marketSaturation}
-              </Badge>
-            </div>
+          
+          {/* Main Content */}
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            {marketSaturationInfo.content}
+          </p>
+          
+          {/* Footer with Status */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-2 border-t border-border/30">
+            <span className="text-sm font-medium text-foreground">
+              {marketSaturationInfo.status}
+            </span>
+            <Badge variant={marketSaturationInfo.badgeVariant}>
+              {data.marketSaturation}
+            </Badge>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };
