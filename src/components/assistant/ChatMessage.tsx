@@ -21,22 +21,22 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   const isAi = message.sender === 'ai';
 
   return (
-    <div className={cn("flex items-start gap-4 w-full", isAi ? "justify-start" : "justify-end")}>
+    <div className={cn("flex items-start gap-3 w-full", isAi ? "justify-start" : "justify-end")}>
       {isAi && (
-        <AIAvatar className="w-10 h-10 flex-shrink-0 mt-1" />
+        <AIAvatar className="w-8 h-8 flex-shrink-0 mt-1" />
       )}
       
-      <div className={cn("flex flex-col max-w-[80%] md:max-w-[70%]", isAi ? "items-start" : "items-end")}>
+      <div className={cn("flex flex-col", isAi ? "items-start" : "items-end")}>
         <div
           className={cn(
-            "group relative p-4 rounded-2xl shadow-sm backdrop-blur-sm border",
+            "group relative max-w-xs md:max-w-md lg:max-w-lg p-3 rounded-2xl shadow-sm",
             isAi 
-              ? "bg-card/80 border-border/50 text-foreground rounded-tl-md hover:bg-card/90" 
-              : "bg-primary/90 border-primary/30 text-primary-foreground rounded-tr-md hover:bg-primary"
+              ? "bg-muted text-foreground rounded-tl-sm" 
+              : "bg-primary text-primary-foreground rounded-tr-sm"
           )}
         >
           {isAi && (
-            <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="absolute top-2 right-2">
               <CopyButton content={message.text} />
             </div>
           )}
@@ -50,7 +50,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
           </div>
         </div>
         <p className={cn(
-          "text-xs mt-2 opacity-60 px-2",
+          "text-xs mt-1 opacity-70 px-1",
           isAi ? "text-muted-foreground" : "text-muted-foreground"
         )}>
           {message.timestamp}
@@ -58,7 +58,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
       </div>
 
       {!isAi && (
-        <UserAvatar className="h-10 w-10 flex-shrink-0 mt-1" />
+        <UserAvatar className="h-8 w-8 flex-shrink-0 mt-1" />
       )}
     </div>
   );

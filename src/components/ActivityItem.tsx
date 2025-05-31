@@ -38,10 +38,10 @@ const ActivityItem: React.FC<ActivityItemProps> = ({
     return AlertCircle;
   };
 
-  const getScoreDisplay = () => {
-    if (score >= 8) return { bg: 'bg-gradient-to-br from-green-500 to-green-600', border: 'border-green-500', glow: 'shadow-green-500/25' };
-    if (score >= 6) return { bg: 'bg-gradient-to-br from-yellow-500 to-yellow-600', border: 'border-yellow-500', glow: 'shadow-yellow-500/25' };
-    return { bg: 'bg-gradient-to-br from-red-500 to-red-600', border: 'border-red-500', glow: 'shadow-red-500/25' };
+  const getScoreColorClasses = () => {
+    if (score >= 7) return 'bg-gradient-to-br from-green-500 to-green-600 border-green-600 shadow-soft';
+    if (score >= 5) return 'bg-gradient-to-br from-yellow-500 to-yellow-600 border-yellow-600 shadow-soft';
+    return 'bg-gradient-to-br from-red-500 to-red-600 border-red-600 shadow-soft';
   };
 
   const getStatusIndicatorClass = () => {
@@ -52,33 +52,32 @@ const ActivityItem: React.FC<ActivityItemProps> = ({
   };
 
   const StatusIcon = getStatusIcon();
-  const scoreDisplay = getScoreDisplay();
 
   return (
-    <div className="group p-5 hover:bg-card/50 rounded-xl transition-all duration-300 border border-transparent hover:border-border/30 hover-lift">
+    <div className="group p-4 hover:bg-accent/30 rounded-xl transition-all duration-200 border border-transparent hover:border-border/50 hover-lift">
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-4 flex-1 min-w-0">
           {/* Score Display */}
           <div className="flex-shrink-0">
             {isRunningExperiment ? (
-              <div className="w-14 h-14 rounded-xl flex items-center justify-center premium-card border-primary/20">
-                <Clock className="w-6 h-6 text-primary animate-pulse" />
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-primary/10 border border-primary/20">
+                <Clock className="w-5 h-5 text-primary animate-pulse" />
               </div>
             ) : (
-              <div className={`w-14 h-14 rounded-xl flex items-center justify-center text-white font-bold text-sm border-2 ${scoreDisplay.bg} ${scoreDisplay.border} shadow-lg ${scoreDisplay.glow}`}>
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-sm border ${getScoreColorClasses()}`}>
                 {score.toFixed(1)}
               </div>
             )}
           </div>
 
           {/* Content */}
-          <div className="flex-1 min-w-0 space-y-3">
+          <div className="flex-1 min-w-0 space-y-2">
             <div>
-              <h4 className="font-semibold text-foreground group-hover:text-primary transition-colors cursor-pointer truncate text-lg">
+              <h4 className="font-semibold text-foreground hover:text-primary transition-colors cursor-pointer truncate">
                 {ideaName}
               </h4>
-              <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-1">
-                <Clock className="w-3.5 h-3.5" />
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <Clock className="w-3 h-3" />
                 {timestamp}
               </p>
             </div>
@@ -86,7 +85,7 @@ const ActivityItem: React.FC<ActivityItemProps> = ({
             {/* Status */}
             <div className="flex items-center gap-2">
               <div className={getStatusIndicatorClass()}>
-                <StatusIcon className="w-3.5 h-3.5" />
+                <StatusIcon className="w-3 h-3" />
                 {statusText}
               </div>
             </div>
@@ -98,7 +97,7 @@ const ActivityItem: React.FC<ActivityItemProps> = ({
           <Button
             variant="ghost"
             size="sm"
-            className="opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-primary/10 hover:text-primary text-muted-foreground hover-lift"
+            className="opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-primary/10 hover:text-primary"
             onClick={handleViewReport}
           >
             <Download className="h-4 w-4" />
