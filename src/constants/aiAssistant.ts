@@ -20,12 +20,3 @@ export const initialMessages: Message[] = [
     timestamp: new Date(Date.now() - 120000),
   },
 ];
-
-export const suggestedPromptsData = [
-  { id: "sp1", text: "What's a good name for my startup?" },
-  { id: "sp2", text: "How do I validate B2B demand?" },
-  { id: "sp3", text: "What would investors ask about my idea?" },
-  { id: "sp4", text: "Help me design a landing page test" },
-  { id: "sp5", text: "What are similar successful startups?" },
-  { id: "sp6", text: "How can I reduce customer acquisition cost?" },
-];

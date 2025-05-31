@@ -57,23 +57,29 @@ const AIAssistantPage: React.FC = () => {
   return (
     <DashboardLayout>
       <DashboardHeader>AI Assistant</DashboardHeader>
-      <div className="flex h-[calc(100vh-120px)] bg-gradient-to-br from-background via-background/95 to-muted/20">
+      <div className="flex h-[calc(100vh-120px)] bg-gradient-to-br from-background via-slate-950/90 to-slate-900/80">
         <div className="flex-1 flex flex-col min-h-0">
           {/* Hero Section - Only show when no messages or just initial message */}
           {messages.length <= 1 && (
-            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
-              <div className="mb-8">
-                <Badge variant="secondary" className="mb-6 px-4 py-2 bg-primary/10 text-primary border-primary/20">
+            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center relative overflow-hidden">
+              {/* Animated background elements */}
+              <div className="absolute inset-0 overflow-hidden">
+                <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-primary/20 to-accent/20 rounded-full blur-3xl opacity-30 animate-pulse"></div>
+                <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-accent/20 to-primary/20 rounded-full blur-3xl opacity-30 animate-pulse" style={{ animationDelay: '2s' }}></div>
+              </div>
+              
+              <div className="relative z-10 mb-8">
+                <Badge variant="secondary" className="mb-6 px-4 py-2 bg-primary/10 text-primary border-primary/20 backdrop-blur-sm">
                   <Sparkles className="w-4 h-4 mr-2" />
                   Introducing AI-Powered Startup Advisor
                 </Badge>
-                <h1 className="text-4xl md:text-6xl font-bold mb-4 bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
+                <h1 className="text-4xl md:text-6xl font-bold mb-4 bg-gradient-to-r from-white via-white to-white/80 bg-clip-text text-transparent">
                   Build Stunning startups{' '}
                   <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                     effortlessly
                   </span>
                 </h1>
-                <p className="text-lg text-muted-foreground mb-8 max-w-2xl">
+                <p className="text-lg text-slate-300 mb-8 max-w-2xl">
                   {isConfigured 
                     ? 'AI-powered startup advisor can create amazing business insights with few lines of prompt.' 
                     : 'AI service not configured - please contact support for assistance.'}
@@ -81,7 +87,7 @@ const AIAssistantPage: React.FC = () => {
               </div>
               
               {/* Enhanced Chat Input for Hero */}
-              <div className="w-full max-w-3xl">
+              <div className="relative z-10 w-full max-w-3xl">
                 <ChatInput onSendMessage={handleSendMessageWithSession} isTyping={isTyping} isHeroMode={true} />
               </div>
             </div>
@@ -91,28 +97,28 @@ const AIAssistantPage: React.FC = () => {
           {messages.length > 1 && (
             <>
               {/* Status Bar */}
-              <div className="p-4 border-b bg-background/50 backdrop-blur-sm flex-shrink-0">
+              <div className="p-4 border-b border-slate-800/50 bg-slate-900/50 backdrop-blur-sm flex-shrink-0">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2">
                       <Brain className="w-5 h-5 text-primary" />
-                      <span className="text-sm font-medium">AI Startup Advisor</span>
+                      <span className="text-sm font-medium text-white">AI Startup Advisor</span>
                     </div>
                     {currentSessionId && (
-                      <Badge variant="outline" className="text-xs">
+                      <Badge variant="outline" className="text-xs border-primary/30 text-primary bg-primary/10">
                         Active Session
                       </Badge>
                     )}
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                    <span className="text-xs text-muted-foreground">Online</span>
+                    <span className="text-xs text-slate-400">Online</span>
                   </div>
                 </div>
               </div>
 
               {/* Chat Area */}
-              <div className="flex-1 min-h-0 overflow-hidden">
+              <div className="flex-1 min-h-0 overflow-hidden bg-gradient-to-b from-slate-900/20 to-transparent">
                 <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
                   <div className="p-6 space-y-6">
                     {messages.slice(1).map((msg) => (
