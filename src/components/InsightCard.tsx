@@ -10,10 +10,16 @@ interface InsightCardProps {
 
 const InsightCard: React.FC<InsightCardProps> = ({ text, icon: Icon }) => {
   return (
-    <Card className="hover:shadow-lg transition-shadow cursor-pointer hover:border-primary/50">
-      <CardContent className="p-4 flex items-center space-x-3">
-        <Icon className="h-6 w-6 text-primary" />
-        <p className="text-sm text-foreground">{text}</p>
+    <Card className="enhanced-card hover-lift hover-glow group cursor-pointer">
+      <CardContent className="p-4">
+        <div className="flex items-start gap-3">
+          <div className="flex-shrink-0 p-2 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
+            <Icon className="h-5 w-5 text-primary group-hover:scale-110 transition-transform" />
+          </div>
+          <p className="text-sm text-foreground leading-relaxed flex-1 group-hover:text-primary transition-colors">
+            {text}
+          </p>
+        </div>
       </CardContent>
     </Card>
   );

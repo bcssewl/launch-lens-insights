@@ -2,7 +2,7 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Download, Clock } from 'lucide-react';
+import { Download, Clock, CheckCircle, AlertCircle, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface ActivityItemProps {
@@ -31,46 +31,73 @@ const ActivityItem: React.FC<ActivityItemProps> = ({
     }
   };
 
-  const getScoreColorClasses = () => {
-    if (score >= 7) return 'bg-green-500 border-green-600';
-    if (score >= 5) return 'bg-yellow-500 border-yellow-600';
-    return 'bg-red-500 border-red-600';
+  const getStatusIcon = () => {
+    if (isRunningExperiment) return Clock;
+    if (statusColor === 'green') return CheckCircle;
+    if (statusColor === 'red') return XCircle;
+    return AlertCircle;
   };
 
-  const getBadgeClasses = () => {
-    if (statusColor === 'green') return 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900 dark:text-green-300 dark:hover:bg-green-800 border-green-300 dark:border-green-700';
-    if (statusColor === 'yellow') return 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 dark:bg-yellow-900 dark:text-yellow-300 dark:hover:bg-yellow-800 border-yellow-300 dark:border-yellow-700';
-    return 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900 dark:text-red-300 dark:hover:bg-red-800 border-red-300 dark:border-red-700';
+  const getScoreColorClasses = () => {
+    if (score >= 7) return 'bg-gradient-to-br from-green-500 to-green-600 border-green-600 shadow-soft';
+    if (score >= 5) return 'bg-gradient-to-br from-yellow-500 to-yellow-600 border-yellow-600 shadow-soft';
+    return 'bg-gradient-to-br from-red-500 to-red-600 border-red-600 shadow-soft';
   };
+
+  const getStatusIndicatorClass = () => {
+    if (statusColor === 'green') return 'status-indicator success';
+    if (statusColor === 'red') return 'status-indicator error';
+    if (isRunningExperiment) return 'status-indicator info';
+    return 'status-indicator warning';
+  };
+
+  const StatusIcon = getStatusIcon();
 
   return (
-    <div className="group flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 hover:bg-accent/50 rounded-lg transition-colors">
-      <div className="flex items-center mb-2 sm:mb-0">
-        {isRunningExperiment ? (
-          <div className="w-10 h-10 rounded-full flex items-center justify-center bg-blue-500 border-2 border-blue-600 mr-4">
-            <Clock className="w-5 h-5 text-white animate-pulse" />
+    <div className="group p-4 hover:bg-accent/30 rounded-xl transition-all duration-200 border border-transparent hover:border-border/50 hover-lift">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start gap-4 flex-1 min-w-0">
+          {/* Score Display */}
+          <div className="flex-shrink-0">
+            {isRunningExperiment ? (
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-primary/10 border border-primary/20">
+                <Clock className="w-5 h-5 text-primary animate-pulse" />
+              </div>
+            ) : (
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-sm border ${getScoreColorClasses()}`}>
+                {score.toFixed(1)}
+              </div>
+            )}
           </div>
-        ) : (
-          <div
-            className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm border-2 mr-4 ${getScoreColorClasses()}`}
-          >
-            {score.toFixed(1)}
+
+          {/* Content */}
+          <div className="flex-1 min-w-0 space-y-2">
+            <div>
+              <h4 className="font-semibold text-foreground hover:text-primary transition-colors cursor-pointer truncate">
+                {ideaName}
+              </h4>
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                {timestamp}
+              </p>
+            </div>
+
+            {/* Status */}
+            <div className="flex items-center gap-2">
+              <div className={getStatusIndicatorClass()}>
+                <StatusIcon className="w-3 h-3" />
+                {statusText}
+              </div>
+            </div>
           </div>
-        )}
-        <div>
-          <a href="#" className="font-semibold text-primary hover:underline">
-            {ideaName}
-          </a>
-          <p className="text-xs text-muted-foreground">{timestamp}</p>
         </div>
-      </div>
-      <div className="flex flex-col sm:flex-row items-start sm:items-end gap-2 mt-2 sm:mt-0">
-         <Badge className={`${getBadgeClasses()} whitespace-nowrap`}>{statusText}</Badge>
+
+        {/* Action Button */}
         {!isRunningExperiment && reportId && (
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
-            className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 mt-2 sm:mt-0"
+            className="opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-primary/10 hover:text-primary"
             onClick={handleViewReport}
           >
             <Download className="h-4 w-4" />
