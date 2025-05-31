@@ -20,12 +20,66 @@ import SettingsPage from "./pages/SettingsPage";
 import ProfilePage from "./pages/ProfilePage";
 
 // Placeholder pages for now
-const ForgotPasswordPage = () => <div className="h-screen flex items-center justify-center">Forgot Password Page Placeholder - Coming Soon!</div>;
-const TermsPage = () => <div className="h-screen flex items-center justify-center">Terms of Service - Coming Soon!</div>;
-const PrivacyPage = () => <div className="h-screen flex items-center justify-center">Privacy Policy - Coming Soon!</div>;
+const ForgotPasswordPage = () => (
+  <div className="min-h-screen page-background flex items-center justify-center">
+    <div className="absolute inset-0 bg-gradient-to-br from-background via-muted/50 to-background">
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full filter blur-3xl opacity-30 animate-pulse"></div>
+    </div>
+    <div className="relative z-10 glassmorphism-card p-8 text-center">
+      <h1 className="text-2xl font-bold text-foreground">Forgot Password Page</h1>
+      <p className="text-muted-foreground">Coming Soon!</p>
+    </div>
+  </div>
+);
+
+const TermsPage = () => (
+  <div className="min-h-screen page-background flex items-center justify-center">
+    <div className="absolute inset-0 bg-gradient-to-br from-background via-muted/50 to-background">
+      <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-accent/20 rounded-full filter blur-3xl opacity-30 animate-pulse"></div>
+    </div>
+    <div className="relative z-10 glassmorphism-card p-8 text-center">
+      <h1 className="text-2xl font-bold text-foreground">Terms of Service</h1>
+      <p className="text-muted-foreground">Coming Soon!</p>
+    </div>
+  </div>
+);
+
+const PrivacyPage = () => (
+  <div className="min-h-screen page-background flex items-center justify-center">
+    <div className="absolute inset-0 bg-gradient-to-br from-background via-muted/50 to-background">
+      <div className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full filter blur-3xl opacity-30 animate-pulse"></div>
+    </div>
+    <div className="relative z-10 glassmorphism-card p-8 text-center">
+      <h1 className="text-2xl font-bold text-foreground">Privacy Policy</h1>
+      <p className="text-muted-foreground">Coming Soon!</p>
+    </div>
+  </div>
+);
+
 // Placeholder for other dashboard sub-pages if needed
-const ExperimentsPage = () => <div className="h-screen flex items-center justify-center">Experiments Page - Coming Soon!</div>;
-const BillingPage = () => <div className="h-screen flex items-center justify-center">Billing Page - Coming Soon!</div>;
+const ExperimentsPage = () => (
+  <div className="min-h-screen page-background flex items-center justify-center">
+    <div className="absolute inset-0 bg-gradient-to-br from-background via-muted/50 to-background">
+      <div className="absolute top-1/3 left-1/3 w-80 h-80 bg-accent/20 rounded-full filter blur-3xl opacity-30 animate-pulse"></div>
+    </div>
+    <div className="relative z-10 glassmorphism-card p-8 text-center">
+      <h1 className="text-2xl font-bold text-foreground">Experiments Page</h1>
+      <p className="text-muted-foreground">Coming Soon!</p>
+    </div>
+  </div>
+);
+
+const BillingPage = () => (
+  <div className="min-h-screen page-background flex items-center justify-center">
+    <div className="absolute inset-0 bg-gradient-to-br from-background via-muted/50 to-background">
+      <div className="absolute bottom-1/3 right-1/3 w-80 h-80 bg-primary/20 rounded-full filter blur-3xl opacity-30 animate-pulse"></div>
+    </div>
+    <div className="relative z-10 glassmorphism-card p-8 text-center">
+      <h1 className="text-2xl font-bold text-foreground">Billing Page</h1>
+      <p className="text-muted-foreground">Coming Soon!</p>
+    </div>
+  </div>
+);
 
 const queryClient = new QueryClient();
 
