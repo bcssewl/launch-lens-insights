@@ -4,7 +4,7 @@ import DashboardLayout from '@/layouts/DashboardLayout';
 import DashboardHeader from '@/components/DashboardHeader';
 import MetricCard from '@/components/MetricCard';
 import { Button } from '@/components/ui/button';
-import { Lightbulb, BarChart3, FlaskConical, Target, PlayCircle, Briefcase, Users, DollarSign, RefreshCw } from 'lucide-react';
+import { Lightbulb, BarChart3, FileText, Target, PlayCircle, Briefcase, Users, DollarSign, RefreshCw } from 'lucide-react';
 import ActivityItem from '@/components/ActivityItem';
 import InsightCard from '@/components/InsightCard';
 import { Card as ShadcnCard, CardContent as ShadcnCardContent, CardHeader as ShadcnCardHeader, CardTitle as ShadcnCardTitle } from '@/components/ui/card';
@@ -94,10 +94,10 @@ const DashboardPage: React.FC = () => {
             iconColor={stats.averageScore >= 6 ? "text-green-500" : "text-yellow-500"}
           />
           <MetricCard
-            title="Experiments Running"
-            value={stats.experimentsRunning.toString()}
-            subtitle={stats.experimentsRunning > 0 ? "In progress..." : "No active experiments"}
-            icon={FlaskConical}
+            title="Business Plans"
+            value={stats.businessPlans.toString()}
+            subtitle={stats.businessPlans > 0 ? "Plans generated" : "Coming soon"}
+            icon={FileText}
             iconColor="text-blue-500"
           />
           <MetricCard

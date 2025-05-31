@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -5,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 interface DashboardStats {
   ideasValidated: number;
   averageScore: number;
-  experimentsRunning: number;
+  businessPlans: number;
   successRate: number;
 }
 
@@ -23,7 +24,7 @@ export const useDashboardData = () => {
   const [stats, setStats] = useState<DashboardStats>({
     ideasValidated: 0,
     averageScore: 0,
-    experimentsRunning: 0,
+    businessPlans: 0,
     successRate: 0,
   });
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
@@ -51,10 +52,8 @@ export const useDashboardData = () => {
 
       if (validationsError) throw validationsError;
 
-      // Count pending and processing validations as experiments running
-      const experimentsRunning = validations?.filter(v => 
-        v.status === 'pending' || v.status === 'processing'
-      ).length || 0;
+      // For now, business plans count is 0 since the feature isn't implemented yet
+      const businessPlans = 0;
 
       // Fetch validation reports
       const { data: reports, error: reportsError } = await supabase
@@ -91,7 +90,7 @@ export const useDashboardData = () => {
       setStats({
         ideasValidated: totalReports,
         averageScore: Math.round(averageScore * 10) / 10,
-        experimentsRunning: experimentsRunning,
+        businessPlans: businessPlans,
         successRate: Math.round(successRate),
       });
 
