@@ -1,4 +1,3 @@
-
 import { cn } from "@/lib/utils"
 import { TestimonialCard, TestimonialAuthor } from "@/components/ui/testimonial-card"
 
@@ -50,10 +49,6 @@ export function TestimonialsSection({
               ))}
             </div>
           </div>
-
-          {/* Enhanced gradient overlays */}
-          <div className="pointer-events-none absolute inset-y-0 left-0 hidden w-1/4 bg-gradient-to-r from-surface via-surface/80 to-transparent sm:block" />
-          <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-1/4 bg-gradient-to-l from-surface via-surface/80 to-transparent sm:block" />
         </div>
       </div>
     </section>
