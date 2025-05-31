@@ -38,33 +38,37 @@ const MetricCard: React.FC<MetricCardProps> = ({
   const shouldShowProgress = showProgress || (title === "Average Score" && value !== "N/A") || (title === "Success Rate" && value !== "N/A");
 
   return (
-    <Card className="glassmorphism-card border-white/10 hover-lift hover-glow group">
+    <Card className="premium-card hover-lift group">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-        <CardTitle className="text-sm font-medium text-white/70 group-hover:text-white transition-colors">
+        <CardTitle className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">
           {title}
         </CardTitle>
-        <div className="p-2 bg-white/10 backdrop-blur-sm rounded-lg group-hover:bg-white/20 transition-colors">
-          <Icon className={`h-5 w-5 ${iconColor} opacity-80 group-hover:opacity-100 transition-opacity`} />
+        <div className="p-2.5 bg-primary/10 backdrop-blur-sm rounded-xl group-hover:bg-primary/20 transition-all duration-300 group-hover:scale-110">
+          <Icon className={`h-5 w-5 ${iconColor} transition-all duration-300`} />
         </div>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-4">
         <div className="flex items-baseline gap-1">
-          <div className="text-3xl font-bold text-white">{value}</div>
+          <div className="text-3xl font-bold text-foreground group-hover:text-primary transition-colors">
+            {value}
+          </div>
         </div>
         
         {shouldShowProgress && actualProgressValue > 0 && (
-          <div className="space-y-2">
-            <Progress 
-              value={actualProgressValue} 
-              className="h-2 bg-white/10"
-            />
-            <p className="text-xs text-white/60">
+          <div className="space-y-3">
+            <div className="progress-bar h-2">
+              <div 
+                className="progress-fill animate-slide-in"
+                style={{ width: `${actualProgressValue}%` }}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
               {Math.round(actualProgressValue)}% completion
             </p>
           </div>
         )}
         
-        <p className="text-sm text-white/70 leading-relaxed">{subtitle}</p>
+        <p className="text-sm text-muted-foreground leading-relaxed">{subtitle}</p>
       </CardContent>
     </Card>
   );

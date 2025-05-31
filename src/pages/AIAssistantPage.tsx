@@ -57,30 +57,23 @@ const AIAssistantPage: React.FC = () => {
   return (
     <DashboardLayout>
       <DashboardHeader>AI Assistant</DashboardHeader>
-      <div className="flex h-[calc(100vh-120px)] page-background">
-        {/* Enhanced Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-background via-muted/30 to-background">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/20 rounded-full filter blur-3xl opacity-30 animate-pulse"></div>
-          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent/20 rounded-full filter blur-3xl opacity-30 animate-pulse" style={{ animationDelay: '2s' }}></div>
-          <div className="absolute top-3/4 left-1/2 w-64 h-64 bg-blue-500/10 rounded-full filter blur-2xl opacity-20 animate-pulse" style={{ animationDelay: '4s' }}></div>
-        </div>
-        
+      <div className="flex h-[calc(100vh-120px)] page-background-full">
         <div className="flex-1 flex flex-col min-h-0 relative z-10">
           {/* Hero Section - Only show when no messages or just initial message */}
           {messages.length <= 1 && (
             <div className="flex-1 flex flex-col items-center justify-center p-8 text-center relative overflow-hidden">
-              <div className="relative z-10 mb-8">
-                <Badge variant="secondary" className="mb-6 px-4 py-2 bg-primary/10 text-primary border-primary/20 backdrop-blur-sm glassmorphism-card">
+              <div className="relative z-10 mb-8 animate-slide-in">
+                <Badge variant="secondary" className="mb-6 px-6 py-3 bg-primary/10 text-primary border-primary/20 premium-card">
                   <Sparkles className="w-4 h-4 mr-2" />
                   Introducing AI-Powered Startup Advisor
                 </Badge>
-                <h1 className="text-4xl md:text-6xl font-bold mb-4 bg-gradient-to-r from-foreground via-foreground to-foreground/80 bg-clip-text text-transparent">
-                  Build Stunning startups{' '}
-                  <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                <h1 className="text-4xl md:text-6xl font-bold mb-4 text-foreground">
+                  Build stunning startups{' '}
+                  <span className="heading-gradient animate-typewriter">
                     effortlessly
                   </span>
                 </h1>
-                <p className="text-lg text-muted-foreground mb-8 max-w-2xl">
+                <p className="text-lg text-muted-foreground mb-8 max-w-2xl leading-relaxed">
                   {isConfigured 
                     ? 'AI-powered startup advisor can create amazing business insights with few lines of prompt.' 
                     : 'AI service not configured - please contact support for assistance.'}
@@ -98,11 +91,13 @@ const AIAssistantPage: React.FC = () => {
           {messages.length > 1 && (
             <>
               {/* Status Bar */}
-              <div className="p-4 border-b border-border/50 glassmorphism-card rounded-none border-l-0 border-r-0 border-t-0 flex-shrink-0">
+              <div className="p-4 border-b border-border/30 premium-card rounded-none border-l-0 border-r-0 border-t-0 flex-shrink-0">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2">
-                      <Brain className="w-5 h-5 text-primary" />
+                      <div className="p-2 bg-primary/10 rounded-lg">
+                        <Brain className="w-5 h-5 text-primary" />
+                      </div>
                       <span className="text-sm font-medium text-foreground">AI Startup Advisor</span>
                     </div>
                     {currentSessionId && (
@@ -119,7 +114,7 @@ const AIAssistantPage: React.FC = () => {
               </div>
 
               {/* Chat Area */}
-              <div className="flex-1 min-h-0 overflow-hidden bg-gradient-to-b from-background/20 to-transparent">
+              <div className="flex-1 min-h-0 overflow-hidden">
                 <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
                   <div className="p-6 space-y-6">
                     {messages.slice(1).map((msg) => (

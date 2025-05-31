@@ -11,6 +11,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useValidationData } from '@/hooks/useValidationData';
+import { Lightbulb, BarChart3 } from 'lucide-react';
 
 import Step1BasicInfo from './form-steps/Step1BasicInfo';
 import Step2MarketDetails from './form-steps/Step2MarketDetails';
@@ -221,7 +222,7 @@ const IdeaValidationForm: React.FC = () => {
 
   if (loadingValidation) {
     return (
-      <Card className="w-full max-w-2xl mx-auto">
+      <Card className="w-full max-w-2xl mx-auto premium-card">
         <CardContent className="p-6">
           <div className="text-center">Loading validation data...</div>
         </CardContent>
@@ -230,42 +231,80 @@ const IdeaValidationForm: React.FC = () => {
   }
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
-      <CardHeader className="text-center">
-        <CardTitle className="text-3xl font-bold text-primary">
-          {duplicateId ? 'Edit & Resubmit Idea' : 'Validate Your Startup Idea'}
-        </CardTitle>
-        <CardDescription className="text-md text-muted-foreground">
-          {duplicateId ? 'Modify your idea and resubmit for analysis' : 'Get AI-powered insights in minutes'}
-        </CardDescription>
-        <div className="mt-4">
-          <Progress value={progressValue} className="w-full h-2" />
-          <p className="text-sm text-muted-foreground mt-1">Step {currentStep + 1} of {steps.length}: {steps[currentStep].name}</p>
+    <Card className="w-full max-w-2xl mx-auto premium-card">
+      <CardHeader className="text-center space-y-6">
+        <div className="flex justify-center">
+          <div className="p-4 bg-primary/10 rounded-2xl">
+            <Lightbulb className="w-8 h-8 text-primary" />
+          </div>
+        </div>
+        <div>
+          <CardTitle className="text-3xl font-bold heading-gradient mb-2">
+            {duplicateId ? 'Edit & Resubmit Idea' : 'Validate Your Startup Idea'}
+          </CardTitle>
+          <CardDescription className="text-md text-muted-foreground">
+            {duplicateId ? 'Modify your idea and resubmit for analysis' : 'Get AI-powered insights in minutes'}
+          </CardDescription>
+        </div>
+        
+        <div className="space-y-4">
+          <div className="progress-bar h-3">
+            <div 
+              className="progress-fill animate-slide-in"
+              style={{ width: `${progressValue}%` }}
+            />
+          </div>
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">
+              Step {currentStep + 1} of {steps.length}: {steps[currentStep].name}
+            </span>
+            <div className="flex items-center gap-2">
+              <div className="stepper-dot"></div>
+              <span className="text-xs text-muted-foreground">Active</span>
+            </div>
+          </div>
         </div>
       </CardHeader>
-      <CardContent>
+      
+      <CardContent className="px-8">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(processForm)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(processForm)} className="space-y-8">
             {currentStep === 0 && <Step1BasicInfo form={form} />}
             {currentStep === 1 && <Step2MarketDetails form={form} geographicFocusOptions={geographicFocusOptions} targetCustomerOptions={targetCustomerOptions} />}
             {currentStep === 2 && <Step3BusinessModel form={form} revenueModelOptions={revenueModelOptions}/>}
             {currentStep === 3 && <Step4ValidationGoals form={form} primaryGoalOptions={primaryGoalOptions} timelineOptions={timelineOptions}/>}
             
-            <div className="flex justify-between pt-6">
+            <div className="flex justify-between pt-8">
               {currentStep > 0 && (
-                <Button type="button" variant="outline" onClick={prevStep} disabled={isSubmitting}>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={prevStep} 
+                  disabled={isSubmitting}
+                  className="premium-card hover-lift"
+                >
                   Back
                 </Button>
               )}
               {currentStep === 0 && <div className="flex-grow"></div>} 
               
               {currentStep < steps.length - 1 ? (
-                <Button type="button" onClick={nextStep} disabled={isSubmitting}>
+                <Button 
+                  type="button" 
+                  onClick={nextStep} 
+                  disabled={isSubmitting}
+                  className="gradient-button hover-lift"
+                >
                   Continue
                 </Button>
               ) : (
-                <Button type="submit" className="gradient-button" disabled={isSubmitting}>
-                  {isSubmitting ? 'Submitting...' : (duplicateId ? 'Resubmit Analysis' : 'Analyze My Idea')}
+                <Button 
+                  type="submit" 
+                  className="gradient-button hover-lift" 
+                  disabled={isSubmitting}
+                >
+                  <BarChart3 className="mr-2 h-4 w-4" />
+                  {isSubmitting ? 'Submitting...' : (duplicateId ? '📊 Resubmit Analysis' : '📊 Analyze My Idea')}
                 </Button>
               )}
             </div>
