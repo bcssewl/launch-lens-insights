@@ -13,7 +13,7 @@ export function LandingNavbar() {
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 py-4 px-6 md:px-10 bg-transparent">
+    <nav className="fixed top-0 left-0 right-0 z-50 py-4 px-6 md:px-10 bg-black/20 backdrop-blur-md border-b border-white/10">
       <div className="container mx-auto flex justify-between items-center">
         <Logo />
         <div className="flex items-center space-x-4">
