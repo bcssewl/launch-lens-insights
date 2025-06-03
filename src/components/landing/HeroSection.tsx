@@ -24,9 +24,7 @@ export const HeroSection = () => {
   };
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center text-white overflow-hidden pt-20" style={{
-      background: 'linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 25%, #16213e 50%, #0f3460 75%, #533483 100%)'
-    }}>
+    <section className="relative min-h-screen hero-gradient flex items-center justify-center text-white overflow-hidden pt-20">
       <FloatingElements />
       
       <div className="container mx-auto px-6 relative z-10 text-center">

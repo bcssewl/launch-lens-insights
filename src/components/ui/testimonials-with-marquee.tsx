@@ -1,3 +1,4 @@
+
 import { cn } from "@/lib/utils"
 import { TestimonialCard, TestimonialAuthor } from "@/components/ui/testimonial-card"
 
@@ -20,7 +21,7 @@ export function TestimonialsSection({
 }: TestimonialsSectionProps) {
   return (
     <section className={cn(
-      "py-16 md:py-24 relative overflow-hidden -mt-1",
+      "py-16 md:py-24 relative overflow-hidden",
       "bg-gradient-to-b from-[#533483] via-[#2a1a3e] to-[#0f0a1a]",
       className
     )}>
