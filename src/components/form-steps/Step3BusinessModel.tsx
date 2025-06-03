@@ -1,16 +1,15 @@
-
 import React from 'react';
-import { UseFormReturn } from 'react-hook-form'; // Controller removed as it's not used
+import { UseFormReturn } from 'react-hook-form';
 import { FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { Textarea } from '@/components/ui/textarea';
-import { IdeaValidationFormData } from '../IdeaValidationForm';
-import { revenueModelOptions as revenueModelOptionsData } from '@/lib/validation-constants'; // Import constants with new path
+import { IdeaValidationFormData } from '@/hooks/useIdeaValidationForm';
+import { revenueModelOptions as revenueModelOptionsData } from '@/lib/validation-constants';
 
 interface Step3BusinessModelProps {
   form: UseFormReturn<IdeaValidationFormData>;
-  revenueModelOptions: typeof revenueModelOptionsData; // Use typeof with the imported constant
+  revenueModelOptions: typeof revenueModelOptionsData;
 }
 
 const Step3BusinessModel: React.FC<Step3BusinessModelProps> = ({ form, revenueModelOptions }) => {
@@ -49,12 +48,12 @@ const Step3BusinessModel: React.FC<Step3BusinessModelProps> = ({ form, revenueMo
             <FormLabel>Expected Pricing</FormLabel>
             <FormControl>
               <Slider
-                defaultValue={[field.value ?? 50]} // Use nullish coalescing for default
+                defaultValue={[field.value ?? 50]}
                 onValueChange={(value) => field.onChange(value[0])}
                 max={1000}
                 min={1}
                 step={1}
-                value={[field.value ?? 50]} // Ensure slider is controlled
+                value={[field.value ?? 50]}
               />
             </FormControl>
             <FormDescription>
@@ -82,4 +81,3 @@ const Step3BusinessModel: React.FC<Step3BusinessModelProps> = ({ form, revenueMo
 };
 
 export default Step3BusinessModel;
-

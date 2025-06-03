@@ -1,10 +1,9 @@
-
 import React from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { IdeaValidationFormData } from '../IdeaValidationForm';
+import { IdeaValidationFormData } from '@/hooks/useIdeaValidationForm';
 
 interface Step1BasicInfoProps {
   form: UseFormReturn<IdeaValidationFormData>;
@@ -87,4 +86,3 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({ form }) => {
 };
 
 export default Step1BasicInfo;
-

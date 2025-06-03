@@ -1,17 +1,16 @@
-
 import React from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { IdeaValidationFormData } from '../IdeaValidationForm'; // This type import is still needed
-import { geographicFocusOptions as geographicFocusOptionsData, targetCustomerOptions as targetCustomerOptionsData } from '@/lib/validation-constants'; // Import constants with new path
+import { IdeaValidationFormData } from '@/hooks/useIdeaValidationForm';
+import { geographicFocusOptions as geographicFocusOptionsData, targetCustomerOptions as targetCustomerOptionsData } from '@/lib/validation-constants';
 
 interface Step2MarketDetailsProps {
   form: UseFormReturn<IdeaValidationFormData>;
-  targetCustomerOptions: typeof targetCustomerOptionsData; // Use typeof with the imported constant
-  geographicFocusOptions: typeof geographicFocusOptionsData; // Use typeof with the imported constant
+  targetCustomerOptions: typeof targetCustomerOptionsData;
+  geographicFocusOptions: typeof geographicFocusOptionsData;
 }
 
 const Step2MarketDetails: React.FC<Step2MarketDetailsProps> = ({ form, targetCustomerOptions, geographicFocusOptions }) => {
@@ -106,4 +105,3 @@ const Step2MarketDetails: React.FC<Step2MarketDetailsProps> = ({ form, targetCus
 };
 
 export default Step2MarketDetails;
-

@@ -1,18 +1,16 @@
-
 import React from 'react';
-import { UseFormReturn } from 'react-hook-form'; // Controller removed as it's not used
+import { UseFormReturn } from 'react-hook-form';
 import { FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage } from '@/components/ui/form';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-// Label import was here but not used, confirming it's not needed.
-import { IdeaValidationFormData } from '../IdeaValidationForm';
-import { primaryGoalOptions as primaryGoalOptionsData, timelineOptions as timelineOptionsData } from '@/lib/validation-constants'; // Import constants
+import { IdeaValidationFormData } from '@/hooks/useIdeaValidationForm';
+import { primaryGoalOptions as primaryGoalOptionsData, timelineOptions as timelineOptionsData } from '@/lib/validation-constants';
 
 interface Step4ValidationGoalsProps {
   form: UseFormReturn<IdeaValidationFormData>;
-  primaryGoalOptions: typeof primaryGoalOptionsData; // Use typeof with imported constant
-  timelineOptions: typeof timelineOptionsData; // Use typeof with imported constant
+  primaryGoalOptions: typeof primaryGoalOptionsData;
+  timelineOptions: typeof timelineOptionsData;
 }
 
 const Step4ValidationGoals: React.FC<Step4ValidationGoalsProps> = ({ form, primaryGoalOptions, timelineOptions }) => {
@@ -31,10 +29,10 @@ const Step4ValidationGoals: React.FC<Step4ValidationGoalsProps> = ({ form, prima
                 onValueChange={field.onChange}
                 defaultValue={field.value}
                 className="flex flex-col space-y-1"
-                value={field.value} // Ensure RadioGroup is controlled
+                value={field.value}
               >
                 {primaryGoalOptions.map(option => (
-                   <FormItem key={option} className="flex items-center space-x-3 space-y-0">
+                  <FormItem key={option} className="flex items-center space-x-3 space-y-0">
                     <FormControl>
                       <RadioGroupItem value={option} />
                     </FormControl>
@@ -53,7 +51,7 @@ const Step4ValidationGoals: React.FC<Step4ValidationGoalsProps> = ({ form, prima
         render={({ field }) => (
           <FormItem>
             <FormLabel>Development Timeline</FormLabel>
-            <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}> {/* Ensure Select is controlled */}
+            <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
               <FormControl>
                 <SelectTrigger>
                   <SelectValue placeholder="Select your estimated timeline" />
@@ -87,4 +85,3 @@ const Step4ValidationGoals: React.FC<Step4ValidationGoalsProps> = ({ form, prima
 };
 
 export default Step4ValidationGoals;
-

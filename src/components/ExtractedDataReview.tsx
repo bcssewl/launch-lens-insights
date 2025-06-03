@@ -1,10 +1,9 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, AlertCircle, Edit3 } from 'lucide-react';
-import { IdeaValidationFormData } from './IdeaValidationForm';
+import { IdeaValidationFormData } from '@/hooks/useIdeaValidationForm';
 
 interface ExtractedDataReviewProps {
   extractedData: Partial<IdeaValidationFormData>;
