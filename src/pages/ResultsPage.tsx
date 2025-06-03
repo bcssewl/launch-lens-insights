@@ -31,12 +31,14 @@ const ResultsPage: React.FC = () => {
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="w-full max-w-7xl mx-auto px-4 py-6 space-y-6">
-          <Skeleton className="h-32 w-full" />
-          <Skeleton className="h-12 w-full" />
-          <div className="space-y-4">
-            <Skeleton className="h-64 w-full" />
-            <Skeleton className="h-64 w-full" />
+        <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
+          <div className="w-full max-w-7xl mx-auto px-6 py-8 space-y-6">
+            <Skeleton className="h-32 w-full rounded-3xl" />
+            <Skeleton className="h-12 w-full rounded-2xl" />
+            <div className="space-y-4">
+              <Skeleton className="h-64 w-full rounded-3xl" />
+              <Skeleton className="h-64 w-full rounded-3xl" />
+            </div>
           </div>
         </div>
       </DashboardLayout>
@@ -46,12 +48,14 @@ const ResultsPage: React.FC = () => {
   if (error || !report) {
     return (
       <DashboardLayout>
-        <div className="w-full max-w-7xl mx-auto px-4 py-6">
-          <Alert variant="destructive">
-            <AlertDescription>
-              {error || 'Report not found'}
-            </AlertDescription>
-          </Alert>
+        <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
+          <div className="w-full max-w-7xl mx-auto px-6 py-8">
+            <Alert variant="destructive" className="rounded-2xl border-0 shadow-lg">
+              <AlertDescription>
+                {error || 'Report not found'}
+              </AlertDescription>
+            </Alert>
+          </div>
         </div>
       </DashboardLayout>
     );
@@ -60,7 +64,6 @@ const ResultsPage: React.FC = () => {
   // Get report data or use default structure
   const reportData = report.report_data || {};
   
-  // Extract basic info
   const ideaName = report.idea_name || 'Untitled Idea';
   const score = report.overall_score || 0;
   const recommendation = report.recommendation || 'Analysis in progress';
@@ -68,7 +71,6 @@ const ResultsPage: React.FC = () => {
     ? format(new Date(report.completed_at), 'MMM d, yyyy')
     : format(new Date(report.created_at), 'MMM d, yyyy');
 
-  // Extract detailed data with proper fallbacks
   const executiveSummary = reportData.executiveSummary || report.one_line_description || 'No summary available';
   const keyMetrics = reportData.keyMetrics || {
     marketSize: { value: 'N/A' },
@@ -77,7 +79,6 @@ const ResultsPage: React.FC = () => {
     revenuePotential: { value: 'N/A' }
   };
 
-  // Extract market analysis data with proper structure
   const marketAnalysisData = reportData.marketAnalysis || {};
   const marketAnalysis = {
     tamSamSom: marketAnalysisData.tamSamSom || [],
@@ -86,7 +87,6 @@ const ResultsPage: React.FC = () => {
     geographicOpportunity: marketAnalysisData.geographicOpportunity || []
   };
 
-  // Extract other data sections
   const competition = reportData.competition || {
     competitors: [],
     competitiveAdvantages: [],
@@ -116,69 +116,73 @@ const ResultsPage: React.FC = () => {
 
   return (
     <DashboardLayout>
-      <div className="w-full max-w-7xl mx-auto px-4 py-6 space-y-6">
-        <ResultsHeader 
-          ideaName={ideaName}
-          score={score}
-          recommendationText={recommendation}
-          analysisDate={analysisDate}
-        />
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
+        <div className="w-full max-w-7xl mx-auto px-6 py-8 space-y-8">
+          <ResultsHeader 
+            ideaName={ideaName}
+            score={score}
+            recommendationText={recommendation}
+            analysisDate={analysisDate}
+          />
 
-        <Tabs defaultValue="overview" className="w-full">
-          <div className="w-full overflow-x-auto mb-4">
-            <TabsList className="w-full grid grid-cols-7 min-w-fit">
-              <TabsTrigger value="overview" className="text-xs sm:text-sm px-2">Overview</TabsTrigger>
-              <TabsTrigger value="market" className="text-xs sm:text-sm px-2">Market</TabsTrigger>
-              <TabsTrigger value="competition" className="text-xs sm:text-sm px-2">Competition</TabsTrigger>
-              <TabsTrigger value="financial" className="text-xs sm:text-sm px-2">Financial</TabsTrigger>
-              <TabsTrigger value="swot" className="text-xs sm:text-sm px-2">SWOT</TabsTrigger>
-              <TabsTrigger value="scores" className="text-xs sm:text-sm px-2">Scores</TabsTrigger>
-              <TabsTrigger value="actions" className="text-xs sm:text-sm px-2">Actions</TabsTrigger>
-            </TabsList>
+          <div className="apple-card border-0 shadow-lg">
+            <Tabs defaultValue="overview" className="w-full">
+              <div className="w-full overflow-x-auto mb-6 p-6 pb-0">
+                <TabsList className="w-full grid grid-cols-7 min-w-fit bg-muted/30 rounded-2xl p-1">
+                  <TabsTrigger value="overview" className="text-xs sm:text-sm px-3 rounded-xl">Overview</TabsTrigger>
+                  <TabsTrigger value="market" className="text-xs sm:text-sm px-3 rounded-xl">Market</TabsTrigger>
+                  <TabsTrigger value="competition" className="text-xs sm:text-sm px-3 rounded-xl">Competition</TabsTrigger>
+                  <TabsTrigger value="financial" className="text-xs sm:text-sm px-3 rounded-xl">Financial</TabsTrigger>
+                  <TabsTrigger value="swot" className="text-xs sm:text-sm px-3 rounded-xl">SWOT</TabsTrigger>
+                  <TabsTrigger value="scores" className="text-xs sm:text-sm px-3 rounded-xl">Scores</TabsTrigger>
+                  <TabsTrigger value="actions" className="text-xs sm:text-sm px-3 rounded-xl">Actions</TabsTrigger>
+                </TabsList>
+              </div>
+              
+              <div className="w-full px-6 pb-6">
+                <TabsContent value="overview" className="mt-4 w-full">
+                  <OverviewTabContent 
+                    summary={executiveSummary}
+                    metrics={keyMetrics}
+                  />
+                </TabsContent>
+                <TabsContent value="market" className="mt-4 w-full">
+                  <MarketAnalysisTabContent data={marketAnalysis} />
+                </TabsContent>
+                <TabsContent value="competition" className="mt-4 w-full">
+                  <CompetitionTabContent data={competition} />
+                </TabsContent>
+                <TabsContent value="financial" className="mt-4 w-full">
+                  <FinancialAnalysisTabContent data={financialAnalysis} />
+                </TabsContent>
+                <TabsContent value="swot" className="mt-4 w-full">
+                  <SWOTAnalysisTabContent data={swot} />
+                </TabsContent>
+                <TabsContent value="scores" className="mt-4 w-full">
+                  <DetailedScoresTabContent scores={detailedScores} />
+                </TabsContent>
+                <TabsContent value="actions" className="mt-4 w-full">
+                  <ActionItemsTabContent items={actionItems} />
+                </TabsContent>
+              </div>
+            </Tabs>
           </div>
-          
-          <div className="w-full">
-            <TabsContent value="overview" className="mt-4 w-full">
-              <OverviewTabContent 
-                summary={executiveSummary}
-                metrics={keyMetrics}
-              />
-            </TabsContent>
-            <TabsContent value="market" className="mt-4 w-full">
-              <MarketAnalysisTabContent data={marketAnalysis} />
-            </TabsContent>
-            <TabsContent value="competition" className="mt-4 w-full">
-              <CompetitionTabContent data={competition} />
-            </TabsContent>
-            <TabsContent value="financial" className="mt-4 w-full">
-              <FinancialAnalysisTabContent data={financialAnalysis} />
-            </TabsContent>
-            <TabsContent value="swot" className="mt-4 w-full">
-              <SWOTAnalysisTabContent data={swot} />
-            </TabsContent>
-            <TabsContent value="scores" className="mt-4 w-full">
-              <DetailedScoresTabContent scores={detailedScores} />
-            </TabsContent>
-            <TabsContent value="actions" className="mt-4 w-full">
-              <ActionItemsTabContent items={actionItems} />
-            </TabsContent>
-          </div>
-        </Tabs>
 
-        <div className="w-full border-t pt-6 mt-6">
-          <div className="flex flex-col sm:flex-row gap-3 justify-end">
-            <Button variant="outline" size="sm" className="w-full sm:w-auto">
-              <Download className="mr-2 h-4 w-4" /> Download PDF
-            </Button>
-            <Button variant="outline" size="sm" className="w-full sm:w-auto" onClick={handleAIFollowUp}>
-              <MessageSquare className="mr-2 h-4 w-4" /> Ask AI Follow-up
-            </Button>
-            <Button size="sm" className="w-full sm:w-auto">
-              <Save className="mr-2 h-4 w-4" /> Save to My Reports
-            </Button>
-            <Button variant="secondary" size="sm" className="w-full sm:w-auto">
-              <PlusCircle className="mr-2 h-4 w-4" /> Start New Analysis
-            </Button>
+          <div className="w-full border-t border-border/50 pt-8 mt-8">
+            <div className="flex flex-col sm:flex-row gap-3 justify-end">
+              <Button variant="outline" size="sm" className="w-full sm:w-auto apple-button-outline">
+                <Download className="mr-2 h-4 w-4" /> Download PDF
+              </Button>
+              <Button variant="outline" size="sm" className="w-full sm:w-auto apple-button-outline" onClick={handleAIFollowUp}>
+                <MessageSquare className="mr-2 h-4 w-4" /> Ask AI Follow-up
+              </Button>
+              <Button size="sm" className="w-full sm:w-auto apple-button">
+                <Save className="mr-2 h-4 w-4" /> Save to My Reports
+              </Button>
+              <Button variant="secondary" size="sm" className="w-full sm:w-auto apple-button-outline">
+                <PlusCircle className="mr-2 h-4 w-4" /> Start New Analysis
+              </Button>
+            </div>
           </div>
         </div>
       </div>

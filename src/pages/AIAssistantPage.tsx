@@ -55,45 +55,49 @@ const AIAssistantPage: React.FC = () => {
 
   return (
     <DashboardLayout>
-      <DashboardHeader>AI Assistant</DashboardHeader>
-      <div className="flex h-[calc(100vh-120px)]">
-        <div className="flex-1 flex flex-col min-h-0">
-          {/* Subheader */}
-          <div className="p-4 border-b bg-background flex-shrink-0">
-            <p className="text-sm text-muted-foreground">
-              {isConfigured ? 'AI-powered startup advisor' : 'AI service not configured'}
-              {currentSessionId && (
-                <span className="ml-2 px-2 py-1 bg-primary/10 text-primary text-xs rounded">
-                  Active Session
-                </span>
-              )}
-            </p>
+      <div className="bg-gradient-to-br from-background via-background to-muted/10 min-h-screen">
+        <DashboardHeader>AI Assistant</DashboardHeader>
+        <div className="flex h-[calc(100vh-120px)]">
+          <div className="flex-1 flex flex-col min-h-0">
+            {/* Subheader */}
+            <div className="p-6 border-b border-border/50 bg-background/50 backdrop-blur-xl flex-shrink-0 rounded-t-3xl mx-4 mt-4">
+              <p className="text-sm text-muted-foreground">
+                {isConfigured ? 'AI-powered startup advisor' : 'AI service not configured'}
+                {currentSessionId && (
+                  <span className="ml-2 px-3 py-1 bg-primary/10 text-primary text-xs rounded-full border border-primary/20">
+                    Active Session
+                  </span>
+                )}
+              </p>
+            </div>
+
+            {/* Chat Area - Takes remaining space */}
+            <div className="flex-1 min-h-0 overflow-hidden mx-4 bg-background/30 backdrop-blur-xl border border-border/50 border-t-0 rounded-b-3xl">
+              <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
+                <div className="p-6 space-y-6">
+                  {messages.map((msg) => (
+                    <ChatMessage key={msg.id} message={{ ...msg, timestamp: formatTimestamp(msg.timestamp) }} />
+                  ))}
+                  {isTyping && <TypingIndicator />}
+                </div>
+              </ScrollArea>
+            </div>
+
+            {/* Input Area - Sticky at bottom */}
+            <div className="p-4">
+              <ChatInput onSendMessage={handleSendMessageWithSession} isTyping={isTyping} />
+            </div>
           </div>
 
-          {/* Chat Area - Takes remaining space */}
-          <div className="flex-1 min-h-0 overflow-hidden">
-            <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
-              <div className="p-6 space-y-4">
-                {messages.map((msg) => (
-                  <ChatMessage key={msg.id} message={{ ...msg, timestamp: formatTimestamp(msg.timestamp) }} />
-                ))}
-                {isTyping && <TypingIndicator />}
-              </div>
-            </ScrollArea>
-          </div>
-
-          {/* Input Area - Sticky at bottom */}
-          <ChatInput onSendMessage={handleSendMessageWithSession} isTyping={isTyping} />
+          {/* Right Sidebar (Desktop Only) */}
+          <ChatSidebar 
+            onClearConversation={handleClearConversationWithHistory}
+            onDownloadChat={handleDownloadChat}
+            recentTopics={[]}
+            currentSessionId={currentSessionId}
+            onSessionSelect={handleSessionSelect}
+          />
         </div>
-
-        {/* Right Sidebar (Desktop Only) */}
-        <ChatSidebar 
-          onClearConversation={handleClearConversationWithHistory}
-          onDownloadChat={handleDownloadChat}
-          recentTopics={[]}
-          currentSessionId={currentSessionId}
-          onSessionSelect={handleSessionSelect}
-        />
       </div>
     </DashboardLayout>
   );

@@ -24,33 +24,33 @@ const DashboardPage: React.FC = () => {
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-background">
+        <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
           <DashboardHeader />
-          <div className="p-8 space-y-8">
+          <div className="p-6 lg:p-8 space-y-8">
             {/* Quick Action Section */}
             <section className="flex flex-col sm:flex-row items-center gap-4">
-              <Button size="lg" className="w-full sm:w-auto gradient-button shadow-soft" asChild>
+              <Button size="lg" className="w-full sm:w-auto apple-button shadow-lg" asChild>
                 <Link to="/dashboard/validate">
                   <Lightbulb className="mr-2 h-5 w-5" />
                   Validate New Idea
                 </Link>
               </Button>
-              <Button variant="outline" size="lg" className="w-full sm:w-auto hover-lift">
+              <Button variant="outline" size="lg" className="w-full sm:w-auto apple-button-outline">
                 <PlayCircle className="mr-2 h-5 w-5" />
                 View Tutorial
               </Button>
             </section>
 
             {/* Loading skeletons */}
-            <section className="grid gap-8 md:grid-cols-2 xl:grid-cols-4">
+            <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
               {[...Array(4)].map((_, i) => (
-                <Skeleton key={i} className="h-40 w-full rounded-2xl" />
+                <Skeleton key={i} className="h-40 w-full rounded-3xl" />
               ))}
             </section>
             
             <section className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <Skeleton className="lg:col-span-2 h-80 rounded-2xl" />
-              <Skeleton className="h-80 rounded-2xl" />
+              <Skeleton className="lg:col-span-2 h-80 rounded-3xl" />
+              <Skeleton className="h-80 rounded-3xl" />
             </section>
           </div>
         </div>
@@ -60,22 +60,22 @@ const DashboardPage: React.FC = () => {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-background">
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
         <DashboardHeader />
-        <div className="p-8 space-y-8">
+        <div className="p-6 lg:p-8 space-y-8">
           {/* Quick Action Section */}
           <section className="flex flex-col sm:flex-row items-center gap-4">
-            <Button size="lg" className="w-full sm:w-auto gradient-button shadow-soft hover-lift" asChild>
+            <Button size="lg" className="w-full sm:w-auto apple-button shadow-lg hover:shadow-xl transition-all duration-300" asChild>
               <Link to="/dashboard/validate">
                 <Lightbulb className="mr-2 h-5 w-5" />
                 Validate New Idea
               </Link>
             </Button>
-            <Button variant="outline" size="lg" className="w-full sm:w-auto hover-lift border-primary/20 hover:border-primary/40">
+            <Button variant="outline" size="lg" className="w-full sm:w-auto apple-button-outline">
               <PlayCircle className="mr-2 h-5 w-5" />
               View Tutorial
             </Button>
-            <Button variant="outline" size="sm" onClick={refreshData} className="hover-lift">
+            <Button variant="outline" size="sm" onClick={refreshData} className="apple-button-outline">
               <RefreshCw className="mr-2 h-4 w-4" />
               Refresh
             </Button>
@@ -115,7 +115,7 @@ const DashboardPage: React.FC = () => {
           {/* Recent Activity Feed & Quick Insights Panel */}
           <section className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Recent Activity Feed */}
-            <ShadcnCard className="lg:col-span-2 enhanced-card">
+            <ShadcnCard className="lg:col-span-2 apple-card border-0 shadow-lg">
               <ShadcnCardHeader className="pb-4">
                 <ShadcnCardTitle className="text-xl font-semibold">Recent Activity</ShadcnCardTitle>
               </ShadcnCardHeader>
@@ -134,11 +134,11 @@ const DashboardPage: React.FC = () => {
                   ))
                 ) : (
                   <div className="text-center py-12">
-                    <div className="w-16 h-16 mx-auto mb-4 bg-primary/10 rounded-full flex items-center justify-center">
+                    <div className="w-16 h-16 mx-auto mb-4 bg-primary/10 rounded-2xl flex items-center justify-center">
                       <Lightbulb className="w-8 h-8 text-primary" />
                     </div>
                     <p className="text-muted-foreground text-sm mb-4">No recent activity yet.</p>
-                    <Button variant="outline" className="hover-lift border-primary/20 hover:border-primary/40" asChild>
+                    <Button variant="outline" className="apple-button-outline" asChild>
                       <Link to="/dashboard/validate">
                         <Lightbulb className="mr-2 h-4 w-4" />
                         Validate Your First Idea
@@ -151,7 +151,7 @@ const DashboardPage: React.FC = () => {
 
             {/* Quick Insights Panel */}
             <div className="space-y-6">
-              <ShadcnCard className="enhanced-card">
+              <ShadcnCard className="apple-card border-0 shadow-lg">
                 <ShadcnCardHeader className="pb-4">
                   <ShadcnCardTitle className="text-xl font-semibold">Your Insights</ShadcnCardTitle>
                 </ShadcnCardHeader>
@@ -166,7 +166,7 @@ const DashboardPage: React.FC = () => {
                     ))
                   ) : (
                     <div className="text-center py-8">
-                      <div className="w-12 h-12 mx-auto mb-3 bg-primary/10 rounded-lg flex items-center justify-center">
+                      <div className="w-12 h-12 mx-auto mb-3 bg-primary/10 rounded-2xl flex items-center justify-center">
                         <BarChart3 className="w-6 h-6 text-primary" />
                       </div>
                       <p className="text-muted-foreground text-sm">Complete a few validations to see personalized insights.</p>
@@ -176,7 +176,7 @@ const DashboardPage: React.FC = () => {
               </ShadcnCard>
 
               {/* Quick Access to AI Assistant */}
-              <ShadcnCard className="enhanced-card">
+              <ShadcnCard className="apple-card border-0 shadow-lg">
                 <ShadcnCardHeader className="pb-4">
                   <ShadcnCardTitle className="text-lg font-semibold">AI Assistant</ShadcnCardTitle>
                 </ShadcnCardHeader>
@@ -184,7 +184,7 @@ const DashboardPage: React.FC = () => {
                   <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
                     Get personalized advice for your startup ideas
                   </p>
-                  <Button className="w-full gradient-button shadow-soft hover-lift" asChild>
+                  <Button className="w-full apple-button shadow-lg hover:shadow-xl transition-all duration-300" asChild>
                     <Link to="/dashboard/assistant">
                       <PlayCircle className="mr-2 h-4 w-4" />
                       Start Chat

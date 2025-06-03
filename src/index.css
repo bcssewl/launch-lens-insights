@@ -95,6 +95,19 @@
 }
 
 @layer components {
+  /* Landing Page Styles */
+  .hero-gradient {
+    background: linear-gradient(315deg, #0f0f23 0%, #1a1a2e 25%, #16213e 50%, #1a1a2e 75%, #0f0f23 100%);
+    background-size: 400% 400%;
+    animation: gradientShift 15s ease infinite;
+  }
+  
+  .dark .hero-gradient {
+    background: linear-gradient(315deg, #0f0f23 0%, #1a1a2e 25%, #16213e 50%, #1a1a2e 75%, #0f0f23 100%);
+    background-size: 400% 400%;
+    animation: gradientShift 15s ease infinite;
+  }
+
   .apple-hero {
     background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%);
   }
@@ -103,26 +116,26 @@
   }
   
   .apple-card {
-    @apply bg-white/80 backdrop-blur-xl border border-gray-200/50 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500;
+    @apply bg-white/90 backdrop-blur-xl border border-gray-200/30 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500;
   }
   .dark .apple-card {
-    @apply bg-gray-900/80 border-gray-700/50;
+    @apply bg-gray-900/90 border-gray-700/30;
   }
 
   .apple-button {
-    @apply bg-gradient-to-r from-primary to-accent text-white font-medium px-8 py-4 rounded-full transition-all duration-300 hover:shadow-lg hover:scale-105;
+    @apply bg-gradient-to-r from-primary to-accent text-white font-medium px-8 py-4 rounded-2xl transition-all duration-300 hover:shadow-lg hover:scale-105 border-0;
     box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
   }
   
   .apple-button-outline {
-    @apply border-2 border-primary/20 text-primary bg-white/80 backdrop-blur-xl font-medium px-8 py-4 rounded-full transition-all duration-300 hover:bg-primary/5 hover:border-primary/40;
+    @apply border-2 border-primary/20 text-primary bg-white/90 backdrop-blur-xl font-medium px-8 py-4 rounded-2xl transition-all duration-300 hover:bg-primary/5 hover:border-primary/40;
   }
   .dark .apple-button-outline {
-    @apply bg-gray-900/80 text-white border-gray-600/50 hover:bg-gray-800/90;
+    @apply bg-gray-900/90 text-white border-gray-600/30 hover:bg-gray-800/90;
   }
 
   .apple-badge {
-    @apply inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-primary/10 text-primary border border-primary/20 backdrop-blur-sm;
+    @apply inline-flex items-center px-4 py-2 rounded-2xl text-sm font-medium bg-primary/10 text-primary border border-primary/20 backdrop-blur-sm;
   }
 
   .apple-section {
@@ -158,10 +171,62 @@
   }
 
   .apple-metric-card {
-    @apply bg-white/90 backdrop-blur-xl border border-gray-200/50 rounded-2xl p-6 hover:bg-white/95 transition-all duration-300;
+    @apply bg-white/95 backdrop-blur-xl border border-gray-200/30 rounded-3xl p-6 hover:bg-white/98 transition-all duration-300 shadow-lg;
   }
   .dark .apple-metric-card {
-    @apply bg-gray-900/90 border-gray-700/50 hover:bg-gray-800/95;
+    @apply bg-gray-900/95 border-gray-700/30 hover:bg-gray-800/98;
+  }
+
+  /* Dashboard-specific Apple styles */
+  .enhanced-card {
+    @apply apple-card shadow-lg hover:shadow-xl;
+  }
+
+  .gradient-button {
+    @apply apple-button;
+  }
+
+  .hover-lift {
+    @apply transition-transform duration-200 hover:-translate-y-1;
+  }
+
+  .shadow-soft {
+    box-shadow: 0 4px 6px -1px rgba(139, 92, 246, 0.1), 0 2px 4px -1px rgba(139, 92, 246, 0.06);
+  }
+
+  /* Chat interface styles */
+  .chat-container {
+    @apply bg-white/95 backdrop-blur-xl border border-gray-200/30 rounded-3xl shadow-lg;
+  }
+  .dark .chat-container {
+    @apply bg-gray-900/95 border-gray-700/30;
+  }
+
+  /* Form styles */
+  .apple-input {
+    @apply rounded-2xl border-gray-200/50 bg-white/80 backdrop-blur-sm focus:border-primary/50 focus:ring-primary/20;
+  }
+  .dark .apple-input {
+    @apply border-gray-600/50 bg-gray-800/80 focus:border-primary/50;
+  }
+
+  /* Tab styles */
+  .apple-tabs {
+    @apply bg-gray-100/50 rounded-2xl p-1;
+  }
+  .dark .apple-tabs {
+    @apply bg-gray-800/50;
+  }
+
+  .apple-tab {
+    @apply rounded-xl px-4 py-2 text-sm font-medium transition-all duration-200;
+  }
+
+  .apple-tab[data-state="active"] {
+    @apply bg-white text-primary shadow-sm;
+  }
+  .dark .apple-tab[data-state="active"] {
+    @apply bg-gray-700 text-white;
   }
 }
 
@@ -174,4 +239,9 @@
 @keyframes float {
   0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.7; }
   50% { transform: translateY(-15px) rotate(3deg); opacity: 1; }
+}
+
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
 }
