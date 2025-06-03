@@ -27,14 +27,16 @@ const pricingTiers = [
 ];
 
 export const PricingSection = () => (
-  <section className="py-16 md:py-24 bg-surface">
-    <div className="container mx-auto px-6">
-      <h2 className="text-3xl md:text-4xl font-bold font-heading text-center mb-4">
-        Simple, Transparent Pricing
-      </h2>
-      <p className="text-center text-muted-foreground mb-12 max-w-xl mx-auto">
-        Choose the plan that's right for your journey. No hidden fees, upgrade or cancel anytime.
-      </p>
+  <section className="apple-section">
+    <div className="apple-container">
+      <div className="text-center mb-16">
+        <h2 className="apple-heading">
+          Simple, Transparent Pricing
+        </h2>
+        <p className="apple-subheading">
+          Choose the plan that's right for your journey. No hidden fees, upgrade or cancel anytime.
+        </p>
+      </div>
       <div className="grid md:grid-cols-3 gap-8 items-stretch">
         {pricingTiers.map((tier, index) => (
           <PricingCard
@@ -48,7 +50,7 @@ export const PricingSection = () => (
           />
         ))}
       </div>
-      <p className="text-center text-muted-foreground mt-12 text-sm">
+      <p className="text-center text-gray-600 dark:text-gray-400 mt-12 text-sm">
         All plans come with a 7-day money-back guarantee.
       </p>
     </div>

@@ -11,21 +11,17 @@ export default function LandingPage() {
     <div className="flex flex-col min-h-screen">
       <LandingNavbar />
       <main className="flex-grow">
-        <div className="relative">
-          <HeroSection />
-          <div className="-mt-1">
-            <TestimonialsSectionDemo />
-          </div>
-        </div>
+        <HeroSection />
+        <TestimonialsSectionDemo />
         <FeaturesSection />
         <HowItWorksSection />
         <PricingSection />
       </main>
 
-      <footer className="py-8 border-t border-border bg-surface">
-        <div className="container mx-auto px-6 text-center text-muted-foreground">
-          <p>&copy; {new Date().getFullYear()} Launch Lens. All rights reserved.</p>
-          <p className="text-sm">Built with love by Lovable AI</p>
+      <footer className="apple-section bg-gray-50/50 border-t border-gray-200/50">
+        <div className="apple-container text-center">
+          <p className="text-gray-600 dark:text-gray-400">&copy; {new Date().getFullYear()} Launch Lens. All rights reserved.</p>
+          <p className="text-sm text-gray-500 mt-2">Built with love by Lovable AI</p>
         </div>
       </footer>
     </div>

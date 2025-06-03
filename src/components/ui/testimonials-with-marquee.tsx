@@ -21,30 +21,28 @@ export function TestimonialsSection({
 }: TestimonialsSectionProps) {
   return (
     <section className={cn(
-      "py-0 pt-16 pb-24 relative overflow-hidden unified-section",
+      "apple-section bg-gray-50/50",
       className
     )}>
-      {/* Seamless integration overlay */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-accent/5 pointer-events-none" />
-      
-      <div className="container mx-auto px-6 relative z-10">
+      <div className="apple-container">
         <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold font-heading mb-4 text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">
+          <h2 className="text-3xl md:text-5xl font-semibold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">
             {title}
           </h2>
-          <p className="text-lg text-gray-300 max-w-2xl mx-auto">
+          <p className="apple-subheading">
             {description}
           </p>
         </div>
 
         <div className="relative flex w-full flex-col items-center justify-center overflow-hidden">
-          <div className="group flex overflow-hidden p-2 [--gap:1.5rem] [gap:var(--gap)] flex-row [--duration:40s]">
+          <div className="group flex overflow-hidden p-2 [--gap:2rem] [gap:var(--gap)] flex-row [--duration:50s]">
             <div className="flex shrink-0 justify-around [gap:var(--gap)] animate-marquee flex-row group-hover:[animation-play-state:paused]">
               {[...Array(4)].map((_, setIndex) => (
                 testimonials.map((testimonial, i) => (
                   <TestimonialCard 
                     key={`${setIndex}-${i}`}
                     {...testimonial}
+                    className="apple-card"
                   />
                 ))
               ))}
@@ -63,7 +61,7 @@ const testimonials = [
       handle: "@emmaai",
       avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face"
     },
-    text: "Using this AI platform has transformed how we handle data analysis. The speed and accuracy are unprecedented.",
+    text: "Launch Lens transformed how we validate ideas. The AI insights are incredibly accurate and saved us months of guesswork.",
     href: "https://twitter.com/emmaai"
   },
   {
@@ -72,7 +70,7 @@ const testimonials = [
       handle: "@davidtech",
       avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face"
     },
-    text: "The API integration is flawless. We've reduced our development time by 60% since implementing this solution.",
+    text: "We avoided a costly mistake thanks to Launch Lens. The market analysis showed us why our initial approach wouldn't work.",
     href: "https://twitter.com/davidtech"
   },
   {
@@ -81,7 +79,7 @@ const testimonials = [
       handle: "@sofiaml",
       avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=face"
     },
-    text: "Finally, an AI tool that actually understands context! The accuracy in natural language processing is impressive."
+    text: "Finally, a validation tool that actually works. The detailed reports give you everything you need to make informed decisions."
   }
 ]
 
@@ -89,7 +87,7 @@ export function TestimonialsSectionDemo() {
   return (
     <TestimonialsSection
       title="Trusted by developers worldwide"
-      description="Join thousands of developers who are already building the future with our AI platform"
+      description="Join thousands of founders who validate smarter, not harder"
       testimonials={testimonials}
     />
   )

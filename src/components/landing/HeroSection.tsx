@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { Star, ArrowRight } from "lucide-react";
+import { ArrowRight, CheckCircle } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { FloatingElements } from "./FloatingElements";
 import { DashboardPreview } from "./DashboardPreview";
@@ -24,18 +24,18 @@ export const HeroSection = () => {
   };
 
   return (
-    <section className="relative min-h-screen unified-section flex items-center justify-center text-white overflow-hidden pt-20 pb-0">
+    <section className="relative min-h-screen apple-hero flex items-center justify-center overflow-hidden">
       <FloatingElements />
       
-      <div className="container mx-auto px-6 relative z-10 text-center">
+      <div className="apple-container relative z-10 text-center">
         {/* Badge */}
-        <div className="hero-badge mb-8 inline-flex items-center gap-2">
-          <Star className="w-3 h-3" />
-          <span>Build for the future</span>
+        <div className="apple-badge mb-8 inline-flex items-center gap-2">
+          <CheckCircle className="w-4 h-4" />
+          <span>Trusted by 10,000+ founders</span>
         </div>
         
         {/* Main Headline */}
-        <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-6xl font-bold font-heading mb-8 text-shadow">
+        <h1 className="apple-heading">
           Don't Build What
           <br />
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-accent to-primary">
@@ -44,14 +44,14 @@ export const HeroSection = () => {
         </h1>
         
         {/* Subtitle */}
-        <p className="text-xl md:text-2xl text-gray-300 max-w-3xl mx-auto mb-12 leading-relaxed">
+        <p className="apple-subheading">
           AI-powered validation that separates winning ideas from expensive mistakes. 
           Validate any business idea in days, not months, with evidence.
         </p>
         
         {/* CTA Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
-          <Button size="lg" className="gradient-button px-8 py-4 text-lg font-semibold min-w-[200px]" asChild>
+        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-20">
+          <Button size="lg" className="apple-button text-lg min-w-[220px]" asChild>
             <Link to="/signup">
               Validate My Idea
               <ArrowRight className="ml-2 w-5 h-5" />
@@ -60,7 +60,7 @@ export const HeroSection = () => {
           <Button 
             size="lg" 
             variant="outline" 
-            className="px-8 py-4 text-lg border-2 border-white/20 text-white hover:bg-white/10 hover:text-white backdrop-blur-sm min-w-[200px]" 
+            className="apple-button-outline text-lg min-w-[220px]" 
             onClick={handleSeeHowItWorks}
           >
             See How It Works
