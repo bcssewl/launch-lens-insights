@@ -1,3 +1,4 @@
+
 import { cn } from "@/lib/utils"
 import { TestimonialCard, TestimonialAuthor } from "@/components/ui/testimonial-card"
 
@@ -20,10 +21,11 @@ export function TestimonialsSection({
 }: TestimonialsSectionProps) {
   return (
     <section className={cn(
-      "py-16 md:py-24 bg-surface relative overflow-hidden",
+      "py-16 md:py-24 relative overflow-hidden",
+      "bg-gradient-to-b from-[#533483] via-[#2a1a3e] to-[#0f0a1a]",
       className
     )}>
-      {/* Subtle background gradient */}
+      {/* Subtle overlay gradient for added depth */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 pointer-events-none" />
       
       <div className="container mx-auto px-6 relative z-10">
@@ -31,7 +33,7 @@ export function TestimonialsSection({
           <h2 className="text-3xl md:text-4xl font-bold font-heading mb-4 text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">
             {title}
           </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-lg text-gray-300 max-w-2xl mx-auto">
             {description}
           </p>
         </div>
