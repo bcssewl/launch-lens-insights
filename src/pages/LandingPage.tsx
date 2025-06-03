@@ -160,8 +160,8 @@ export default function LandingPage() {
     <div className="flex flex-col min-h-screen">
       <LandingNavbar />
       <main className="flex-grow">
-        {/* Hero Section - Fixed navbar overlap and reduced text size */}
-        <section className="relative min-h-[calc(100vh-80px)] mt-20 hero-gradient flex items-center justify-center text-white overflow-hidden">
+        {/* Hero Section - Fixed black line by removing mt-20 and adjusting height */}
+        <section className="relative min-h-screen hero-gradient flex items-center justify-center text-white overflow-hidden pt-20">
           <FloatingElements />
           
           <div className="container mx-auto px-6 relative z-10 text-center">
