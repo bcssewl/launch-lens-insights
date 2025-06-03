@@ -31,6 +31,16 @@ export const useIdeaOperations = () => {
         throw archiveError;
       }
 
+      // Update the report status to archived
+      const { error: reportUpdateError } = await supabase
+        .from('validation_reports')
+        .update({ status: 'archived' })
+        .eq('id', reportId);
+
+      if (reportUpdateError) {
+        throw reportUpdateError;
+      }
+
       toast({
         title: "Idea Archived",
         description: "The idea has been archived successfully.",
@@ -115,6 +125,16 @@ export const useIdeaOperations = () => {
 
       if (unarchiveError) {
         throw unarchiveError;
+      }
+
+      // Update the report status back to completed (assuming it was completed before archiving)
+      const { error: reportUpdateError } = await supabase
+        .from('validation_reports')
+        .update({ status: 'completed' })
+        .eq('id', reportId);
+
+      if (reportUpdateError) {
+        throw reportUpdateError;
       }
 
       toast({
