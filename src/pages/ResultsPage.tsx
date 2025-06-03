@@ -14,6 +14,7 @@ import CompetitionTabContent from '@/components/results/CompetitionTabContent';
 import SWOTAnalysisTabContent from '@/components/results/SWOTAnalysisTabContent';
 import DetailedScoresTabContent from '@/components/results/DetailedScoresTabContent';
 import ActionItemsTabContent from '@/components/results/ActionItemsTabContent';
+import FinancialAnalysisTabContent from '@/components/results/FinancialAnalysisTabContent';
 import { useValidationReport } from '@/hooks/useValidationReport';
 import { format } from 'date-fns';
 
@@ -85,6 +86,19 @@ const ResultsPage: React.FC = () => {
     competitiveAdvantages: [],
     marketSaturation: 'Unknown'
   };
+  const financialAnalysis = reportData.financialAnalysis || {
+    startupCosts: [],
+    operatingCosts: [],
+    revenueProjections: [],
+    breakEvenAnalysis: [],
+    fundingRequirements: [],
+    keyMetrics: {
+      totalStartupCost: 0,
+      monthlyBurnRate: 0,
+      breakEvenMonth: 0,
+      fundingNeeded: 0
+    }
+  };
   const swot = reportData.swot || {
     strengths: [],
     weaknesses: [],
@@ -106,10 +120,11 @@ const ResultsPage: React.FC = () => {
 
         <Tabs defaultValue="overview" className="w-full">
           <div className="w-full overflow-x-auto mb-4">
-            <TabsList className="w-full grid grid-cols-6 min-w-fit">
+            <TabsList className="w-full grid grid-cols-7 min-w-fit">
               <TabsTrigger value="overview" className="text-xs sm:text-sm px-2">Overview</TabsTrigger>
               <TabsTrigger value="market" className="text-xs sm:text-sm px-2">Market</TabsTrigger>
               <TabsTrigger value="competition" className="text-xs sm:text-sm px-2">Competition</TabsTrigger>
+              <TabsTrigger value="financial" className="text-xs sm:text-sm px-2">Financial</TabsTrigger>
               <TabsTrigger value="swot" className="text-xs sm:text-sm px-2">SWOT</TabsTrigger>
               <TabsTrigger value="scores" className="text-xs sm:text-sm px-2">Scores</TabsTrigger>
               <TabsTrigger value="actions" className="text-xs sm:text-sm px-2">Actions</TabsTrigger>
@@ -128,6 +143,9 @@ const ResultsPage: React.FC = () => {
             </TabsContent>
             <TabsContent value="competition" className="mt-4 w-full">
               <CompetitionTabContent data={competition} />
+            </TabsContent>
+            <TabsContent value="financial" className="mt-4 w-full">
+              <FinancialAnalysisTabContent data={financialAnalysis} />
             </TabsContent>
             <TabsContent value="swot" className="mt-4 w-full">
               <SWOTAnalysisTabContent data={swot} />
