@@ -1,7 +1,9 @@
 
 import React from 'react';
 import { Logo } from './icons';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft } from 'lucide-react';
 
 interface AuthLayoutProps {
   title: string;
@@ -20,9 +22,23 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({
   footerLinkText,
   footerLinkTo,
 }) => {
+  const navigate = useNavigate();
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background py-12 px-4 sm:px-6 lg:px-8">
       <div className="w-full max-w-md space-y-8">
+        {/* Back Arrow */}
+        <div className="flex justify-start">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate(-1)}
+            className="hover:bg-accent"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+        </div>
+        
         <div className="flex flex-col items-center">
           <Logo />
           <h2 className="mt-6 text-center text-3xl font-extrabold font-heading text-foreground">
