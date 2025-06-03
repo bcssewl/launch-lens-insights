@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -136,28 +135,15 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onComplete, onBack }) => 
             <Progress value={progressValue} className="w-full mt-2" />
           </div>
 
-          {/* Recording Visualization with Glassmorphism */}
+          {/* Recording Visualization with Animated Sphere */}
           <div className={`recording-visualization mb-6 transition-all duration-500 ${
             isActiveRecording ? 'bg-primary/5 border-primary/30' : ''
           }`}>
-            <div className="flex justify-center items-center h-20">
-              {isActiveRecording && (
-                <div className="flex space-x-1">
-                  {[...Array(5)].map((_, i) => (
-                    <div
-                      key={i}
-                      className={`w-2 bg-primary rounded-full animate-pulse`}
-                      style={{
-                        height: `${Math.random() * 40 + 10}px`,
-                        animationDelay: `${i * 0.1}s`,
-                        boxShadow: isActiveRecording ? '0 0 10px rgba(139, 92, 246, 0.5)' : 'none',
-                      }}
-                    />
-                  ))}
-                </div>
-              )}
-              {!isRecording && (
-                <div className="w-16 h-16 rounded-full bg-muted/50 backdrop-blur-sm flex items-center justify-center border border-muted/30">
+            <div className="flex justify-center items-center h-32">
+              {isActiveRecording ? (
+                <div className="recording-sphere recording-sphere-enter" />
+              ) : (
+                <div className="w-16 h-16 rounded-full bg-muted/50 backdrop-blur-sm flex items-center justify-center border border-muted/30 transition-all duration-300">
                   <Mic className="h-8 w-8 text-muted-foreground" />
                 </div>
               )}
