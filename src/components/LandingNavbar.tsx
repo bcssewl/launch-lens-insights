@@ -1,3 +1,4 @@
+
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "./ThemeToggle";
@@ -12,7 +13,7 @@ export function LandingNavbar() {
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 py-4 px-6 md:px-10 hero-gradient backdrop-blur-md border-b border-white/10" style={{opacity: 0.9}}>
+    <nav className="fixed top-0 left-0 right-0 z-50 py-4 px-6 md:px-10 hero-gradient backdrop-blur-md" style={{opacity: 0.9}}>
       <div className="container mx-auto flex justify-between items-center">
         <Logo />
         <div className="flex items-center space-x-4">
