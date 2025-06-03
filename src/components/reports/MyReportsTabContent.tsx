@@ -25,6 +25,8 @@ const MyReportsTabContent: React.FC = () => {
     // Map status to ReportCard status
     const getReportCardStatus = (status: string): Report['status'] => {
       switch (status) {
+        case 'archived':
+          return 'Archived';
         case 'completed':
           if (report.overall_score && report.overall_score >= 7) return 'Validated';
           if (report.overall_score && report.overall_score >= 5) return 'Promising';
@@ -32,10 +34,9 @@ const MyReportsTabContent: React.FC = () => {
           return 'High Risk';
         case 'failed':
           return 'Not Recommended';
-        case 'archived':
-          return 'Archived';
+        case 'generating':
         default:
-          return 'Caution'; // For generating status
+          return 'Caution'; // For generating status and other cases
       }
     };
 
