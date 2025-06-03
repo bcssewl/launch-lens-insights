@@ -22,6 +22,8 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onComplete, onBack }) => 
 
   const maxRecordingTime = 600; // 10 minutes in seconds
 
+  const isActiveRecording = isRecording && !isPaused;
+
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isRecording && !isPaused) {
@@ -118,7 +120,9 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onComplete, onBack }) => 
   const progressValue = (recordingTime / maxRecordingTime) * 100;
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
+    <Card className={`w-full max-w-2xl mx-auto glass-card transition-all duration-500 ${
+      isActiveRecording ? 'recording-glow recording-border' : ''
+    }`}>
       <CardHeader className="text-center">
         <CardTitle className="text-2xl font-bold text-primary">Record Your Idea</CardTitle>
         <p className="text-muted-foreground">
@@ -132,82 +136,91 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onComplete, onBack }) => 
             <Progress value={progressValue} className="w-full mt-2" />
           </div>
 
-          {/* Recording Visualization */}
-          <div className="flex justify-center items-center h-20 mb-6">
-            {isRecording && !isPaused && (
-              <div className="flex space-x-1">
-                {[...Array(5)].map((_, i) => (
-                  <div
-                    key={i}
-                    className={`w-2 bg-primary rounded-full animate-pulse`}
-                    style={{
-                      height: `${Math.random() * 40 + 10}px`,
-                      animationDelay: `${i * 0.1}s`,
-                    }}
-                  />
-                ))}
-              </div>
-            )}
-            {!isRecording && (
-              <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
-                <Mic className="h-8 w-8 text-muted-foreground" />
-              </div>
-            )}
+          {/* Recording Visualization with Glassmorphism */}
+          <div className={`recording-visualization mb-6 transition-all duration-500 ${
+            isActiveRecording ? 'bg-primary/5 border-primary/30' : ''
+          }`}>
+            <div className="flex justify-center items-center h-20">
+              {isActiveRecording && (
+                <div className="flex space-x-1">
+                  {[...Array(5)].map((_, i) => (
+                    <div
+                      key={i}
+                      className={`w-2 bg-primary rounded-full animate-pulse`}
+                      style={{
+                        height: `${Math.random() * 40 + 10}px`,
+                        animationDelay: `${i * 0.1}s`,
+                        boxShadow: isActiveRecording ? '0 0 10px rgba(139, 92, 246, 0.5)' : 'none',
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+              {!isRecording && (
+                <div className="w-16 h-16 rounded-full bg-muted/50 backdrop-blur-sm flex items-center justify-center border border-muted/30">
+                  <Mic className="h-8 w-8 text-muted-foreground" />
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Recording Controls */}
-          <div className="flex justify-center space-x-4 mb-6">
-            {!isRecording && !audioBlob && (
-              <Button onClick={startRecording} size="lg" className="rounded-full">
-                <Mic className="mr-2 h-5 w-5" />
-                Start Recording
-              </Button>
-            )}
-
-            {isRecording && (
-              <>
-                <Button onClick={stopRecording} size="lg" variant="destructive" className="rounded-full">
-                  <Square className="mr-2 h-4 w-4" />
-                  Stop
+          {/* Recording Controls with Glass Effect */}
+          <div className={`glass-controls p-4 mb-6 transition-all duration-300 ${
+            isActiveRecording ? 'bg-primary/5' : ''
+          }`}>
+            <div className="flex justify-center space-x-4">
+              {!isRecording && !audioBlob && (
+                <Button onClick={startRecording} size="lg" className="rounded-full gradient-button">
+                  <Mic className="mr-2 h-5 w-5" />
+                  Start Recording
                 </Button>
-                {isPaused ? (
-                  <Button onClick={resumeRecording} size="lg" className="rounded-full">
-                    <Mic className="mr-2 h-5 w-5" />
-                    Resume
-                  </Button>
-                ) : (
-                  <Button onClick={pauseRecording} size="lg" variant="outline" className="rounded-full">
-                    <Pause className="mr-2 h-4 w-4" />
-                    Pause
-                  </Button>
-                )}
-              </>
-            )}
+              )}
 
-            {audioBlob && (
-              <>
-                {!isPlaying ? (
-                  <Button onClick={playRecording} size="lg" variant="outline" className="rounded-full">
-                    <Play className="mr-2 h-4 w-4" />
-                    Play
+              {isRecording && (
+                <>
+                  <Button onClick={stopRecording} size="lg" variant="destructive" className="rounded-full">
+                    <Square className="mr-2 h-4 w-4" />
+                    Stop
                   </Button>
-                ) : (
-                  <Button onClick={pausePlayback} size="lg" variant="outline" className="rounded-full">
-                    <Pause className="mr-2 h-4 w-4" />
-                    Pause
+                  {isPaused ? (
+                    <Button onClick={resumeRecording} size="lg" className="rounded-full gradient-button">
+                      <Mic className="mr-2 h-5 w-5" />
+                      Resume
+                    </Button>
+                  ) : (
+                    <Button onClick={pauseRecording} size="lg" variant="outline" className="rounded-full apple-button-outline">
+                      <Pause className="mr-2 h-4 w-4" />
+                      Pause
+                    </Button>
+                  )}
+                </>
+              )}
+
+              {audioBlob && (
+                <>
+                  {!isPlaying ? (
+                    <Button onClick={playRecording} size="lg" variant="outline" className="rounded-full apple-button-outline">
+                      <Play className="mr-2 h-4 w-4" />
+                      Play
+                    </Button>
+                  ) : (
+                    <Button onClick={pausePlayback} size="lg" variant="outline" className="rounded-full apple-button-outline">
+                      <Pause className="mr-2 h-4 w-4" />
+                      Pause
+                    </Button>
+                  )}
+                  <Button onClick={resetRecording} size="lg" variant="outline" className="rounded-full apple-button-outline">
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    Re-record
                   </Button>
-                )}
-                <Button onClick={resetRecording} size="lg" variant="outline" className="rounded-full">
-                  <RotateCcw className="mr-2 h-4 w-4" />
-                  Re-record
-                </Button>
-              </>
-            )}
+                </>
+              )}
+            </div>
           </div>
 
           {/* Navigation */}
           <div className="flex justify-between">
-            <Button variant="outline" onClick={onBack}>
+            <Button variant="outline" onClick={onBack} className="apple-button-outline">
               Back to Options
             </Button>
             {audioBlob && (

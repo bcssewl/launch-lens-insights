@@ -123,6 +123,44 @@
     @apply bg-gray-900/90 border-gray-700/30;
   }
 
+  /* Glassmorphism Styles */
+  .glass-card {
+    @apply bg-white/20 backdrop-blur-xl border border-white/30 shadow-2xl;
+  }
+  .dark .glass-card {
+    @apply bg-gray-900/20 border-gray-700/30;
+  }
+
+  .glass-recording {
+    @apply bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl;
+  }
+  .dark .glass-recording {
+    @apply bg-gray-800/10 border-gray-600/20;
+  }
+
+  .glass-controls {
+    @apply bg-white/5 backdrop-blur-md border border-white/10 rounded-xl;
+  }
+  .dark .glass-controls {
+    @apply bg-gray-700/5 border-gray-500/10;
+  }
+
+  /* Purple Glow Animation */
+  .recording-glow {
+    animation: purpleGlow 2s ease-in-out infinite alternate;
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.3), 0 0 40px rgba(139, 92, 246, 0.2), 0 0 60px rgba(139, 92, 246, 0.1);
+  }
+
+  .recording-border {
+    border: 2px solid;
+    border-image: linear-gradient(45deg, rgba(139, 92, 246, 0.6), rgba(168, 85, 247, 0.4), rgba(139, 92, 246, 0.6)) 1;
+    animation: borderPulse 2s ease-in-out infinite;
+  }
+
+  .recording-visualization {
+    @apply glass-recording p-6;
+  }
+
   .apple-button {
     @apply bg-gradient-to-r from-primary to-accent text-white font-medium px-8 py-4 rounded-2xl transition-all duration-300 hover:shadow-lg hover:scale-105 border-0;
     box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
@@ -275,3 +313,23 @@
   50% { background-position: 100% 50%; }
 }
 
+@keyframes purpleGlow {
+  0% { 
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.3), 0 0 40px rgba(139, 92, 246, 0.2), 0 0 60px rgba(139, 92, 246, 0.1);
+  }
+  100% { 
+    box-shadow: 0 0 30px rgba(139, 92, 246, 0.5), 0 0 60px rgba(139, 92, 246, 0.3), 0 0 90px rgba(139, 92, 246, 0.2);
+  }
+}
+
+@keyframes borderPulse {
+  0% { 
+    border-color: rgba(139, 92, 246, 0.6);
+  }
+  50% { 
+    border-color: rgba(168, 85, 247, 0.8);
+  }
+  100% { 
+    border-color: rgba(139, 92, 246, 0.6);
+  }
+}
