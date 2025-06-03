@@ -12,6 +12,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useValidationData } from '@/hooks/useValidationData';
 
+import InputMethodSelector from './InputMethodSelector';
+import VoiceRecorder from './VoiceRecorder';
+import PitchDeckUploader from './PitchDeckUploader';
+import ExtractedDataReview from './ExtractedDataReview';
 import Step1BasicInfo from './form-steps/Step1BasicInfo';
 import Step2MarketDetails from './form-steps/Step2MarketDetails';
 import Step3BusinessModel from './form-steps/Step3BusinessModel';
@@ -24,6 +28,8 @@ import {
   primaryGoalOptions,
   timelineOptions
 } from '@/lib/validation-constants';
+
+// ... keep existing code (schema definition)
 
 const ideaValidationSchema = z.object({
   // Step 1
@@ -47,6 +53,9 @@ const ideaValidationSchema = z.object({
 
 export type IdeaValidationFormData = z.infer<typeof ideaValidationSchema>;
 
+type InputMethod = 'form' | 'voice' | 'pitch_deck';
+type FormFlow = 'method_selection' | 'voice_recording' | 'pitch_upload' | 'data_review' | 'form_steps';
+
 const steps = [
   { id: 'Step 1', name: 'Basic Information', fields: ['ideaName', 'oneLineDescription', 'problemStatement', 'solutionDescription'] },
   { id: 'Step 2', name: 'Market Details', fields: ['targetCustomer', 'customerSegment', 'geographicFocus'] },
@@ -55,8 +64,11 @@ const steps = [
 ];
 
 const IdeaValidationForm: React.FC = () => {
+  const [currentFlow, setCurrentFlow] = useState<FormFlow>('method_selection');
+  const [inputMethod, setInputMethod] = useState<InputMethod>('form');
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [extractedData, setExtractedData] = useState<Partial<IdeaValidationFormData>>({});
   const [searchParams] = useSearchParams();
   const duplicateId = searchParams.get('duplicateId');
   const navigate = useNavigate();
@@ -101,8 +113,86 @@ const IdeaValidationForm: React.FC = () => {
         timeline: formData.timeline || undefined,
         additionalContext: formData.additionalContext || '',
       });
+      setCurrentFlow('form_steps');
     }
   }, [validationData, reset]);
+
+  const handleMethodSelect = (method: InputMethod) => {
+    setInputMethod(method);
+    if (method === 'form') {
+      setCurrentFlow('form_steps');
+    } else if (method === 'voice') {
+      setCurrentFlow('voice_recording');
+    } else if (method === 'pitch_deck') {
+      setCurrentFlow('pitch_upload');
+    }
+  };
+
+  const handleVoiceComplete = (audioBlob: Blob) => {
+    // Mock extracted data from voice recording
+    const mockExtracted: Partial<IdeaValidationFormData> = {
+      ideaName: "FarmConnect",
+      oneLineDescription: "A mobile platform connecting local farmers directly with consumers for fresh produce delivery",
+      problemStatement: "Consumers want fresh, local produce but farmers struggle to reach customers without expensive middlemen reducing their profits",
+      solutionDescription: "A mobile app where farmers list their products and consumers can order directly, with built-in logistics and payment processing",
+      targetCustomer: "Individual consumers",
+      customerSegment: "Health-conscious families and individuals who value fresh, local produce",
+      revenueModel: "Commission per transaction",
+      expectedPricing: 25,
+      knownCompetitors: "Local farmers markets, grocery stores, some existing farm-to-table apps",
+      primaryGoal: "Test market demand and customer acquisition",
+      timeline: "3-6 months"
+    };
+    
+    setExtractedData(mockExtracted);
+    setCurrentFlow('data_review');
+  };
+
+  const handlePitchDeckComplete = (file: File) => {
+    // Mock extracted data from pitch deck
+    const mockExtracted: Partial<IdeaValidationFormData> = {
+      ideaName: "EcoCommute Solutions",
+      oneLineDescription: "Smart carpooling platform that reduces urban traffic congestion and carbon emissions",
+      problemStatement: "Urban areas face increasing traffic congestion and air pollution, while many commuters travel alone in private vehicles",
+      solutionDescription: "AI-powered matching system that connects commuters with similar routes, optimizing carpooling for maximum efficiency and convenience",
+      targetCustomer: "Working professionals",
+      customerSegment: "Daily commuters in metropolitan areas aged 25-45",
+      revenueModel: "Subscription service",
+      expectedPricing: 15,
+      knownCompetitors: "Uber Pool, traditional carpooling apps, public transportation",
+      primaryGoal: "Validate business model and revenue potential",
+      timeline: "6-12 months"
+    };
+    
+    setExtractedData(mockExtracted);
+    setCurrentFlow('data_review');
+  };
+
+  const handleDataReviewConfirm = (data: Partial<IdeaValidationFormData>) => {
+    // Pre-populate form with extracted data
+    reset({
+      ...form.getValues(),
+      ...data,
+      geographicFocus: data.geographicFocus || ['North America'],
+    });
+    setCurrentFlow('form_steps');
+  };
+
+  const handleDataReviewEdit = () => {
+    // Pre-populate form with extracted data for editing
+    reset({
+      ...form.getValues(),
+      ...extractedData,
+      geographicFocus: extractedData.geographicFocus || ['North America'],
+    });
+    setCurrentFlow('form_steps');
+  };
+
+  const handleBackToMethodSelection = () => {
+    setCurrentFlow('method_selection');
+    setInputMethod('form');
+    setExtractedData({});
+  };
 
   const processForm = async (data: IdeaValidationFormData) => {
     if (!user) {
@@ -216,8 +306,6 @@ const IdeaValidationForm: React.FC = () => {
       setCurrentStep(step => step - 1);
     }
   };
-  
-  const progressValue = ((currentStep + 1) / steps.length) * 100;
 
   if (loadingValidation) {
     return (
@@ -228,6 +316,43 @@ const IdeaValidationForm: React.FC = () => {
       </Card>
     );
   }
+
+  // Render based on current flow
+  if (currentFlow === 'method_selection') {
+    return <InputMethodSelector onMethodSelect={handleMethodSelect} />;
+  }
+
+  if (currentFlow === 'voice_recording') {
+    return (
+      <VoiceRecorder 
+        onComplete={handleVoiceComplete}
+        onBack={handleBackToMethodSelection}
+      />
+    );
+  }
+
+  if (currentFlow === 'pitch_upload') {
+    return (
+      <PitchDeckUploader 
+        onComplete={handlePitchDeckComplete}
+        onBack={handleBackToMethodSelection}
+      />
+    );
+  }
+
+  if (currentFlow === 'data_review') {
+    return (
+      <ExtractedDataReview
+        extractedData={extractedData}
+        inputMethod={inputMethod}
+        onConfirm={handleDataReviewConfirm}
+        onEdit={handleDataReviewEdit}
+        onBack={() => setCurrentFlow(inputMethod === 'voice' ? 'voice_recording' : 'pitch_upload')}
+      />
+    );
+  }
+
+  const progressValue = ((currentStep + 1) / steps.length) * 100;
 
   return (
     <Card className="w-full max-w-2xl mx-auto">
@@ -242,6 +367,16 @@ const IdeaValidationForm: React.FC = () => {
           <Progress value={progressValue} className="w-full h-2" />
           <p className="text-sm text-muted-foreground mt-1">Step {currentStep + 1} of {steps.length}: {steps[currentStep].name}</p>
         </div>
+        {inputMethod !== 'form' && (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleBackToMethodSelection}
+            className="mt-2"
+          >
+            Change Input Method
+          </Button>
+        )}
       </CardHeader>
       <CardContent>
         <Form {...form}>
