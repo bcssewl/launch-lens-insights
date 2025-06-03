@@ -45,10 +45,10 @@ const ActivityItem: React.FC<ActivityItemProps> = ({
   };
 
   const getStatusIndicatorClass = () => {
-    if (statusColor === 'green') return 'status-indicator success';
-    if (statusColor === 'red') return 'status-indicator error';
-    if (isRunningExperiment) return 'status-indicator info';
-    return 'status-indicator warning';
+    if (statusColor === 'green') return 'flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 border border-green-200';
+    if (statusColor === 'red') return 'flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-red-100 text-red-700 border border-red-200';
+    if (isRunningExperiment) return 'flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700 border border-blue-200';
+    return 'flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-yellow-100 text-yellow-700 border border-yellow-200';
   };
 
   const StatusIcon = getStatusIcon();
@@ -82,11 +82,11 @@ const ActivityItem: React.FC<ActivityItemProps> = ({
               </p>
             </div>
 
-            {/* Status */}
+            {/* Status with Icon */}
             <div className="flex items-center gap-2">
               <div className={getStatusIndicatorClass()}>
                 <StatusIcon className="w-3 h-3" />
-                {statusText}
+                <span>{statusText}</span>
               </div>
             </div>
           </div>
