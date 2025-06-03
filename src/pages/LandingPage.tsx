@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle, TrendingUp, Zap, Brain, BarChart3, Rocket, FlaskConical, FileText, Users, Award, DollarSign, ArrowRight, Star } from "lucide-react";
@@ -159,8 +160,8 @@ export default function LandingPage() {
     <div className="flex flex-col min-h-screen">
       <LandingNavbar />
       <main className="flex-grow">
-        {/* Hero Section - Luro Inspired */}
-        <section className="relative min-h-screen hero-gradient flex items-center justify-center text-white overflow-hidden">
+        {/* Hero Section - Fixed navbar overlap and reduced text size */}
+        <section className="relative min-h-[calc(100vh-80px)] mt-20 hero-gradient flex items-center justify-center text-white overflow-hidden">
           <FloatingElements />
           
           <div className="container mx-auto px-6 relative z-10 text-center">
@@ -170,8 +171,8 @@ export default function LandingPage() {
               <span>Build for the future</span>
             </div>
             
-            {/* Main Headline */}
-            <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold font-heading mb-8 text-shadow">
+            {/* Main Headline - Reduced from lg:text-8xl to lg:text-6xl for better aesthetics */}
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-6xl font-bold font-heading mb-8 text-shadow">
               Don't Build What
               <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-accent to-primary">
