@@ -24,6 +24,8 @@ const MyReportsTabContent: React.FC = () => {
   const transformedReports: Report[] = reports.map(report => {
     // Map status to ReportCard status
     const getReportCardStatus = (status: string): Report['status'] => {
+      console.log('Report status:', status, 'Report ID:', report.id, 'Archived at:', report.archived_at);
+      
       switch (status) {
         case 'archived':
           return 'Archived';
