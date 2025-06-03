@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/layouts/DashboardLayout';
@@ -40,7 +41,7 @@ const ResultsPage: React.FC = () => {
         </div>
       </DashboardLayout>
     );
-  }
+  };
 
   if (error || !report) {
     return (
@@ -67,7 +68,7 @@ const ResultsPage: React.FC = () => {
     ? format(new Date(report.completed_at), 'MMM d, yyyy')
     : format(new Date(report.created_at), 'MMM d, yyyy');
 
-  // Extract detailed data with fallbacks
+  // Extract detailed data with proper fallbacks
   const executiveSummary = reportData.executiveSummary || report.one_line_description || 'No summary available';
   const keyMetrics = reportData.keyMetrics || {
     marketSize: { value: 'N/A' },
@@ -75,12 +76,17 @@ const ResultsPage: React.FC = () => {
     problemClarity: { value: 'N/A' },
     revenuePotential: { value: 'N/A' }
   };
-  const marketAnalysis = reportData.marketAnalysis || {
-    tamSamSom: [],
-    marketGrowth: [],
-    customerSegments: [],
-    geographicOpportunity: []
+
+  // Extract market analysis data with proper structure
+  const marketAnalysisData = reportData.marketAnalysis || {};
+  const marketAnalysis = {
+    tamSamSom: marketAnalysisData.tamSamSom || [],
+    marketGrowth: marketAnalysisData.marketGrowth || [],
+    customerSegments: marketAnalysisData.customerSegments || [],
+    geographicOpportunity: marketAnalysisData.geographicOpportunity || []
   };
+
+  // Extract other data sections
   const competition = reportData.competition || {
     competitors: [],
     competitiveAdvantages: [],
