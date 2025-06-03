@@ -1,4 +1,5 @@
 
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -116,7 +117,7 @@
   }
   
   .apple-card {
-    @apply bg-white/90 backdrop-blur-xl border border-gray-200/30 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500;
+    @apply bg-white/95 backdrop-blur-xl border border-gray-200/30 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500;
   }
   .dark .apple-card {
     @apply bg-gray-900/90 border-gray-700/30;
@@ -171,10 +172,10 @@
   }
 
   .apple-metric-card {
-    @apply bg-white/95 backdrop-blur-xl border border-gray-200/30 rounded-3xl p-6 hover:bg-white/98 transition-all duration-300 shadow-lg;
+    @apply bg-white/95 backdrop-blur-xl border border-gray-200/30 rounded-3xl p-6 hover:bg-white/90 transition-all duration-300 shadow-lg;
   }
   .dark .apple-metric-card {
-    @apply bg-gray-900/95 border-gray-700/30 hover:bg-gray-800/98;
+    @apply bg-gray-900/95 border-gray-700/30 hover:bg-gray-800/95;
   }
 
   /* Dashboard-specific Apple styles */
@@ -228,6 +229,34 @@
   .dark .apple-tab[data-state="active"] {
     @apply bg-gray-700 text-white;
   }
+
+  /* Apple-inspired dashboard background */
+  .apple-dashboard-bg {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%, #f8fafc 100%);
+    background-size: 400% 400%;
+    animation: gradientShift 20s ease infinite;
+  }
+  .dark .apple-dashboard-bg {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 25%, #334155 50%, #1e293b 75%, #0f172a 100%);
+    background-size: 400% 400%;
+    animation: gradientShift 20s ease infinite;
+  }
+
+  /* Apple-inspired glass morphism */
+  .apple-glass {
+    @apply bg-white/80 backdrop-blur-xl border border-white/20 shadow-2xl;
+  }
+  .dark .apple-glass {
+    @apply bg-gray-900/80 border-gray-700/20;
+  }
+
+  /* Refined cards for dashboard */
+  .apple-dashboard-card {
+    @apply bg-white/95 backdrop-blur-xl border border-gray-200/20 rounded-3xl shadow-xl hover:shadow-2xl hover:bg-white/98 transition-all duration-500;
+  }
+  .dark .apple-dashboard-card {
+    @apply bg-gray-900/95 border-gray-700/20 hover:bg-gray-800/95;
+  }
 }
 
 @layer utilities {
@@ -245,3 +274,4 @@
   0%, 100% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
 }
+
