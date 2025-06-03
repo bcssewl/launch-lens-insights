@@ -105,48 +105,48 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen geometric-bg">
+    <div className="flex flex-col min-h-screen">
       <LandingNavbar />
       <main className="flex-grow">
-        {/* Hero Section */}
-        <section className="pt-32 pb-20 md:pt-40 md:pb-28 text-center relative hero-bg">
-          <div className="container mx-auto px-6 relative z-10">
-            <div className="max-w-5xl mx-auto">
-              <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold font-heading mb-8 leading-tight">
-                <span className="bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent animate-gradient bg-[length:200%_auto]">
-                  Don't Build What
-                </span>
-                <br />
-                <span className="text-foreground">Nobody Wants</span>
-              </h1>
-              <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto mb-12 leading-relaxed">
-                AI-powered validation that separates winning ideas from expensive mistakes. Validate any business idea in days, not months, with evidence — before writing a single line of code.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-16">
-                <Button size="lg" className="premium-gradient px-10 py-4 text-lg font-semibold rounded-2xl shadow-2xl" asChild>
-                  <Link to="/signup">Validate My Idea</Link>
-                </Button>
+        {/* Hero Section - Transformed */}
+        <section className="min-h-screen flex items-center justify-center hero-dynamic-bg relative">
+          {/* 3D Geometric Elements */}
+          <div className="geometric-shape"></div>
+          <div className="geometric-shape"></div>
+          <div className="geometric-shape"></div>
+          <div className="geometric-shape"></div>
+          <div className="geometric-shape"></div>
+          
+          <div className="container mx-auto px-6 relative z-20">
+            <div className="max-w-6xl mx-auto">
+              <div className="hero-content-elevated text-center">
+                {/* Hero Spinner */}
+                <div className="hero-spinner"></div>
+                
+                {/* Main Heading */}
+                <h1 className="text-6xl sm:text-7xl md:text-8xl font-bold font-heading mb-8 leading-tight">
+                  <span className="block text-white mb-4">Built For</span>
+                  <span className="block bg-gradient-to-r from-purple-300 via-purple-200 to-purple-100 bg-clip-text text-transparent">
+                    Faster Success
+                  </span>
+                </h1>
+                
+                {/* Subtitle */}
+                <p className="text-xl md:text-2xl text-gray-300 max-w-4xl mx-auto mb-12 leading-relaxed">
+                  Launch Lens offers an innovative business validation solution that supports you every step of the way
+                </p>
+                
+                {/* CTA Button */}
                 <Button 
                   size="lg" 
-                  variant="outline" 
-                  className="px-10 py-4 text-lg font-semibold rounded-2xl border-2 border-primary/30 bg-white/10 backdrop-blur-sm hover:bg-primary/10 hover:border-primary/50 transition-all duration-300" 
-                  onClick={handleSeeHowItWorks}
+                  className="premium-gradient px-12 py-6 text-xl font-semibold rounded-2xl shadow-2xl hover:shadow-3xl transition-all duration-300" 
+                  asChild
                 >
-                  See How It Works
+                  <Link to="/signup" className="flex items-center gap-3">
+                    <Rocket className="w-6 h-6" />
+                    Get Started Today
+                  </Link>
                 </Button>
-              </div>
-              <div className="relative max-w-4xl mx-auto">
-                <div className="glass-card-3d p-8 floating">
-                  <p className="text-muted-foreground mb-6 text-lg">
-                    Experience the power of AI-driven validation
-                  </p>
-                  <div className="h-64 flex items-center justify-center relative">
-                    <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-accent/5 to-primary/10 rounded-2xl"></div>
-                    <Brain className="w-32 h-32 text-primary opacity-80 relative z-10 floating" />
-                    <div className="absolute top-4 right-4 w-4 h-4 bg-gradient-to-r from-primary to-accent rounded-full floating-delayed"></div>
-                    <div className="absolute bottom-6 left-6 w-3 h-3 bg-gradient-to-r from-accent to-primary rounded-full floating"></div>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
