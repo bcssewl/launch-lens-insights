@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -93,7 +92,11 @@
 
 @layer components {
   .hero-gradient {
-    background: linear-gradient(315deg, #0a0a0a 0%, #1a1a2e 25%, #16213e 50%, #0f3460 75%, #533483 100%);
+    background: linear-gradient(180deg, #0a0a0a 0%, #1a1a2e 25%, #16213e 50%, #0f3460 75%, #533483 100%);
+  }
+  
+  .seamless-section {
+    background: linear-gradient(180deg, #533483 0%, #0f3460 25%, #16213e 50%, #1a1a2e 75%, #0a0a0a 100%);
   }
   
   .glassmorphism-card {
@@ -136,6 +139,11 @@
 
   .metric-card {
     @apply bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg p-4 hover:bg-white/10 transition-all duration-300;
+  }
+  
+  .unified-section {
+    @apply relative overflow-hidden;
+    background: linear-gradient(180deg, #0a0a0a 0%, #1a1a2e 15%, #16213e 35%, #0f3460 65%, #533483 85%, #533483 100%);
   }
 }
 

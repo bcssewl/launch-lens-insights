@@ -24,7 +24,7 @@ export const HeroSection = () => {
   };
 
   return (
-    <section className="relative min-h-screen hero-gradient flex items-center justify-center text-white overflow-hidden pt-20">
+    <section className="relative min-h-screen unified-section flex items-center justify-center text-white overflow-hidden pt-20 pb-0">
       <FloatingElements />
       
       <div className="container mx-auto px-6 relative z-10 text-center">

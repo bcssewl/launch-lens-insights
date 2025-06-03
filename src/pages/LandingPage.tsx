@@ -11,8 +11,12 @@ export default function LandingPage() {
     <div className="flex flex-col min-h-screen">
       <LandingNavbar />
       <main className="flex-grow">
-        <HeroSection />
-        <TestimonialsSectionDemo />
+        <div className="relative">
+          <HeroSection />
+          <div className="-mt-1">
+            <TestimonialsSectionDemo />
+          </div>
+        </div>
         <FeaturesSection />
         <HowItWorksSection />
         <PricingSection />

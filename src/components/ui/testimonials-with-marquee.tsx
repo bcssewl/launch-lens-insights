@@ -1,3 +1,4 @@
+
 import { cn } from "@/lib/utils"
 import { TestimonialCard, TestimonialAuthor } from "@/components/ui/testimonial-card"
 
@@ -20,11 +21,11 @@ export function TestimonialsSection({
 }: TestimonialsSectionProps) {
   return (
     <section className={cn(
-      "py-16 md:py-24 relative overflow-hidden hero-gradient",
+      "py-0 pt-16 pb-24 relative overflow-hidden unified-section",
       className
     )}>
-      {/* Subtle overlay gradient for added depth */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 pointer-events-none" />
+      {/* Seamless integration overlay */}
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/5 to-accent/5 pointer-events-none" />
       
       <div className="container mx-auto px-6 relative z-10">
         <div className="text-center mb-16">
