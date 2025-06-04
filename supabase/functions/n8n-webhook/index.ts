@@ -76,87 +76,119 @@ serve(async (req) => {
       );
     }
 
-    const webhookUrl = Deno.env.get('N8N_WEBHOOK_URL');
+    console.log('Authenticated user:', authenticatedUser.id, authenticatedUser.email);
     
-    if (!webhookUrl) {
-      console.error('N8N_WEBHOOK_URL not configured in secrets');
+    // Handle different message types
+    if (message === 'transcribe_audio' && audio_data) {
+      // Audio transcription request
+      console.log('Processing audio transcription request for recording:', audio_data.recording_id);
+      
+      try {
+        // For now, let's return a mock transcription to test the flow
+        const mockTranscription = "This is a test transcription of your audio recording. The actual transcription service is being configured.";
+        
+        console.log('Returning mock transcription for testing');
+        
+        return new Response(
+          JSON.stringify({ response: mockTranscription }), 
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      } catch (transcriptionError) {
+        console.error('Error in transcription process:', transcriptionError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to process audio transcription' }), 
+          { 
+            status: 500, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+    } else {
+      // Regular chat message
+      const webhookUrl = Deno.env.get('N8N_WEBHOOK_URL');
+      
+      if (!webhookUrl) {
+        console.error('N8N_WEBHOOK_URL not configured in secrets');
+        return new Response(
+          JSON.stringify({ error: 'N8N webhook URL not configured' }), 
+          { 
+            status: 500, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+
+      console.log('Sending request to n8n webhook:', webhookUrl);
+      
+      // Prepare the request body
+      const requestBody = {
+        user: {
+          id: authenticatedUser.id,
+          email: authenticatedUser.email,
+          full_name: authenticatedUser.full_name,
+          created_at: authenticatedUser.created_at
+        },
+        auth_token: authToken,
+        timestamp: new Date().toISOString(),
+        metadata: {
+          source: 'ai_assistant',
+          function_origin: 'supabase_edge_function',
+          authenticated: true,
+        },
+        type: 'chat_message',
+        message: message,
+      };
+
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`N8N webhook responded with status: ${response.status}`, errorText);
+        throw new Error(`N8N webhook responded with status: ${response.status}`);
+      }
+
+      const responseText = await response.text();
+      console.log('N8n webhook raw response:', responseText);
+
+      if (!responseText || responseText.trim() === '') {
+        throw new Error('Empty response from N8N webhook');
+      }
+
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.log('Response is not JSON, treating as plain text');
+        data = { response: responseText };
+      }
+
+      console.log('Received response from n8n:', data);
+
+      // Extract the response from the n8n response
+      const responseMessage = data.response || data.message || 'No response received from service.';
+
       return new Response(
-        JSON.stringify({ error: 'N8N webhook URL not configured' }), 
+        JSON.stringify({ response: responseMessage }), 
         { 
-          status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
     }
-
-    console.log('Sending request to n8n webhook:', webhookUrl);
-    console.log('Authenticated user:', authenticatedUser.id, authenticatedUser.email);
-    
-    // Prepare the request body based on message type
-    let requestBody: any = {
-      user: {
-        id: authenticatedUser.id,
-        email: authenticatedUser.email,
-        full_name: authenticatedUser.full_name,
-        created_at: authenticatedUser.created_at
-      },
-      auth_token: authToken,
-      timestamp: new Date().toISOString(),
-      metadata: {
-        source: 'ai_assistant',
-        function_origin: 'supabase_edge_function',
-        authenticated: true,
-      },
-    };
-
-    // Handle different message types
-    if (message === 'transcribe_audio' && audio_data) {
-      // Audio transcription request
-      requestBody = {
-        ...requestBody,
-        type: 'audio_transcription',
-        audio_url: audio_data.audio_url,
-        recording_id: audio_data.recording_id,
-        file_name: audio_data.file_name,
-        duration_seconds: audio_data.duration_seconds,
-      };
-    } else {
-      // Regular chat message
-      requestBody = {
-        ...requestBody,
-        type: 'chat_message',
-        message: message,
-      };
-    }
-
-    const response = await fetch(webhookUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody),
-    });
-
-    if (!response.ok) {
-      throw new Error(`N8N webhook responded with status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    console.log('Received response from n8n:', data);
-
-    // Extract the response from the n8n response
-    const responseText = data.response || data.transcription || data.message || 'No response received from service.';
-
-    return new Response(
-      JSON.stringify({ response: responseText }), 
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    );
   } catch (error) {
     console.error('Error in n8n-webhook function:', error);
     return new Response(
-      JSON.stringify({ error: 'Failed to communicate with N8N webhook' }), 
+      JSON.stringify({ 
+        error: 'Failed to communicate with N8N webhook',
+        details: error.message 
+      }), 
       { 
         status: 500, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
