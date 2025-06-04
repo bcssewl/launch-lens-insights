@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, ChevronRight, HelpCircle, Eye, EyeOff } from 'lucide-react';
+import { ChevronDown, ChevronRight, HelpCircle, EyeOff } from 'lucide-react';
 
 interface VoiceRecordingGuideProps {
   isVisible: boolean;
@@ -79,17 +79,7 @@ const VoiceRecordingGuide: React.FC<VoiceRecordingGuideProps> = ({
   ];
 
   if (!isVisible) {
-    return (
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={onToggleVisibility}
-        className="fixed top-4 right-4 z-10 apple-button-outline lg:static lg:w-full"
-      >
-        <HelpCircle className="h-4 w-4 mr-2" />
-        Show Guide
-      </Button>
-    );
+    return null;
   }
 
   return (
