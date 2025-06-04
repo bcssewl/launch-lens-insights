@@ -92,7 +92,7 @@ export const useN8nWebhook = () => {
           requestBody.session_id = sessionId;
         }
 
-        const { data, error } = await supabase.functions.invoke('n8n-webhook', {
+        const { data, error } = await supabase.functions.invoke('n8n-chat-webhook', {
           body: requestBody
         });
 

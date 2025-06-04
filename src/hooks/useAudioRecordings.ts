@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -135,9 +134,8 @@ export const useAudioRecordings = () => {
       console.log('Sending audio to n8n webhook for transcription...');
 
       // Use Supabase Edge Function to call n8n webhook with authentication
-      const { data, error } = await supabase.functions.invoke('n8n-webhook', {
+      const { data, error } = await supabase.functions.invoke('n8n-audio-webhook', {
         body: {
-          message: 'transcribe_audio', // Special message type for audio transcription
           user: {
             id: user.id,
             email: user.email,
