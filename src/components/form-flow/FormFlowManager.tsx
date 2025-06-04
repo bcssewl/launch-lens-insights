@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { IdeaValidationFormData } from '@/hooks/useIdeaValidationForm';
 import { supabase } from '@/integrations/supabase/client';
@@ -81,25 +80,36 @@ const FormFlowManager: React.FC<FormFlowManagerProps> = ({
           
           console.log('Form extraction result:', extractionResult);
           
-          if (extractionResult?.response) {
-            // The n8n webhook should return structured form data
-            const formData = extractionResult.response;
-            
+          // Handle the new response format: array with response.body structure
+          let formData = null;
+          
+          if (Array.isArray(extractionResult) && extractionResult.length > 0) {
+            const responseObj = extractionResult[0];
+            if (responseObj.response && responseObj.response.body) {
+              formData = responseObj.response.body;
+              console.log('Successfully extracted form data from n8n response:', formData);
+            }
+          } else if (extractionResult?.response) {
+            // Fallback: try the old format
+            formData = extractionResult.response;
+          }
+          
+          if (formData) {
             // Validate and structure the extracted data according to our form schema
             const structuredData: Partial<IdeaValidationFormData> = {
-              ideaName: formData.ideaName || formData.idea_name || "Voice-recorded Idea",
-              oneLineDescription: formData.oneLineDescription || formData.one_line_description || "An innovative solution extracted from voice recording",
-              problemStatement: formData.problemStatement || formData.problem_statement || "Based on your voice recording, we've identified key problem areas",
-              solutionDescription: formData.solutionDescription || formData.solution_description || "Your proposed solution as described in the recording",
+              ideaName: formData.ideaName || "Voice-recorded Idea",
+              oneLineDescription: formData.oneLineDescription || "An innovative solution extracted from voice recording",
+              problemStatement: formData.problemStatement || "Based on your voice recording, we've identified key problem areas",
+              solutionDescription: formData.solutionDescription || "Your proposed solution as described in the recording",
               targetCustomer: formData.targetCustomer || "B2C",
-              customerSegment: formData.customerSegment || formData.customer_segment || "Target audience identified from your description",
+              customerSegment: formData.customerSegment || "Target audience identified from your description",
               geographicFocus: formData.geographicFocus || ["United States"],
               revenueModel: formData.revenueModel || "Commission",
               expectedPricing: formData.expectedPricing || 25,
-              knownCompetitors: formData.knownCompetitors || formData.known_competitors || "Competitors mentioned in your recording",
+              knownCompetitors: formData.knownCompetitors || "Competitors mentioned in your recording",
               primaryGoal: formData.primaryGoal || "Validate Market Demand",
               timeline: formData.timeline || "In 3 months",
-              additionalContext: formData.additionalContext || formData.additional_context || ""
+              additionalContext: formData.additionalContext || ""
             };
             
             setExtractedData(structuredData);
