@@ -115,16 +115,23 @@ const ExtractedDataReview: React.FC<ExtractedDataReviewProps> = ({
           </div>
         </div>
 
-        <div className="flex justify-between space-x-4">
-          <Button variant="outline" onClick={onBack}>
+        <div className="flex flex-col space-y-3 pt-4">
+          <Button variant="outline" onClick={onBack} className="w-full">
             Back
           </Button>
-          <div className="flex space-x-2">
-            <Button variant="outline" onClick={onEdit}>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button 
+              variant="outline" 
+              onClick={onEdit}
+              className="flex-1 sm:flex-none sm:min-w-[140px]"
+            >
               <Edit3 className="mr-2 h-4 w-4" />
               Edit Details
             </Button>
-            <Button onClick={() => onConfirm(extractedData)} className="gradient-button">
+            <Button 
+              onClick={() => onConfirm(extractedData)} 
+              className="flex-1 gradient-button"
+            >
               Looks Good - Continue
             </Button>
           </div>
