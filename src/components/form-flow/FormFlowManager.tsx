@@ -42,6 +42,61 @@ const FormFlowManager: React.FC<FormFlowManagerProps> = ({
     }
   };
 
+  const parseFormDataFromResponse = (response: any): Partial<IdeaValidationFormData> | null => {
+    console.log('Parsing form data from response:', response);
+    
+    let formData = null;
+    
+    // Handle array response format (most common from n8n)
+    if (Array.isArray(response) && response.length > 0) {
+      const responseObj = response[0];
+      if (responseObj?.response?.body) {
+        formData = responseObj.response.body;
+        console.log('Extracted form data from array response:', formData);
+      }
+    }
+    
+    // Handle direct response object
+    else if (response?.response?.body) {
+      formData = response.response.body;
+      console.log('Extracted form data from direct response:', formData);
+    }
+    
+    // Handle flat response
+    else if (response && typeof response === 'object') {
+      formData = response;
+      console.log('Using flat response as form data:', formData);
+    }
+    
+    if (!formData) {
+      console.warn('Could not extract form data from response');
+      return null;
+    }
+    
+    // Map the response to our form structure
+    const structuredData: Partial<IdeaValidationFormData> = {
+      ideaName: formData.ideaName || formData.idea_name || "Voice-recorded Idea",
+      oneLineDescription: formData.oneLineDescription || formData.one_line_description || "An innovative solution extracted from voice recording",
+      problemStatement: formData.problemStatement || formData.problem_statement || "Problem identified from your voice recording",
+      solutionDescription: formData.solutionDescription || formData.solution_description || "Solution described in your recording",
+      targetCustomer: formData.targetCustomer || formData.target_customer || "B2C",
+      customerSegment: formData.customerSegment || formData.customer_segment || "Target audience from your description",
+      geographicFocus: Array.isArray(formData.geographicFocus) ? formData.geographicFocus : 
+                      Array.isArray(formData.geographic_focus) ? formData.geographic_focus : 
+                      ["United States"],
+      revenueModel: formData.revenueModel || formData.revenue_model || "One-time Purchase",
+      expectedPricing: typeof formData.expectedPricing === 'number' ? formData.expectedPricing : 
+                      typeof formData.expected_pricing === 'number' ? formData.expected_pricing : 25,
+      knownCompetitors: formData.knownCompetitors || formData.known_competitors || "Competitors mentioned in your recording",
+      primaryGoal: formData.primaryGoal || formData.primary_goal || "Validate Market Demand",
+      timeline: formData.timeline || "Building this month",
+      additionalContext: formData.additionalContext || formData.additional_context || ""
+    };
+    
+    console.log('Final structured data:', structuredData);
+    return structuredData;
+  };
+
   const handleVoiceComplete = async (audioBlob: Blob, recordingId?: string) => {
     console.log('Voice recording completed:', { recordingId, blobSize: audioBlob.size });
     
@@ -78,57 +133,30 @@ const FormFlowManager: React.FC<FormFlowManagerProps> = ({
             throw extractionError;
           }
           
-          console.log('Form extraction result:', extractionResult);
+          console.log('Raw form extraction result:', extractionResult);
           
-          // Handle the new response format: array with response.body structure
-          let formData = null;
+          // Parse the form data from the response
+          const parsedFormData = parseFormDataFromResponse(extractionResult);
           
-          if (Array.isArray(extractionResult) && extractionResult.length > 0) {
-            const responseObj = extractionResult[0];
-            if (responseObj.response && responseObj.response.body) {
-              formData = responseObj.response.body;
-              console.log('Successfully extracted form data from n8n response:', formData);
-            }
-          } else if (extractionResult?.response) {
-            // Fallback: try the old format
-            formData = extractionResult.response;
-          }
-          
-          if (formData) {
-            // Validate and structure the extracted data according to our form schema
-            const structuredData: Partial<IdeaValidationFormData> = {
-              ideaName: formData.ideaName || "Voice-recorded Idea",
-              oneLineDescription: formData.oneLineDescription || "An innovative solution extracted from voice recording",
-              problemStatement: formData.problemStatement || "Based on your voice recording, we've identified key problem areas",
-              solutionDescription: formData.solutionDescription || "Your proposed solution as described in the recording",
-              targetCustomer: formData.targetCustomer || "B2C",
-              customerSegment: formData.customerSegment || "Target audience identified from your description",
-              geographicFocus: formData.geographicFocus || ["United States"],
-              revenueModel: formData.revenueModel || "Commission",
-              expectedPricing: formData.expectedPricing || 25,
-              knownCompetitors: formData.knownCompetitors || "Competitors mentioned in your recording",
-              primaryGoal: formData.primaryGoal || "Validate Market Demand",
-              timeline: formData.timeline || "In 3 months",
-              additionalContext: formData.additionalContext || ""
-            };
-            
-            setExtractedData(structuredData);
+          if (parsedFormData) {
+            setExtractedData(parsedFormData);
+            console.log('Successfully set extracted data:', parsedFormData);
           } else {
-            console.warn('No structured data returned from extraction, using fallback');
-            // Fallback with basic extracted data
+            console.warn('Failed to parse form data, using fallback');
+            // Use fallback data with transcription text
             setExtractedData({
               ideaName: "Voice-recorded Idea",
-              oneLineDescription: "An innovative solution extracted from voice recording",
-              problemStatement: recording.transcription_text.substring(0, 200) + "...",
-              solutionDescription: "Solution extracted from your voice recording",
+              oneLineDescription: "Please review and edit the extracted information",
+              problemStatement: recording.transcription_text.substring(0, 200) + (recording.transcription_text.length > 200 ? "..." : ""),
+              solutionDescription: "Please describe your solution based on your recording",
               targetCustomer: "B2C",
-              customerSegment: "Target audience from recording",
+              customerSegment: "Please specify your target customer segment",
               geographicFocus: ["United States"],
-              revenueModel: "Commission",
+              revenueModel: "One-time Purchase",
               expectedPricing: 25,
               knownCompetitors: "",
               primaryGoal: "Validate Market Demand",
-              timeline: "In 3 months"
+              timeline: "Building this month"
             });
           }
         } else {
@@ -141,11 +169,11 @@ const FormFlowManager: React.FC<FormFlowManagerProps> = ({
             targetCustomer: "B2C",
             customerSegment: "Please specify your target customer segment",
             geographicFocus: ["United States"],
-            revenueModel: "Commission",
+            revenueModel: "One-time Purchase",
             expectedPricing: 25,
             knownCompetitors: "",
             primaryGoal: "Validate Market Demand",
-            timeline: "In 3 months"
+            timeline: "Building this month"
           });
         }
       } catch (error) {
@@ -159,11 +187,11 @@ const FormFlowManager: React.FC<FormFlowManagerProps> = ({
           targetCustomer: "B2C",
           customerSegment: "Please specify your target customer segment",
           geographicFocus: ["United States"],
-          revenueModel: "Commission",
+          revenueModel: "One-time Purchase",
           expectedPricing: 25,
           knownCompetitors: "",
           primaryGoal: "Validate Market Demand",
-          timeline: "In 3 months"
+          timeline: "Building this month"
         });
       }
     }
