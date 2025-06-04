@@ -62,7 +62,7 @@ const FormFlowManager: React.FC<FormFlowManagerProps> = ({
       console.log('Extracted form data from direct response:', formData);
     }
     
-    // Handle flat response
+    // Handle flat response - this is the case for your data
     else if (response && typeof response === 'object') {
       formData = response;
       console.log('Using flat response as form data:', formData);
@@ -73,7 +73,7 @@ const FormFlowManager: React.FC<FormFlowManagerProps> = ({
       return null;
     }
     
-    // Map the response to our form structure
+    // Map the response to our form structure - handle both camelCase and snake_case
     const structuredData: Partial<IdeaValidationFormData> = {
       ideaName: formData.ideaName || formData.idea_name || "Voice-recorded Idea",
       oneLineDescription: formData.oneLineDescription || formData.one_line_description || "An innovative solution extracted from voice recording",
@@ -83,11 +83,12 @@ const FormFlowManager: React.FC<FormFlowManagerProps> = ({
       customerSegment: formData.customerSegment || formData.customer_segment || "Target audience from your description",
       geographicFocus: Array.isArray(formData.geographicFocus) ? formData.geographicFocus : 
                       Array.isArray(formData.geographic_focus) ? formData.geographic_focus : 
+                      (formData.geographicFocus === "Global" || formData.geographic_focus === "Global") ? ["Global"] :
                       ["United States"],
       revenueModel: formData.revenueModel || formData.revenue_model || "One-time Purchase",
       expectedPricing: typeof formData.expectedPricing === 'number' ? formData.expectedPricing : 
                       typeof formData.expected_pricing === 'number' ? formData.expected_pricing : 25,
-      knownCompetitors: formData.knownCompetitors || formData.known_competitors || "Competitors mentioned in your recording",
+      knownCompetitors: formData.knownCompetitors || formData.known_competitors || "",
       primaryGoal: formData.primaryGoal || formData.primary_goal || "Validate Market Demand",
       timeline: formData.timeline || "Building this month",
       additionalContext: formData.additionalContext || formData.additional_context || ""
