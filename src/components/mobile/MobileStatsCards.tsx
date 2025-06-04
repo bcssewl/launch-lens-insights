@@ -37,26 +37,28 @@ const MobileStatCard: React.FC<MobileStatCardProps> = ({
 
   return (
     <Card className="mobile-stat-card border-0 shadow-lg hover:shadow-xl transition-all duration-300">
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-3 mobile-card-spacing">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+          <div className="flex items-center gap-3">
+            <div className="touch-target bg-primary/10 rounded-xl flex items-center justify-center flex-shrink-0">
               <Icon className={`h-5 w-5 ${iconColor}`} />
             </div>
-            <div>
-              <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-              <div className="text-2xl font-bold text-foreground mt-1">{value}</div>
+            <div className="min-w-0 flex-1">
+              <CardTitle className="mobile-subheading text-muted-foreground">{title}</CardTitle>
+              <div className="mobile-heading text-foreground mt-1">{value}</div>
             </div>
           </div>
         </div>
       </CardHeader>
-      <CardContent className="pt-0 space-y-3">
+      <CardContent className="pt-0 mobile-card-spacing">
         {shouldShowProgress && (
           <div className="space-y-2">
-            <Progress 
-              value={actualProgressValue} 
-              className="h-2 mobile-gradient-progress"
-            />
+            <div className="mobile-progress-container">
+              <div 
+                className="mobile-progress-bar"
+                style={{ width: `${actualProgressValue}%` }}
+              />
+            </div>
             <div className="flex justify-between items-center text-xs">
               <span className="text-muted-foreground">{Math.round(actualProgressValue)}% completion</span>
               <span className="text-primary font-medium">{actualProgressValue >= 70 ? 'Excellent' : actualProgressValue >= 40 ? 'Good' : 'Getting Started'}</span>
@@ -80,7 +82,7 @@ interface MobileStatsCardsProps {
 
 const MobileStatsCards: React.FC<MobileStatsCardsProps> = ({ stats }) => {
   return (
-    <div className="grid grid-cols-1 gap-4 md:hidden">
+    <div className="grid grid-cols-1 mobile-spacing md:hidden">
       <MobileStatCard
         title="Ideas Validated"
         value={stats.ideasValidated.toString()}
