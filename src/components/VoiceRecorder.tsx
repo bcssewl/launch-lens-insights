@@ -21,7 +21,7 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onComplete, onBack }) => 
   const [showGuide, setShowGuide] = useState(false);
   const [autoShowedGuide, setAutoShowedGuide] = useState(false);
   const [recordingId, setRecordingId] = useState<string | null>(null);
-  const [transcriptionText, setTranscriptionText] = useState<string | null>(null);
+  const [isProcessingComplete, setIsProcessingComplete] = useState(false);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -110,6 +110,7 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onComplete, onBack }) => 
     setAudioBlob(null);
     setIsPlaying(false);
     setRecordingId(null);
+    setIsProcessingComplete(false);
   };
 
   const playRecording = () => {
@@ -128,31 +129,52 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onComplete, onBack }) => 
     }
   };
 
-  const handleUploadAndTranscribe = async () => {
+  const handleUploadTranscribeAndComplete = async () => {
     if (!audioBlob) return;
 
-    const fileName = `voice_recording_${Date.now()}.webm`;
-    const uploadedRecording = await uploadAudioRecording(audioBlob, fileName, recordingTime);
-    
-    if (uploadedRecording) {
+    try {
+      // Step 1: Upload to Supabase
+      const fileName = `voice_recording_${Date.now()}.webm`;
+      const uploadedRecording = await uploadAudioRecording(audioBlob, fileName, recordingTime);
+      
+      if (!uploadedRecording) {
+        toast({
+          title: "Upload Failed",
+          description: "Failed to upload audio recording. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       setRecordingId(uploadedRecording.id);
       
-      // Start transcription process
+      // Step 2: Transcribe with n8n
       const transcription = await transcribeAudioWithN8n(uploadedRecording.id);
       
       if (transcription) {
-        setTranscriptionText(transcription);
+        setIsProcessingComplete(true);
+        
         toast({
-          title: "Ready to Continue",
-          description: "Your recording has been transcribed and is ready for form extraction.",
+          title: "Processing Complete",
+          description: "Your recording has been transcribed and will now be used to fill out the form.",
+        });
+        
+        // Step 3: Automatically proceed to form completion
+        onComplete(audioBlob, uploadedRecording.id);
+      } else {
+        toast({
+          title: "Transcription Failed",
+          description: "Failed to transcribe audio. Please try again.",
+          variant: "destructive",
         });
       }
-    }
-  };
-
-  const handleContinueWithTranscription = () => {
-    if (audioBlob && recordingId) {
-      onComplete(audioBlob, recordingId);
+    } catch (error) {
+      console.error('Error in upload and transcribe process:', error);
+      toast({
+        title: "Processing Failed",
+        description: "An error occurred during processing. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -223,16 +245,6 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onComplete, onBack }) => 
               </div>
             </div>
 
-            {/* Transcription Display */}
-            {transcriptionText && (
-              <div className="mb-4 p-4 bg-muted/50 rounded-lg">
-                <h4 className="font-medium mb-2 text-sm">Transcription:</h4>
-                <p className="text-sm text-muted-foreground italic text-left">
-                  "{transcriptionText}"
-                </p>
-              </div>
-            )}
-
             {/* Recording Controls with Glass Effect */}
             <div className={`glass-controls mobile-spacing mb-4 transition-all duration-300 ${
               isActiveRecording ? 'bg-primary/5' : ''
@@ -283,7 +295,7 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onComplete, onBack }) => 
                   </>
                 )}
 
-                {audioBlob && !transcriptionText && (
+                {audioBlob && !isProcessingComplete && (
                   <>
                     {!isPlaying ? (
                       <Button 
@@ -320,7 +332,7 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onComplete, onBack }) => 
               </div>
             </div>
 
-            {/* Bottom Navigation with Show Guide Button */}
+            {/* Bottom Navigation */}
             <div className="flex flex-col sm:flex-row justify-between gap-3">
               {!isRecording && (
                 <Button 
@@ -332,9 +344,9 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onComplete, onBack }) => 
                   Show Guide
                 </Button>
               )}
-              {audioBlob && !transcriptionText && (
+              {audioBlob && !isProcessingComplete && (
                 <Button 
-                  onClick={handleUploadAndTranscribe}
+                  onClick={handleUploadTranscribeAndComplete}
                   disabled={uploading || processing}
                   className="w-full sm:w-auto mobile-gradient-button touch-target"
                 >
@@ -351,17 +363,9 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onComplete, onBack }) => 
                   ) : (
                     <>
                       <Upload className="mr-2 h-4 w-4" />
-                      Upload & Transcribe
+                      Upload & Process
                     </>
                   )}
-                </Button>
-              )}
-              {transcriptionText && (
-                <Button 
-                  onClick={handleContinueWithTranscription}
-                  className="w-full sm:w-auto mobile-gradient-button touch-target"
-                >
-                  Continue to Form
                 </Button>
               )}
             </div>
