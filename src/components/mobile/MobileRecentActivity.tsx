@@ -54,16 +54,16 @@ const MobileActivityItem: React.FC<MobileActivityItemProps> = ({
   const StatusIcon = getStatusIcon();
 
   return (
-    <div className="mobile-activity-item border border-border/50 hover:border-border transition-all duration-200 hover:shadow-md">
-      <div className="flex items-center gap-4">
+    <div className="mobile-activity-item p-4 rounded-2xl border border-border/50 hover:border-border transition-all duration-200 hover:shadow-md">
+      <div className="flex items-center space-x-4">
         {/* Score Badge */}
         <div className="flex-shrink-0">
           {isRunningExperiment ? (
-            <div className="touch-target rounded-xl flex items-center justify-center bg-primary/10 border border-primary/20">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-primary/10 border border-primary/20">
               <Clock className="w-5 h-5 text-primary animate-pulse" />
             </div>
           ) : (
-            <div className={`touch-target rounded-xl flex items-center justify-center font-bold text-sm shadow-lg ${getScoreColorClasses()}`}>
+            <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-sm shadow-lg ${getScoreColorClasses()}`}>
               {score.toFixed(1)}
             </div>
           )}
@@ -71,7 +71,7 @@ const MobileActivityItem: React.FC<MobileActivityItemProps> = ({
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <h4 className="font-semibold text-foreground mobile-subheading truncate mb-1">
+          <h4 className="font-semibold text-foreground text-sm truncate mb-1">
             {ideaName}
           </h4>
           <div className="flex items-center gap-2 mb-2">
@@ -91,7 +91,7 @@ const MobileActivityItem: React.FC<MobileActivityItemProps> = ({
           <Button
             variant="ghost"
             size="sm"
-            className="rounded-xl hover:bg-primary/10 hover:text-primary touch-target"
+            className="rounded-xl hover:bg-primary/10 hover:text-primary"
             onClick={handleViewReport}
           >
             <Download className="h-4 w-4" />
@@ -117,10 +117,10 @@ interface MobileRecentActivityProps {
 const MobileRecentActivity: React.FC<MobileRecentActivityProps> = ({ recentActivities }) => {
   return (
     <Card className="mobile-activity-card border-0 shadow-lg md:hidden">
-      <CardHeader className="pb-4 mobile-card-spacing">
-        <CardTitle className="mobile-heading">Recent Activity</CardTitle>
+      <CardHeader className="pb-4">
+        <CardTitle className="text-lg font-semibold">Recent Activity</CardTitle>
       </CardHeader>
-      <CardContent className="mobile-card-spacing">
+      <CardContent className="space-y-3">
         {recentActivities.length > 0 ? (
           recentActivities.map((activity) => (
             <MobileActivityItem
@@ -138,7 +138,7 @@ const MobileRecentActivity: React.FC<MobileRecentActivityProps> = ({ recentActiv
             <div className="w-16 h-16 mx-auto mb-4 bg-primary/10 rounded-2xl flex items-center justify-center">
               <Lightbulb className="w-8 h-8 text-primary" />
             </div>
-            <p className="text-muted-foreground mobile-subheading mb-4">No recent activity yet.</p>
+            <p className="text-muted-foreground text-sm mb-4">No recent activity yet.</p>
             <Button variant="outline" className="apple-button-outline" asChild>
               <Link to="/dashboard/validate">
                 <Lightbulb className="mr-2 h-4 w-4" />

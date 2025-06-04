@@ -14,10 +14,10 @@ const MobileDashboardHeader: React.FC<MobileDashboardHeaderProps> = ({ title = '
   const currentDate = format(new Date(), "MMM dd, yyyy");
 
   return (
-    <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border/50 md:hidden ios-safe-top">
-      <div className="flex items-center justify-between mobile-spacing">
+    <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border/50 md:hidden">
+      <div className="flex items-center justify-between p-4">
         {/* Left: Hamburger Menu */}
-        <Button variant="ghost" size="icon" className="rounded-xl touch-target" asChild>
+        <Button variant="ghost" size="icon" className="rounded-xl" asChild>
           <SidebarTrigger>
             <Menu className="h-5 w-5" />
           </SidebarTrigger>
@@ -25,14 +25,14 @@ const MobileDashboardHeader: React.FC<MobileDashboardHeaderProps> = ({ title = '
 
         {/* Center: Title and Date */}
         <div className="flex flex-col items-center text-center">
-          <h1 className="mobile-heading text-foreground">{title}</h1>
+          <h1 className="text-lg font-semibold text-foreground">{title}</h1>
           <p className="text-xs text-muted-foreground">{currentDate}</p>
         </div>
 
         {/* Right: Search and Theme Toggle */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center space-x-2">
           <ThemeToggle />
-          <Button variant="ghost" size="icon" className="rounded-xl touch-target">
+          <Button variant="ghost" size="icon" className="rounded-xl">
             <Search className="h-5 w-5" />
           </Button>
         </div>
