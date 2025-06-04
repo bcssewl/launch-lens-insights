@@ -16,7 +16,7 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onComplete, onBack }) => 
   const [recordingTime, setRecordingTime] = useState(0);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [showGuide, setShowGuide] = useState(true);
+  const [showGuide, setShowGuide] = useState(false); // Start hidden on mobile for better UX
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -121,161 +121,163 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onComplete, onBack }) => 
   const progressValue = (recordingTime / maxRecordingTime) * 100;
 
   return (
-    <div className="flex flex-col gap-4 w-full max-w-none overflow-x-hidden mobile-container">
-      {/* Voice Recording Guide - Hidden on mobile to save space */}
-      <div className="hidden lg:block lg:w-80 flex-shrink-0">
-        <VoiceRecordingGuide 
-          isVisible={showGuide}
-          onToggleVisibility={() => setShowGuide(!showGuide)}
-        />
-      </div>
+    <div className="w-full max-w-none overflow-x-hidden mobile-container">
+      <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
+        {/* Voice Recording Guide - Now visible on all screen sizes */}
+        <div className="w-full lg:w-80 lg:flex-shrink-0">
+          <VoiceRecordingGuide 
+            isVisible={showGuide}
+            onToggleVisibility={() => setShowGuide(!showGuide)}
+          />
+        </div>
 
-      {/* Main Recording Interface */}
-      <Card className={`w-full mobile-gradient-card transition-all duration-500 ${
-        isActiveRecording ? 'recording-glow recording-border' : ''
-      }`}>
-        <CardHeader className="text-center mobile-spacing">
-          <CardTitle className="mobile-heading text-primary">Record Your Idea</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Tell us about your startup idea in your own words. You have up to 10 minutes.
-          </p>
-        </CardHeader>
-        <CardContent className="mobile-spacing">
-          <div className="text-center">
-            <div className="mb-4">
-              <div className="text-2xl sm:text-3xl font-mono font-bold">{formatTime(recordingTime)}</div>
-              <Progress value={progressValue} className="mobile-gradient-progress w-full mt-2" />
-            </div>
-
-            {/* Recording Visualization with Animated Sphere */}
-            <div className={`recording-visualization mb-4 transition-all duration-500 ${
-              isActiveRecording ? 'bg-primary/5 border-primary/30' : ''
-            }`}>
-              <div className="flex justify-center items-center h-24 sm:h-32">
-                {isActiveRecording ? (
-                  <div className="recording-sphere recording-sphere-enter" />
-                ) : (
-                  <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-muted/50 backdrop-blur-sm flex items-center justify-center border border-muted/30 transition-all duration-300">
-                    <Mic className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground" />
-                  </div>
-                )}
+        {/* Main Recording Interface */}
+        <Card className={`w-full mobile-gradient-card transition-all duration-500 ${
+          isActiveRecording ? 'recording-glow recording-border' : ''
+        }`}>
+          <CardHeader className="text-center mobile-spacing">
+            <CardTitle className="mobile-heading text-primary">Record Your Idea</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Tell us about your startup idea in your own words. You have up to 10 minutes.
+            </p>
+          </CardHeader>
+          <CardContent className="mobile-spacing">
+            <div className="text-center">
+              <div className="mb-4">
+                <div className="text-2xl sm:text-3xl font-mono font-bold">{formatTime(recordingTime)}</div>
+                <Progress value={progressValue} className="mobile-gradient-progress w-full mt-2" />
               </div>
-            </div>
 
-            {/* Recording Controls with Glass Effect */}
-            <div className={`glass-controls mobile-spacing mb-4 transition-all duration-300 ${
-              isActiveRecording ? 'bg-primary/5' : ''
-            }`}>
-              <div className="flex flex-col sm:flex-row justify-center gap-3">
-                {!isRecording && !audioBlob && (
+              {/* Recording Visualization with Animated Sphere */}
+              <div className={`recording-visualization mb-4 transition-all duration-500 ${
+                isActiveRecording ? 'bg-primary/5 border-primary/30' : ''
+              }`}>
+                <div className="flex justify-center items-center h-24 sm:h-32">
+                  {isActiveRecording ? (
+                    <div className="recording-sphere recording-sphere-enter" />
+                  ) : (
+                    <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-muted/50 backdrop-blur-sm flex items-center justify-center border border-muted/30 transition-all duration-300">
+                      <Mic className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground" />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Recording Controls with Glass Effect */}
+              <div className={`glass-controls mobile-spacing mb-4 transition-all duration-300 ${
+                isActiveRecording ? 'bg-primary/5' : ''
+              }`}>
+                <div className="flex flex-col sm:flex-row justify-center gap-3">
+                  {!isRecording && !audioBlob && (
+                    <Button 
+                      onClick={startRecording} 
+                      size="lg" 
+                      className="w-full sm:w-auto rounded-full mobile-gradient-button touch-target"
+                    >
+                      <Mic className="mr-2 h-5 w-5" />
+                      Start Recording
+                    </Button>
+                  )}
+
+                  {isRecording && (
+                    <>
+                      <Button 
+                        onClick={stopRecording} 
+                        size="lg" 
+                        variant="destructive" 
+                        className="w-full sm:w-auto rounded-full touch-target"
+                      >
+                        <Square className="mr-2 h-4 w-4" />
+                        Stop
+                      </Button>
+                      {isPaused ? (
+                        <Button 
+                          onClick={resumeRecording} 
+                          size="lg" 
+                          className="w-full sm:w-auto rounded-full mobile-gradient-button touch-target"
+                        >
+                          <Mic className="mr-2 h-5 w-5" />
+                          Resume
+                        </Button>
+                      ) : (
+                        <Button 
+                          onClick={pauseRecording} 
+                          size="lg" 
+                          variant="outline" 
+                          className="w-full sm:w-auto rounded-full apple-button-outline touch-target"
+                        >
+                          <Pause className="mr-2 h-4 w-4" />
+                          Pause
+                        </Button>
+                      )}
+                    </>
+                  )}
+
+                  {audioBlob && (
+                    <>
+                      {!isPlaying ? (
+                        <Button 
+                          onClick={playRecording} 
+                          size="lg" 
+                          variant="outline" 
+                          className="w-full sm:w-auto rounded-full apple-button-outline touch-target"
+                        >
+                          <Play className="mr-2 h-4 w-4" />
+                          Play
+                        </Button>
+                      ) : (
+                        <Button 
+                          onClick={pausePlayback} 
+                          size="lg" 
+                          variant="outline" 
+                          className="w-full sm:w-auto rounded-full apple-button-outline touch-target"
+                        >
+                          <Pause className="mr-2 h-4 w-4" />
+                          Pause
+                        </Button>
+                      )}
+                      <Button 
+                        onClick={resetRecording} 
+                        size="lg" 
+                        variant="outline" 
+                        className="w-full sm:w-auto rounded-full apple-button-outline touch-target"
+                      >
+                        <RotateCcw className="mr-2 h-4 w-4" />
+                        Re-record
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Navigation */}
+              <div className="flex flex-col sm:flex-row justify-between gap-3">
+                <Button 
+                  variant="outline" 
+                  onClick={onBack} 
+                  className="w-full sm:w-auto apple-button-outline touch-target"
+                >
+                  Back to Options
+                </Button>
+                {audioBlob && (
                   <Button 
-                    onClick={startRecording} 
-                    size="lg" 
-                    className="w-full sm:w-auto rounded-full mobile-gradient-button touch-target"
+                    onClick={() => onComplete(audioBlob)} 
+                    className="w-full sm:w-auto mobile-gradient-button touch-target"
                   >
-                    <Mic className="mr-2 h-5 w-5" />
-                    Start Recording
+                    Continue to Review
                   </Button>
                 )}
-
-                {isRecording && (
-                  <>
-                    <Button 
-                      onClick={stopRecording} 
-                      size="lg" 
-                      variant="destructive" 
-                      className="w-full sm:w-auto rounded-full touch-target"
-                    >
-                      <Square className="mr-2 h-4 w-4" />
-                      Stop
-                    </Button>
-                    {isPaused ? (
-                      <Button 
-                        onClick={resumeRecording} 
-                        size="lg" 
-                        className="w-full sm:w-auto rounded-full mobile-gradient-button touch-target"
-                      >
-                        <Mic className="mr-2 h-5 w-5" />
-                        Resume
-                      </Button>
-                    ) : (
-                      <Button 
-                        onClick={pauseRecording} 
-                        size="lg" 
-                        variant="outline" 
-                        className="w-full sm:w-auto rounded-full apple-button-outline touch-target"
-                      >
-                        <Pause className="mr-2 h-4 w-4" />
-                        Pause
-                      </Button>
-                    )}
-                  </>
-                )}
-
-                {audioBlob && (
-                  <>
-                    {!isPlaying ? (
-                      <Button 
-                        onClick={playRecording} 
-                        size="lg" 
-                        variant="outline" 
-                        className="w-full sm:w-auto rounded-full apple-button-outline touch-target"
-                      >
-                        <Play className="mr-2 h-4 w-4" />
-                        Play
-                      </Button>
-                    ) : (
-                      <Button 
-                        onClick={pausePlayback} 
-                        size="lg" 
-                        variant="outline" 
-                        className="w-full sm:w-auto rounded-full apple-button-outline touch-target"
-                      >
-                        <Pause className="mr-2 h-4 w-4" />
-                        Pause
-                      </Button>
-                    )}
-                    <Button 
-                      onClick={resetRecording} 
-                      size="lg" 
-                      variant="outline" 
-                      className="w-full sm:w-auto rounded-full apple-button-outline touch-target"
-                    >
-                      <RotateCcw className="mr-2 h-4 w-4" />
-                      Re-record
-                    </Button>
-                  </>
-                )}
               </div>
             </div>
 
-            {/* Navigation */}
-            <div className="flex flex-col sm:flex-row justify-between gap-3">
-              <Button 
-                variant="outline" 
-                onClick={onBack} 
-                className="w-full sm:w-auto apple-button-outline touch-target"
-              >
-                Back to Options
-              </Button>
-              {audioBlob && (
-                <Button 
-                  onClick={() => onComplete(audioBlob)} 
-                  className="w-full sm:w-auto mobile-gradient-button touch-target"
-                >
-                  Continue to Review
-                </Button>
-              )}
-            </div>
-          </div>
-
-          <audio
-            ref={audioRef}
-            onEnded={() => setIsPlaying(false)}
-            className="hidden"
-          />
-        </CardContent>
-      </Card>
+            <audio
+              ref={audioRef}
+              onEnded={() => setIsPlaying(false)}
+              className="hidden"
+            />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
