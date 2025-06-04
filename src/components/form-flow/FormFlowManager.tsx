@@ -1,5 +1,7 @@
+
 import React, { useState } from 'react';
 import { IdeaValidationFormData } from '@/hooks/useIdeaValidationForm';
+import { supabase } from '@/integrations/supabase/client';
 
 import InputMethodSelector from '../InputMethodSelector';
 import VoiceRecorder from '../VoiceRecorder';

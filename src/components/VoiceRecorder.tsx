@@ -1,8 +1,10 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Mic, Square, Play, Pause, RotateCcw, ArrowLeft, HelpCircle, Upload } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { toast } from '@/hooks/use-toast';
 import VoiceRecordingGuide from './VoiceRecordingGuide';
 import { useAudioRecordings } from '@/hooks/useAudioRecordings';
 
