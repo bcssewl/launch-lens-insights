@@ -13,7 +13,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Eye, EyeOff, Github, Linkedin } from 'lucide-react';
+import { Eye, EyeOff, Apple, Linkedin } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -244,8 +244,8 @@ export const SignUpForm: React.FC = () => {
             {isGoogleLoading ? "Signing up..." : "Google"}
           </Button>
           <Button variant="outline" className="w-full">
-            <Github className="mr-2 h-4 w-4" />
-            GitHub
+            <Apple className="mr-2 h-4 w-4" />
+            Apple
           </Button>
           <Button variant="outline" className="w-full">
             <Linkedin className="mr-2 h-4 w-4" />
