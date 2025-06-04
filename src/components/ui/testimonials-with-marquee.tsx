@@ -21,7 +21,7 @@ export function TestimonialsSection({
 }: TestimonialsSectionProps) {
   return (
     <section className={cn(
-      "apple-section bg-gray-200/80",
+      "apple-section bg-gray-200/80 dark:bg-gray-900/95",
       className
     )}>
       <div className="apple-container">
