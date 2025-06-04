@@ -323,6 +323,98 @@
   .recording-sphere-exit {
     animation: sphereExit 0.3s ease-in forwards;
   }
+
+  /* Mobile-specific dashboard styles */
+  .mobile-gradient-card {
+    @apply bg-white/95 backdrop-blur-xl border border-gray-200/30 rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300;
+  }
+  .dark .mobile-gradient-card {
+    @apply bg-gray-900/95 border-gray-700/30;
+  }
+
+  .mobile-stat-card {
+    @apply bg-gray-900/95 backdrop-blur-xl border border-gray-700/30 rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300;
+  }
+  .dark .mobile-stat-card {
+    @apply bg-gray-800/95 border-gray-600/30;
+  }
+
+  .mobile-activity-card {
+    @apply bg-gray-900/95 backdrop-blur-xl border border-gray-700/30 rounded-3xl shadow-lg;
+  }
+  .dark .mobile-activity-card {
+    @apply bg-gray-800/95 border-gray-600/30;
+  }
+
+  .mobile-insights-card {
+    @apply bg-gray-900/95 backdrop-blur-xl border border-gray-700/30 rounded-3xl shadow-lg;
+  }
+  .dark .mobile-insights-card {
+    @apply bg-gray-800/95 border-gray-600/30;
+  }
+
+  .mobile-assistant-card {
+    @apply bg-gray-900/95 backdrop-blur-xl border border-gray-700/30 rounded-3xl shadow-lg;
+  }
+  .dark .mobile-assistant-card {
+    @apply bg-gray-800/95 border-gray-600/30;
+  }
+
+  .mobile-activity-item {
+    @apply bg-gray-800/50 backdrop-blur-sm hover:bg-gray-700/60;
+  }
+  .dark .mobile-activity-item {
+    @apply bg-gray-700/50 hover:bg-gray-600/60;
+  }
+
+  .mobile-gradient-button {
+    @apply bg-gradient-to-r from-primary via-accent to-yellow-500 text-white font-medium rounded-2xl transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-0;
+    box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
+  }
+
+  .mobile-gradient-progress {
+    @apply bg-gray-700/50;
+  }
+
+  .mobile-gradient-progress [role="progressbar"] {
+    background: linear-gradient(90deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 50%, #fbbf24 100%);
+  }
+
+  /* Mobile touch targets */
+  @media (max-width: 768px) {
+    .touch-target {
+      @apply min-h-[44px] min-w-[44px];
+    }
+    
+    /* Improve mobile spacing */
+    .mobile-spacing {
+      @apply p-4 space-y-4;
+    }
+    
+    /* Mobile typography adjustments */
+    .mobile-heading {
+      @apply text-xl font-semibold;
+    }
+    
+    .mobile-subheading {
+      @apply text-lg font-medium;
+    }
+    
+    /* Mobile card spacing */
+    .mobile-card-spacing {
+      @apply p-4 space-y-3;
+    }
+  }
+
+  /* Enhanced mobile progress bars */
+  .mobile-progress-container {
+    @apply relative h-2 w-full overflow-hidden rounded-full bg-gray-700/50;
+  }
+
+  .mobile-progress-bar {
+    @apply h-full transition-all duration-500 ease-out;
+    background: linear-gradient(90deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 50%, #fbbf24 100%);
+  }
 }
 
 @layer utilities {
