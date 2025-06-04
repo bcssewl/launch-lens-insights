@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { IdeaValidationFormData } from '@/hooks/useIdeaValidationForm';
 import { supabase } from '@/integrations/supabase/client';
@@ -42,60 +43,57 @@ const FormFlowManager: React.FC<FormFlowManagerProps> = ({
     }
   };
 
-  const parseFormDataFromResponse = (response: any): Partial<IdeaValidationFormData> | null => {
-    console.log('Parsing form data from response:', response);
+  const parseFormDataFromTranscription = (transcriptionText: string): Partial<IdeaValidationFormData> => {
+    console.log('Parsing form data from transcription text:', transcriptionText);
     
-    let formData = null;
-    
-    // Handle array response format (most common from n8n)
-    if (Array.isArray(response) && response.length > 0) {
-      const responseObj = response[0];
-      if (responseObj?.response?.body) {
-        formData = responseObj.response.body;
-        console.log('Extracted form data from array response:', formData);
+    // Try to parse JSON if the transcription contains structured data
+    try {
+      // Look for JSON-like structure in the transcription
+      const jsonMatch = transcriptionText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const extractedJson = JSON.parse(jsonMatch[0]);
+        console.log('Found JSON structure in transcription:', extractedJson);
+        
+        // Map the extracted JSON to our form structure
+        const structuredData: Partial<IdeaValidationFormData> = {
+          ideaName: extractedJson.ideaName || "Voice-recorded Idea",
+          oneLineDescription: extractedJson.oneLineDescription || "An innovative solution extracted from voice recording",
+          problemStatement: extractedJson.problemStatement || "Problem identified from your voice recording",
+          solutionDescription: extractedJson.solutionDescription || "Solution described in your recording",
+          targetCustomer: extractedJson.targetCustomer || "B2C",
+          customerSegment: extractedJson.customerSegment || "Target audience from your description",
+          geographicFocus: Array.isArray(extractedJson.geographicFocus) ? extractedJson.geographicFocus : 
+                          (extractedJson.geographicFocus === "Global") ? ["Global"] : ["United States"],
+          revenueModel: extractedJson.revenueModel || "One-time Purchase",
+          expectedPricing: typeof extractedJson.expectedPricing === 'number' ? extractedJson.expectedPricing : 25,
+          knownCompetitors: extractedJson.knownCompetitors || "",
+          primaryGoal: extractedJson.primaryGoal || "Validate Market Demand",
+          timeline: extractedJson.timeline || "Building this month",
+          additionalContext: extractedJson.additionalContext || ""
+        };
+        
+        console.log('Final structured data from transcription:', structuredData);
+        return structuredData;
       }
+    } catch (error) {
+      console.log('No valid JSON found in transcription, using fallback');
     }
     
-    // Handle direct response object
-    else if (response?.response?.body) {
-      formData = response.response.body;
-      console.log('Extracted form data from direct response:', formData);
-    }
-    
-    // Handle flat response - this is the case for your data
-    else if (response && typeof response === 'object') {
-      formData = response;
-      console.log('Using flat response as form data:', formData);
-    }
-    
-    if (!formData) {
-      console.warn('Could not extract form data from response');
-      return null;
-    }
-    
-    // Map the response to our form structure - handle both camelCase and snake_case
-    const structuredData: Partial<IdeaValidationFormData> = {
-      ideaName: formData.ideaName || formData.idea_name || "Voice-recorded Idea",
-      oneLineDescription: formData.oneLineDescription || formData.one_line_description || "An innovative solution extracted from voice recording",
-      problemStatement: formData.problemStatement || formData.problem_statement || "Problem identified from your voice recording",
-      solutionDescription: formData.solutionDescription || formData.solution_description || "Solution described in your recording",
-      targetCustomer: formData.targetCustomer || formData.target_customer || "B2C",
-      customerSegment: formData.customerSegment || formData.customer_segment || "Target audience from your description",
-      geographicFocus: Array.isArray(formData.geographicFocus) ? formData.geographicFocus : 
-                      Array.isArray(formData.geographic_focus) ? formData.geographic_focus : 
-                      (formData.geographicFocus === "Global" || formData.geographic_focus === "Global") ? ["Global"] :
-                      ["United States"],
-      revenueModel: formData.revenueModel || formData.revenue_model || "One-time Purchase",
-      expectedPricing: typeof formData.expectedPricing === 'number' ? formData.expectedPricing : 
-                      typeof formData.expected_pricing === 'number' ? formData.expected_pricing : 25,
-      knownCompetitors: formData.knownCompetitors || formData.known_competitors || "",
-      primaryGoal: formData.primaryGoal || formData.primary_goal || "Validate Market Demand",
-      timeline: formData.timeline || "Building this month",
-      additionalContext: formData.additionalContext || formData.additional_context || ""
+    // Fallback for plain text transcription
+    return {
+      ideaName: "Voice-recorded Idea",
+      oneLineDescription: "Please review and edit the extracted information",
+      problemStatement: transcriptionText.substring(0, 200) + (transcriptionText.length > 200 ? "..." : ""),
+      solutionDescription: "Please describe your solution based on your recording",
+      targetCustomer: "B2C",
+      customerSegment: "Please specify your target customer segment",
+      geographicFocus: ["United States"],
+      revenueModel: "One-time Purchase",
+      expectedPricing: 25,
+      knownCompetitors: "",
+      primaryGoal: "Validate Market Demand",
+      timeline: "Building this month"
     };
-    
-    console.log('Final structured data:', structuredData);
-    return structuredData;
   };
 
   const handleVoiceComplete = async (audioBlob: Blob, recordingId?: string) => {
@@ -118,33 +116,17 @@ const FormFlowManager: React.FC<FormFlowManagerProps> = ({
         }
         
         if (recording?.transcription_text) {
-          console.log('Transcription found, extracting form data...');
+          console.log('Transcription found:', recording.transcription_text);
           
-          // Call n8n webhook to extract form data from transcription
-          const { data: extractionResult, error: extractionError } = await supabase.functions.invoke('n8n-webhook', {
-            body: {
-              message: 'extract_form_data',
-              transcription: recording.transcription_text,
-              action: 'extract_form_data'
-            }
-          });
-          
-          if (extractionError) {
-            console.error('Error extracting form data:', extractionError);
-            throw extractionError;
-          }
-          
-          console.log('Raw form extraction result:', extractionResult);
-          
-          // Parse the form data from the response
-          const parsedFormData = parseFormDataFromResponse(extractionResult);
+          // Parse the form data directly from the transcription text
+          // The n8n webhook should have already processed and structured the data
+          const parsedFormData = parseFormDataFromTranscription(recording.transcription_text);
           
           if (parsedFormData) {
             setExtractedData(parsedFormData);
-            console.log('Successfully set extracted data:', parsedFormData);
+            console.log('Successfully set extracted data from transcription:', parsedFormData);
           } else {
-            console.warn('Failed to parse form data, using fallback');
-            // Use fallback data with transcription text
+            console.warn('Failed to parse form data from transcription, using fallback');
             setExtractedData({
               ideaName: "Voice-recorded Idea",
               oneLineDescription: "Please review and edit the extracted information",
@@ -197,7 +179,7 @@ const FormFlowManager: React.FC<FormFlowManagerProps> = ({
       }
     }
     
-    // Go directly to form steps instead of data review
+    // Go directly to form steps
     setCurrentFlow('form_steps');
   };
 
