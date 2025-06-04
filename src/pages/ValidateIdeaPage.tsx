@@ -4,10 +4,10 @@ import DashboardLayout from '@/layouts/DashboardLayout';
 import IdeaValidationForm from '@/components/IdeaValidationForm';
 import DashboardHeader from '@/components/DashboardHeader';
 import MobileDashboardHeader from '@/components/mobile/MobileDashboardHeader';
-import { useMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const ValidateIdeaPage: React.FC = () => {
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
 
   return (
     <DashboardLayout>
