@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,6 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { toast } from '@/hooks/use-toast';
 import VoiceRecordingGuide from './VoiceRecordingGuide';
 import { useAudioRecordings } from '@/hooks/useAudioRecordings';
+import { convertToWav } from '@/utils/audioConverter';
 
 interface VoiceRecorderProps {
   onComplete: (audioBlob: Blob, recordingId?: string) => void;
@@ -22,6 +24,7 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onComplete, onBack }) => 
   const [autoShowedGuide, setAutoShowedGuide] = useState(false);
   const [recordingId, setRecordingId] = useState<string | null>(null);
   const [isProcessingComplete, setIsProcessingComplete] = useState(false);
+  const [isConverting, setIsConverting] = useState(false);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -62,9 +65,27 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onComplete, onBack }) => 
         }
       };
 
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
-        setAudioBlob(blob);
+      mediaRecorder.onstop = async () => {
+        const webmBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
+        
+        // Convert to WAV format
+        try {
+          setIsConverting(true);
+          const wavBlob = await convertToWav(webmBlob);
+          setAudioBlob(wavBlob);
+          console.log('Audio converted to WAV format successfully');
+        } catch (error) {
+          console.error('Error converting audio to WAV:', error);
+          toast({
+            title: "Conversion Warning",
+            description: "Could not convert to WAV format, using original recording.",
+            variant: "destructive",
+          });
+          setAudioBlob(webmBlob);
+        } finally {
+          setIsConverting(false);
+        }
+        
         stream.getTracks().forEach(track => track.stop());
       };
 
@@ -133,8 +154,8 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onComplete, onBack }) => 
     if (!audioBlob) return;
 
     try {
-      // Step 1: Upload to Supabase
-      const fileName = `voice_recording_${Date.now()}.webm`;
+      // Step 1: Upload to Supabase (now as WAV)
+      const fileName = `voice_recording_${Date.now()}.wav`;
       const uploadedRecording = await uploadAudioRecording(audioBlob, fileName, recordingTime);
       
       if (!uploadedRecording) {
@@ -221,6 +242,7 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onComplete, onBack }) => 
           <CardTitle className="mobile-heading text-primary">Record Your Idea</CardTitle>
           <p className="text-sm text-muted-foreground">
             Tell us about your startup idea in your own words. You have up to 10 minutes.
+            {isConverting && <span className="block mt-1 text-blue-600">Converting to WAV format...</span>}
           </p>
         </CardHeader>
         <CardContent className="mobile-spacing">
@@ -255,6 +277,7 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onComplete, onBack }) => 
                     onClick={startRecording} 
                     size="lg" 
                     className="w-full sm:w-auto rounded-full mobile-gradient-button touch-target"
+                    disabled={isConverting}
                   >
                     <Mic className="mr-2 h-5 w-5" />
                     Start Recording
@@ -295,7 +318,7 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onComplete, onBack }) => 
                   </>
                 )}
 
-                {audioBlob && !isProcessingComplete && (
+                {audioBlob && !isProcessingComplete && !isConverting && (
                   <>
                     {!isPlaying ? (
                       <Button 
@@ -344,7 +367,7 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onComplete, onBack }) => 
                   Show Guide
                 </Button>
               )}
-              {audioBlob && !isProcessingComplete && (
+              {audioBlob && !isProcessingComplete && !isConverting && (
                 <Button 
                   onClick={handleUploadTranscribeAndComplete}
                   disabled={uploading || processing}
@@ -353,7 +376,7 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onComplete, onBack }) => 
                   {uploading ? (
                     <>
                       <Upload className="mr-2 h-4 w-4 animate-pulse" />
-                      Uploading...
+                      Uploading WAV...
                     </>
                   ) : processing ? (
                     <>

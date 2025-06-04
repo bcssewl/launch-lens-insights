@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -40,19 +41,19 @@ export const useAudioRecordings = () => {
     try {
       setUploading(true);
 
-      // Create unique file path with user ID
+      // Create unique file path with user ID - now using .wav extension
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const fileExtension = fileName.split('.').pop() || 'webm';
+      const fileExtension = fileName.split('.').pop() || 'wav';
       const uniqueFileName = `${timestamp}_${fileName}`;
       const filePath = `${user.id}/${uniqueFileName}`;
 
-      console.log('Uploading audio file:', { fileName: uniqueFileName, filePath, size: audioBlob.size });
+      console.log('Uploading WAV audio file:', { fileName: uniqueFileName, filePath, size: audioBlob.size });
 
-      // Upload audio file to Supabase Storage
+      // Upload audio file to Supabase Storage with WAV content type
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('audio-recordings')
         .upload(filePath, audioBlob, {
-          contentType: audioBlob.type || 'audio/webm',
+          contentType: 'audio/wav',
           upsert: false
         });
 
@@ -61,7 +62,7 @@ export const useAudioRecordings = () => {
         throw uploadError;
       }
 
-      console.log('Audio file uploaded successfully:', uploadData);
+      console.log('WAV audio file uploaded successfully:', uploadData);
 
       // Create database record
       const { data: recordData, error: recordError } = await supabase
@@ -82,19 +83,19 @@ export const useAudioRecordings = () => {
         throw recordError;
       }
 
-      console.log('Audio recording record created:', recordData);
+      console.log('WAV audio recording record created:', recordData);
 
       toast({
         title: "Audio Uploaded",
-        description: "Your audio recording has been saved successfully.",
+        description: "Your WAV audio recording has been saved successfully.",
       });
 
       return recordData;
     } catch (error) {
-      console.error('Error uploading audio recording:', error);
+      console.error('Error uploading WAV audio recording:', error);
       toast({
         title: "Upload Failed",
-        description: "Failed to upload audio recording. Please try again.",
+        description: "Failed to upload WAV audio recording. Please try again.",
         variant: "destructive",
       });
       return null;
