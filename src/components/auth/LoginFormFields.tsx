@@ -16,7 +16,7 @@ import { PasswordInput } from './PasswordInput';
 type LoginFormValues = {
   email: string;
   password: string;
-  rememberMe: boolean;
+  rememberMe?: boolean;
 };
 
 interface LoginFormFieldsProps {
