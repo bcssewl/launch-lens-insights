@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage } from '@/components/ui/form';
@@ -15,6 +16,12 @@ interface Step3BusinessModelProps {
 const Step3BusinessModel: React.FC<Step3BusinessModelProps> = ({ form, revenueModelOptions }) => {
   const { control, watch } = form;
   const expectedPricingValue = watch('expectedPricing');
+
+  const autoResize = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const target = e.target;
+    target.style.height = 'auto';
+    target.style.height = `${target.scrollHeight}px`;
+  };
 
   return (
     <div className="space-y-4">
@@ -70,7 +77,18 @@ const Step3BusinessModel: React.FC<Step3BusinessModelProps> = ({ form, revenueMo
           <FormItem>
             <FormLabel>Known Competitors (Optional)</FormLabel>
             <FormControl>
-              <Textarea placeholder="List any competitors you're aware of (e.g., Company A, Product B)" {...field} value={field.value ?? ''} rows={3}/>
+              <Textarea 
+                placeholder="List any competitors you're aware of (e.g., Company A, Product B)" 
+                {...field} 
+                value={field.value ?? ''} 
+                rows={3}
+                className="apple-input w-full min-h-[80px] resize-none overflow-hidden"
+                onChange={(e) => {
+                  field.onChange(e);
+                  autoResize(e);
+                }}
+                onInput={autoResize}
+              />
             </FormControl>
             <FormMessage />
           </FormItem>

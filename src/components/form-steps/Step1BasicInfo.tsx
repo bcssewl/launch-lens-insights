@@ -16,6 +16,12 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({ form }) => {
   const problemStatementLength = watch('problemStatement')?.length || 0;
   const solutionDescriptionLength = watch('solutionDescription')?.length || 0;
 
+  const autoResize = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const target = e.target;
+    target.style.height = 'auto';
+    target.style.height = `${target.scrollHeight}px`;
+  };
+
   return (
     <div className="space-y-4 w-full">
       <FormField
@@ -67,7 +73,12 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({ form }) => {
                 placeholder="What problem does this solve? Who experiences this problem?" 
                 {...field} 
                 rows={3}
-                className="apple-input w-full min-h-[80px] resize-none"
+                className="apple-input w-full min-h-[80px] resize-none overflow-hidden"
+                onChange={(e) => {
+                  field.onChange(e);
+                  autoResize(e);
+                }}
+                onInput={autoResize}
               />
             </FormControl>
              <FormDescription className="flex flex-col sm:flex-row sm:justify-between gap-1">
@@ -89,7 +100,12 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({ form }) => {
                 placeholder="How does your solution work? What makes it unique?" 
                 {...field} 
                 rows={3}
-                className="apple-input w-full min-h-[80px] resize-none"
+                className="apple-input w-full min-h-[80px] resize-none overflow-hidden"
+                onChange={(e) => {
+                  field.onChange(e);
+                  autoResize(e);
+                }}
+                onInput={autoResize}
               />
             </FormControl>
             <FormDescription className="flex flex-col sm:flex-row sm:justify-between gap-1">

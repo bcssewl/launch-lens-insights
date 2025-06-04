@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage } from '@/components/ui/form';
@@ -15,6 +16,12 @@ interface Step4ValidationGoalsProps {
 
 const Step4ValidationGoals: React.FC<Step4ValidationGoalsProps> = ({ form, primaryGoalOptions, timelineOptions }) => {
   const { control } = form;
+
+  const autoResize = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const target = e.target;
+    target.style.height = 'auto';
+    target.style.height = `${target.scrollHeight}px`;
+  };
 
   return (
     <div className="space-y-4">
@@ -74,7 +81,18 @@ const Step4ValidationGoals: React.FC<Step4ValidationGoalsProps> = ({ form, prima
           <FormItem>
             <FormLabel>Additional Context (Optional)</FormLabel>
             <FormControl>
-              <Textarea placeholder="Any other details about your idea or specific questions you have?" {...field} value={field.value ?? ''} rows={4}/>
+              <Textarea 
+                placeholder="Any other details about your idea or specific questions you have?" 
+                {...field} 
+                value={field.value ?? ''} 
+                rows={4}
+                className="apple-input w-full min-h-[80px] resize-none overflow-hidden"
+                onChange={(e) => {
+                  field.onChange(e);
+                  autoResize(e);
+                }}
+                onInput={autoResize}
+              />
             </FormControl>
             <FormMessage />
           </FormItem>
