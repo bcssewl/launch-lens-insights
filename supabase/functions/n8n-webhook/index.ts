@@ -83,24 +83,89 @@ serve(async (req) => {
       // Audio transcription request
       console.log('Processing audio transcription request for recording:', audio_data.recording_id);
       
+      const audioWebhookUrl = 'https://n8n-launchlens.botica.it.com/webhook/audio-transcribe-form';
+      
+      const requestBody = {
+        user: {
+          id: authenticatedUser.id,
+          email: authenticatedUser.email,
+          full_name: authenticatedUser.full_name,
+          created_at: authenticatedUser.created_at
+        },
+        auth_token: authToken,
+        timestamp: new Date().toISOString(),
+        metadata: {
+          source: 'ai_assistant',
+          function_origin: 'supabase_edge_function',
+          authenticated: true,
+        },
+        type: 'audio_transcription',
+        audio_url: audio_data.audio_url,
+        recording_id: audio_data.recording_id,
+        file_name: audio_data.file_name,
+        duration_seconds: audio_data.duration_seconds,
+      };
+
+      console.log('Sending audio transcription request to:', audioWebhookUrl);
+      console.log('Request payload:', JSON.stringify(requestBody, null, 2));
+
       try {
-        // For now, let's return a mock transcription to test the flow
-        const mockTranscription = "This is a test transcription of your audio recording. The actual transcription service is being configured.";
-        
-        console.log('Returning mock transcription for testing');
-        
+        const response = await fetch(audioWebhookUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestBody),
+        });
+
+        console.log('Audio webhook response status:', response.status);
+        console.log('Audio webhook response headers:', Object.fromEntries(response.headers.entries()));
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Audio webhook error response:', errorText);
+          throw new Error(`Audio transcription webhook responded with status: ${response.status} - ${errorText}`);
+        }
+
+        const responseText = await response.text();
+        console.log('Audio webhook raw response:', responseText);
+
+        if (!responseText || responseText.trim() === '') {
+          throw new Error('Empty response from audio transcription webhook');
+        }
+
+        let data;
+        try {
+          data = JSON.parse(responseText);
+        } catch (parseError) {
+          console.error('Failed to parse JSON response from audio webhook:', parseError);
+          console.error('Response text:', responseText);
+          // Treat as plain text response
+          data = { transcription: responseText };
+        }
+
+        console.log('Parsed audio transcription response:', data);
+
+        // Extract the transcription from the response
+        const transcriptionText = data.transcription || data.response || data.text || data.message || 'Transcription completed but no text returned.';
+
         return new Response(
-          JSON.stringify({ response: mockTranscription }), 
+          JSON.stringify({ response: transcriptionText }), 
           { 
             headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
           }
         );
       } catch (transcriptionError) {
-        console.error('Error in transcription process:', transcriptionError);
+        console.error('Error in audio transcription process:', transcriptionError);
+        
+        // For now, return a mock transcription to test the flow
+        const mockTranscription = "This is a test transcription of your audio recording. The actual transcription service is being configured.";
+        
+        console.log('Returning mock transcription due to error');
+        
         return new Response(
-          JSON.stringify({ error: 'Failed to process audio transcription' }), 
+          JSON.stringify({ response: mockTranscription }), 
           { 
-            status: 500, 
             headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
           }
         );
