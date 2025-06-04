@@ -140,31 +140,64 @@ serve(async (req) => {
         } catch (parseError) {
           console.error('Failed to parse JSON response from audio webhook:', parseError);
           console.error('Response text:', responseText);
-          // Treat as plain text response
-          data = { transcription: responseText };
+          throw new Error('Invalid JSON response from transcription service');
         }
 
         console.log('Parsed audio transcription response:', data);
 
-        // Extract the transcription from the response
-        const transcriptionText = data.transcription || data.response || data.text || data.message || 'Transcription completed but no text returned.';
-
-        return new Response(
-          JSON.stringify({ response: transcriptionText }), 
-          { 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        // Handle the new response format: data is an array with response.body.output structure
+        let extractedFormData = null;
+        
+        if (Array.isArray(data) && data.length > 0) {
+          const responseObj = data[0];
+          if (responseObj.response && responseObj.response.body && responseObj.response.body.output) {
+            extractedFormData = responseObj.response.body.output;
+            console.log('Successfully extracted form data from n8n response:', extractedFormData);
           }
-        );
+        }
+
+        if (!extractedFormData) {
+          // Fallback: try to find form data in other possible locations
+          extractedFormData = data.output || data.formData || data.extractedData;
+        }
+
+        if (extractedFormData) {
+          // Return the structured form data for the frontend to process
+          return new Response(
+            JSON.stringify({ 
+              response: 'Form data extracted successfully',
+              formData: extractedFormData,
+              type: 'form_extraction'
+            }), 
+            { 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
+          );
+        } else {
+          // If we can't extract form data, return a simple transcription message
+          const transcriptionText = data.transcription || data.response || data.text || data.message || 'Audio transcription completed but no form data could be extracted.';
+          
+          return new Response(
+            JSON.stringify({ 
+              response: transcriptionText,
+              type: 'simple_transcription'
+            }), 
+            { 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
+          );
+        }
+
       } catch (transcriptionError) {
         console.error('Error in audio transcription process:', transcriptionError);
         
-        // For now, return a mock transcription to test the flow
-        const mockTranscription = "This is a test transcription of your audio recording. The actual transcription service is being configured.";
-        
-        console.log('Returning mock transcription due to error');
-        
+        // Return error but allow the flow to continue with manual form entry
         return new Response(
-          JSON.stringify({ response: mockTranscription }), 
+          JSON.stringify({ 
+            response: 'Audio transcription failed. Please fill out the form manually.',
+            error: transcriptionError.message,
+            type: 'transcription_error'
+          }), 
           { 
             headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
           }
