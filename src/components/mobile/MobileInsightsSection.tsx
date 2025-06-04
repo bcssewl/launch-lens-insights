@@ -33,9 +33,9 @@ const quickInsights = [
 
 const MobileInsightsSection: React.FC<MobileInsightsSectionProps> = ({ hasValidatedIdeas }) => {
   return (
-    <div className="space-y-3 px-4 md:hidden">
+    <div className="space-y-3 w-full">
       {/* Your Insights Card */}
-      <Card className="mobile-insights-card border-0 shadow-lg">
+      <Card className="mobile-insights-card border-0 shadow-lg w-full">
         <CardHeader className="pb-3">
           <CardTitle className="text-lg font-semibold">Your Insights</CardTitle>
         </CardHeader>
@@ -60,7 +60,7 @@ const MobileInsightsSection: React.FC<MobileInsightsSectionProps> = ({ hasValida
       </Card>
 
       {/* AI Assistant Card */}
-      <Card className="mobile-assistant-card border-0 shadow-lg">
+      <Card className="mobile-assistant-card border-0 shadow-lg w-full">
         <CardHeader className="pb-3">
           <CardTitle className="text-lg font-semibold">AI Assistant</CardTitle>
         </CardHeader>

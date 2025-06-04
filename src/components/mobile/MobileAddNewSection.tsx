@@ -7,7 +7,7 @@ import { Link } from 'react-router-dom';
 
 const MobileAddNewSection: React.FC = () => {
   return (
-    <Card className="mobile-gradient-card border-0 shadow-lg hover:shadow-xl transition-all duration-300 mx-4">
+    <Card className="mobile-gradient-card border-0 shadow-lg hover:shadow-xl transition-all duration-300 w-full">
       <CardContent className="p-0">
         <Button 
           className="w-full h-16 rounded-2xl bg-gradient-to-r from-primary via-accent to-yellow-500 text-white font-medium text-base hover:shadow-lg hover:scale-[1.02] transition-all duration-300 border-0" 

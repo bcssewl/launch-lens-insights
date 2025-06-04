@@ -86,6 +86,7 @@
     font-size: 16px;
     -webkit-text-size-adjust: 100%;
     -webkit-tap-highlight-color: transparent;
+    overflow-x: hidden;
   }
   
   body {
@@ -96,6 +97,14 @@
     min-height: 100vh;
     line-height: 1.5;
     overflow-x: hidden;
+    width: 100vw;
+    max-width: 100%;
+  }
+
+  #root {
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
   }
   
   h1, h2, h3, h4, h5, h6 {
@@ -105,41 +114,43 @@
     line-height: 1.2;
   }
 
-  /* Mobile-first typography */
-  h1 { font-size: 1.5rem; } /* 24px */
-  h2 { font-size: 1.25rem; } /* 20px */
-  h3 { font-size: 1.125rem; } /* 18px */
-  
-  @media (min-width: 768px) {
-    h1 { font-size: 2rem; } /* 32px */
-    h2 { font-size: 1.5rem; } /* 24px */
-    h3 { font-size: 1.25rem; } /* 20px */
-  }
+  /* Mobile-first typography with clamp for fluid scaling */
+  h1 { font-size: clamp(1.5rem, 4vw, 2rem); } /* 24px to 32px */
+  h2 { font-size: clamp(1.25rem, 3vw, 1.5rem); } /* 20px to 24px */
+  h3 { font-size: clamp(1.125rem, 2.5vw, 1.25rem); } /* 18px to 20px */
 }
 
 @layer components {
-  /* Mobile-first button styles */
+  /* Mobile-first button styles with fluid sizing */
   .apple-button {
-    @apply bg-gradient-to-r from-primary to-accent text-white font-medium px-4 py-3 rounded-xl transition-all duration-300 hover:shadow-lg hover:scale-105 border-0 text-sm;
+    @apply bg-gradient-to-r from-primary to-accent text-white font-medium rounded-xl transition-all duration-300 hover:shadow-lg hover:scale-105 border-0;
+    font-size: clamp(0.875rem, 3vw, 1rem); /* 14px to 16px */
+    padding: clamp(0.75rem, 3vw, 1rem) clamp(1rem, 4vw, 2rem); /* Responsive padding */
     box-shadow: 0 2px 10px rgba(139, 92, 246, 0.3);
     min-height: 44px; /* iOS touch target */
+    width: 100%;
+    max-width: 100%;
   }
   
   @media (min-width: 768px) {
     .apple-button {
-      @apply px-8 py-4 rounded-2xl text-base;
+      width: auto;
       box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
     }
   }
   
   .apple-button-outline {
-    @apply border border-primary/20 text-primary bg-white/90 backdrop-blur-xl font-medium px-4 py-3 rounded-xl transition-all duration-300 hover:bg-primary/5 hover:border-primary/40 text-sm;
+    @apply border border-primary/20 text-primary bg-white/90 backdrop-blur-xl font-medium rounded-xl transition-all duration-300 hover:bg-primary/5 hover:border-primary/40;
+    font-size: clamp(0.875rem, 3vw, 1rem); /* 14px to 16px */
+    padding: clamp(0.75rem, 3vw, 1rem) clamp(1rem, 4vw, 2rem); /* Responsive padding */
     min-height: 44px; /* iOS touch target */
+    width: 100%;
+    max-width: 100%;
   }
   
   @media (min-width: 768px) {
     .apple-button-outline {
-      @apply px-8 py-4 rounded-2xl text-base;
+      width: auto;
     }
   }
   
@@ -147,9 +158,12 @@
     @apply bg-gray-900/90 text-white border-gray-600/30 hover:bg-gray-800/90;
   }
 
-  /* Mobile-first card styles */
+  /* Mobile-first card styles with overflow prevention */
   .apple-card {
     @apply bg-white/95 backdrop-blur-xl border border-gray-200/30 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-500;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
   }
   
   @media (min-width: 768px) {
@@ -162,9 +176,12 @@
     @apply bg-gray-900/90 border-gray-700/30;
   }
 
-  /* Mobile dashboard specific styles */
+  /* Mobile dashboard specific styles with strict width control */
   .mobile-gradient-card {
     @apply bg-white/95 backdrop-blur-xl border border-gray-200/30 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
   }
   
   @media (min-width: 768px) {
@@ -179,6 +196,9 @@
 
   .mobile-stat-card {
     @apply bg-white/95 backdrop-blur-xl border border-gray-200/30 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
   }
   
   @media (min-width: 768px) {
@@ -193,6 +213,9 @@
 
   .mobile-activity-card {
     @apply bg-white/95 backdrop-blur-xl border border-gray-200/30 rounded-2xl shadow-lg;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
   }
   
   @media (min-width: 768px) {
@@ -207,6 +230,9 @@
 
   .mobile-insights-card {
     @apply bg-white/95 backdrop-blur-xl border border-gray-200/30 rounded-2xl shadow-lg;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
   }
   
   @media (min-width: 768px) {
@@ -221,6 +247,9 @@
 
   .mobile-assistant-card {
     @apply bg-white/95 backdrop-blur-xl border border-gray-200/30 rounded-2xl shadow-lg;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
   }
   
   @media (min-width: 768px) {
@@ -235,6 +264,9 @@
 
   .mobile-activity-item {
     @apply bg-gray-50/50 backdrop-blur-sm hover:bg-gray-100/60 rounded-xl;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
   }
   
   .dark .mobile-activity-item {
@@ -242,14 +274,18 @@
   }
 
   .mobile-gradient-button {
-    @apply bg-gradient-to-r from-primary via-accent to-yellow-500 text-white font-medium rounded-xl transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-0 text-sm;
+    @apply bg-gradient-to-r from-primary via-accent to-yellow-500 text-white font-medium rounded-xl transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-0;
+    font-size: clamp(0.875rem, 3vw, 1rem); /* 14px to 16px */
+    padding: clamp(0.75rem, 3vw, 1rem) clamp(1rem, 4vw, 2rem); /* Responsive padding */
     box-shadow: 0 2px 10px rgba(139, 92, 246, 0.3);
     min-height: 44px; /* iOS touch target */
+    width: 100%;
+    max-width: 100%;
   }
   
   @media (min-width: 768px) {
     .mobile-gradient-button {
-      @apply rounded-2xl text-base;
+      @apply rounded-2xl;
       box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
     }
   }
@@ -272,42 +308,24 @@
     background: linear-gradient(90deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 50%, #fbbf24 100%);
   }
 
-  /* Mobile responsive spacing utilities */
+  /* Mobile responsive spacing utilities with overflow prevention */
   .mobile-spacing {
-    @apply p-4 space-y-3;
-  }
-  
-  @media (min-width: 768px) {
-    .mobile-spacing {
-      @apply p-6 space-y-4;
-    }
-  }
-  
-  @media (min-width: 1024px) {
-    .mobile-spacing {
-      @apply p-8 space-y-6;
-    }
+    padding: clamp(1rem, 4vw, 2rem);
+    gap: clamp(0.75rem, 3vw, 1.5rem);
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
   }
 
-  /* Mobile typography */
+  /* Mobile typography with fluid scaling */
   .mobile-heading {
-    @apply text-lg font-semibold;
-  }
-  
-  @media (min-width: 768px) {
-    .mobile-heading {
-      @apply text-xl;
-    }
+    font-size: clamp(1.125rem, 4vw, 1.25rem); /* 18px to 20px */
+    font-weight: 600;
   }
   
   .mobile-subheading {
-    @apply text-base font-medium;
-  }
-  
-  @media (min-width: 768px) {
-    .mobile-subheading {
-      @apply text-lg;
-    }
+    font-size: clamp(1rem, 3vw, 1.125rem); /* 16px to 18px */
+    font-weight: 500;
   }
 
   /* Touch target optimization */
@@ -326,7 +344,14 @@
     transform: scale(1);
   }
 
-  /* ... keep existing code (all the other CSS styles from animations to glassmorphism) */
+  /* Global overflow prevention */
+  .overflow-prevent {
+    overflow-x: hidden !important;
+    max-width: 100vw !important;
+    width: 100% !important;
+  }
+
+  /* ... keep existing code (all other CSS styles from animations to glassmorphism) */
   
   /* Landing Page Styles */
   .hero-gradient {
@@ -544,7 +569,33 @@
   .text-shadow-subtle {
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   }
+
+  /* Utility classes for preventing horizontal overflow */
+  .no-horizontal-scroll {
+    overflow-x: hidden !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+  }
+
+  .mobile-container {
+    width: 100% !important;
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  .mobile-full-width {
+    width: 100% !important;
+    max-width: none !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
 }
+
+/* ... keep existing code (keyframes animations) */
 
 @keyframes float {
   0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.7; }

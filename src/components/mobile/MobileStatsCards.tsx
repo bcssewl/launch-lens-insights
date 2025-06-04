@@ -36,7 +36,7 @@ const MobileStatCard: React.FC<MobileStatCardProps> = ({
   const shouldShowProgress = actualProgressValue > 0;
 
   return (
-    <Card className="mobile-stat-card border-0 shadow-lg hover:shadow-xl transition-all duration-300">
+    <Card className="mobile-stat-card border-0 shadow-lg hover:shadow-xl transition-all duration-300 w-full">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
@@ -80,7 +80,7 @@ interface MobileStatsCardsProps {
 
 const MobileStatsCards: React.FC<MobileStatsCardsProps> = ({ stats }) => {
   return (
-    <div className="grid grid-cols-1 gap-3 px-4 md:hidden">
+    <div className="grid grid-cols-1 gap-3 w-full">
       <MobileStatCard
         title="Ideas Validated"
         value={stats.ideasValidated.toString()}

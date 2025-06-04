@@ -54,7 +54,7 @@ const MobileActivityItem: React.FC<MobileActivityItemProps> = ({
   const StatusIcon = getStatusIcon();
 
   return (
-    <div className="mobile-activity-item p-3 rounded-xl border border-border/50 hover:border-border transition-all duration-200 hover:shadow-sm">
+    <div className="mobile-activity-item p-3 rounded-xl border border-border/50 hover:border-border transition-all duration-200 hover:shadow-sm w-full">
       <div className="flex items-center space-x-3">
         {/* Score Badge */}
         <div className="flex-shrink-0">
@@ -116,7 +116,7 @@ interface MobileRecentActivityProps {
 
 const MobileRecentActivity: React.FC<MobileRecentActivityProps> = ({ recentActivities }) => {
   return (
-    <Card className="mobile-activity-card border-0 shadow-lg md:hidden mx-4">
+    <Card className="mobile-activity-card border-0 shadow-lg w-full">
       <CardHeader className="pb-3">
         <CardTitle className="text-lg font-semibold">Recent Activity</CardTitle>
       </CardHeader>

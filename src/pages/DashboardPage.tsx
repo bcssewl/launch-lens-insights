@@ -1,4 +1,3 @@
-
 import React from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import DashboardHeader from '@/components/DashboardHeader';
@@ -31,9 +30,9 @@ const DashboardPage: React.FC = () => {
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
+        <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10 overflow-x-hidden">
           {isMobile ? <MobileDashboardHeader /> : <DashboardHeader />}
-          <div className="mobile-spacing">
+          <div className={isMobile ? "w-full px-4 py-4 space-y-4 overflow-x-hidden" : "p-4 md:p-6 lg:p-8 space-y-6 md:space-y-8"}>
             {/* Quick Action Section */}
             <section className="flex flex-col sm:flex-row items-center gap-4">
               <Button size="lg" className="w-full sm:w-auto apple-button shadow-lg" asChild>
@@ -67,14 +66,14 @@ const DashboardPage: React.FC = () => {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10 overflow-x-hidden">
         {/* Conditional Header Rendering */}
         {isMobile ? <MobileDashboardHeader /> : <DashboardHeader />}
         
-        <div className={isMobile ? "space-y-4 py-4" : "p-4 md:p-6 lg:p-8 space-y-6 md:space-y-8"}>
+        <div className={isMobile ? "w-full px-4 py-4 space-y-4 overflow-x-hidden" : "p-4 md:p-6 lg:p-8 space-y-6 md:space-y-8"}>
           {/* Mobile Add New Section - Only show on mobile */}
           {isMobile && (
-            <section>
+            <section className="w-full">
               <MobileAddNewSection />
             </section>
           )}
@@ -101,7 +100,7 @@ const DashboardPage: React.FC = () => {
 
           {/* Mobile Stats Cards */}
           {isMobile && (
-            <section>
+            <section className="w-full">
               <MobileStatsCards stats={stats} />
             </section>
           )}
@@ -141,14 +140,14 @@ const DashboardPage: React.FC = () => {
 
           {/* Mobile Recent Activity */}
           {isMobile && (
-            <section>
+            <section className="w-full">
               <MobileRecentActivity recentActivities={recentActivities} />
             </section>
           )}
 
           {/* Mobile Insights Section */}
           {isMobile && (
-            <section>
+            <section className="w-full">
               <MobileInsightsSection hasValidatedIdeas={stats.ideasValidated > 0} />
             </section>
           )}
