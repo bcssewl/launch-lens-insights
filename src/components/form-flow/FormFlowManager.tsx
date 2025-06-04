@@ -196,7 +196,8 @@ const FormFlowManager: React.FC<FormFlowManagerProps> = ({
       }
     }
     
-    setCurrentFlow('data_review');
+    // Go directly to form steps instead of data review
+    setCurrentFlow('form_steps');
   };
 
   const handlePitchDeckComplete = (file: File) => {
@@ -217,7 +218,7 @@ const FormFlowManager: React.FC<FormFlowManagerProps> = ({
     };
     
     setExtractedData(mockExtracted);
-    setCurrentFlow('data_review');
+    setCurrentFlow('form_steps');
   };
 
   const handleDataReviewConfirm = (data: Partial<IdeaValidationFormData>) => {
