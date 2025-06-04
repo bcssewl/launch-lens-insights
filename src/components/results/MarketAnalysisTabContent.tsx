@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, Tooltip, Legend, BarChart, Bar } from 'recharts';
+import { ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, Tooltip, Legend, BarChart, Bar, LabelList } from 'recharts';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 
 interface MarketAnalysisData {
@@ -50,6 +51,19 @@ const getChartColors = (count: number) => {
   return Array.from({ length: count }, (_, i) => colors[i % colors.length]);
 };
 
+// Custom label function for pie charts
+const renderCustomizedLabel = (entry: any) => {
+  const percent = ((entry.value / entry.payload.total) * 100).toFixed(1);
+  return `${entry.value} (${percent}%)`;
+};
+
+// Custom label function with percentage calculation
+const renderPieLabel = (data: any[]) => (entry: any) => {
+  const total = data.reduce((sum, item) => sum + item.value, 0);
+  const percent = ((entry.value / total) * 100).toFixed(1);
+  return `${entry.value}\n(${percent}%)`;
+};
+
 const MarketAnalysisTabContent: React.FC<MarketAnalysisTabContentProps> = ({ data }) => {
   // Assign colors to TAM/SAM/SOM data
   const tamSamSomWithColors = data.tamSamSom.map((item, index) => ({
@@ -88,6 +102,7 @@ const MarketAnalysisTabContent: React.FC<MarketAnalysisTabContentProps> = ({ dat
                 outerRadius={120} 
                 innerRadius={60} 
                 labelLine={false}
+                label={renderPieLabel(tamSamSomWithColors)}
               >
                 {tamSamSomWithColors.map((entry, index) => (
                   <Cell key={`cell-${entry.name}`} fill={entry.fill} />
@@ -110,7 +125,9 @@ const MarketAnalysisTabContent: React.FC<MarketAnalysisTabContentProps> = ({ dat
               <YAxis />
               <ChartTooltipContent />
               <Legend />
-              <Line type="monotone" dataKey="growth" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="growth" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={{ fill: "hsl(var(--chart-1))", r: 6 }}>
+                <LabelList dataKey="growth" position="top" formatter={(value: number) => `${value}%`} />
+              </Line>
             </LineChart>
           </ChartContainer>
         </CardContent>
@@ -132,6 +149,7 @@ const MarketAnalysisTabContent: React.FC<MarketAnalysisTabContentProps> = ({ dat
                 cy="50%" 
                 outerRadius={120} 
                 labelLine={false}
+                label={renderPieLabel(customerSegmentsWithColors)}
               >
                 {customerSegmentsWithColors.map((entry, index) => (
                   <Cell key={`cell-${entry.name}`} fill={entry.fill} />
@@ -155,6 +173,7 @@ const MarketAnalysisTabContent: React.FC<MarketAnalysisTabContentProps> = ({ dat
               <ChartTooltipContent />
               <Legend />
               <Bar dataKey="value" radius={4}>
+                <LabelList dataKey="value" position="right" />
                 {geographicOpportunityWithColors.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.fill} />
                 ))}
