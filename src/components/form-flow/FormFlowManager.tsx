@@ -44,69 +44,117 @@ const FormFlowManager: React.FC<FormFlowManagerProps> = ({
   };
 
   const handleVoiceComplete = async (audioBlob: Blob, recordingId?: string) => {
-    // Store the recording ID for later use
+    console.log('Voice recording completed:', { recordingId, blobSize: audioBlob.size });
+    
     if (recordingId) {
       setAudioRecordingId(recordingId);
       
-      // Get the transcription and extract form data
       try {
-        const { data: recording } = await supabase
+        // Get the transcription from the audio recording
+        const { data: recording, error: recordingError } = await supabase
           .from('audio_recordings')
           .select('transcription_text')
           .eq('id', recordingId)
           .single();
         
+        if (recordingError) {
+          console.error('Error fetching recording:', recordingError);
+          throw recordingError;
+        }
+        
         if (recording?.transcription_text) {
-          // Send transcription to n8n for form extraction
-          const response = await fetch('https://n8n-launchlens.botica.it.com/webhook/audio-transcribe-form', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
+          console.log('Transcription found, extracting form data...');
+          
+          // Call n8n webhook to extract form data from transcription
+          const { data: extractionResult, error: extractionError } = await supabase.functions.invoke('n8n-webhook', {
+            body: {
+              message: 'extract_form_data',
               transcription: recording.transcription_text,
               action: 'extract_form_data'
-            })
+            }
           });
           
-          if (response.ok) {
-            const extractedFormData = await response.json();
-            setExtractedData(extractedFormData);
+          if (extractionError) {
+            console.error('Error extracting form data:', extractionError);
+            throw extractionError;
+          }
+          
+          console.log('Form extraction result:', extractionResult);
+          
+          if (extractionResult?.response) {
+            // The n8n webhook should return structured form data
+            const formData = extractionResult.response;
+            
+            // Validate and structure the extracted data according to our form schema
+            const structuredData: Partial<IdeaValidationFormData> = {
+              ideaName: formData.ideaName || formData.idea_name || "Voice-recorded Idea",
+              oneLineDescription: formData.oneLineDescription || formData.one_line_description || "An innovative solution extracted from voice recording",
+              problemStatement: formData.problemStatement || formData.problem_statement || "Based on your voice recording, we've identified key problem areas",
+              solutionDescription: formData.solutionDescription || formData.solution_description || "Your proposed solution as described in the recording",
+              targetCustomer: formData.targetCustomer || "B2C",
+              customerSegment: formData.customerSegment || formData.customer_segment || "Target audience identified from your description",
+              geographicFocus: formData.geographicFocus || ["United States"],
+              revenueModel: formData.revenueModel || "Commission",
+              expectedPricing: formData.expectedPricing || 25,
+              knownCompetitors: formData.knownCompetitors || formData.known_competitors || "Competitors mentioned in your recording",
+              primaryGoal: formData.primaryGoal || "Validate Market Demand",
+              timeline: formData.timeline || "In 3 months",
+              additionalContext: formData.additionalContext || formData.additional_context || ""
+            };
+            
+            setExtractedData(structuredData);
           } else {
-            // Fallback to mock data if extraction fails
-            const mockExtracted: Partial<IdeaValidationFormData> = {
+            console.warn('No structured data returned from extraction, using fallback');
+            // Fallback with basic extracted data
+            setExtractedData({
               ideaName: "Voice-recorded Idea",
               oneLineDescription: "An innovative solution extracted from voice recording",
-              problemStatement: "Based on your voice recording, we've identified key problem areas",
-              solutionDescription: "Your proposed solution as described in the recording",
+              problemStatement: recording.transcription_text.substring(0, 200) + "...",
+              solutionDescription: "Solution extracted from your voice recording",
               targetCustomer: "B2C",
-              customerSegment: "Target audience identified from your description",
+              customerSegment: "Target audience from recording",
+              geographicFocus: ["United States"],
               revenueModel: "Commission",
               expectedPricing: 25,
-              knownCompetitors: "Competitors mentioned in your recording",
+              knownCompetitors: "",
               primaryGoal: "Validate Market Demand",
               timeline: "In 3 months"
-            };
-            setExtractedData(mockExtracted);
+            });
           }
+        } else {
+          console.warn('No transcription found, using basic fallback data');
+          setExtractedData({
+            ideaName: "Voice-recorded Idea",
+            oneLineDescription: "Please review and edit the extracted information",
+            problemStatement: "Please describe your problem statement",
+            solutionDescription: "Please describe your solution",
+            targetCustomer: "B2C",
+            customerSegment: "Please specify your target customer segment",
+            geographicFocus: ["United States"],
+            revenueModel: "Commission",
+            expectedPricing: 25,
+            knownCompetitors: "",
+            primaryGoal: "Validate Market Demand",
+            timeline: "In 3 months"
+          });
         }
       } catch (error) {
         console.error('Error processing voice recording:', error);
-        // Use fallback mock data
-        const mockExtracted: Partial<IdeaValidationFormData> = {
+        // Use fallback data if processing fails
+        setExtractedData({
           ideaName: "Voice-recorded Idea",
-          oneLineDescription: "An innovative solution extracted from voice recording",
-          problemStatement: "Based on your voice recording, we've identified key problem areas",
-          solutionDescription: "Your proposed solution as described in the recording",
+          oneLineDescription: "Please review and edit the extracted information",
+          problemStatement: "Please describe your problem statement",
+          solutionDescription: "Please describe your solution",
           targetCustomer: "B2C",
-          customerSegment: "Target audience identified from your description",
+          customerSegment: "Please specify your target customer segment",
+          geographicFocus: ["United States"],
           revenueModel: "Commission",
           expectedPricing: 25,
-          knownCompetitors: "Competitors mentioned in your recording",
+          knownCompetitors: "",
           primaryGoal: "Validate Market Demand",
           timeline: "In 3 months"
-        };
-        setExtractedData(mockExtracted);
+        });
       }
     }
     
@@ -122,6 +170,7 @@ const FormFlowManager: React.FC<FormFlowManagerProps> = ({
       solutionDescription: "AI-powered matching system that connects commuters with similar routes, optimizing carpooling for maximum efficiency and convenience",
       targetCustomer: "B2B",
       customerSegment: "Daily commuters in metropolitan areas aged 25-45",
+      geographicFocus: ["United States"],
       revenueModel: "Subscription",
       expectedPricing: 15,
       knownCompetitors: "Uber Pool, traditional carpooling apps, public transportation",
