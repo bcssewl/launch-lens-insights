@@ -3,7 +3,7 @@ import { FileText, Brain, BarChart3, Rocket } from "lucide-react";
 import { HowItWorksStep } from "./HowItWorksStep";
 
 export const HowItWorksSection = () => (
-  <section className="apple-section bg-gray-50/50">
+  <section className="apple-section bg-gray-200/80 dark:bg-gray-900/95">
     <div className="apple-container">
       <div className="text-center mb-16">
         <h2 className="apple-heading">
