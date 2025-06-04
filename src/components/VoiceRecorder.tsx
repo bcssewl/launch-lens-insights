@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,12 +20,13 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onComplete, onBack }) => 
   const [showGuide, setShowGuide] = useState(false);
   const [autoShowedGuide, setAutoShowedGuide] = useState(false);
   const [recordingId, setRecordingId] = useState<string | null>(null);
+  const [transcriptionText, setTranscriptionText] = useState<string | null>(null);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const chunksRef = useRef<Blob[]>([]);
 
-  const { uploading, uploadAudioRecording } = useAudioRecordings();
+  const { uploading, processing, uploadAudioRecording, transcribeAudioWithN8n } = useAudioRecordings();
 
   const maxRecordingTime = 600; // 10 minutes in seconds
 
@@ -126,7 +126,7 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onComplete, onBack }) => 
     }
   };
 
-  const handleUploadAndContinue = async () => {
+  const handleUploadAndTranscribe = async () => {
     if (!audioBlob) return;
 
     const fileName = `voice_recording_${Date.now()}.webm`;
@@ -134,7 +134,23 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onComplete, onBack }) => 
     
     if (uploadedRecording) {
       setRecordingId(uploadedRecording.id);
-      onComplete(audioBlob, uploadedRecording.id);
+      
+      // Start transcription process
+      const transcription = await transcribeAudioWithN8n(uploadedRecording.id);
+      
+      if (transcription) {
+        setTranscriptionText(transcription);
+        toast({
+          title: "Ready to Continue",
+          description: "Your recording has been transcribed and is ready for form extraction.",
+        });
+      }
+    }
+  };
+
+  const handleContinueWithTranscription = () => {
+    if (audioBlob && recordingId) {
+      onComplete(audioBlob, recordingId);
     }
   };
 
@@ -202,6 +218,16 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onComplete, onBack }) => 
                 </div>
               </div>
 
+              {/* Transcription Display */}
+              {transcriptionText && (
+                <div className="mb-4 p-4 bg-muted/50 rounded-lg">
+                  <h4 className="font-medium mb-2 text-sm">Transcription:</h4>
+                  <p className="text-sm text-muted-foreground italic text-left">
+                    "{transcriptionText}"
+                  </p>
+                </div>
+              )}
+
               {/* Recording Controls with Glass Effect */}
               <div className={`glass-controls mobile-spacing mb-4 transition-all duration-300 ${
                 isActiveRecording ? 'bg-primary/5' : ''
@@ -252,7 +278,7 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onComplete, onBack }) => 
                     </>
                   )}
 
-                  {audioBlob && (
+                  {audioBlob && !transcriptionText && (
                     <>
                       {!isPlaying ? (
                         <Button 
@@ -301,10 +327,10 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onComplete, onBack }) => 
                     Show Guide
                   </Button>
                 )}
-                {audioBlob && (
+                {audioBlob && !transcriptionText && (
                   <Button 
-                    onClick={handleUploadAndContinue}
-                    disabled={uploading}
+                    onClick={handleUploadAndTranscribe}
+                    disabled={uploading || processing}
                     className="w-full sm:w-auto mobile-gradient-button touch-target"
                   >
                     {uploading ? (
@@ -312,12 +338,25 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onComplete, onBack }) => 
                         <Upload className="mr-2 h-4 w-4 animate-pulse" />
                         Uploading...
                       </>
+                    ) : processing ? (
+                      <>
+                        <Upload className="mr-2 h-4 w-4 animate-spin" />
+                        Transcribing...
+                      </>
                     ) : (
                       <>
                         <Upload className="mr-2 h-4 w-4" />
-                        Save & Continue
+                        Upload & Transcribe
                       </>
                     )}
+                  </Button>
+                )}
+                {transcriptionText && (
+                  <Button 
+                    onClick={handleContinueWithTranscription}
+                    className="w-full sm:w-auto mobile-gradient-button touch-target"
+                  >
+                    Continue to Form
                   </Button>
                 )}
               </div>

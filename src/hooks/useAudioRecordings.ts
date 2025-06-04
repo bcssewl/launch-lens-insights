@@ -104,6 +104,88 @@ export const useAudioRecordings = () => {
     }
   };
 
+  const transcribeAudioWithN8n = async (recordingId: string): Promise<string | null> => {
+    if (!user) return null;
+
+    try {
+      setProcessing(true);
+
+      // Get the recording details
+      const { data: recording, error: fetchError } = await supabase
+        .from('audio_recordings')
+        .select('*')
+        .eq('id', recordingId)
+        .eq('user_id', user.id)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Update status to processing
+      await updateAudioRecording(recordingId, { processing_status: 'transcribing' });
+
+      // Get the audio file URL
+      const { data: urlData } = await supabase.storage
+        .from('audio-recordings')
+        .createSignedUrl(recording.file_path, 3600); // 1 hour expiry
+
+      if (!urlData?.signedUrl) {
+        throw new Error('Failed to get audio file URL');
+      }
+
+      console.log('Sending audio to n8n webhook for transcription...');
+
+      // Send to n8n webhook
+      const response = await fetch('https://n8n-launchlens.botica.it.com/webhook/audio-transcribe-form', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          audio_url: urlData.signedUrl,
+          recording_id: recordingId,
+          user_id: user.id,
+          file_name: recording.file_name,
+          duration_seconds: recording.duration_seconds
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`N8n webhook failed: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('N8n transcription response:', result);
+
+      // Update the recording with transcription results
+      await updateAudioRecording(recordingId, {
+        transcription_text: result.transcription || result.text,
+        processing_status: 'completed',
+        transcription_completed_at: new Date().toISOString()
+      });
+
+      toast({
+        title: "Transcription Complete",
+        description: "Your audio has been transcribed successfully.",
+      });
+
+      return result.transcription || result.text;
+    } catch (error) {
+      console.error('Error transcribing audio:', error);
+      
+      // Update status to failed
+      await updateAudioRecording(recordingId, { processing_status: 'failed' });
+      
+      toast({
+        title: "Transcription Failed",
+        description: "Failed to transcribe audio. Please try again.",
+        variant: "destructive",
+      });
+      return null;
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   const updateAudioRecording = async (
     recordingId: string,
     updates: Partial<AudioRecording>
@@ -198,6 +280,7 @@ export const useAudioRecordings = () => {
     uploading,
     processing,
     uploadAudioRecording,
+    transcribeAudioWithN8n,
     updateAudioRecording,
     getAudioRecordings,
     deleteAudioRecording

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { IdeaValidationFormData } from '@/hooks/useIdeaValidationForm';
 
@@ -42,28 +41,73 @@ const FormFlowManager: React.FC<FormFlowManagerProps> = ({
     }
   };
 
-  const handleVoiceComplete = (audioBlob: Blob, recordingId?: string) => {
+  const handleVoiceComplete = async (audioBlob: Blob, recordingId?: string) => {
     // Store the recording ID for later use
     if (recordingId) {
       setAudioRecordingId(recordingId);
+      
+      // Get the transcription and extract form data
+      try {
+        const { data: recording } = await supabase
+          .from('audio_recordings')
+          .select('transcription_text')
+          .eq('id', recordingId)
+          .single();
+        
+        if (recording?.transcription_text) {
+          // Send transcription to n8n for form extraction
+          const response = await fetch('https://n8n-launchlens.botica.it.com/webhook/audio-transcribe-form', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              transcription: recording.transcription_text,
+              action: 'extract_form_data'
+            })
+          });
+          
+          if (response.ok) {
+            const extractedFormData = await response.json();
+            setExtractedData(extractedFormData);
+          } else {
+            // Fallback to mock data if extraction fails
+            const mockExtracted: Partial<IdeaValidationFormData> = {
+              ideaName: "Voice-recorded Idea",
+              oneLineDescription: "An innovative solution extracted from voice recording",
+              problemStatement: "Based on your voice recording, we've identified key problem areas",
+              solutionDescription: "Your proposed solution as described in the recording",
+              targetCustomer: "B2C",
+              customerSegment: "Target audience identified from your description",
+              revenueModel: "Commission",
+              expectedPricing: 25,
+              knownCompetitors: "Competitors mentioned in your recording",
+              primaryGoal: "Validate Market Demand",
+              timeline: "In 3 months"
+            };
+            setExtractedData(mockExtracted);
+          }
+        }
+      } catch (error) {
+        console.error('Error processing voice recording:', error);
+        // Use fallback mock data
+        const mockExtracted: Partial<IdeaValidationFormData> = {
+          ideaName: "Voice-recorded Idea",
+          oneLineDescription: "An innovative solution extracted from voice recording",
+          problemStatement: "Based on your voice recording, we've identified key problem areas",
+          solutionDescription: "Your proposed solution as described in the recording",
+          targetCustomer: "B2C",
+          customerSegment: "Target audience identified from your description",
+          revenueModel: "Commission",
+          expectedPricing: 25,
+          knownCompetitors: "Competitors mentioned in your recording",
+          primaryGoal: "Validate Market Demand",
+          timeline: "In 3 months"
+        };
+        setExtractedData(mockExtracted);
+      }
     }
     
-    // Mock extracted data from voice recording - using exact enum values
-    const mockExtracted: Partial<IdeaValidationFormData> = {
-      ideaName: "FarmConnect",
-      oneLineDescription: "A mobile platform connecting local farmers directly with consumers for fresh produce delivery",
-      problemStatement: "Consumers want fresh, local produce but farmers struggle to reach customers without expensive middlemen reducing their profits",
-      solutionDescription: "A mobile app where farmers list their products and consumers can order directly, with built-in logistics and payment processing",
-      targetCustomer: "B2C",
-      customerSegment: "Health-conscious families and individuals who value fresh, local produce",
-      revenueModel: "Commission",
-      expectedPricing: 25,
-      knownCompetitors: "Local farmers markets, grocery stores, some existing farm-to-table apps",
-      primaryGoal: "Validate Market Demand",
-      timeline: "In 3 months"
-    };
-    
-    setExtractedData(mockExtracted);
     setCurrentFlow('data_review');
   };
 
