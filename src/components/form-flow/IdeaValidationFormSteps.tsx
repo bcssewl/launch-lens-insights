@@ -121,12 +121,21 @@ const IdeaValidationFormSteps: React.FC<IdeaValidationFormStepsProps> = ({
             {currentStep === 3 && <Step4ValidationGoals form={form} primaryGoalOptions={primaryGoalOptions} timelineOptions={timelineOptions}/>}
             
             <div className="flex justify-between pt-6">
-              {currentStep > 0 && (
+              {currentStep > 0 ? (
                 <Button type="button" variant="outline" onClick={prevStep} disabled={isSubmitting}>
                   Back
                 </Button>
+              ) : (
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={onBackToMethodSelection}
+                  disabled={isSubmitting}
+                  className="apple-button-outline"
+                >
+                  Back to Options
+                </Button>
               )}
-              {currentStep === 0 && <div className="flex-grow"></div>} 
               
               {currentStep < steps.length - 1 ? (
                 <Button type="button" onClick={nextStep} disabled={isSubmitting}>
