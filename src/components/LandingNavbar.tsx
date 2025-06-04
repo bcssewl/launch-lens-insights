@@ -35,9 +35,8 @@ export function LandingNavbar() {
         className={`fixed top-0 left-0 right-0 z-50 px-6 md:px-10 transition-all duration-300 ${
           isScrolled 
             ? 'py-2 bg-background/95 backdrop-blur-md shadow-md border-b border-border' 
-            : 'py-4 hero-gradient backdrop-blur-md'
+            : 'py-4 bg-transparent backdrop-blur-sm'
         }`}
-        style={!isScrolled ? {opacity: 0.9} : undefined}
       >
         <div className="container mx-auto flex justify-between items-center">
           <Logo />
