@@ -88,10 +88,14 @@ export const useDashboardData = () => {
       // Create recent activities from reports
       const reportActivities = (reports || []).map(report => {
         const score = report.overall_score || 0;
-        let statusText = 'In Progress';
+        let statusText = 'Unknown';
         let statusColor: 'green' | 'yellow' | 'red' = 'yellow';
 
-        if (report.status === 'completed') {
+        // Only show as "in progress" if the status is "generating"
+        if (report.status === 'generating') {
+          statusText = 'Analysis in Progress';
+          statusColor = 'yellow';
+        } else if (report.status === 'completed') {
           if (score >= 7) {
             statusText = 'High Potential';
             statusColor = 'green';
@@ -107,6 +111,9 @@ export const useDashboardData = () => {
           }
         } else if (report.status === 'failed') {
           statusText = 'Analysis Failed';
+          statusColor = 'red';
+        } else if (report.status === 'archived') {
+          statusText = 'Archived';
           statusColor = 'red';
         }
 

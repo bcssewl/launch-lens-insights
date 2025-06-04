@@ -23,7 +23,7 @@ const ActivityItem: React.FC<ActivityItemProps> = ({
   reportId,
 }) => {
   const navigate = useNavigate();
-  const isRunningExperiment = score === 0 && (statusText === 'Validation Queued' || statusText === 'Analysis in Progress');
+  const isRunningExperiment = statusText === 'Analysis in Progress';
 
   const handleViewReport = () => {
     if (reportId) {
