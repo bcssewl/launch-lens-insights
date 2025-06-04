@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage } from '@/components/ui/form';
@@ -16,15 +17,19 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({ form }) => {
   const solutionDescriptionLength = watch('solutionDescription')?.length || 0;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full">
       <FormField
         control={control}
         name="ideaName"
         render={({ field }) => (
-          <FormItem>
-            <FormLabel>Idea Name</FormLabel>
+          <FormItem className="w-full">
+            <FormLabel className="mobile-subheading">Idea Name</FormLabel>
             <FormControl>
-              <Input placeholder="e.g., Netflix for Books" {...field} />
+              <Input 
+                placeholder="e.g., Netflix for Books" 
+                {...field} 
+                className="apple-input w-full touch-target"
+              />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -34,14 +39,18 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({ form }) => {
         control={control}
         name="oneLineDescription"
         render={({ field }) => (
-          <FormItem>
-            <FormLabel>One-line Description</FormLabel>
+          <FormItem className="w-full">
+            <FormLabel className="mobile-subheading">One-line Description</FormLabel>
             <FormControl>
-              <Input placeholder="Describe your idea in one sentence" {...field} />
+              <Input 
+                placeholder="Describe your idea in one sentence" 
+                {...field} 
+                className="apple-input w-full touch-target"
+              />
             </FormControl>
-            <FormDescription className="flex justify-between">
-              <span>Describe your idea in one powerful sentence.</span>
-              <span>{oneLineDescriptionLength}/150</span>
+            <FormDescription className="flex flex-col sm:flex-row sm:justify-between gap-1">
+              <span className="text-xs">Describe your idea in one powerful sentence.</span>
+              <span className="text-xs font-medium">{oneLineDescriptionLength}/150</span>
             </FormDescription>
             <FormMessage />
           </FormItem>
@@ -51,14 +60,19 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({ form }) => {
         control={control}
         name="problemStatement"
         render={({ field }) => (
-          <FormItem>
-            <FormLabel>Problem Statement</FormLabel>
+          <FormItem className="w-full">
+            <FormLabel className="mobile-subheading">Problem Statement</FormLabel>
             <FormControl>
-              <Textarea placeholder="What problem does this solve? Who experiences this problem?" {...field} rows={4}/>
+              <Textarea 
+                placeholder="What problem does this solve? Who experiences this problem?" 
+                {...field} 
+                rows={3}
+                className="apple-input w-full min-h-[80px] resize-none"
+              />
             </FormControl>
-             <FormDescription className="flex justify-between">
-              <span>Clearly define the pain point you are addressing.</span>
-              <span>{problemStatementLength}/500</span>
+             <FormDescription className="flex flex-col sm:flex-row sm:justify-between gap-1">
+              <span className="text-xs">Clearly define the pain point you are addressing.</span>
+              <span className="text-xs font-medium">{problemStatementLength}/500</span>
             </FormDescription>
             <FormMessage />
           </FormItem>
@@ -68,14 +82,19 @@ const Step1BasicInfo: React.FC<Step1BasicInfoProps> = ({ form }) => {
         control={control}
         name="solutionDescription"
         render={({ field }) => (
-          <FormItem>
-            <FormLabel>Solution Description</FormLabel>
+          <FormItem className="w-full">
+            <FormLabel className="mobile-subheading">Solution Description</FormLabel>
             <FormControl>
-              <Textarea placeholder="How does your solution work? What makes it unique?" {...field} rows={4}/>
+              <Textarea 
+                placeholder="How does your solution work? What makes it unique?" 
+                {...field} 
+                rows={3}
+                className="apple-input w-full min-h-[80px] resize-none"
+              />
             </FormControl>
-            <FormDescription className="flex justify-between">
-              <span>Explain your proposed solution and its key features.</span>
-              <span>{solutionDescriptionLength}/500</span>
+            <FormDescription className="flex flex-col sm:flex-row sm:justify-between gap-1">
+              <span className="text-xs">Explain your proposed solution and its key features.</span>
+              <span className="text-xs font-medium">{solutionDescriptionLength}/500</span>
             </FormDescription>
             <FormMessage />
           </FormItem>

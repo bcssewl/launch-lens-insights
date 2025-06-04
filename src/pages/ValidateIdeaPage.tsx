@@ -7,11 +7,11 @@ import DashboardHeader from '@/components/DashboardHeader';
 const ValidateIdeaPage: React.FC = () => {
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10 overflow-x-hidden">
         <DashboardHeader>Idea Validation</DashboardHeader>
-        <div className="p-6 lg:p-8">
-          <div className="max-w-4xl mx-auto">
-            <div className="apple-card border-0 shadow-lg p-8">
+        <div className="mobile-container">
+          <div className="w-full max-w-none">
+            <div className="apple-card border-0 shadow-lg mobile-spacing">
               <IdeaValidationForm />
             </div>
           </div>

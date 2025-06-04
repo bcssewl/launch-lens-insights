@@ -89,40 +89,46 @@ const IdeaValidationFormSteps: React.FC<IdeaValidationFormStepsProps> = ({
   const progressValue = ((currentStep + 1) / steps.length) * 100;
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
-      <CardHeader className="text-center">
-        <CardTitle className="text-3xl font-bold text-primary">
+    <Card className="w-full max-w-none mobile-gradient-card overflow-x-hidden">
+      <CardHeader className="text-center mobile-spacing">
+        <CardTitle className="mobile-heading text-primary">
           {duplicateId ? 'Edit & Resubmit Idea' : 'Validate Your Startup Idea'}
         </CardTitle>
-        <CardDescription className="text-md text-muted-foreground">
+        <CardDescription className="text-sm text-muted-foreground">
           {duplicateId ? 'Modify your idea and resubmit for analysis' : 'Get AI-powered insights in minutes'}
         </CardDescription>
         <div className="mt-4">
-          <Progress value={progressValue} className="w-full h-2" />
-          <p className="text-sm text-muted-foreground mt-1">Step {currentStep + 1} of {steps.length}: {steps[currentStep].name}</p>
+          <Progress value={progressValue} className="mobile-gradient-progress w-full" />
+          <p className="text-xs text-muted-foreground mt-2">Step {currentStep + 1} of {steps.length}: {steps[currentStep].name}</p>
         </div>
         {inputMethod !== 'form' && (
           <Button 
             variant="outline" 
             size="sm" 
             onClick={onBackToMethodSelection}
-            className="mt-2"
+            className="mt-3 apple-button-outline touch-target"
           >
             Change Input Method
           </Button>
         )}
       </CardHeader>
-      <CardContent>
+      <CardContent className="mobile-spacing">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onFormComplete)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(onFormComplete)} className="space-y-4 w-full">
             {currentStep === 0 && <Step1BasicInfo form={form} />}
             {currentStep === 1 && <Step2MarketDetails form={form} geographicFocusOptions={geographicFocusOptions} targetCustomerOptions={targetCustomerOptions} />}
             {currentStep === 2 && <Step3BusinessModel form={form} revenueModelOptions={revenueModelOptions}/>}
             {currentStep === 3 && <Step4ValidationGoals form={form} primaryGoalOptions={primaryGoalOptions} timelineOptions={timelineOptions}/>}
             
-            <div className="flex justify-between pt-6">
+            <div className="flex flex-col sm:flex-row justify-between gap-3 pt-6 w-full">
               {currentStep > 0 ? (
-                <Button type="button" variant="outline" onClick={prevStep} disabled={isSubmitting}>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={prevStep} 
+                  disabled={isSubmitting}
+                  className="w-full sm:w-auto apple-button-outline touch-target"
+                >
                   Back
                 </Button>
               ) : (
@@ -131,18 +137,27 @@ const IdeaValidationFormSteps: React.FC<IdeaValidationFormStepsProps> = ({
                   variant="outline" 
                   onClick={onBackToMethodSelection}
                   disabled={isSubmitting}
-                  className="apple-button-outline"
+                  className="w-full sm:w-auto apple-button-outline touch-target"
                 >
                   Back to Options
                 </Button>
               )}
               
               {currentStep < steps.length - 1 ? (
-                <Button type="button" onClick={nextStep} disabled={isSubmitting}>
+                <Button 
+                  type="button" 
+                  onClick={nextStep} 
+                  disabled={isSubmitting}
+                  className="w-full sm:w-auto mobile-gradient-button touch-target"
+                >
                   Continue
                 </Button>
               ) : (
-                <Button type="submit" className="gradient-button" disabled={isSubmitting}>
+                <Button 
+                  type="submit" 
+                  className="w-full sm:w-auto mobile-gradient-button touch-target" 
+                  disabled={isSubmitting}
+                >
                   {isSubmitting ? 'Submitting...' : (duplicateId ? 'Resubmit Analysis' : 'Analyze My Idea')}
                 </Button>
               )}
