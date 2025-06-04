@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Search, Menu, Home, Lightbulb, FileText, Bot, Settings as SettingsIcon, UserCircle, LogOut, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -70,8 +69,8 @@ const MobileDashboardHeader: React.FC<MobileDashboardHeaderProps> = ({ title = '
 
       {/* Mobile Navigation Sheet */}
       <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-        <SheetContent side="left" className="w-[280px] bg-background border-r border-border">
-          <SheetHeader className="border-b border-border pb-4">
+        <SheetContent side="left" className="w-[280px] bg-background border-r border-border p-0">
+          <SheetHeader className="border-b border-border p-6 pb-4">
             <div className="flex items-center justify-between">
               <SheetTitle className="text-lg font-semibold">Menu</SheetTitle>
               <SheetClose asChild>
@@ -82,9 +81,9 @@ const MobileDashboardHeader: React.FC<MobileDashboardHeaderProps> = ({ title = '
             </div>
           </SheetHeader>
           
-          <div className="flex flex-col h-full">
+          <div className="flex flex-col h-[calc(100vh-80px)] overflow-hidden">
             {/* Navigation Items */}
-            <nav className="flex-1 py-4">
+            <nav className="flex-1 overflow-y-auto py-4 px-3">
               <div className="space-y-2">
                 {navItems.map((item) => (
                   <Link
@@ -106,7 +105,7 @@ const MobileDashboardHeader: React.FC<MobileDashboardHeaderProps> = ({ title = '
             </nav>
 
             {/* User Profile Section */}
-            <div className="border-t border-border pt-4 pb-4">
+            <div className="border-t border-border p-4 mt-auto">
               <div className="flex items-center gap-3 px-3 py-2 mb-3">
                 <Avatar className="h-8 w-8">
                   <AvatarImage src="" alt="User Avatar" />
