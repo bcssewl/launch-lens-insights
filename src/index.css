@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -78,22 +79,255 @@
 @layer base {
   * {
     @apply border-border;
+    box-sizing: border-box;
   }
+  
+  html {
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
   body {
     @apply bg-background text-foreground;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     min-height: 100vh;
+    line-height: 1.5;
+    overflow-x: hidden;
   }
+  
   h1, h2, h3, h4, h5, h6 {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
     font-weight: 600;
     letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+
+  /* Mobile-first typography */
+  h1 { font-size: 1.5rem; } /* 24px */
+  h2 { font-size: 1.25rem; } /* 20px */
+  h3 { font-size: 1.125rem; } /* 18px */
+  
+  @media (min-width: 768px) {
+    h1 { font-size: 2rem; } /* 32px */
+    h2 { font-size: 1.5rem; } /* 24px */
+    h3 { font-size: 1.25rem; } /* 20px */
   }
 }
 
 @layer components {
+  /* Mobile-first button styles */
+  .apple-button {
+    @apply bg-gradient-to-r from-primary to-accent text-white font-medium px-4 py-3 rounded-xl transition-all duration-300 hover:shadow-lg hover:scale-105 border-0 text-sm;
+    box-shadow: 0 2px 10px rgba(139, 92, 246, 0.3);
+    min-height: 44px; /* iOS touch target */
+  }
+  
+  @media (min-width: 768px) {
+    .apple-button {
+      @apply px-8 py-4 rounded-2xl text-base;
+      box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
+    }
+  }
+  
+  .apple-button-outline {
+    @apply border border-primary/20 text-primary bg-white/90 backdrop-blur-xl font-medium px-4 py-3 rounded-xl transition-all duration-300 hover:bg-primary/5 hover:border-primary/40 text-sm;
+    min-height: 44px; /* iOS touch target */
+  }
+  
+  @media (min-width: 768px) {
+    .apple-button-outline {
+      @apply px-8 py-4 rounded-2xl text-base;
+    }
+  }
+  
+  .dark .apple-button-outline {
+    @apply bg-gray-900/90 text-white border-gray-600/30 hover:bg-gray-800/90;
+  }
+
+  /* Mobile-first card styles */
+  .apple-card {
+    @apply bg-white/95 backdrop-blur-xl border border-gray-200/30 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-500;
+  }
+  
+  @media (min-width: 768px) {
+    .apple-card {
+      @apply rounded-3xl shadow-xl hover:shadow-2xl;
+    }
+  }
+  
+  .dark .apple-card {
+    @apply bg-gray-900/90 border-gray-700/30;
+  }
+
+  /* Mobile dashboard specific styles */
+  .mobile-gradient-card {
+    @apply bg-white/95 backdrop-blur-xl border border-gray-200/30 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300;
+  }
+  
+  @media (min-width: 768px) {
+    .mobile-gradient-card {
+      @apply rounded-3xl;
+    }
+  }
+  
+  .dark .mobile-gradient-card {
+    @apply bg-gray-900/95 border-gray-700/30;
+  }
+
+  .mobile-stat-card {
+    @apply bg-white/95 backdrop-blur-xl border border-gray-200/30 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300;
+  }
+  
+  @media (min-width: 768px) {
+    .mobile-stat-card {
+      @apply rounded-3xl;
+    }
+  }
+  
+  .dark .mobile-stat-card {
+    @apply bg-gray-900/95 border-gray-700/30;
+  }
+
+  .mobile-activity-card {
+    @apply bg-white/95 backdrop-blur-xl border border-gray-200/30 rounded-2xl shadow-lg;
+  }
+  
+  @media (min-width: 768px) {
+    .mobile-activity-card {
+      @apply rounded-3xl;
+    }
+  }
+  
+  .dark .mobile-activity-card {
+    @apply bg-gray-900/95 border-gray-700/30;
+  }
+
+  .mobile-insights-card {
+    @apply bg-white/95 backdrop-blur-xl border border-gray-200/30 rounded-2xl shadow-lg;
+  }
+  
+  @media (min-width: 768px) {
+    .mobile-insights-card {
+      @apply rounded-3xl;
+    }
+  }
+  
+  .dark .mobile-insights-card {
+    @apply bg-gray-900/95 border-gray-700/30;
+  }
+
+  .mobile-assistant-card {
+    @apply bg-white/95 backdrop-blur-xl border border-gray-200/30 rounded-2xl shadow-lg;
+  }
+  
+  @media (min-width: 768px) {
+    .mobile-assistant-card {
+      @apply rounded-3xl;
+    }
+  }
+  
+  .dark .mobile-assistant-card {
+    @apply bg-gray-900/95 border-gray-700/30;
+  }
+
+  .mobile-activity-item {
+    @apply bg-gray-50/50 backdrop-blur-sm hover:bg-gray-100/60 rounded-xl;
+  }
+  
+  .dark .mobile-activity-item {
+    @apply bg-gray-800/50 hover:bg-gray-700/60;
+  }
+
+  .mobile-gradient-button {
+    @apply bg-gradient-to-r from-primary via-accent to-yellow-500 text-white font-medium rounded-xl transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-0 text-sm;
+    box-shadow: 0 2px 10px rgba(139, 92, 246, 0.3);
+    min-height: 44px; /* iOS touch target */
+  }
+  
+  @media (min-width: 768px) {
+    .mobile-gradient-button {
+      @apply rounded-2xl text-base;
+      box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
+    }
+  }
+
+  .mobile-gradient-progress {
+    @apply bg-gray-200/50 h-1.5;
+  }
+  
+  @media (min-width: 768px) {
+    .mobile-gradient-progress {
+      @apply h-2;
+    }
+  }
+  
+  .dark .mobile-gradient-progress {
+    @apply bg-gray-700/50;
+  }
+
+  .mobile-gradient-progress [role="progressbar"] {
+    background: linear-gradient(90deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 50%, #fbbf24 100%);
+  }
+
+  /* Mobile responsive spacing utilities */
+  .mobile-spacing {
+    @apply p-4 space-y-3;
+  }
+  
+  @media (min-width: 768px) {
+    .mobile-spacing {
+      @apply p-6 space-y-4;
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .mobile-spacing {
+      @apply p-8 space-y-6;
+    }
+  }
+
+  /* Mobile typography */
+  .mobile-heading {
+    @apply text-lg font-semibold;
+  }
+  
+  @media (min-width: 768px) {
+    .mobile-heading {
+      @apply text-xl;
+    }
+  }
+  
+  .mobile-subheading {
+    @apply text-base font-medium;
+  }
+  
+  @media (min-width: 768px) {
+    .mobile-subheading {
+      @apply text-lg;
+    }
+  }
+
+  /* Touch target optimization */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  /* Prevent zoom on form elements in iOS */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  textarea,
+  select {
+    font-size: 16px !important;
+    transform: scale(1);
+  }
+
+  /* ... keep existing code (all the other CSS styles from animations to glassmorphism) */
+  
   /* Landing Page Styles */
   .hero-gradient {
     background: linear-gradient(315deg, #0f0f23 0%, #1a1a2e 25%, #16213e 50%, #1a1a2e 75%, #0f0f23 100%);
@@ -112,13 +346,6 @@
   }
   .dark .apple-hero {
     background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
-  }
-  
-  .apple-card {
-    @apply bg-white/95 backdrop-blur-xl border border-gray-200/30 rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500;
-  }
-  .dark .apple-card {
-    @apply bg-gray-900/90 border-gray-700/30;
   }
 
   /* Glassmorphism Styles */
@@ -157,18 +384,6 @@
 
   .recording-visualization {
     @apply glass-recording p-6;
-  }
-
-  .apple-button {
-    @apply bg-gradient-to-r from-primary to-accent text-white font-medium px-8 py-4 rounded-2xl transition-all duration-300 hover:shadow-lg hover:scale-105 border-0;
-    box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
-  }
-  
-  .apple-button-outline {
-    @apply border-2 border-primary/20 text-primary bg-white/90 backdrop-blur-xl font-medium px-8 py-4 rounded-2xl transition-all duration-300 hover:bg-primary/5 hover:border-primary/40;
-  }
-  .dark .apple-button-outline {
-    @apply bg-gray-900/90 text-white border-gray-600/30 hover:bg-gray-800/90;
   }
 
   .apple-badge {
@@ -322,98 +537,6 @@
 
   .recording-sphere-exit {
     animation: sphereExit 0.3s ease-in forwards;
-  }
-
-  /* Mobile-specific dashboard styles */
-  .mobile-gradient-card {
-    @apply bg-white/95 backdrop-blur-xl border border-gray-200/30 rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300;
-  }
-  .dark .mobile-gradient-card {
-    @apply bg-gray-900/95 border-gray-700/30;
-  }
-
-  .mobile-stat-card {
-    @apply bg-gray-900/95 backdrop-blur-xl border border-gray-700/30 rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300;
-  }
-  .dark .mobile-stat-card {
-    @apply bg-gray-800/95 border-gray-600/30;
-  }
-
-  .mobile-activity-card {
-    @apply bg-gray-900/95 backdrop-blur-xl border border-gray-700/30 rounded-3xl shadow-lg;
-  }
-  .dark .mobile-activity-card {
-    @apply bg-gray-800/95 border-gray-600/30;
-  }
-
-  .mobile-insights-card {
-    @apply bg-gray-900/95 backdrop-blur-xl border border-gray-700/30 rounded-3xl shadow-lg;
-  }
-  .dark .mobile-insights-card {
-    @apply bg-gray-800/95 border-gray-600/30;
-  }
-
-  .mobile-assistant-card {
-    @apply bg-gray-900/95 backdrop-blur-xl border border-gray-700/30 rounded-3xl shadow-lg;
-  }
-  .dark .mobile-assistant-card {
-    @apply bg-gray-800/95 border-gray-600/30;
-  }
-
-  .mobile-activity-item {
-    @apply bg-gray-800/50 backdrop-blur-sm hover:bg-gray-700/60;
-  }
-  .dark .mobile-activity-item {
-    @apply bg-gray-700/50 hover:bg-gray-600/60;
-  }
-
-  .mobile-gradient-button {
-    @apply bg-gradient-to-r from-primary via-accent to-yellow-500 text-white font-medium rounded-2xl transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-0;
-    box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
-  }
-
-  .mobile-gradient-progress {
-    @apply bg-gray-700/50;
-  }
-
-  .mobile-gradient-progress [role="progressbar"] {
-    background: linear-gradient(90deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 50%, #fbbf24 100%);
-  }
-
-  /* Mobile touch targets */
-  @media (max-width: 768px) {
-    .touch-target {
-      @apply min-h-[44px] min-w-[44px];
-    }
-    
-    /* Improve mobile spacing */
-    .mobile-spacing {
-      @apply p-4 space-y-4;
-    }
-    
-    /* Mobile typography adjustments */
-    .mobile-heading {
-      @apply text-xl font-semibold;
-    }
-    
-    .mobile-subheading {
-      @apply text-lg font-medium;
-    }
-    
-    /* Mobile card spacing */
-    .mobile-card-spacing {
-      @apply p-4 space-y-3;
-    }
-  }
-
-  /* Enhanced mobile progress bars */
-  .mobile-progress-container {
-    @apply relative h-2 w-full overflow-hidden rounded-full bg-gray-700/50;
-  }
-
-  .mobile-progress-bar {
-    @apply h-full transition-all duration-500 ease-out;
-    background: linear-gradient(90deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 50%, #fbbf24 100%);
   }
 }
 

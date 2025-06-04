@@ -37,28 +37,28 @@ const MobileStatCard: React.FC<MobileStatCardProps> = ({
 
   return (
     <Card className="mobile-stat-card border-0 shadow-lg hover:shadow-xl transition-all duration-300">
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
-              <Icon className={`h-5 w-5 ${iconColor}`} />
+            <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+              <Icon className={`h-4 w-4 ${iconColor}`} />
             </div>
             <div>
-              <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-              <div className="text-2xl font-bold text-foreground mt-1">{value}</div>
+              <CardTitle className="text-xs font-medium text-muted-foreground">{title}</CardTitle>
+              <div className="text-xl font-bold text-foreground mt-0.5">{value}</div>
             </div>
           </div>
         </div>
       </CardHeader>
-      <CardContent className="pt-0 space-y-3">
+      <CardContent className="pt-0 space-y-2">
         {shouldShowProgress && (
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Progress 
               value={actualProgressValue} 
-              className="h-2 mobile-gradient-progress"
+              className="h-1.5 mobile-gradient-progress"
             />
             <div className="flex justify-between items-center text-xs">
-              <span className="text-muted-foreground">{Math.round(actualProgressValue)}% completion</span>
+              <span className="text-muted-foreground">{Math.round(actualProgressValue)}%</span>
               <span className="text-primary font-medium">{actualProgressValue >= 70 ? 'Excellent' : actualProgressValue >= 40 ? 'Good' : 'Getting Started'}</span>
             </div>
           </div>
@@ -80,7 +80,7 @@ interface MobileStatsCardsProps {
 
 const MobileStatsCards: React.FC<MobileStatsCardsProps> = ({ stats }) => {
   return (
-    <div className="grid grid-cols-1 gap-4 md:hidden">
+    <div className="grid grid-cols-1 gap-3 px-4 md:hidden">
       <MobileStatCard
         title="Ideas Validated"
         value={stats.ideasValidated.toString()}

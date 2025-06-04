@@ -1,3 +1,4 @@
+
 import React from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import DashboardHeader from '@/components/DashboardHeader';
@@ -32,7 +33,7 @@ const DashboardPage: React.FC = () => {
       <DashboardLayout>
         <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
           {isMobile ? <MobileDashboardHeader /> : <DashboardHeader />}
-          <div className="p-4 md:p-6 lg:p-8 space-y-6 md:space-y-8">
+          <div className="mobile-spacing">
             {/* Quick Action Section */}
             <section className="flex flex-col sm:flex-row items-center gap-4">
               <Button size="lg" className="w-full sm:w-auto apple-button shadow-lg" asChild>
@@ -48,15 +49,15 @@ const DashboardPage: React.FC = () => {
             </section>
 
             {/* Loading skeletons */}
-            <section className="grid gap-4 md:gap-6 md:grid-cols-2 xl:grid-cols-4">
+            <section className="grid gap-3 md:gap-6 md:grid-cols-2 xl:grid-cols-4">
               {[...Array(isMobile ? 3 : 4)].map((_, i) => (
-                <Skeleton key={i} className="h-32 md:h-40 w-full rounded-3xl" />
+                <Skeleton key={i} className="h-24 md:h-32 w-full rounded-2xl md:rounded-3xl" />
               ))}
             </section>
             
-            <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
-              <Skeleton className="lg:col-span-2 h-60 md:h-80 rounded-3xl" />
-              <Skeleton className="h-60 md:h-80 rounded-3xl" />
+            <section className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-8">
+              <Skeleton className="lg:col-span-2 h-48 md:h-60 rounded-2xl md:rounded-3xl" />
+              <Skeleton className="h-48 md:h-60 rounded-2xl md:rounded-3xl" />
             </section>
           </div>
         </div>
@@ -70,7 +71,7 @@ const DashboardPage: React.FC = () => {
         {/* Conditional Header Rendering */}
         {isMobile ? <MobileDashboardHeader /> : <DashboardHeader />}
         
-        <div className="p-4 md:p-6 lg:p-8 space-y-6 md:space-y-8">
+        <div className={isMobile ? "space-y-4 py-4" : "p-4 md:p-6 lg:p-8 space-y-6 md:space-y-8"}>
           {/* Mobile Add New Section - Only show on mobile */}
           {isMobile && (
             <section>

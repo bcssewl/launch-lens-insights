@@ -12,7 +12,7 @@ interface MobileInsightItemProps {
 
 const MobileInsightItem: React.FC<MobileInsightItemProps> = ({ text, icon: Icon }) => {
   return (
-    <div className="flex items-start gap-3 p-3 rounded-xl hover:bg-accent/30 transition-colors duration-200">
+    <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-accent/30 transition-colors duration-200">
       <div className="flex-shrink-0 p-2 bg-primary/10 rounded-lg">
         <Icon className="h-4 w-4 text-primary" />
       </div>
@@ -33,13 +33,13 @@ const quickInsights = [
 
 const MobileInsightsSection: React.FC<MobileInsightsSectionProps> = ({ hasValidatedIdeas }) => {
   return (
-    <div className="space-y-4 md:hidden">
+    <div className="space-y-3 px-4 md:hidden">
       {/* Your Insights Card */}
       <Card className="mobile-insights-card border-0 shadow-lg">
-        <CardHeader className="pb-4">
+        <CardHeader className="pb-3">
           <CardTitle className="text-lg font-semibold">Your Insights</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2">
+        <CardContent className="space-y-1">
           {hasValidatedIdeas ? (
             quickInsights.map((insight) => (
               <MobileInsightItem
@@ -49,9 +49,9 @@ const MobileInsightsSection: React.FC<MobileInsightsSectionProps> = ({ hasValida
               />
             ))
           ) : (
-            <div className="text-center py-8">
-              <div className="w-12 h-12 mx-auto mb-3 bg-primary/10 rounded-2xl flex items-center justify-center">
-                <BarChart3 className="w-6 h-6 text-primary" />
+            <div className="text-center py-6">
+              <div className="w-10 h-10 mx-auto mb-3 bg-primary/10 rounded-xl flex items-center justify-center">
+                <BarChart3 className="w-5 h-5 text-primary" />
               </div>
               <p className="text-muted-foreground text-sm">Complete a few validations to see personalized insights.</p>
             </div>
@@ -61,11 +61,11 @@ const MobileInsightsSection: React.FC<MobileInsightsSectionProps> = ({ hasValida
 
       {/* AI Assistant Card */}
       <Card className="mobile-assistant-card border-0 shadow-lg">
-        <CardHeader className="pb-4">
+        <CardHeader className="pb-3">
           <CardTitle className="text-lg font-semibold">AI Assistant</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
+          <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
             Get personalized advice for your startup ideas
           </p>
           <Button className="w-full mobile-gradient-button shadow-lg hover:shadow-xl transition-all duration-300" asChild>

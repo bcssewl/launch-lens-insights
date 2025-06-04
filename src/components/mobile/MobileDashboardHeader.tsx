@@ -15,24 +15,24 @@ const MobileDashboardHeader: React.FC<MobileDashboardHeaderProps> = ({ title = '
 
   return (
     <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border/50 md:hidden">
-      <div className="flex items-center justify-between p-4">
+      <div className="flex items-center justify-between px-4 py-3 h-14">
         {/* Left: Hamburger Menu */}
-        <Button variant="ghost" size="icon" className="rounded-xl" asChild>
+        <Button variant="ghost" size="icon" className="rounded-lg w-10 h-10" asChild>
           <SidebarTrigger>
             <Menu className="h-5 w-5" />
           </SidebarTrigger>
         </Button>
 
         {/* Center: Title and Date */}
-        <div className="flex flex-col items-center text-center">
-          <h1 className="text-lg font-semibold text-foreground">{title}</h1>
-          <p className="text-xs text-muted-foreground">{currentDate}</p>
+        <div className="flex flex-col items-center text-center flex-1 mx-4">
+          <h1 className="text-base font-semibold text-foreground leading-tight">{title}</h1>
+          <p className="text-xs text-muted-foreground leading-tight">{currentDate}</p>
         </div>
 
         {/* Right: Search and Theme Toggle */}
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-1">
           <ThemeToggle />
-          <Button variant="ghost" size="icon" className="rounded-xl">
+          <Button variant="ghost" size="icon" className="rounded-lg w-10 h-10">
             <Search className="h-5 w-5" />
           </Button>
         </div>
