@@ -1,12 +1,14 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Mic, Square, Play, Pause, RotateCcw, ArrowLeft, HelpCircle } from 'lucide-react';
+import { Mic, Square, Play, Pause, RotateCcw, ArrowLeft, HelpCircle, Upload } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import VoiceRecordingGuide from './VoiceRecordingGuide';
+import { useAudioRecordings } from '@/hooks/useAudioRecordings';
 
 interface VoiceRecorderProps {
-  onComplete: (audioBlob: Blob) => void;
+  onComplete: (audioBlob: Blob, recordingId?: string) => void;
   onBack: () => void;
 }
 
@@ -18,9 +20,13 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onComplete, onBack }) => 
   const [isPlaying, setIsPlaying] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [autoShowedGuide, setAutoShowedGuide] = useState(false);
+  const [recordingId, setRecordingId] = useState<string | null>(null);
+  
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+
+  const { uploading, uploadAudioRecording } = useAudioRecordings();
 
   const maxRecordingTime = 600; // 10 minutes in seconds
 
@@ -101,6 +107,7 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onComplete, onBack }) => 
     setRecordingTime(0);
     setAudioBlob(null);
     setIsPlaying(false);
+    setRecordingId(null);
   };
 
   const playRecording = () => {
@@ -116,6 +123,18 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onComplete, onBack }) => 
     if (audioRef.current) {
       audioRef.current.pause();
       setIsPlaying(false);
+    }
+  };
+
+  const handleUploadAndContinue = async () => {
+    if (!audioBlob) return;
+
+    const fileName = `voice_recording_${Date.now()}.webm`;
+    const uploadedRecording = await uploadAudioRecording(audioBlob, fileName, recordingTime);
+    
+    if (uploadedRecording) {
+      setRecordingId(uploadedRecording.id);
+      onComplete(audioBlob, uploadedRecording.id);
     }
   };
 
@@ -284,10 +303,21 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onComplete, onBack }) => 
                 )}
                 {audioBlob && (
                   <Button 
-                    onClick={() => onComplete(audioBlob)} 
+                    onClick={handleUploadAndContinue}
+                    disabled={uploading}
                     className="w-full sm:w-auto mobile-gradient-button touch-target"
                   >
-                    Continue to Review
+                    {uploading ? (
+                      <>
+                        <Upload className="mr-2 h-4 w-4 animate-pulse" />
+                        Uploading...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="mr-2 h-4 w-4" />
+                        Save & Continue
+                      </>
+                    )}
                   </Button>
                 )}
               </div>

@@ -7,6 +7,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useValidationData } from '@/hooks/useValidationData';
+import { useAudioRecordings } from '@/hooks/useAudioRecordings';
 import { toast } from '@/hooks/use-toast';
 
 import {
@@ -35,6 +36,8 @@ const ideaValidationSchema = z.object({
   primaryGoal: z.enum(primaryGoalOptions, { required_error: "Primary goal is required" }),
   timeline: z.enum(timelineOptions, { required_error: "Timeline is required" }),
   additionalContext: z.string().max(1000, "Additional context must be 1000 characters or less").optional(),
+  // Optional audio recording ID
+  audioRecordingId: z.string().optional(),
 });
 
 export type IdeaValidationFormData = z.infer<typeof ideaValidationSchema>;
@@ -44,6 +47,7 @@ export const useIdeaValidationForm = () => {
   const duplicateId = searchParams.get('duplicateId');
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { updateAudioRecording } = useAudioRecordings();
   
   const { validationData, loading: loadingValidation } = useValidationData(duplicateId);
 
@@ -125,6 +129,18 @@ export const useIdeaValidationForm = () => {
 
       console.log('Idea validation submitted successfully:', submission);
 
+      // If there's an audio recording, link it to this validation
+      if (data.audioRecordingId) {
+        const audioUpdateSuccess = await updateAudioRecording(data.audioRecordingId, {
+          validation_id: submission.id,
+          processing_status: 'linked_to_validation'
+        });
+        
+        if (audioUpdateSuccess) {
+          console.log('Audio recording linked to validation:', data.audioRecordingId);
+        }
+      }
+
       // Create the validation report
       const { data: report, error: reportError } = await supabase
         .from('validation_reports')
@@ -133,7 +149,8 @@ export const useIdeaValidationForm = () => {
           status: 'generating',
           report_data: {
             form_data: data,
-            submission_timestamp: new Date().toISOString()
+            submission_timestamp: new Date().toISOString(),
+            audio_recording_id: data.audioRecordingId || null
           }
         })
         .select()

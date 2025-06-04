@@ -34,6 +34,7 @@ interface IdeaValidationFormStepsProps {
   extractedData: Partial<IdeaValidationFormData>;
   inputMethod: 'form' | 'voice' | 'pitch_deck';
   onBackToMethodSelection: () => void;
+  audioRecordingId?: string | null;
 }
 
 const IdeaValidationFormSteps: React.FC<IdeaValidationFormStepsProps> = ({
@@ -42,7 +43,8 @@ const IdeaValidationFormSteps: React.FC<IdeaValidationFormStepsProps> = ({
   duplicateId,
   extractedData,
   inputMethod,
-  onBackToMethodSelection
+  onBackToMethodSelection,
+  audioRecordingId
 }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const { form } = useIdeaValidationForm();
@@ -76,7 +78,13 @@ const IdeaValidationFormSteps: React.FC<IdeaValidationFormStepsProps> = ({
     if (currentStep < steps.length - 1) {
       setCurrentStep(step => step + 1);
     } else {
-      form.handleSubmit(onFormComplete)();
+      // Include audio recording ID in the form submission if available
+      const formData = form.getValues();
+      const submissionData = {
+        ...formData,
+        audioRecordingId: audioRecordingId || undefined
+      };
+      form.handleSubmit(() => onFormComplete(submissionData))();
     }
   };
 

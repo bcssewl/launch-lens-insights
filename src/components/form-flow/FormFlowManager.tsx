@@ -29,6 +29,7 @@ const FormFlowManager: React.FC<FormFlowManagerProps> = ({
   );
   const [inputMethod, setInputMethod] = useState<InputMethod>('form');
   const [extractedData, setExtractedData] = useState<Partial<IdeaValidationFormData>>({});
+  const [audioRecordingId, setAudioRecordingId] = useState<string | null>(null);
 
   const handleMethodSelect = (method: InputMethod) => {
     setInputMethod(method);
@@ -41,7 +42,12 @@ const FormFlowManager: React.FC<FormFlowManagerProps> = ({
     }
   };
 
-  const handleVoiceComplete = (audioBlob: Blob) => {
+  const handleVoiceComplete = (audioBlob: Blob, recordingId?: string) => {
+    // Store the recording ID for later use
+    if (recordingId) {
+      setAudioRecordingId(recordingId);
+    }
+    
     // Mock extracted data from voice recording - using exact enum values
     const mockExtracted: Partial<IdeaValidationFormData> = {
       ideaName: "FarmConnect",
@@ -94,6 +100,7 @@ const FormFlowManager: React.FC<FormFlowManagerProps> = ({
     setCurrentFlow('method_selection');
     setInputMethod('form');
     setExtractedData({});
+    setAudioRecordingId(null);
   };
 
   // Render based on current flow
@@ -139,6 +146,7 @@ const FormFlowManager: React.FC<FormFlowManagerProps> = ({
       extractedData={extractedData}
       inputMethod={inputMethod}
       onBackToMethodSelection={handleBackToMethodSelection}
+      audioRecordingId={audioRecordingId}
     />
   );
 };
