@@ -126,14 +126,16 @@ export const useDashboardData = () => {
           statusColor,
           created_at: report.created_at,
           reportId: report.id,
+          status: report.status,
         };
       });
 
-      // Sort activities by creation date and take the most recent 5
+      // Filter out archived reports and sort activities by creation date and take the most recent 5
       const allActivities = reportActivities
+        .filter(activity => activity.status !== 'archived')
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
         .slice(0, 5)
-        .map(({ created_at, ...activity }) => activity);
+        .map(({ created_at, status, ...activity }) => activity);
 
       setRecentActivities(allActivities);
     } catch (error) {
