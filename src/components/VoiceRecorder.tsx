@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Mic, Square, Play, Pause, RotateCcw } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import VoiceRecordingGuide from './VoiceRecordingGuide';
 
 interface VoiceRecorderProps {
   onComplete: (audioBlob: Blob) => void;
@@ -15,6 +16,7 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onComplete, onBack }) => 
   const [recordingTime, setRecordingTime] = useState(0);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [showGuide, setShowGuide] = useState(true);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -119,111 +121,122 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onComplete, onBack }) => 
   const progressValue = (recordingTime / maxRecordingTime) * 100;
 
   return (
-    <Card className={`w-full max-w-2xl mx-auto glass-card transition-all duration-500 ${
-      isActiveRecording ? 'recording-glow recording-border' : ''
-    }`}>
-      <CardHeader className="text-center">
-        <CardTitle className="text-2xl font-bold text-primary">Record Your Idea</CardTitle>
-        <p className="text-muted-foreground">
-          Tell us about your startup idea in your own words. You have up to 10 minutes.
-        </p>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="text-center">
-          <div className="mb-4">
-            <div className="text-3xl font-mono font-bold">{formatTime(recordingTime)}</div>
-            <Progress value={progressValue} className="w-full mt-2" />
-          </div>
+    <div className="flex flex-col lg:flex-row gap-6 w-full max-w-6xl mx-auto">
+      {/* Voice Recording Guide */}
+      <div className="lg:w-80 flex-shrink-0">
+        <VoiceRecordingGuide 
+          isVisible={showGuide}
+          onToggleVisibility={() => setShowGuide(!showGuide)}
+        />
+      </div>
 
-          {/* Recording Visualization with Animated Sphere */}
-          <div className={`recording-visualization mb-6 transition-all duration-500 ${
-            isActiveRecording ? 'bg-primary/5 border-primary/30' : ''
-          }`}>
-            <div className="flex justify-center items-center h-32">
-              {isActiveRecording ? (
-                <div className="recording-sphere recording-sphere-enter" />
-              ) : (
-                <div className="w-16 h-16 rounded-full bg-muted/50 backdrop-blur-sm flex items-center justify-center border border-muted/30 transition-all duration-300">
-                  <Mic className="h-8 w-8 text-muted-foreground" />
-                </div>
-              )}
+      {/* Main Recording Interface */}
+      <Card className={`flex-1 glass-card transition-all duration-500 ${
+        isActiveRecording ? 'recording-glow recording-border' : ''
+      }`}>
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl font-bold text-primary">Record Your Idea</CardTitle>
+          <p className="text-muted-foreground">
+            Tell us about your startup idea in your own words. You have up to 10 minutes.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="text-center">
+            <div className="mb-4">
+              <div className="text-3xl font-mono font-bold">{formatTime(recordingTime)}</div>
+              <Progress value={progressValue} className="w-full mt-2" />
             </div>
-          </div>
 
-          {/* Recording Controls with Glass Effect */}
-          <div className={`glass-controls p-4 mb-6 transition-all duration-300 ${
-            isActiveRecording ? 'bg-primary/5' : ''
-          }`}>
-            <div className="flex justify-center space-x-4">
-              {!isRecording && !audioBlob && (
-                <Button onClick={startRecording} size="lg" className="rounded-full gradient-button">
-                  <Mic className="mr-2 h-5 w-5" />
-                  Start Recording
+            {/* Recording Visualization with Animated Sphere */}
+            <div className={`recording-visualization mb-6 transition-all duration-500 ${
+              isActiveRecording ? 'bg-primary/5 border-primary/30' : ''
+            }`}>
+              <div className="flex justify-center items-center h-32">
+                {isActiveRecording ? (
+                  <div className="recording-sphere recording-sphere-enter" />
+                ) : (
+                  <div className="w-16 h-16 rounded-full bg-muted/50 backdrop-blur-sm flex items-center justify-center border border-muted/30 transition-all duration-300">
+                    <Mic className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Recording Controls with Glass Effect */}
+            <div className={`glass-controls p-4 mb-6 transition-all duration-300 ${
+              isActiveRecording ? 'bg-primary/5' : ''
+            }`}>
+              <div className="flex justify-center space-x-4">
+                {!isRecording && !audioBlob && (
+                  <Button onClick={startRecording} size="lg" className="rounded-full gradient-button">
+                    <Mic className="mr-2 h-5 w-5" />
+                    Start Recording
+                  </Button>
+                )}
+
+                {isRecording && (
+                  <>
+                    <Button onClick={stopRecording} size="lg" variant="destructive" className="rounded-full">
+                      <Square className="mr-2 h-4 w-4" />
+                      Stop
+                    </Button>
+                    {isPaused ? (
+                      <Button onClick={resumeRecording} size="lg" className="rounded-full gradient-button">
+                        <Mic className="mr-2 h-5 w-5" />
+                        Resume
+                      </Button>
+                    ) : (
+                      <Button onClick={pauseRecording} size="lg" variant="outline" className="rounded-full apple-button-outline">
+                        <Pause className="mr-2 h-4 w-4" />
+                        Pause
+                      </Button>
+                    )}
+                  </>
+                )}
+
+                {audioBlob && (
+                  <>
+                    {!isPlaying ? (
+                      <Button onClick={playRecording} size="lg" variant="outline" className="rounded-full apple-button-outline">
+                        <Play className="mr-2 h-4 w-4" />
+                        Play
+                      </Button>
+                    ) : (
+                      <Button onClick={pausePlayback} size="lg" variant="outline" className="rounded-full apple-button-outline">
+                        <Pause className="mr-2 h-4 w-4" />
+                        Pause
+                      </Button>
+                    )}
+                    <Button onClick={resetRecording} size="lg" variant="outline" className="rounded-full apple-button-outline">
+                      <RotateCcw className="mr-2 h-4 w-4" />
+                      Re-record
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Navigation */}
+            <div className="flex justify-between">
+              <Button variant="outline" onClick={onBack} className="apple-button-outline">
+                Back to Options
+              </Button>
+              {audioBlob && (
+                <Button onClick={() => onComplete(audioBlob)} className="gradient-button">
+                  Continue to Review
                 </Button>
               )}
-
-              {isRecording && (
-                <>
-                  <Button onClick={stopRecording} size="lg" variant="destructive" className="rounded-full">
-                    <Square className="mr-2 h-4 w-4" />
-                    Stop
-                  </Button>
-                  {isPaused ? (
-                    <Button onClick={resumeRecording} size="lg" className="rounded-full gradient-button">
-                      <Mic className="mr-2 h-5 w-5" />
-                      Resume
-                    </Button>
-                  ) : (
-                    <Button onClick={pauseRecording} size="lg" variant="outline" className="rounded-full apple-button-outline">
-                      <Pause className="mr-2 h-4 w-4" />
-                      Pause
-                    </Button>
-                  )}
-                </>
-              )}
-
-              {audioBlob && (
-                <>
-                  {!isPlaying ? (
-                    <Button onClick={playRecording} size="lg" variant="outline" className="rounded-full apple-button-outline">
-                      <Play className="mr-2 h-4 w-4" />
-                      Play
-                    </Button>
-                  ) : (
-                    <Button onClick={pausePlayback} size="lg" variant="outline" className="rounded-full apple-button-outline">
-                      <Pause className="mr-2 h-4 w-4" />
-                      Pause
-                    </Button>
-                  )}
-                  <Button onClick={resetRecording} size="lg" variant="outline" className="rounded-full apple-button-outline">
-                    <RotateCcw className="mr-2 h-4 w-4" />
-                    Re-record
-                  </Button>
-                </>
-              )}
             </div>
           </div>
 
-          {/* Navigation */}
-          <div className="flex justify-between">
-            <Button variant="outline" onClick={onBack} className="apple-button-outline">
-              Back to Options
-            </Button>
-            {audioBlob && (
-              <Button onClick={() => onComplete(audioBlob)} className="gradient-button">
-                Continue to Review
-              </Button>
-            )}
-          </div>
-        </div>
-
-        <audio
-          ref={audioRef}
-          onEnded={() => setIsPlaying(false)}
-          className="hidden"
-        />
-      </CardContent>
-    </Card>
+          <audio
+            ref={audioRef}
+            onEnded={() => setIsPlaying(false)}
+            className="hidden"
+          />
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 
