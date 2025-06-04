@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Search, Menu, Home, Lightbulb, FileText, Bot, Settings as SettingsIcon, UserCircle, LogOut, X } from 'lucide-react';
+import { Search, Menu, Home, Lightbulb, FileText, Bot, Settings as SettingsIcon, UserCircle, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -71,14 +71,7 @@ const MobileDashboardHeader: React.FC<MobileDashboardHeaderProps> = ({ title = '
       <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
         <SheetContent side="left" className="w-[280px] bg-background border-r border-border p-0">
           <SheetHeader className="border-b border-border p-6 pb-4">
-            <div className="flex items-center justify-between">
-              <SheetTitle className="text-lg font-semibold">Menu</SheetTitle>
-              <SheetClose asChild>
-                <Button variant="ghost" size="icon">
-                  <X className="h-5 w-5" />
-                </Button>
-              </SheetClose>
-            </div>
+            <SheetTitle className="text-lg font-semibold text-left">Menu</SheetTitle>
           </SheetHeader>
           
           <div className="flex flex-col h-[calc(100vh-80px)] overflow-hidden">
