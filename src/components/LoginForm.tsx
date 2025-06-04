@@ -14,7 +14,8 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Link } from 'react-router-dom';
-import { Eye, EyeOff, Apple, Linkedin } from 'lucide-react';
+import { Eye, EyeOff, Linkedin } from 'lucide-react';
+import { AppleLogo } from './AppleLogo';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
@@ -198,7 +199,7 @@ export const LoginForm: React.FC = () => {
             {isGoogleLoading ? "Signing in..." : "Google"}
           </Button>
           <Button variant="outline" className="w-full">
-            <Apple className="mr-2 h-4 w-4" />
+            <AppleLogo className="mr-2 h-4 w-4" />
             Apple
           </Button>
           <Button variant="outline" className="w-full">

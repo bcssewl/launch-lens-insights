@@ -13,11 +13,12 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Eye, EyeOff, Apple, Linkedin } from 'lucide-react';
+import { Eye, EyeOff, Linkedin } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { AppleLogo } from './AppleLogo';
 
 const signUpSchema = z.object({
   fullName: z.string().min(2, { message: "Full name must be at least 2 characters." }),
@@ -244,7 +245,7 @@ export const SignUpForm: React.FC = () => {
             {isGoogleLoading ? "Signing up..." : "Google"}
           </Button>
           <Button variant="outline" className="w-full">
-            <Apple className="mr-2 h-4 w-4" />
+            <AppleLogo className="mr-2 h-4 w-4" />
             Apple
           </Button>
           <Button variant="outline" className="w-full">
