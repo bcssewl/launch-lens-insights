@@ -24,7 +24,7 @@ export const HeroSection = () => {
   };
 
   return (
-    <section className="relative min-h-screen apple-hero flex items-center justify-center overflow-hidden">
+    <section className="relative min-h-screen apple-hero flex items-center justify-center overflow-hidden pt-24 md:pt-32">
       <FloatingElements />
       
       <div className="apple-container relative z-10 text-center">
