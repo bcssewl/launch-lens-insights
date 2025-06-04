@@ -142,7 +142,7 @@ const ResultsPage: React.FC = () => {
 
           <div className="apple-card border-0 shadow-lg">
             <Tabs defaultValue="overview" className="w-full">
-              <div className="w-full overflow-x-auto mb-6 p-6 pb-0">
+              <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-xl border-b border-border/30 w-full overflow-x-auto mb-6 p-6 pb-4">
                 <TabsList className="flex min-w-fit w-max bg-muted/30 rounded-2xl p-1">
                   <TabsTrigger value="overview" className="flex-shrink-0 text-xs sm:text-sm px-3 py-2 rounded-xl whitespace-nowrap">Overview</TabsTrigger>
                   <TabsTrigger value="market" className="flex-shrink-0 text-xs sm:text-sm px-3 py-2 rounded-xl whitespace-nowrap">Market</TabsTrigger>
