@@ -143,14 +143,14 @@ const ResultsPage: React.FC = () => {
           <div className="apple-card border-0 shadow-lg">
             <Tabs defaultValue="overview" className="w-full">
               <div className="w-full overflow-x-auto mb-6 p-6 pb-0">
-                <TabsList className="w-full grid grid-cols-7 min-w-fit bg-muted/30 rounded-2xl p-1">
-                  <TabsTrigger value="overview" className="text-xs sm:text-sm px-3 rounded-xl">Overview</TabsTrigger>
-                  <TabsTrigger value="market" className="text-xs sm:text-sm px-3 rounded-xl">Market</TabsTrigger>
-                  <TabsTrigger value="competition" className="text-xs sm:text-sm px-3 rounded-xl">Competition</TabsTrigger>
-                  <TabsTrigger value="financial" className="text-xs sm:text-sm px-3 rounded-xl">Financial</TabsTrigger>
-                  <TabsTrigger value="swot" className="text-xs sm:text-sm px-3 rounded-xl">SWOT</TabsTrigger>
-                  <TabsTrigger value="scores" className="text-xs sm:text-sm px-3 rounded-xl">Scores</TabsTrigger>
-                  <TabsTrigger value="actions" className="text-xs sm:text-sm px-3 rounded-xl">Actions</TabsTrigger>
+                <TabsList className="flex min-w-fit w-max bg-muted/30 rounded-2xl p-1">
+                  <TabsTrigger value="overview" className="flex-shrink-0 text-xs sm:text-sm px-3 py-2 rounded-xl whitespace-nowrap">Overview</TabsTrigger>
+                  <TabsTrigger value="market" className="flex-shrink-0 text-xs sm:text-sm px-3 py-2 rounded-xl whitespace-nowrap">Market</TabsTrigger>
+                  <TabsTrigger value="competition" className="flex-shrink-0 text-xs sm:text-sm px-3 py-2 rounded-xl whitespace-nowrap">Competition</TabsTrigger>
+                  <TabsTrigger value="financial" className="flex-shrink-0 text-xs sm:text-sm px-3 py-2 rounded-xl whitespace-nowrap">Financial</TabsTrigger>
+                  <TabsTrigger value="swot" className="flex-shrink-0 text-xs sm:text-sm px-3 py-2 rounded-xl whitespace-nowrap">SWOT</TabsTrigger>
+                  <TabsTrigger value="scores" className="flex-shrink-0 text-xs sm:text-sm px-3 py-2 rounded-xl whitespace-nowrap">Scores</TabsTrigger>
+                  <TabsTrigger value="actions" className="flex-shrink-0 text-xs sm:text-sm px-3 py-2 rounded-xl whitespace-nowrap">Actions</TabsTrigger>
                 </TabsList>
               </div>
               
