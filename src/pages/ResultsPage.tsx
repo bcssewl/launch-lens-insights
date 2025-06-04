@@ -1,10 +1,9 @@
-
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from '@/components/ui/button';
-import { Download, MessageSquare, PlusCircle, Save } from 'lucide-react';
+import { Download, MessageSquare, PlusCircle, Save, ArrowLeft } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -26,6 +25,10 @@ const ResultsPage: React.FC = () => {
 
   const handleAIFollowUp = () => {
     navigate('/dashboard/assistant');
+  };
+
+  const handleGoBack = () => {
+    navigate('/dashboard/reports');
   };
 
   if (loading) {
@@ -118,6 +121,18 @@ const ResultsPage: React.FC = () => {
     <DashboardLayout>
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
         <div className="w-full max-w-7xl mx-auto px-6 py-8 space-y-8">
+          {/* Back Button */}
+          <div className="flex items-center gap-4">
+            <Button 
+              variant="ghost" 
+              onClick={handleGoBack}
+              className="flex items-center gap-2 hover:bg-muted/50"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Reports
+            </Button>
+          </div>
+
           <ResultsHeader 
             ideaName={ideaName}
             score={score}
