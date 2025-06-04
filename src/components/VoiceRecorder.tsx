@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Mic, Square, Play, Pause, RotateCcw, HelpCircle } from 'lucide-react';
+import { Mic, Square, Play, Pause, RotateCcw, ArrowLeft, HelpCircle } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import VoiceRecordingGuide from './VoiceRecordingGuide';
 
@@ -141,10 +141,21 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onComplete, onBack }) => 
         </div>
 
         {/* Main Recording Interface */}
-        <Card className={`w-full mobile-gradient-card transition-all duration-500 ${
+        <Card className={`w-full mobile-gradient-card transition-all duration-500 relative ${
           isActiveRecording ? 'recording-glow recording-border' : ''
         }`}>
-          <CardHeader className="text-center mobile-spacing">
+          {/* Top-left back button */}
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={onBack} 
+            className="absolute top-4 left-4 z-10 h-8 w-8 p-0 hover:bg-muted/50"
+            aria-label="Back to input method options"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+
+          <CardHeader className="text-center mobile-spacing pt-12">
             <CardTitle className="mobile-heading text-primary">Record Your Idea</CardTitle>
             <p className="text-sm text-muted-foreground">
               Tell us about your startup idea in your own words. You have up to 10 minutes.
