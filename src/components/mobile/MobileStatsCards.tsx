@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { LucideIcon } from 'lucide-react';
+import { LucideIcon, Lightbulb, BarChart3, Target } from 'lucide-react';
 
 interface MobileStatCardProps {
   title: string;
@@ -85,20 +85,20 @@ const MobileStatsCards: React.FC<MobileStatsCardsProps> = ({ stats }) => {
         title="Ideas Validated"
         value={stats.ideasValidated.toString()}
         subtitle={stats.ideasValidated > 0 ? "Keep the momentum going!" : "Start your validation journey"}
-        icon={require('lucide-react').Lightbulb}
+        icon={Lightbulb}
       />
       <MobileStatCard
         title="Average Score"
         value={stats.averageScore > 0 ? `${stats.averageScore}/10` : "N/A"}
         subtitle={stats.averageScore > 0 ? (stats.averageScore >= 6 ? "↗ Trending upward" : "Room for improvement") : "No completed analyses yet"}
-        icon={require('lucide-react').BarChart3}
+        icon={BarChart3}
         iconColor={stats.averageScore >= 6 ? "text-green-500" : "text-yellow-500"}
       />
       <MobileStatCard
         title="Success Rate"
         value={stats.successRate > 0 ? `${stats.successRate}%` : "N/A"}
         subtitle={stats.successRate > 0 ? "vs 42% industry average" : "Complete more validations"}
-        icon={require('lucide-react').Target}
+        icon={Target}
         iconColor="text-yellow-500"
       />
     </div>
