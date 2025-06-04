@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Mic, Square, Play, Pause, RotateCcw } from 'lucide-react';
+import { Mic, Square, Play, Pause, RotateCcw, ArrowLeft } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import VoiceRecordingGuide from './VoiceRecordingGuide';
 
@@ -16,7 +16,8 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onComplete, onBack }) => 
   const [recordingTime, setRecordingTime] = useState(0);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [showGuide, setShowGuide] = useState(false); // Start hidden on mobile for better UX
+  const [showGuide, setShowGuide] = useState(false);
+  const [autoShowedGuide, setAutoShowedGuide] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const chunksRef = useRef<Blob[]>([]);
@@ -63,6 +64,12 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onComplete, onBack }) => 
       mediaRecorder.start();
       setIsRecording(true);
       setIsPaused(false);
+      
+      // Auto-show guide when recording starts
+      if (!autoShowedGuide) {
+        setShowGuide(true);
+        setAutoShowedGuide(true);
+      }
     } catch (error) {
       console.error('Error accessing microphone:', error);
     }
@@ -123,11 +130,13 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onComplete, onBack }) => 
   return (
     <div className="w-full max-w-none overflow-x-hidden mobile-container">
       <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
-        {/* Voice Recording Guide - Now visible on all screen sizes */}
+        {/* Voice Recording Guide */}
         <div className="w-full lg:w-80 lg:flex-shrink-0">
           <VoiceRecordingGuide 
             isVisible={showGuide}
             onToggleVisibility={() => setShowGuide(!showGuide)}
+            autoShowed={autoShowedGuide}
+            isRecording={isActiveRecording}
           />
         </div>
 
@@ -256,8 +265,9 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onComplete, onBack }) => 
                   variant="outline" 
                   onClick={onBack} 
                   className="w-full sm:w-auto apple-button-outline touch-target"
+                  aria-label="Back to input method options"
                 >
-                  Back to Options
+                  <ArrowLeft className="h-4 w-4" />
                 </Button>
                 {audioBlob && (
                   <Button 
