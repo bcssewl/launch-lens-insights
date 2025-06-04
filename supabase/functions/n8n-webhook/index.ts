@@ -14,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    const { message, user } = await req.json();
+    const { message, user, audio_data } = await req.json();
     
     if (!message) {
       return new Response(
@@ -40,7 +40,7 @@ serve(async (req) => {
       );
     }
 
-    // Validate the token using our new validate-token function
+    // Validate the token using our validate-token function
     const validateResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/validate-token`, {
       method: 'POST',
       headers: {
@@ -89,31 +89,52 @@ serve(async (req) => {
       );
     }
 
-    console.log('Sending message to n8n webhook:', webhookUrl);
+    console.log('Sending request to n8n webhook:', webhookUrl);
     console.log('Authenticated user:', authenticatedUser.id, authenticatedUser.email);
     
+    // Prepare the request body based on message type
+    let requestBody: any = {
+      user: {
+        id: authenticatedUser.id,
+        email: authenticatedUser.email,
+        full_name: authenticatedUser.full_name,
+        created_at: authenticatedUser.created_at
+      },
+      auth_token: authToken,
+      timestamp: new Date().toISOString(),
+      metadata: {
+        source: 'ai_assistant',
+        function_origin: 'supabase_edge_function',
+        authenticated: true,
+      },
+    };
+
+    // Handle different message types
+    if (message === 'transcribe_audio' && audio_data) {
+      // Audio transcription request
+      requestBody = {
+        ...requestBody,
+        type: 'audio_transcription',
+        audio_url: audio_data.audio_url,
+        recording_id: audio_data.recording_id,
+        file_name: audio_data.file_name,
+        duration_seconds: audio_data.duration_seconds,
+      };
+    } else {
+      // Regular chat message
+      requestBody = {
+        ...requestBody,
+        type: 'chat_message',
+        message: message,
+      };
+    }
+
     const response = await fetch(webhookUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        type: 'chat_message',
-        message: message,
-        user: {
-          id: authenticatedUser.id,
-          email: authenticatedUser.email,
-          full_name: authenticatedUser.full_name,
-          created_at: authenticatedUser.created_at
-        },
-        auth_token: authToken,
-        timestamp: new Date().toISOString(),
-        metadata: {
-          source: 'ai_assistant',
-          function_origin: 'supabase_edge_function',
-          authenticated: true,
-        },
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
@@ -123,11 +144,11 @@ serve(async (req) => {
     const data = await response.json();
     console.log('Received response from n8n:', data);
 
-    // Extract the AI response from the n8n response
-    const aiResponse = data.response || data.message || 'I received your message but couldn\'t generate a response.';
+    // Extract the response from the n8n response
+    const responseText = data.response || data.transcription || data.message || 'No response received from service.';
 
     return new Response(
-      JSON.stringify({ response: aiResponse }), 
+      JSON.stringify({ response: responseText }), 
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }

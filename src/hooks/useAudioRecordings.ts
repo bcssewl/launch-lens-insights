@@ -134,31 +134,38 @@ export const useAudioRecordings = () => {
 
       console.log('Sending audio to n8n webhook for transcription...');
 
-      // Send to n8n webhook
-      const response = await fetch('https://n8n-launchlens.botica.it.com/webhook/audio-transcribe-form', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          audio_url: urlData.signedUrl,
-          recording_id: recordingId,
-          user_id: user.id,
-          file_name: recording.file_name,
-          duration_seconds: recording.duration_seconds
-        })
+      // Use Supabase Edge Function to call n8n webhook with authentication
+      const { data, error } = await supabase.functions.invoke('n8n-webhook', {
+        body: {
+          message: 'transcribe_audio', // Special message type for audio transcription
+          user: {
+            id: user.id,
+            email: user.email,
+            full_name: user.user_metadata?.full_name || null,
+            created_at: user.created_at
+          },
+          audio_data: {
+            audio_url: urlData.signedUrl,
+            recording_id: recordingId,
+            file_name: recording.file_name,
+            duration_seconds: recording.duration_seconds
+          }
+        }
       });
 
-      if (!response.ok) {
-        throw new Error(`N8n webhook failed: ${response.status}`);
+      if (error) {
+        throw error;
       }
 
-      const result = await response.json();
-      console.log('N8n transcription response:', result);
+      if (!data || !data.response) {
+        throw new Error('Invalid response from transcription service');
+      }
+
+      console.log('N8n transcription response:', data);
 
       // Update the recording with transcription results
       await updateAudioRecording(recordingId, {
-        transcription_text: result.transcription || result.text,
+        transcription_text: data.response,
         processing_status: 'completed',
         transcription_completed_at: new Date().toISOString()
       });
@@ -168,7 +175,7 @@ export const useAudioRecordings = () => {
         description: "Your audio has been transcribed successfully.",
       });
 
-      return result.transcription || result.text;
+      return data.response;
     } catch (error) {
       console.error('Error transcribing audio:', error);
       
