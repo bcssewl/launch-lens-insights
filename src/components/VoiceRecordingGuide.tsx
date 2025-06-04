@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, ChevronRight, HelpCircle, EyeOff } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ChevronDown, ChevronRight, HelpCircle, X } from 'lucide-react';
 
 interface VoiceRecordingGuideProps {
   isVisible: boolean;
@@ -78,58 +79,31 @@ const VoiceRecordingGuide: React.FC<VoiceRecordingGuideProps> = ({
     }
   ];
 
-  if (!isVisible) {
-    return null;
-  }
-
   return (
-    <div className={`fixed inset-0 z-50 lg:static lg:z-auto transition-all duration-500 ${
-      isVisible ? 'animate-fade-in' : ''
-    }`}>
-      {/* Mobile backdrop */}
-      <div 
-        className="lg:hidden fixed inset-0 bg-black/20 backdrop-blur-sm"
-        onClick={onToggleVisibility}
-      />
-      
-      <Card className={`
-        glass-card w-full max-w-md mx-auto
-        fixed bottom-0 left-0 right-0 lg:static
-        rounded-t-xl lg:rounded-xl
-        max-h-[80vh] lg:max-h-none
-        overflow-y-auto
-        transform transition-all duration-500 ease-out
-        ${isVisible ? 'translate-y-0 lg:translate-x-0' : 'translate-y-full lg:translate-x-0'}
+    <Dialog open={isVisible} onOpenChange={onToggleVisibility}>
+      <DialogContent className={`
+        max-w-md max-h-[80vh] overflow-y-auto
         ${showHighlight ? 'ring-2 ring-primary/50 shadow-lg shadow-primary/25' : ''}
         ${isRecording ? 'border-primary/30 bg-primary/5' : ''}
       `}>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className={`text-lg font-semibold flex items-center transition-colors duration-300 ${
-              isRecording ? 'text-primary' : 'text-primary'
-            }`}>
-              <HelpCircle className="h-5 w-5 mr-2" />
-              Recording Guide
-              {autoShowed && showHighlight && (
-                <span className="ml-2 text-xs bg-primary/10 text-primary px-2 py-1 rounded-full animate-pulse">
-                  New!
-                </span>
-              )}
-            </CardTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onToggleVisibility}
-              className="h-8 w-8 p-0"
-            >
-              <EyeOff className="h-4 w-4" />
-            </Button>
-          </div>
+        <DialogHeader>
+          <DialogTitle className={`text-lg font-semibold flex items-center transition-colors duration-300 ${
+            isRecording ? 'text-primary' : 'text-primary'
+          }`}>
+            <HelpCircle className="h-5 w-5 mr-2" />
+            Recording Guide
+            {autoShowed && showHighlight && (
+              <span className="ml-2 text-xs bg-primary/10 text-primary px-2 py-1 rounded-full animate-pulse">
+                New!
+              </span>
+            )}
+          </DialogTitle>
           <p className="text-sm text-muted-foreground">
             Cover these points in your recording for the best analysis results.
           </p>
-        </CardHeader>
-        <CardContent className="space-y-3">
+        </DialogHeader>
+        
+        <div className="space-y-3">
           {guideItems.map((section) => (
             <Collapsible
               key={section.id}
@@ -170,9 +144,9 @@ const VoiceRecordingGuide: React.FC<VoiceRecordingGuideProps> = ({
               Speak naturally! You don't need to answer in order. The AI will extract and organize your information automatically.
             </div>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 
