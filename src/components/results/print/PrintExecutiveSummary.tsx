@@ -1,5 +1,6 @@
 
 import React from 'react';
+import PrintIcon from './PrintIcon';
 
 interface PrintExecutiveSummaryProps {
   summary: string;
@@ -19,33 +20,30 @@ const PrintExecutiveSummary: React.FC<PrintExecutiveSummaryProps> = ({
       return {
         status: "PROCEED",
         color: "#059669",
-        bgColor: "#dcfce7",
+        bgColor: "#ecfdf5",
         borderColor: "#059669",
         risk: "Low Risk",
         confidence: "High Confidence",
-        icon: "🟢",
         priority: "HIGH PRIORITY"
       };
     } else if (score >= 6) {
       return {
         status: "PROCEED WITH CAUTION",
         color: "#d97706",
-        bgColor: "#fef3c7",
+        bgColor: "#fffbeb",
         borderColor: "#d97706",
         risk: "Medium Risk",
         confidence: "Moderate Confidence",
-        icon: "🟡",
         priority: "MEDIUM PRIORITY"
       };
     } else {
       return {
         status: "HIGH RISK",
         color: "#dc2626",
-        bgColor: "#fee2e2",
+        bgColor: "#fef2f2",
         borderColor: "#dc2626",
         risk: "High Risk",
         confidence: "Low Confidence",
-        icon: "🔴",
         priority: "CRITICAL REVIEW"
       };
     }
@@ -57,10 +55,10 @@ const PrintExecutiveSummary: React.FC<PrintExecutiveSummaryProps> = ({
     <div className="print-page-break print-section">
       {/* Section Header with Icon */}
       <div className="flex items-center gap-4 mb-8">
-        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
-          <span className="text-xl">📋</span>
+        <div className="w-12 h-12 bg-gradient-to-br from-slate-600 to-slate-700 rounded-xl flex items-center justify-center">
+          <PrintIcon name="executive-summary" size={24} color="white" />
         </div>
-        <h2 className="print-title-2 text-blue-800">1.0 Executive Summary</h2>
+        <h2 className="print-title-2 text-slate-800">1.0 Executive Summary</h2>
       </div>
       
       {/* Enhanced Strategic Recommendation Card */}
@@ -76,7 +74,9 @@ const PrintExecutiveSummary: React.FC<PrintExecutiveSummaryProps> = ({
           <div className="flex justify-between items-start mb-6">
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-4">
-                <span className="text-2xl">{recData.icon}</span>
+                <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                  <PrintIcon name="insight" size={18} color={recData.color} />
+                </div>
                 <h3 className="print-title-3 text-gray-800">Strategic Recommendation</h3>
               </div>
               <div 
@@ -135,7 +135,7 @@ const PrintExecutiveSummary: React.FC<PrintExecutiveSummaryProps> = ({
             </div>
             <div className="text-center">
               <div className="text-sm font-semibold text-gray-700 mb-1">Market Timing</div>
-              <div className="text-lg font-bold text-green-600">
+              <div className="text-lg font-bold text-emerald-600">
                 Optimal
               </div>
             </div>
@@ -146,7 +146,7 @@ const PrintExecutiveSummary: React.FC<PrintExecutiveSummaryProps> = ({
       {/* Business Concept Overview */}
       <div className="print-avoid-break mb-8">
         <h3 className="print-title-3 flex items-center gap-2 mb-4">
-          <span className="text-lg">🎯</span>
+          <PrintIcon name="market-analysis" size={18} color="#475569" />
           Business Concept Overview
         </h3>
         <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
@@ -157,7 +157,7 @@ const PrintExecutiveSummary: React.FC<PrintExecutiveSummaryProps> = ({
       {/* Detailed Analysis & Recommendation */}
       <div className="print-avoid-break mb-8">
         <h3 className="print-title-3 flex items-center gap-2 mb-4">
-          <span className="text-lg">📊</span>
+          <PrintIcon name="key-insights" size={18} color="#475569" />
           Detailed Analysis & Recommendation
         </h3>
         <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
@@ -168,15 +168,15 @@ const PrintExecutiveSummary: React.FC<PrintExecutiveSummaryProps> = ({
       {/* Enhanced Key Takeaways */}
       <div className="print-avoid-break">
         <h3 className="print-title-3 flex items-center gap-2 mb-4">
-          <span className="text-lg">💡</span>
+          <PrintIcon name="insight" size={18} color="#475569" />
           Key Takeaways & Critical Success Factors
         </h3>
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200">
+        <div className="bg-gradient-to-br from-slate-50 to-gray-50 rounded-2xl p-6 border border-slate-200">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
               <div className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <span className="text-white text-xs">✓</span>
+                <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <PrintIcon name="strengths" size={14} color="white" />
                 </div>
                 <div>
                   <span className="font-semibold text-gray-800">Primary Strength:</span>
@@ -184,8 +184,8 @@ const PrintExecutiveSummary: React.FC<PrintExecutiveSummaryProps> = ({
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <span className="text-white text-xs">→</span>
+                <div className="w-6 h-6 bg-slate-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <PrintIcon name="actions" size={14} color="white" />
                 </div>
                 <div>
                   <span className="font-semibold text-gray-800">Next Step:</span>
@@ -195,8 +195,8 @@ const PrintExecutiveSummary: React.FC<PrintExecutiveSummaryProps> = ({
             </div>
             <div className="space-y-4">
               <div className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <span className="text-white text-xs">!</span>
+                <div className="w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <PrintIcon name="weaknesses" size={14} color="white" />
                 </div>
                 <div>
                   <span className="font-semibold text-gray-800">Main Challenge:</span>
@@ -204,8 +204,8 @@ const PrintExecutiveSummary: React.FC<PrintExecutiveSummaryProps> = ({
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <span className="text-white text-xs">⏱</span>
+                <div className="w-6 h-6 bg-violet-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <PrintIcon name="detailed-scores" size={14} color="white" />
                 </div>
                 <div>
                   <span className="font-semibold text-gray-800">Timeline:</span>

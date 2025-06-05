@@ -52,7 +52,7 @@ const EnhancedPrintView: React.FC<EnhancedPrintViewProps> = ({
     <>
       {/* Print controls - hidden when printing */}
       <div className="print:hidden fixed top-4 right-4 z-50 flex gap-2">
-        <Button onClick={handlePrint} className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
+        <Button onClick={handlePrint} className="flex items-center gap-2 bg-gradient-to-r from-slate-600 to-slate-700 hover:from-slate-700 hover:to-slate-800">
           <Printer className="h-4 w-4" />
           Print / Save as PDF
         </Button>
@@ -91,7 +91,7 @@ const EnhancedPrintView: React.FC<EnhancedPrintViewProps> = ({
 
       <PrintActionItems items={actionItems} />
 
-      {/* Enhanced Print Styles with Modern Typography and Design */}
+      {/* Enhanced Print Styles with Modern Typography and Consistent Design */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
         
@@ -103,14 +103,14 @@ const EnhancedPrintView: React.FC<EnhancedPrintViewProps> = ({
               content: "Page " counter(page);
               font-family: 'Inter', sans-serif;
               font-size: 10pt;
-              color: #6b7280;
+              color: #64748b;
               font-weight: 500;
             }
             @bottom-left {
               content: "Validator • Idea Validation Report";
               font-family: 'Inter', sans-serif;
               font-size: 9pt;
-              color: #6b7280;
+              color: #64748b;
               font-weight: 400;
             }
             @bottom-right {
@@ -165,7 +165,7 @@ const EnhancedPrintView: React.FC<EnhancedPrintViewProps> = ({
             widows: 3;
           }
           
-          /* Enhanced Typography hierarchy */
+          /* Enhanced Typography hierarchy with consistent colors */
           .print-title-1 {
             font-size: 28pt;
             font-weight: 900;
@@ -179,10 +179,10 @@ const EnhancedPrintView: React.FC<EnhancedPrintViewProps> = ({
             font-size: 20pt;
             font-weight: 700;
             line-height: 1.2;
-            color: #1f2937;
+            color: #334155;
             margin-top: 24pt;
             margin-bottom: 16pt;
-            border-bottom: 3pt solid #e5e7eb;
+            border-bottom: 3pt solid #e2e8f0;
             padding-bottom: 8pt;
             letter-spacing: -0.01em;
           }
@@ -191,7 +191,7 @@ const EnhancedPrintView: React.FC<EnhancedPrintViewProps> = ({
             font-size: 16pt;
             font-weight: 600;
             line-height: 1.3;
-            color: #374151;
+            color: #475569;
             margin-top: 20pt;
             margin-bottom: 12pt;
             letter-spacing: -0.005em;
@@ -234,10 +234,10 @@ const EnhancedPrintView: React.FC<EnhancedPrintViewProps> = ({
           }
           
           .print-card {
-            border: 1pt solid #e5e7eb;
+            border: 1pt solid #e2e8f0;
             border-radius: 8pt;
             padding: 16pt;
-            background: #fafafa;
+            background: #f8fafc;
             break-inside: avoid;
             margin-bottom: 16pt;
             box-shadow: 0 1pt 3pt rgba(0, 0, 0, 0.1);
@@ -256,7 +256,7 @@ const EnhancedPrintView: React.FC<EnhancedPrintViewProps> = ({
           .print-metric-value {
             font-size: 24pt;
             font-weight: 800;
-            color: #059669;
+            color: #475569;
             display: block;
             margin-bottom: 6pt;
             letter-spacing: -0.02em;
@@ -264,7 +264,7 @@ const EnhancedPrintView: React.FC<EnhancedPrintViewProps> = ({
           
           .print-metric-label {
             font-size: 9pt;
-            color: #6b7280;
+            color: #64748b;
             font-weight: 500;
             text-transform: uppercase;
             letter-spacing: 0.05em;
@@ -278,7 +278,7 @@ const EnhancedPrintView: React.FC<EnhancedPrintViewProps> = ({
           
           .print-chart-container {
             background: white;
-            border: 1pt solid #e5e7eb;
+            border: 1pt solid #e2e8f0;
             border-radius: 8pt;
             padding: 16pt;
             break-inside: avoid;
@@ -295,23 +295,23 @@ const EnhancedPrintView: React.FC<EnhancedPrintViewProps> = ({
           }
           
           .print-table th {
-            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
             font-weight: 600;
             padding: 12pt 16pt;
-            border: 1pt solid #d1d5db;
+            border: 1pt solid #cbd5e1;
             text-align: left;
-            color: #374151;
+            color: #334155;
           }
           
           .print-table td {
             padding: 10pt 16pt;
-            border: 1pt solid #d1d5db;
+            border: 1pt solid #cbd5e1;
             background: white;
           }
           
-          /* Enhanced Status indicators */
+          /* Enhanced Status indicators with consistent colors */
           .print-status-high {
-            background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
             color: #166534;
             padding: 4pt 8pt;
             border-radius: 6pt;
@@ -321,7 +321,7 @@ const EnhancedPrintView: React.FC<EnhancedPrintViewProps> = ({
           }
           
           .print-status-medium {
-            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
             color: #92400e;
             padding: 4pt 8pt;
             border-radius: 6pt;
@@ -331,7 +331,7 @@ const EnhancedPrintView: React.FC<EnhancedPrintViewProps> = ({
           }
           
           .print-status-low {
-            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
             color: #991b1b;
             padding: 4pt 8pt;
             border-radius: 6pt;
@@ -345,10 +345,10 @@ const EnhancedPrintView: React.FC<EnhancedPrintViewProps> = ({
             position: fixed;
             bottom: 30pt;
             right: 30pt;
-            opacity: 0.08;
+            opacity: 0.05;
             font-size: 64pt;
             font-weight: 900;
-            color: #6b7280;
+            color: #64748b;
             transform: rotate(-45deg);
             pointer-events: none;
             z-index: -1;
@@ -356,17 +356,17 @@ const EnhancedPrintView: React.FC<EnhancedPrintViewProps> = ({
           }
           
           .print-header {
-            border-bottom: 2pt solid #e5e7eb;
+            border-bottom: 2pt solid #e2e8f0;
             padding-bottom: 16pt;
             margin-bottom: 32pt;
           }
           
           .print-footer {
-            border-top: 1pt solid #e5e7eb;
+            border-top: 1pt solid #e2e8f0;
             padding-top: 16pt;
             margin-top: 32pt;
             font-size: 9pt;
-            color: #6b7280;
+            color: #64748b;
             text-align: center;
           }
           
@@ -378,7 +378,7 @@ const EnhancedPrintView: React.FC<EnhancedPrintViewProps> = ({
           
           /* Gradient text fallback */
           .bg-clip-text {
-            background: linear-gradient(135deg, #1f2937 0%, #4b5563 100%);
+            background: linear-gradient(135deg, #334155 0%, #475569 100%);
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
@@ -409,7 +409,7 @@ const EnhancedPrintView: React.FC<EnhancedPrintViewProps> = ({
           
           /* Link styling for digital viewing */
           a {
-            color: #2563eb;
+            color: #475569;
             text-decoration: none;
             font-weight: 500;
           }
@@ -418,7 +418,7 @@ const EnhancedPrintView: React.FC<EnhancedPrintViewProps> = ({
           code, .font-mono {
             font-family: 'JetBrains Mono', 'Courier New', monospace;
             font-size: 9pt;
-            background: #f3f4f6;
+            background: #f1f5f9;
             padding: 2pt 4pt;
             border-radius: 3pt;
           }

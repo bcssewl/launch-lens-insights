@@ -1,5 +1,6 @@
 
 import React from 'react';
+import PrintIcon from './PrintIcon';
 
 interface PrintDetailedScoresProps {
   scores: { category: string; score: number }[];
@@ -21,15 +22,26 @@ const PrintDetailedScores: React.FC<PrintDetailedScoresProps> = ({ scores }) => 
 
   return (
     <div className="print-section">
-      <h2 className="print-title-2">Detailed Score Breakdown</h2>
+      {/* Section Header */}
+      <div className="flex items-center gap-4 mb-8">
+        <div className="w-12 h-12 bg-gradient-to-br from-slate-600 to-slate-700 rounded-xl flex items-center justify-center">
+          <PrintIcon name="detailed-scores" size={24} color="white" />
+        </div>
+        <h2 className="print-title-2 text-slate-800">7.0 Detailed Score Breakdown</h2>
+      </div>
       
-      <div className="space-y-4">
+      <div className="space-y-4 mb-8">
         {scores.map((item, index) => (
           <div key={index} className="print-avoid-break">
-            <div className="flex justify-between items-center mb-2">
-              <span className="font-medium">{item.category}</span>
+            <div className="flex justify-between items-center mb-3 p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
               <div className="flex items-center gap-3">
-                <span className="text-sm text-gray-600">
+                <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center">
+                  <PrintIcon name="key-insights" size={16} color="#64748b" />
+                </div>
+                <span className="font-medium text-gray-800">{item.category}</span>
+              </div>
+              <div className="flex items-center gap-4">
+                <span className="text-sm text-gray-600 font-medium">
                   {getScoreLabel(item.score)}
                 </span>
                 <span 
@@ -40,49 +52,68 @@ const PrintDetailedScores: React.FC<PrintDetailedScoresProps> = ({ scores }) => 
                 </span>
               </div>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
-                className="h-2 rounded-full"
-                style={{ 
-                  width: `${(item.score / 10) * 100}%`,
-                  backgroundColor: getScoreColor(item.score)
-                }}
-              />
+            <div className="px-4">
+              <div className="w-full bg-gray-200 rounded-full h-3">
+                <div 
+                  className="h-3 rounded-full transition-all duration-500"
+                  style={{ 
+                    width: `${(item.score / 10) * 100}%`,
+                    backgroundColor: getScoreColor(item.score)
+                  }}
+                />
+              </div>
             </div>
           </div>
         ))}
       </div>
 
-      <div className="mt-8 print-card">
-        <h3 className="font-semibold mb-3">Score Interpretation Guide</h3>
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <div className="flex items-center mb-1">
-              <div className="w-3 h-3 bg-green-500 rounded mr-2"></div>
-              <span className="font-medium">8.0 - 10.0: Excellent</span>
+      <div className="print-avoid-break">
+        <h3 className="print-title-3 flex items-center gap-2 mb-4">
+          <PrintIcon name="insight" size={18} color="#475569" />
+          Score Interpretation Guide
+        </h3>
+        <div className="bg-gradient-to-br from-slate-50 to-gray-50 rounded-xl p-6 border border-slate-200">
+          <div className="grid grid-cols-2 gap-6 text-sm">
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-4 h-4 bg-emerald-500 rounded-full flex items-center justify-center">
+                  <PrintIcon name="strengths" size={10} color="white" />
+                </div>
+                <div>
+                  <span className="font-medium text-gray-800">8.0 - 10.0: Excellent</span>
+                  <p className="text-gray-600">Strong competitive advantage</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-4 h-4 bg-amber-500 rounded-full flex items-center justify-center">
+                  <PrintIcon name="opportunities" size={10} color="white" />
+                </div>
+                <div>
+                  <span className="font-medium text-gray-800">6.0 - 7.9: Good</span>
+                  <p className="text-gray-600">Above average performance</p>
+                </div>
+              </div>
             </div>
-            <p className="text-gray-600 ml-5">Strong competitive advantage</p>
-          </div>
-          <div>
-            <div className="flex items-center mb-1">
-              <div className="w-3 h-3 bg-orange-500 rounded mr-2"></div>
-              <span className="font-medium">6.0 - 7.9: Good</span>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-4 h-4 bg-amber-600 rounded-full flex items-center justify-center">
+                  <PrintIcon name="weaknesses" size={10} color="white" />
+                </div>
+                <div>
+                  <span className="font-medium text-gray-800">4.0 - 5.9: Fair</span>
+                  <p className="text-gray-600">Needs improvement</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
+                  <PrintIcon name="threats" size={10} color="white" />
+                </div>
+                <div>
+                  <span className="font-medium text-gray-800">0.0 - 3.9: Poor</span>
+                  <p className="text-gray-600">Significant risks present</p>
+                </div>
+              </div>
             </div>
-            <p className="text-gray-600 ml-5">Above average performance</p>
-          </div>
-          <div>
-            <div className="flex items-center mb-1">
-              <div className="w-3 h-3 bg-yellow-500 rounded mr-2"></div>
-              <span className="font-medium">4.0 - 5.9: Fair</span>
-            </div>
-            <p className="text-gray-600 ml-5">Needs improvement</p>
-          </div>
-          <div>
-            <div className="flex items-center mb-1">
-              <div className="w-3 h-3 bg-red-500 rounded mr-2"></div>
-              <span className="font-medium">0.0 - 3.9: Poor</span>
-            </div>
-            <p className="text-gray-600 ml-5">Significant risks present</p>
           </div>
         </div>
       </div>
