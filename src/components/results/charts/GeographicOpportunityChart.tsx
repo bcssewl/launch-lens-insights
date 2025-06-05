@@ -14,11 +14,7 @@ const chartConfigGeo = {
 };
 
 const GeographicOpportunityChart: React.FC<GeographicOpportunityChartProps> = ({ data }) => {
-  // Simple data transformation for geographic opportunity - just use the original data
-  const geoData = data.map((item, index) => ({
-    ...item,
-    fill: getChartColors(data.length)[index]
-  }));
+  const colors = getChartColors(data.length);
 
   return (
     <Card className="print:break-inside-avoid">
@@ -27,7 +23,7 @@ const GeographicOpportunityChart: React.FC<GeographicOpportunityChartProps> = ({
       </CardHeader>
       <CardContent className="p-4 print:p-3">
         <ChartContainer config={chartConfigGeo} className="w-full h-[300px] print:h-[250px]">
-          <BarChart data={geoData} layout="vertical" margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+          <BarChart data={data} layout="vertical" margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
             <XAxis type="number" />
             <YAxis 
               dataKey="name" 
@@ -41,8 +37,8 @@ const GeographicOpportunityChart: React.FC<GeographicOpportunityChartProps> = ({
               dataKey="value" 
               radius={4}
             >
-              {geoData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.fill} />
+              {data.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={colors[index]} />
               ))}
             </Bar>
           </BarChart>
