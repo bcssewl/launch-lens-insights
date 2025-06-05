@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   Dialog,
@@ -72,7 +71,18 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
       if (data && data.length > 0) {
         const shareData = data[0];
         console.log('Share data received:', shareData);
-        setShareUrl(shareData.share_url);
+        
+        // Create the correct share URL based on share type
+        let shareUrl;
+        if (shareType === 'public' && shareData.share_token) {
+          // Public share link using the share token
+          shareUrl = `${window.location.origin}/shared-report/${shareData.share_token}`;
+        } else {
+          // Specific user share - they can access via normal results page
+          shareUrl = `${window.location.origin}/results/${reportId}`;
+        }
+        
+        setShareUrl(shareUrl);
         toast({
           title: 'Share link created',
           description: shareType === 'specific' 
