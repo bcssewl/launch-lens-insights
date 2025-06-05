@@ -64,14 +64,17 @@ const SharedReportPage: React.FC = () => {
 
         if (shareError) {
           console.error('Share error:', shareError);
-          setError(`Share link error: ${shareError.message}`);
+          setError(`Database error: ${shareError.message}`);
           return;
         }
 
         if (!shareRecord) {
-          setError('Share link not found or has expired');
+          console.log('No share record found for token:', shareToken);
+          setError('Share link not found. This link may have been deleted or may have expired.');
           return;
         }
+
+        console.log('Found share record:', shareRecord);
 
         // Check if the share has expired
         if (shareRecord.expires_at && new Date(shareRecord.expires_at) < new Date()) {
@@ -81,48 +84,51 @@ const SharedReportPage: React.FC = () => {
 
         console.log('Report ID from share:', shareRecord.report_id);
 
-        // Now fetch the validation report using the report_id
+        // Now fetch the validation report
         const { data: reportData, error: reportError } = await supabase
           .from('validation_reports')
-          .select(`
-            *,
-            idea_validations(
-              id,
-              idea_name,
-              one_line_description
-            )
-          `)
+          .select('*')
           .eq('id', shareRecord.report_id)
           .maybeSingle();
 
-        console.log('Report query result:', { reportData, reportError });
+        console.log('Report data result:', { reportData, reportError });
 
         if (reportError) {
-          console.error('Report error:', reportError);
-          setError(`Report error: ${reportError.message}`);
+          console.error('Report fetch error:', reportError);
+          setError(`Could not fetch report: ${reportError.message}`);
           return;
         }
 
         if (!reportData) {
-          setError('Report not found');
+          console.log('No report found for ID:', shareRecord.report_id);
+          setError('The report associated with this share link was not found');
           return;
         }
+
+        // Now fetch the idea validation data
+        const { data: ideaData, error: ideaError } = await supabase
+          .from('idea_validations')
+          .select('id, idea_name, one_line_description')
+          .eq('id', reportData.validation_id)
+          .maybeSingle();
+
+        console.log('Idea validation data:', { ideaData, ideaError });
 
         // Transform the data
         const transformedReport: SharedReportData = {
           ...reportData,
           status: reportData.status as 'generating' | 'completed' | 'failed' | 'archived',
-          idea_name: reportData.idea_validations?.idea_name || 'Untitled Idea',
-          one_line_description: reportData.idea_validations?.one_line_description || 'No description available',
+          idea_name: ideaData?.idea_name || 'Untitled Idea',
+          one_line_description: ideaData?.one_line_description || 'No description available',
           access_level: shareRecord.access_level as 'view' | 'comment' | 'edit',
           expires_at: shareRecord.expires_at,
         };
 
-        console.log('Transformed report:', transformedReport);
+        console.log('Final transformed report:', transformedReport);
         setReport(transformedReport);
       } catch (err) {
-        console.error('Error fetching shared report:', err);
-        setError('Failed to fetch shared report');
+        console.error('Unexpected error fetching shared report:', err);
+        setError('An unexpected error occurred while loading the report');
       } finally {
         setLoading(false);
       }
@@ -163,6 +169,10 @@ const SharedReportPage: React.FC = () => {
               {error || 'Report not found'}
             </AlertDescription>
           </Alert>
+          <div className="mt-4 text-sm text-muted-foreground">
+            <p>Share token: {shareToken}</p>
+            <p>If you believe this is an error, please check the console for more details.</p>
+          </div>
         </div>
       </div>
     );
