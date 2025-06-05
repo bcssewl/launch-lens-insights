@@ -147,7 +147,7 @@ const PrintView: React.FC<PrintViewProps> = ({
       </div>
 
       {/* Enhanced Print styles for A4 optimization */}
-      <style jsx>{`
+      <style>{`
         @media print {
           @page {
             size: A4;

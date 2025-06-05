@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, Tooltip, Legend, BarChart, Bar, LabelList } from 'recharts';
@@ -95,7 +94,7 @@ const MarketAnalysisTabContent: React.FC<MarketAnalysisTabContentProps> = ({ dat
   }));
 
   return (
-    <div className="grid grid-cols-2 gap-4 print:gap-3">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 print:gap-3">
       <Card className="print:break-inside-avoid">
         <CardHeader>
           <CardTitle className="text-sm print:text-xs">TAM/SAM/SOM</CardTitle>
