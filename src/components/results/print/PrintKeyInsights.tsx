@@ -68,47 +68,46 @@ const PrintKeyInsights: React.FC<PrintKeyInsightsProps> = ({ metrics }) => {
   ];
 
   return (
-    <div className="print-section">
-      {/* Section Header */}
-      <div className="flex items-center gap-4 mb-8">
-        <div className="w-12 h-12 bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-xl flex items-center justify-center">
-          <PrintIcon name="key-insights" size={24} color="white" />
+    <div className="print-page-break print-section">
+      {/* Compact Section Header */}
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-10 h-10 bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-xl flex items-center justify-center">
+          <PrintIcon name="key-insights" size={20} color="white" />
         </div>
         <h2 className="print-title-2 text-emerald-800">2.0 Key Insights & Metrics</h2>
       </div>
       
-      {/* Enhanced Metrics Grid */}
-      <div className="grid grid-cols-2 gap-6 mb-10">
+      {/* Compressed Metrics Grid */}
+      <div className="grid grid-cols-2 gap-4 mb-6">
         {metricCards.map((metric, index) => (
-          <div key={index} className="relative">
-            <div className="absolute inset-0 bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-lg"></div>
-            <div className="relative bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50">
-              {/* Category Badge */}
-              <div className="text-xs font-semibold text-gray-600 mb-3 uppercase tracking-wide">
+          <div key={index} className="relative print-avoid-break">
+            <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
+              {/* Compact Category Badge */}
+              <div className="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">
                 {metric.category}
               </div>
               
-              {/* Icon and Title */}
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-gradient-to-br from-slate-100 to-slate-200 rounded-xl flex items-center justify-center">
-                  <PrintIcon name={metric.icon} size={18} color="#475569" />
+              {/* Icon and Title - More Compact */}
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 bg-gradient-to-br from-slate-100 to-slate-200 rounded-lg flex items-center justify-center">
+                  <PrintIcon name={metric.icon} size={16} color="#475569" />
                 </div>
                 <div className="text-sm font-semibold text-gray-700">{metric.title}</div>
               </div>
               
-              {/* Value with Color and Progress */}
-              <div className="space-y-3">
+              {/* Compressed Value and Progress */}
+              <div className="space-y-2">
                 <div 
-                  className="text-2xl font-black"
+                  className="text-lg font-black"
                   style={{ color: getMetricColor(metric.value) }}
                 >
                   {metric.value}
                 </div>
                 
-                {/* Progress Bar */}
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                {/* Compact Progress Bar */}
+                <div className="w-full bg-gray-200 rounded-full h-1.5">
                   <div 
-                    className="h-2 rounded-full transition-all duration-500"
+                    className="h-1.5 rounded-full transition-all duration-500"
                     style={{ 
                       width: `${(getMetricScore(metric.value) / 10) * 100}%`,
                       backgroundColor: getMetricColor(metric.value)
@@ -123,61 +122,61 @@ const PrintKeyInsights: React.FC<PrintKeyInsightsProps> = ({ metrics }) => {
         ))}
       </div>
 
-      {/* Enhanced Market Readiness Assessment */}
+      {/* Compressed Market Readiness Assessment */}
       <div className="print-avoid-break">
-        <h3 className="print-title-3 flex items-center gap-2 mb-6">
-          <PrintIcon name="actions" size={18} color="#475569" />
+        <h3 className="text-sm font-semibold flex items-center gap-2 mb-3 text-slate-700">
+          <PrintIcon name="actions" size={16} color="#475569" />
           Market Readiness Assessment
         </h3>
         
-        <div className="bg-gradient-to-br from-slate-50 to-gray-50 rounded-2xl p-6 border border-slate-200">
-          <div className="grid grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div className="flex justify-between items-center p-3 bg-white rounded-lg shadow-sm">
+        <div className="bg-gradient-to-br from-slate-50 to-gray-50 rounded-xl p-4 border border-slate-200">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <div className="flex justify-between items-center p-2 bg-white rounded-lg shadow-sm">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-emerald-500 rounded-full"></div>
-                  <span className="font-semibold text-gray-800">Market Timing</span>
+                  <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                  <span className="text-xs font-semibold text-gray-800">Market Timing</span>
                 </div>
                 <span className="print-status-high text-xs">Excellent</span>
               </div>
               
-              <div className="flex justify-between items-center p-3 bg-white rounded-lg shadow-sm">
+              <div className="flex justify-between items-center p-2 bg-white rounded-lg shadow-sm">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-emerald-500 rounded-full"></div>
-                  <span className="font-semibold text-gray-800">Technology Readiness</span>
+                  <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                  <span className="text-xs font-semibold text-gray-800">Technology Readiness</span>
                 </div>
                 <span className="print-status-high text-xs">Ready</span>
               </div>
             </div>
             
-            <div className="space-y-4">
-              <div className="flex justify-between items-center p-3 bg-white rounded-lg shadow-sm">
+            <div className="space-y-2">
+              <div className="flex justify-between items-center p-2 bg-white rounded-lg shadow-sm">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-amber-500 rounded-full"></div>
-                  <span className="font-semibold text-gray-800">Target Audience</span>
+                  <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
+                  <span className="text-xs font-semibold text-gray-800">Target Audience</span>
                 </div>
                 <span className="print-status-medium text-xs">Well-Defined</span>
               </div>
               
-              <div className="flex justify-between items-center p-3 bg-white rounded-lg shadow-sm">
+              <div className="flex justify-between items-center p-2 bg-white rounded-lg shadow-sm">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-amber-500 rounded-full"></div>
-                  <span className="font-semibold text-gray-800">Business Model</span>
+                  <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
+                  <span className="text-xs font-semibold text-gray-800">Business Model</span>
                 </div>
                 <span className="print-status-medium text-xs">Developing</span>
               </div>
             </div>
           </div>
           
-          {/* Summary Insight */}
-          <div className="mt-6 p-4 bg-white/70 rounded-xl border border-slate-200/50">
-            <div className="flex items-start gap-3">
-              <div className="w-6 h-6 bg-slate-500 rounded-full flex items-center justify-center flex-shrink-0">
-                <PrintIcon name="insight" size={14} color="white" />
+          {/* Compact Summary Insight */}
+          <div className="mt-4 p-3 bg-white/70 rounded-lg border border-slate-200/50">
+            <div className="flex items-start gap-2">
+              <div className="w-5 h-5 bg-slate-500 rounded-full flex items-center justify-center flex-shrink-0">
+                <PrintIcon name="insight" size={12} color="white" />
               </div>
               <div>
-                <h4 className="font-semibold text-slate-800 mb-1">Strategic Insight</h4>
-                <p className="text-sm text-slate-700">
+                <h4 className="text-xs font-semibold text-slate-800 mb-1">Strategic Insight</h4>
+                <p className="text-xs text-slate-700 leading-relaxed">
                   Strong market fundamentals with clear opportunity for differentiation. 
                   Focus on rapid prototype development and customer validation to capitalize on optimal market timing.
                 </p>
