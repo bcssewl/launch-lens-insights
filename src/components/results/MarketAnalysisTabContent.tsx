@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, Tooltip, Legend, BarChart, Bar, LabelList } from 'recharts';
@@ -57,11 +56,10 @@ const renderPieLabel = (data: any[]) => (entry: any) => {
 };
 
 const MarketAnalysisTabContent: React.FC<MarketAnalysisTabContentProps> = ({ data }) => {
-  // Transform TAM/SAM/SOM data for line chart
-  const tamSamSomLineData = data.tamSamSom.map((item, index) => ({
-    name: item.name,
-    value: item.value,
-    order: index
+  // Assign colors to TAM/SAM/SOM data
+  const tamSamSomWithColors = data.tamSamSom.map((item, index) => ({
+    ...item,
+    fill: item.fill || getChartColors(data.tamSamSom.length)[index]
   }));
 
   // Assign colors to customer segments data
@@ -84,22 +82,25 @@ const MarketAnalysisTabContent: React.FC<MarketAnalysisTabContentProps> = ({ dat
         </CardHeader>
         <CardContent className="p-4 print:p-3">
           <ChartContainer config={chartConfigTam} className="w-full h-[300px] print:h-[250px]">
-            <LineChart data={tamSamSomLineData}>
-              <XAxis dataKey="name" />
-              <YAxis />
-              <ChartTooltipContent />
-              <Legend />
-              <Line 
-                type="monotone" 
+            <PieChart>
+              <ChartTooltipContent nameKey="name" hideLabel />
+              <Pie 
+                data={tamSamSomWithColors} 
                 dataKey="value" 
-                stroke="hsl(var(--primary))" 
-                strokeWidth={3} 
-                dot={{ fill: "hsl(var(--primary))", r: 8 }}
-                activeDot={{ r: 10, fill: "hsl(var(--primary))" }}
+                nameKey="name" 
+                cx="50%" 
+                cy="50%" 
+                innerRadius={40}
+                outerRadius={100} 
+                labelLine={false}
+                label={renderPieLabel(tamSamSomWithColors)}
               >
-                <LabelList dataKey="value" position="top" />
-              </Line>
-            </LineChart>
+                {tamSamSomWithColors.map((entry, index) => (
+                  <Cell key={`cell-${entry.name}`} fill={entry.fill} />
+                ))}
+              </Pie>
+              <Legend />
+            </PieChart>
           </ChartContainer>
         </CardContent>
       </Card>
