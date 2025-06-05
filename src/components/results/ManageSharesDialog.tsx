@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -26,8 +26,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Trash2, Settings, Users, Globe, Calendar } from 'lucide-react';
+import { Trash2, Settings, Users, Globe, Calendar, Copy, ExternalLink, Check } from 'lucide-react';
 import { useReportSharing } from '@/hooks/useReportSharing';
+import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 
 interface ManageSharesDialogProps {
@@ -42,6 +43,8 @@ const ManageSharesDialog: React.FC<ManageSharesDialogProps> = ({
   reportId,
 }) => {
   const { shares, loading, deleteShare, updateShareAccess } = useReportSharing(reportId);
+  const { toast } = useToast();
+  const [copiedShareId, setCopiedShareId] = useState<string | null>(null);
 
   const handleDeleteShare = async (shareId: string) => {
     await deleteShare(shareId);
@@ -66,6 +69,40 @@ const ManageSharesDialog: React.FC<ManageSharesDialogProps> = ({
       case 'edit': return 'text-red-600';
       default: return 'text-gray-600';
     }
+  };
+
+  const getShareUrl = (share: any) => {
+    if (share.shared_with) {
+      // Specific user share - use regular results page
+      return `${window.location.origin}/results/${reportId}`;
+    } else {
+      // Public share - use share token
+      return `${window.location.origin}/shared-report/${share.share_token}`;
+    }
+  };
+
+  const handleCopyLink = async (share: any) => {
+    const shareUrl = getShareUrl(share);
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopiedShareId(share.id);
+      toast({
+        title: 'Link copied!',
+        description: 'Share link copied to clipboard',
+      });
+      setTimeout(() => setCopiedShareId(null), 2000);
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to copy link',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleVisitLink = (share: any) => {
+    const shareUrl = getShareUrl(share);
+    window.open(shareUrl, '_blank');
   };
 
   return (
@@ -132,6 +169,28 @@ const ManageSharesDialog: React.FC<ManageSharesDialogProps> = ({
                   <span className={`text-sm font-medium ${getAccessLevelColor(share.access_level)}`}>
                     {share.access_level}
                   </span>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleCopyLink(share)}
+                    className="text-blue-600 hover:text-blue-700"
+                  >
+                    {copiedShareId === share.id ? (
+                      <Check className="h-4 w-4" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleVisitLink(share)}
+                    className="text-green-600 hover:text-green-700"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </Button>
 
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
