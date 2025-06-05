@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -8,6 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Printer, ExternalLink } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
+import { useAuth } from '@/contexts/AuthContext';
+import { useAdPopup } from '@/hooks/useAdPopup';
 
 import ResultsHeader from '@/components/results/ResultsHeader';
 import OverviewTabContent from '@/components/results/OverviewTabContent';
@@ -18,6 +19,7 @@ import DetailedScoresTabContent from '@/components/results/DetailedScoresTabCont
 import ActionItemsTabContent from '@/components/results/ActionItemsTabContent';
 import FinancialAnalysisTabContent from '@/components/results/FinancialAnalysisTabContent';
 import PrintView from '@/components/results/PrintView';
+import AdPopup from '@/components/shared/AdPopup';
 
 interface SharedReportData {
   id: string;
@@ -36,10 +38,14 @@ interface SharedReportData {
 
 const SharedReportPage: React.FC = () => {
   const { shareToken } = useParams<{ shareToken: string }>();
+  const { user } = useAuth();
   const [report, setReport] = useState<SharedReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showPrintView, setShowPrintView] = useState(false);
+  
+  // Show ad popup only if user is not logged in
+  const { isPopupOpen, closePopup } = useAdPopup(!user);
 
   useEffect(() => {
     if (!shareToken) {
@@ -54,7 +60,7 @@ const SharedReportPage: React.FC = () => {
         
         console.log('Fetching shared report with token:', shareToken);
         
-        // Use the new database function to fetch the shared report
+        // Use the database function to fetch the shared report
         const { data: reportData, error: reportError } = await supabase
           .rpc('get_shared_report', { p_share_token: shareToken });
 
@@ -223,6 +229,9 @@ const SharedReportPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
+      {/* Advertisement Popup */}
+      <AdPopup isOpen={isPopupOpen} onClose={closePopup} />
+      
       <div className="w-full max-w-7xl mx-auto px-6 py-8 space-y-8">
         {/* Shared Report Header */}
         <div className="w-full p-4 bg-card rounded-lg shadow space-y-4">
