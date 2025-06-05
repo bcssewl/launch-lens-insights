@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -53,75 +54,43 @@ const SharedReportPage: React.FC = () => {
         
         console.log('Fetching shared report with token:', shareToken);
         
-        // First, fetch the share record to get the report_id
-        const { data: shareRecord, error: shareError } = await supabase
-          .from('report_shares')
-          .select('*')
-          .eq('share_token', shareToken)
-          .maybeSingle();
+        // Use the new database function to fetch the shared report
+        const { data: reportData, error: reportError } = await supabase
+          .rpc('get_shared_report', { p_share_token: shareToken });
 
-        console.log('Share record result:', { shareRecord, shareError });
+        console.log('Shared report result:', { reportData, reportError });
 
-        if (shareError) {
-          console.error('Share error:', shareError);
-          setError(`Database error: ${shareError.message}`);
+        if (reportError) {
+          console.error('Error fetching shared report:', reportError);
+          if (reportError.message.includes('Invalid or expired share token')) {
+            setError('This share link is invalid or has expired.');
+          } else {
+            setError(`Could not fetch report: ${reportError.message}`);
+          }
           return;
         }
 
-        if (!shareRecord) {
-          console.log('No share record found for token:', shareToken);
+        if (!reportData || reportData.length === 0) {
+          console.log('No report found for token:', shareToken);
           setError('Share link not found. This link may have been deleted or may have expired.');
           return;
         }
 
-        console.log('Found share record:', shareRecord);
-
-        // Check if the share has expired
-        if (shareRecord.expires_at && new Date(shareRecord.expires_at) < new Date()) {
-          setError('This share link has expired');
-          return;
-        }
-
-        console.log('Report ID from share:', shareRecord.report_id);
-
-        // Now fetch the validation report directly
-        const { data: reportData, error: reportError } = await supabase
-          .from('validation_reports')
-          .select('*')
-          .eq('id', shareRecord.report_id)
-          .maybeSingle();
-
-        console.log('Direct query result:', { reportData, reportError });
-
-        if (reportError) {
-          console.error('Direct report fetch error:', reportError);
-          setError(`Could not fetch report: ${reportError.message}`);
-          return;
-        }
-
-        if (!reportData) {
-          console.log('No report found for ID:', shareRecord.report_id);
-          setError('The report associated with this share link was not found. It may have been deleted.');
-          return;
-        }
-
-        // Now fetch the idea validation data
-        const { data: ideaData, error: ideaError } = await supabase
-          .from('idea_validations')
-          .select('id, idea_name, one_line_description')
-          .eq('id', reportData.validation_id)
-          .maybeSingle();
-
-        console.log('Idea validation data:', { ideaData, ideaError });
-
-        // Transform the data
+        // Transform the data from the RPC function result
+        const reportInfo = reportData[0];
         const transformedReport: SharedReportData = {
-          ...reportData,
-          status: reportData.status as 'generating' | 'completed' | 'failed' | 'archived',
-          idea_name: ideaData?.idea_name || 'Untitled Idea',
-          one_line_description: ideaData?.one_line_description || 'No description available',
-          access_level: shareRecord.access_level as 'view' | 'comment' | 'edit',
-          expires_at: shareRecord.expires_at,
+          id: reportInfo.report_id,
+          validation_id: reportInfo.validation_id,
+          status: reportInfo.status as 'generating' | 'completed' | 'failed' | 'archived',
+          overall_score: reportInfo.overall_score,
+          recommendation: reportInfo.recommendation,
+          completed_at: reportInfo.completed_at,
+          created_at: reportInfo.created_at,
+          report_data: reportInfo.report_data,
+          idea_name: reportInfo.idea_name || 'Untitled Idea',
+          one_line_description: reportInfo.one_line_description || 'No description available',
+          access_level: reportInfo.access_level as 'view' | 'comment' | 'edit',
+          expires_at: reportInfo.expires_at,
         };
 
         console.log('Final transformed report:', transformedReport);

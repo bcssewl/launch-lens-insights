@@ -293,6 +293,23 @@ export type Database = {
           share_url: string
         }[]
       }
+      get_shared_report: {
+        Args: { p_share_token: string }
+        Returns: {
+          report_id: string
+          validation_id: string
+          status: string
+          overall_score: number
+          recommendation: string
+          completed_at: string
+          created_at: string
+          report_data: Json
+          idea_name: string
+          one_line_description: string
+          access_level: string
+          expires_at: string
+        }[]
+      }
       verify_user: {
         Args: { jwt_token: string } | { user_id: string }
         Returns: {
