@@ -83,6 +83,19 @@ const addImageToPDF = (pdf: jsPDF, imageData: string, yPosition: number): number
   return yPosition + imgHeight + 10;
 };
 
+const activateTab = async (tabValue: string): Promise<void> => {
+  return new Promise((resolve) => {
+    const tabTrigger = document.querySelector(`button[value="${tabValue}"]`) as HTMLButtonElement;
+    if (tabTrigger) {
+      tabTrigger.click();
+      // Wait for tab content to render
+      setTimeout(resolve, 500);
+    } else {
+      resolve();
+    }
+  });
+};
+
 export const generateReportPDF = async (data: ReportData) => {
   try {
     const pdf = new jsPDF();
@@ -124,18 +137,25 @@ export const generateReportPDF = async (data: ReportData) => {
       yPosition = addImageToPDF(pdf, headerImage, yPosition + 10);
     }
 
-    // Capture each tab content
-    const tabContents = [
-      { selector: '[data-tab-overview]', title: 'Overview' },
-      { selector: '[data-tab-market]', title: 'Market Analysis' },
-      { selector: '[data-tab-competition]', title: 'Competition Analysis' },
-      { selector: '[data-tab-financial]', title: 'Financial Analysis' },
-      { selector: '[data-tab-swot]', title: 'SWOT Analysis' },
-      { selector: '[data-tab-scores]', title: 'Detailed Scores' },
-      { selector: '[data-tab-actions]', title: 'Action Items' }
+    // Define all tabs that need to be captured
+    const tabsToCapture = [
+      { value: 'overview', selector: '[data-tab-overview]', title: 'Overview' },
+      { value: 'market', selector: '[data-tab-market]', title: 'Market Analysis' },
+      { value: 'competition', selector: '[data-tab-competition]', title: 'Competition Analysis' },
+      { value: 'financial', selector: '[data-tab-financial]', title: 'Financial Analysis' },
+      { value: 'swot', selector: '[data-tab-swot]', title: 'SWOT Analysis' },
+      { value: 'scores', selector: '[data-tab-scores]', title: 'Detailed Scores' },
+      { value: 'actions', selector: '[data-tab-actions]', title: 'Action Items' }
     ];
 
-    for (const tab of tabContents) {
+    // Capture each tab by activating it first
+    for (const tab of tabsToCapture) {
+      console.log(`Capturing tab: ${tab.title}`);
+      
+      // Activate the tab
+      await activateTab(tab.value);
+      
+      // Find the tab content element
       const element = document.querySelector(tab.selector) as HTMLElement;
       if (element && element.offsetHeight > 0) {
         pdf.addPage();
