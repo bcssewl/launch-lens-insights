@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Share2, TrendingUp, CheckCircle } from 'lucide-react';
+import { Share2, TrendingUp, CheckCircle, Settings } from 'lucide-react';
 import ScoreDisplay from './ScoreDisplay';
 import ShareReportDialog from './ShareReportDialog';
+import ManageSharesDialog from './ManageSharesDialog';
 
 interface ResultsHeaderProps {
   ideaName: string;
@@ -20,6 +21,7 @@ const ResultsHeader: React.FC<ResultsHeaderProps> = ({
   reportId,
 }) => {
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [manageSharesOpen, setManageSharesOpen] = useState(false);
 
   // Parse recommendation to create better content
   const getRecommendationContent = (recommendation: string) => {
@@ -93,7 +95,7 @@ const ResultsHeader: React.FC<ResultsHeaderProps> = ({
           </div>
         </div>
         
-        <div className="flex justify-start print:hidden">
+        <div className="flex flex-wrap gap-2 print:hidden">
           <Button 
             variant="outline" 
             size="sm" 
@@ -103,16 +105,32 @@ const ResultsHeader: React.FC<ResultsHeaderProps> = ({
             <Share2 className="mr-2 h-4 w-4" />
             Share Report
           </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="w-fit"
+            onClick={() => setManageSharesOpen(true)}
+          >
+            <Settings className="mr-2 h-4 w-4" />
+            Manage Shares
+          </Button>
         </div>
       </div>
 
       {reportId && (
-        <ShareReportDialog
-          open={shareDialogOpen}
-          onOpenChange={setShareDialogOpen}
-          reportId={reportId}
-          reportTitle={ideaName}
-        />
+        <>
+          <ShareReportDialog
+            open={shareDialogOpen}
+            onOpenChange={setShareDialogOpen}
+            reportId={reportId}
+            reportTitle={ideaName}
+          />
+          <ManageSharesDialog
+            open={manageSharesOpen}
+            onOpenChange={setManageSharesOpen}
+            reportId={reportId}
+          />
+        </>
       )}
     </div>
   );
