@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import {
   Dialog,
@@ -17,8 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Copy, Check, Users, Globe, Clock } from 'lucide-react';
+import { Copy, Check, Globe, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -35,8 +35,6 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
   reportId,
   reportTitle,
 }) => {
-  const [shareType, setShareType] = useState<'specific' | 'public'>('specific');
-  const [email, setEmail] = useState('');
   const [accessLevel, setAccessLevel] = useState('view');
   const [expirationDays, setExpirationDays] = useState('30');
   const [shareUrl, setShareUrl] = useState('');
@@ -49,14 +47,14 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
     try {
       console.log('Creating share with params:', {
         p_report_id: reportId,
-        p_shared_with: shareType === 'specific' && email ? email : null,
+        p_shared_with: null, // Always null for public sharing
         p_access_level: accessLevel,
         p_expires_in_days: parseInt(expirationDays),
       });
 
       const { data, error } = await supabase.rpc('create_report_share', {
         p_report_id: reportId,
-        p_shared_with: shareType === 'specific' && email ? email : null,
+        p_shared_with: null, // Always public
         p_access_level: accessLevel,
         p_expires_in_days: parseInt(expirationDays),
       });
@@ -72,23 +70,17 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
         const shareData = data[0];
         console.log('Share data received:', shareData);
         
-        // Create the correct share URL based on share type
-        let shareUrl;
-        if (shareType === 'public' && shareData.share_token) {
-          // Public share link using the share token
-          shareUrl = `${window.location.origin}/shared-report/${shareData.share_token}`;
+        // Create the public share URL using the share token
+        if (shareData.share_token) {
+          const shareUrl = `${window.location.origin}/shared-report/${shareData.share_token}`;
+          setShareUrl(shareUrl);
+          toast({
+            title: 'Share link created',
+            description: 'Public share link generated',
+          });
         } else {
-          // Specific user share - they can access via normal results page
-          shareUrl = `${window.location.origin}/results/${reportId}`;
+          throw new Error('No share token returned from function');
         }
-        
-        setShareUrl(shareUrl);
-        toast({
-          title: 'Share link created',
-          description: shareType === 'specific' 
-            ? `Report shared with ${email}` 
-            : 'Public share link generated',
-        });
       } else {
         throw new Error('No share data returned from function');
       }
@@ -124,7 +116,6 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
 
   const handleClose = () => {
     setShareUrl('');
-    setEmail('');
     setCopied(false);
     onOpenChange(false);
   };
@@ -134,55 +125,16 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
+            <Globe className="h-5 w-5" />
             Share Report
           </DialogTitle>
           <DialogDescription>
-            Share "{reportTitle}" with others or create a public link
+            Create a public link to share "{reportTitle}" with anyone
           </DialogDescription>
         </DialogHeader>
 
         {!shareUrl ? (
           <div className="space-y-6">
-            {/* Share Type Selection */}
-            <div className="space-y-3">
-              <Label className="text-sm font-medium">Share with</Label>
-              <RadioGroup
-                value={shareType}
-                onValueChange={(value) => setShareType(value as 'specific' | 'public')}
-                className="grid grid-cols-2 gap-4"
-              >
-                <div className="flex items-center space-x-2 border rounded-lg p-3">
-                  <RadioGroupItem value="specific" id="specific" />
-                  <Label htmlFor="specific" className="flex items-center gap-2 cursor-pointer">
-                    <Users className="h-4 w-4" />
-                    Specific person
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2 border rounded-lg p-3">
-                  <RadioGroupItem value="public" id="public" />
-                  <Label htmlFor="public" className="flex items-center gap-2 cursor-pointer">
-                    <Globe className="h-4 w-4" />
-                    Anyone with link
-                  </Label>
-                </div>
-              </RadioGroup>
-            </div>
-
-            {/* Email Input for Specific Sharing */}
-            {shareType === 'specific' && (
-              <div className="space-y-2">
-                <Label htmlFor="email">Email address</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="Enter email address"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-            )}
-
             {/* Access Level */}
             <div className="space-y-2">
               <Label htmlFor="access-level">Access level</Label>
@@ -248,7 +200,7 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
               </Button>
               <Button
                 onClick={createShare}
-                disabled={loading || (shareType === 'specific' && !email)}
+                disabled={loading}
               >
                 {loading ? 'Creating...' : 'Create Share Link'}
               </Button>
