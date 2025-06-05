@@ -9,7 +9,7 @@ interface MarketGrowthChartProps {
 }
 
 const chartConfigGrowth = {
-  growth: { label: "YoY Growth (%)", color: "hsl(var(--chart-1))" },
+  growth: { label: "YoY Growth (%)", color: "#3B82F6" },
 };
 
 const MarketGrowthChart: React.FC<MarketGrowthChartProps> = ({ data }) => {
@@ -25,7 +25,7 @@ const MarketGrowthChart: React.FC<MarketGrowthChartProps> = ({ data }) => {
             <YAxis />
             <ChartTooltipContent />
             <Legend />
-            <Line type="monotone" dataKey="growth" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={false}>
+            <Line type="monotone" dataKey="growth" stroke="#3B82F6" strokeWidth={3} dot={false}>
               <LabelList dataKey="growth" position="top" formatter={(value: number) => `${value}%`} />
             </Line>
           </LineChart>
