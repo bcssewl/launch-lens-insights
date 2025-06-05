@@ -223,10 +223,7 @@ const MarketAnalysisTabContent: React.FC<MarketAnalysisTabContentProps> = ({ dat
                   <LabelList 
                     dataKey={`region_${index}`} 
                     position="right"
-                    formatter={(value: number, entry: any) => {
-                      const regionIndex = Object.keys(entry).find(key => key.startsWith('region_') && !key.includes('_name') && entry[key] === value)?.split('_')[1];
-                      return regionIndex !== undefined ? data.geographicOpportunity[parseInt(regionIndex)]?.name : '';
-                    }}
+                    formatter={(value: number) => item.name}
                   />
                 </Bar>
               ))}
