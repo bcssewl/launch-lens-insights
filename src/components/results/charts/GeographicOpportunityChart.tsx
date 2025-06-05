@@ -1,17 +1,12 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Cell } from 'recharts';
-import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Cell, Tooltip } from 'recharts';
 import { getChartColors } from './chartUtils';
 
 interface GeographicOpportunityChartProps {
   data: { name: string; value: number }[];
 }
-
-const chartConfigGeo = {
-  value: { label: "Market Size", color: "hsl(var(--chart-1))" },
-};
 
 const GeographicOpportunityChart: React.FC<GeographicOpportunityChartProps> = ({ data }) => {
   const colors = getChartColors(data.length);
@@ -22,7 +17,7 @@ const GeographicOpportunityChart: React.FC<GeographicOpportunityChartProps> = ({
         <CardTitle className="text-sm print:text-xs">Geographic Opportunity</CardTitle>
       </CardHeader>
       <CardContent className="p-4 print:p-3">
-        <ChartContainer config={chartConfigGeo} className="w-full h-[300px] print:h-[250px]">
+        <ResponsiveContainer width="100%" height={300}>
           <BarChart data={data} layout="vertical" margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
             <XAxis type="number" />
             <YAxis 
@@ -30,9 +25,7 @@ const GeographicOpportunityChart: React.FC<GeographicOpportunityChartProps> = ({
               type="category" 
               width={100}
             />
-            <ChartTooltipContent 
-              formatter={(value: number, name: string) => [value, "Market Size"]}
-            />
+            <Tooltip />
             <Bar 
               dataKey="value" 
               radius={4}
@@ -42,7 +35,7 @@ const GeographicOpportunityChart: React.FC<GeographicOpportunityChartProps> = ({
               ))}
             </Bar>
           </BarChart>
-        </ChartContainer>
+        </ResponsiveContainer>
       </CardContent>
     </Card>
   );
