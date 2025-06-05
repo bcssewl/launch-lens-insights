@@ -58,12 +58,17 @@ const SharedReportPage: React.FC = () => {
           .from('report_shares')
           .select('*')
           .eq('share_token', shareToken)
-          .single();
+          .maybeSingle();
 
         console.log('Share record result:', { shareRecord, shareError });
 
         if (shareError) {
           console.error('Share error:', shareError);
+          setError(`Share link error: ${shareError.message}`);
+          return;
+        }
+
+        if (!shareRecord) {
           setError('Share link not found or has expired');
           return;
         }
@@ -88,47 +93,18 @@ const SharedReportPage: React.FC = () => {
             )
           `)
           .eq('id', shareRecord.report_id)
-          .single();
+          .maybeSingle();
 
         console.log('Report query result:', { reportData, reportError });
 
         if (reportError) {
           console.error('Report error:', reportError);
-          
-          // Try without the join first to see if the report exists
-          const { data: basicReport, error: basicError } = await supabase
-            .from('validation_reports')
-            .select('*')
-            .eq('id', shareRecord.report_id)
-            .single();
-          
-          console.log('Basic report check:', { basicReport, basicError });
-          
-          if (basicError) {
-            setError(`Report not found: ${reportError.message}`);
-          } else {
-            // Report exists but join failed, try to get idea validation separately
-            const { data: ideaData, error: ideaError } = await supabase
-              .from('idea_validations')
-              .select('id, idea_name, one_line_description')
-              .eq('id', basicReport.validation_id)
-              .single();
-            
-            console.log('Idea validation data:', { ideaData, ideaError });
-            
-            // Transform the data even if idea validation is missing
-            const transformedReport: SharedReportData = {
-              ...basicReport,
-              status: basicReport.status as 'generating' | 'completed' | 'failed' | 'archived',
-              idea_name: ideaData?.idea_name || 'Untitled Idea',
-              one_line_description: ideaData?.one_line_description || 'No description available',
-              access_level: shareRecord.access_level as 'view' | 'comment' | 'edit',
-              expires_at: shareRecord.expires_at,
-            };
+          setError(`Report error: ${reportError.message}`);
+          return;
+        }
 
-            console.log('Transformed report (fallback):', transformedReport);
-            setReport(transformedReport);
-          }
+        if (!reportData) {
+          setError('Report not found');
           return;
         }
 
