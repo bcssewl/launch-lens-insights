@@ -43,81 +43,91 @@ interface ReportData {
   actionItems: { title: string; description: string; effort: string; impact: string }[];
 }
 
-const captureElementAsImage = async (element: HTMLElement): Promise<string> => {
+const captureElementAsImage = async (element: HTMLElement): Promise<string | null> => {
   try {
-    // Ensure element is visible and has dimensions
+    console.log('Capturing element:', element.tagName, element.className);
+    
+    // Ensure element is visible
     if (element.offsetWidth === 0 || element.offsetHeight === 0) {
-      throw new Error('Element has no dimensions');
+      console.warn('Element has no dimensions');
+      return null;
     }
 
+    // Wait a bit for any animations to complete
+    await new Promise(resolve => setTimeout(resolve, 500));
+
     const canvas = await html2canvas(element, {
-      scale: 1, // Reduce scale to avoid memory issues
+      scale: 2,
       useCORS: true,
       allowTaint: false,
       backgroundColor: '#ffffff',
-      width: element.scrollWidth,
-      height: element.scrollHeight,
-      windowWidth: window.innerWidth,
-      windowHeight: window.innerHeight,
       logging: false,
-      ignoreElements: (element) => {
-        // Ignore certain elements that might cause issues
-        return element.classList.contains('ignore-pdf');
-      }
+      height: element.scrollHeight,
+      width: element.scrollWidth,
     });
     
-    return canvas.toDataURL('image/png', 0.8); // Reduce quality slightly for smaller file size
+    return canvas.toDataURL('image/png', 0.9);
   } catch (error) {
     console.error('Error capturing element:', error);
-    throw error;
+    return null;
   }
 };
 
-const addImageToPDF = (pdf: jsPDF, imageData: string, yPosition: number, maxWidth?: number): number => {
+const addImageToPDF = (pdf: jsPDF, imageData: string, yPosition: number): number => {
   try {
     const pageWidth = pdf.internal.pageSize.width;
     const pageHeight = pdf.internal.pageSize.height;
     const margin = 10;
-    const availableWidth = maxWidth || (pageWidth - 2 * margin);
     
-    // Create a temporary image to get actual dimensions
-    const tempImg = new Image();
-    tempImg.src = imageData;
+    // Create image to get dimensions
+    const img = new Image();
+    img.src = imageData;
     
-    // Calculate dimensions maintaining aspect ratio
-    const imgAspectRatio = tempImg.naturalHeight / tempImg.naturalWidth;
-    const imgWidth = Math.min(availableWidth, pageWidth - 2 * margin);
-    const imgHeight = imgWidth * imgAspectRatio;
+    // Calculate image dimensions
+    const maxWidth = pageWidth - 2 * margin;
+    const aspectRatio = img.naturalHeight / img.naturalWidth;
+    const imgWidth = Math.min(maxWidth, img.naturalWidth * 0.3); // Scale down for PDF
+    const imgHeight = imgWidth * aspectRatio;
     
-    // Check if image fits on current page
+    // Check if we need a new page
     if (yPosition + imgHeight > pageHeight - margin) {
       pdf.addPage();
       yPosition = margin;
     }
     
-    // Add image with proper error handling
+    // Add image to PDF
     pdf.addImage(imageData, 'PNG', margin, yPosition, imgWidth, imgHeight);
     return yPosition + imgHeight + 10;
   } catch (error) {
     console.error('Error adding image to PDF:', error);
-    return yPosition + 50; // Return some offset to continue
+    return yPosition + 20;
   }
 };
 
-const activateTab = async (tabValue: string): Promise<void> => {
+const activateTab = async (tabValue: string): Promise<boolean> => {
   return new Promise((resolve) => {
     try {
+      console.log(`Attempting to activate tab: ${tabValue}`);
+      
+      // Find the tab trigger button
       const tabTrigger = document.querySelector(`button[value="${tabValue}"]`) as HTMLButtonElement;
-      if (tabTrigger && !tabTrigger.getAttribute('data-state')?.includes('active')) {
+      
+      if (tabTrigger) {
+        console.log(`Found tab trigger for ${tabValue}`);
         tabTrigger.click();
-        // Wait longer for tab content to fully render
-        setTimeout(resolve, 1000);
+        
+        // Wait for tab content to load
+        setTimeout(() => {
+          console.log(`Tab ${tabValue} should be active now`);
+          resolve(true);
+        }, 1500);
       } else {
-        resolve();
+        console.warn(`Tab trigger not found for ${tabValue}`);
+        resolve(false);
       }
     } catch (error) {
-      console.error('Error activating tab:', error);
-      resolve();
+      console.error(`Error activating tab ${tabValue}:`, error);
+      resolve(false);
     }
   });
 };
@@ -130,7 +140,7 @@ export const generateReportPDF = async (data: ReportData) => {
     const pageWidth = pdf.internal.pageSize.width;
     const margin = 20;
 
-    // Helper function to add text safely
+    // Helper function to add text
     const addText = (text: string, x: number, y: number, options: any = {}) => {
       try {
         const maxWidth = options.maxWidth || pageWidth - 2 * margin;
@@ -161,17 +171,17 @@ export const generateReportPDF = async (data: ReportData) => {
       const resultsHeader = document.querySelector('[data-results-header]') as HTMLElement;
       if (resultsHeader) {
         console.log('Capturing results header...');
-        pdf.addPage();
-        yPosition = 20;
-        
         const headerImage = await captureElementAsImage(resultsHeader);
-        yPosition = addImageToPDF(pdf, headerImage, yPosition);
+        if (headerImage) {
+          pdf.addPage();
+          yPosition = addImageToPDF(pdf, headerImage, 20);
+        }
       }
     } catch (error) {
       console.error('Error capturing results header:', error);
     }
 
-    // Define all tabs that need to be captured
+    // Define tabs to capture
     const tabsToCapture = [
       { value: 'overview', selector: '[data-tab-overview]', title: 'Overview' },
       { value: 'market', selector: '[data-tab-market]', title: 'Market Analysis' },
@@ -182,39 +192,45 @@ export const generateReportPDF = async (data: ReportData) => {
       { value: 'actions', selector: '[data-tab-actions]', title: 'Action Items' }
     ];
 
-    // Capture each tab by activating it first
+    // Process each tab
     for (const tab of tabsToCapture) {
       try {
-        console.log(`Processing tab: ${tab.title}`);
+        console.log(`Processing ${tab.title}...`);
         
-        // Activate the tab and wait for content to load
-        await activateTab(tab.value);
-        
-        // Find the tab content element
+        // Activate the tab
+        const activated = await activateTab(tab.value);
+        if (!activated) {
+          console.warn(`Failed to activate ${tab.title} tab`);
+          continue;
+        }
+
+        // Find and capture the tab content
         const element = document.querySelector(tab.selector) as HTMLElement;
-        if (element && element.offsetWidth > 0 && element.offsetHeight > 0) {
+        if (element) {
           console.log(`Capturing ${tab.title} content...`);
-          
-          pdf.addPage();
-          yPosition = 20;
-          
-          // Add section title
-          pdf.setFontSize(16);
-          pdf.setFont('helvetica', 'bold');
-          yPosition = addText(tab.title, margin, yPosition);
-          yPosition += 10;
-          
-          // Capture and add the tab content
           const tabImage = await captureElementAsImage(element);
-          yPosition = addImageToPDF(pdf, tabImage, yPosition);
           
-          console.log(`Successfully captured ${tab.title}`);
+          if (tabImage) {
+            pdf.addPage();
+            yPosition = 20;
+            
+            // Add section title
+            pdf.setFontSize(16);
+            pdf.setFont('helvetica', 'bold');
+            yPosition = addText(tab.title, margin, yPosition);
+            yPosition += 10;
+            
+            // Add the captured image
+            yPosition = addImageToPDF(pdf, tabImage, yPosition);
+            console.log(`Successfully added ${tab.title} to PDF`);
+          } else {
+            console.warn(`Failed to capture image for ${tab.title}`);
+          }
         } else {
-          console.warn(`Tab content not found or has no dimensions: ${tab.title}`);
+          console.warn(`Element not found for ${tab.title}: ${tab.selector}`);
         }
       } catch (error) {
-        console.error(`Error capturing ${tab.title}:`, error);
-        // Continue with next tab even if one fails
+        console.error(`Error processing ${tab.title}:`, error);
       }
     }
 
@@ -222,6 +238,7 @@ export const generateReportPDF = async (data: ReportData) => {
     const fileName = `${data.ideaName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_validation_report.pdf`;
     pdf.save(fileName);
     console.log('PDF generation completed successfully');
+    
   } catch (error) {
     console.error('Error generating PDF:', error);
     // Fallback to text-based PDF
@@ -229,7 +246,7 @@ export const generateReportPDF = async (data: ReportData) => {
   }
 };
 
-// Fallback function for text-based PDF if screenshot capture fails
+// Fallback function for text-based PDF
 const generateTextBasedPDF = (data: ReportData) => {
   try {
     console.log('Generating fallback text-based PDF...');
@@ -245,14 +262,14 @@ const generateTextBasedPDF = (data: ReportData) => {
       return y + (lines.length * (options.lineHeight || 7));
     };
 
-    // Title page
-    pdf.setFontSize(24);
+    // Title
+    pdf.setFontSize(20);
     pdf.setFont('helvetica', 'bold');
-    yPosition = addText('Business Idea Validation Report', margin, yPosition, { lineHeight: 10 });
+    yPosition = addText('Business Idea Validation Report', margin, yPosition);
     
-    pdf.setFontSize(18);
+    pdf.setFontSize(16);
     pdf.setFont('helvetica', 'normal');
-    yPosition = addText(data.ideaName, margin, yPosition + 10, { lineHeight: 8 });
+    yPosition = addText(data.ideaName, margin, yPosition + 10);
 
     pdf.setFontSize(12);
     yPosition = addText(`Analysis Date: ${data.analysisDate}`, margin, yPosition + 10);
@@ -262,7 +279,7 @@ const generateTextBasedPDF = (data: ReportData) => {
     // Executive Summary
     pdf.addPage();
     yPosition = 30;
-    pdf.setFontSize(16);
+    pdf.setFontSize(14);
     pdf.setFont('helvetica', 'bold');
     yPosition = addText('Executive Summary', margin, yPosition);
     
