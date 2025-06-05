@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -93,7 +92,7 @@ const SharedReportPage: React.FC = () => {
           status: reportData.status as 'generating' | 'completed' | 'failed' | 'archived',
           idea_name: reportData.idea_validations?.idea_name,
           one_line_description: reportData.idea_validations?.one_line_description,
-          access_level: shareData.access_level,
+          access_level: shareData.access_level as 'view' | 'comment' | 'edit',
           expires_at: shareData.expires_at,
         };
 
