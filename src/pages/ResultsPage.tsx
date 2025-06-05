@@ -16,6 +16,7 @@ import DetailedScoresTabContent from '@/components/results/DetailedScoresTabCont
 import ActionItemsTabContent from '@/components/results/ActionItemsTabContent';
 import FinancialAnalysisTabContent from '@/components/results/FinancialAnalysisTabContent';
 import { useValidationReport } from '@/hooks/useValidationReport';
+import { generateReportPDF } from '@/utils/pdfGenerator';
 import { format } from 'date-fns';
 
 const ResultsPage: React.FC = () => {
@@ -29,6 +30,27 @@ const ResultsPage: React.FC = () => {
 
   const handleGoBack = () => {
     navigate('/dashboard/reports');
+  };
+
+  const handleDownloadPDF = () => {
+    if (!report) return;
+
+    const pdfData = {
+      ideaName,
+      score,
+      recommendation,
+      analysisDate,
+      executiveSummary,
+      keyMetrics,
+      marketAnalysis,
+      competition,
+      financialAnalysis,
+      swot,
+      detailedScores,
+      actionItems
+    };
+
+    generateReportPDF(pdfData);
   };
 
   if (loading) {
@@ -185,7 +207,7 @@ const ResultsPage: React.FC = () => {
 
           <div className="w-full border-t border-border/50 pt-8 mt-8">
             <div className="flex flex-col sm:flex-row gap-3 justify-end">
-              <Button variant="outline" size="sm" className="w-full sm:w-auto apple-button-outline">
+              <Button variant="outline" size="sm" className="w-full sm:w-auto apple-button-outline" onClick={handleDownloadPDF}>
                 <Download className="mr-2 h-4 w-4" /> Download PDF
               </Button>
               <Button variant="outline" size="sm" className="w-full sm:w-auto apple-button-outline" onClick={handleAIFollowUp}>
