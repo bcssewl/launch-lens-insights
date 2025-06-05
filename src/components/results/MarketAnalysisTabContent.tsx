@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, Tooltip, Legend, BarChart, Bar, LabelList } from 'recharts';
@@ -87,11 +88,16 @@ const MarketAnalysisTabContent: React.FC<MarketAnalysisTabContentProps> = ({ dat
     fill: item.fill || getChartColors(data.customerSegments.length)[index]
   }));
 
-  // Assign colors to geographic opportunity data
-  const geographicOpportunityWithColors = data.geographicOpportunity.map((item, index) => ({
-    ...item,
-    fill: getChartColors(data.geographicOpportunity.length)[index]
-  }));
+  // Transform geographic opportunity data to have individual properties for each region
+  const transformedGeoData = data.geographicOpportunity.reduce((acc, item, index) => {
+    const key = `region_${index}`;
+    if (!acc[0]) acc[0] = {};
+    acc[0][key] = item.value;
+    acc[0][`${key}_name`] = item.name;
+    return acc;
+  }, [{}]);
+
+  const geoColors = getChartColors(data.geographicOpportunity.length);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 print:gap-3">
@@ -189,17 +195,41 @@ const MarketAnalysisTabContent: React.FC<MarketAnalysisTabContentProps> = ({ dat
         </CardHeader>
         <CardContent className="p-4 print:p-3">
           <ChartContainer config={chartConfigGeo} className="w-full h-[300px] print:h-[250px]">
-            <BarChart data={geographicOpportunityWithColors} layout="vertical">
+            <BarChart data={transformedGeoData} layout="vertical">
               <XAxis type="number" />
-              <YAxis dataKey="name" type="category" width={80} />
-              <ChartTooltipContent />
-              <Legend />
-              <Bar dataKey="value" radius={4}>
-                <LabelList dataKey="value" position="right" />
-                {geographicOpportunityWithColors.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.fill} />
-                ))}
-              </Bar>
+              <YAxis 
+                dataKey="name" 
+                type="category" 
+                width={80}
+                tickFormatter={() => ''}
+                axisLine={false}
+                tickLine={false}
+              />
+              <ChartTooltipContent 
+                formatter={(value: number, name: string) => {
+                  const regionIndex = name.split('_')[1];
+                  const regionName = data.geographicOpportunity[parseInt(regionIndex)]?.name || name;
+                  return [value, regionName];
+                }}
+              />
+              {data.geographicOpportunity.map((item, index) => (
+                <Bar 
+                  key={`region_${index}`}
+                  dataKey={`region_${index}`} 
+                  fill={geoColors[index]}
+                  radius={4}
+                  name={item.name}
+                >
+                  <LabelList 
+                    dataKey={`region_${index}`} 
+                    position="right"
+                    formatter={(value: number, entry: any) => {
+                      const regionIndex = Object.keys(entry).find(key => key.startsWith('region_') && !key.includes('_name') && entry[key] === value)?.split('_')[1];
+                      return regionIndex !== undefined ? data.geographicOpportunity[parseInt(regionIndex)]?.name : '';
+                    }}
+                  />
+                </Bar>
+              ))}
             </BarChart>
           </ChartContainer>
         </CardContent>
