@@ -49,7 +49,7 @@ const EnhancedPrintView: React.FC<EnhancedPrintViewProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <>
       {/* Print controls - hidden when printing */}
       <div className="print:hidden fixed top-4 right-4 z-50 flex gap-2">
         <Button onClick={handlePrint} className="flex items-center gap-2">
@@ -62,46 +62,34 @@ const EnhancedPrintView: React.FC<EnhancedPrintViewProps> = ({
         </Button>
       </div>
 
-      {/* Print content */}
-      <div className="print-content">
-        {/* Cover Page */}
-        <PrintCoverPage 
-          ideaName={ideaName}
-          score={score}
-          analysisDate={analysisDate}
-        />
+      {/* Print content - remove extra wrapper to prevent empty pages */}
+      <PrintCoverPage 
+        ideaName={ideaName}
+        score={score}
+        analysisDate={analysisDate}
+      />
 
-        {/* Table of Contents */}
-        <PrintTableOfContents />
+      <PrintTableOfContents />
 
-        {/* Executive Summary */}
-        <PrintExecutiveSummary 
-          summary={executiveSummary}
-          recommendation={recommendation}
-          score={score}
-        />
+      <PrintExecutiveSummary 
+        summary={executiveSummary}
+        recommendation={recommendation}
+        score={score}
+      />
 
-        {/* Key Insights */}
-        <PrintKeyInsights metrics={keyMetrics} />
+      <PrintKeyInsights metrics={keyMetrics} />
 
-        {/* Market Analysis */}
-        <PrintMarketAnalysis data={marketAnalysis} />
+      <PrintMarketAnalysis data={marketAnalysis} />
 
-        {/* Competition Analysis */}
-        <PrintCompetitionAnalysis data={competition} />
+      <PrintCompetitionAnalysis data={competition} />
 
-        {/* Financial Analysis */}
-        <PrintFinancialAnalysis data={financialAnalysis} />
+      <PrintFinancialAnalysis data={financialAnalysis} />
 
-        {/* SWOT Analysis */}
-        <PrintSWOTAnalysis data={swot} />
+      <PrintSWOTAnalysis data={swot} />
 
-        {/* Detailed Scores */}
-        <PrintDetailedScores scores={detailedScores} />
+      <PrintDetailedScores scores={detailedScores} />
 
-        {/* Action Items */}
-        <PrintActionItems items={actionItems} />
-      </div>
+      <PrintActionItems items={actionItems} />
 
       {/* Enhanced Print Styles */}
       <style>{`
@@ -143,11 +131,19 @@ const EnhancedPrintView: React.FC<EnhancedPrintViewProps> = ({
             line-height: 1.5;
             color: #1f2937;
             background: white;
+            margin: 0;
+            padding: 0;
           }
           
           /* Hide non-print elements */
           .print\\:hidden {
             display: none !important;
+          }
+          
+          /* Cover page styling - no page break before, should be page 1 */
+          .print-cover-page {
+            min-height: 100vh;
+            break-after: page;
           }
           
           /* Page breaks */
@@ -356,7 +352,7 @@ const EnhancedPrintView: React.FC<EnhancedPrintViewProps> = ({
       
       {/* Watermark */}
       <div className="print-watermark">CONFIDENTIAL</div>
-    </div>
+    </>
   );
 };
 

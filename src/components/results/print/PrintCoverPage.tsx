@@ -26,7 +26,7 @@ const PrintCoverPage: React.FC<PrintCoverPageProps> = ({
   };
 
   return (
-    <div className="print-page-break h-screen flex flex-col justify-between p-8">
+    <div className="print-cover-page min-h-screen flex flex-col justify-between p-8">
       {/* Header with Logo Space */}
       <div className="print-header">
         <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg mb-4"></div>
