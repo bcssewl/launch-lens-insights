@@ -171,6 +171,7 @@ const ResultsPage: React.FC = () => {
               score={score}
               recommendationText={recommendation}
               analysisDate={analysisDate}
+              reportId={reportId}
             />
           </div>
 

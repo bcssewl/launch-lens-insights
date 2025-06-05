@@ -187,6 +187,50 @@ export type Database = {
         }
         Relationships: []
       }
+      report_shares: {
+        Row: {
+          access_level: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          report_id: string
+          share_token: string | null
+          shared_by: string
+          shared_with: string | null
+          updated_at: string
+        }
+        Insert: {
+          access_level: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          report_id: string
+          share_token?: string | null
+          shared_by: string
+          shared_with?: string | null
+          updated_at?: string
+        }
+        Update: {
+          access_level?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          report_id?: string
+          share_token?: string | null
+          shared_by?: string
+          shared_with?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_shares_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "validation_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       validation_reports: {
         Row: {
           completed_at: string | null
@@ -236,6 +280,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_report_share: {
+        Args: {
+          p_report_id: string
+          p_shared_with?: string
+          p_access_level?: string
+          p_expires_in_days?: number
+        }
+        Returns: {
+          share_id: string
+          share_token: string
+          share_url: string
+        }[]
+      }
       verify_user: {
         Args: { jwt_token: string } | { user_id: string }
         Returns: {
