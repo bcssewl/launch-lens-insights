@@ -77,13 +77,13 @@ const MarketAnalysisTabContent: React.FC<MarketAnalysisTabContentProps> = ({ dat
   }));
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <Card>
+    <div className="grid grid-cols-2 gap-4 print:gap-3">
+      <Card className="print:break-inside-avoid">
         <CardHeader>
-          <CardTitle>TAM/SAM/SOM</CardTitle>
+          <CardTitle className="text-sm print:text-xs">TAM/SAM/SOM</CardTitle>
         </CardHeader>
-        <CardContent className="p-6">
-          <ChartContainer config={chartConfigTam} className="w-full h-[400px]">
+        <CardContent className="p-4 print:p-3">
+          <ChartContainer config={chartConfigTam} className="w-full h-[300px] print:h-[250px]">
             <LineChart data={tamSamSomLineData}>
               <XAxis dataKey="name" />
               <YAxis />
@@ -104,12 +104,12 @@ const MarketAnalysisTabContent: React.FC<MarketAnalysisTabContentProps> = ({ dat
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="print:break-inside-avoid">
         <CardHeader>
-          <CardTitle>Market Growth Trend (YoY)</CardTitle>
+          <CardTitle className="text-sm print:text-xs">Market Growth Trend (YoY)</CardTitle>
         </CardHeader>
-        <CardContent className="p-6">
-          <ChartContainer config={chartConfigGrowth} className="w-full h-[400px]">
+        <CardContent className="p-4 print:p-3">
+          <ChartContainer config={chartConfigGrowth} className="w-full h-[300px] print:h-[250px]">
             <LineChart data={data.marketGrowth}>
               <XAxis dataKey="year" />
               <YAxis />
@@ -123,12 +123,12 @@ const MarketAnalysisTabContent: React.FC<MarketAnalysisTabContentProps> = ({ dat
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="print:break-inside-avoid">
         <CardHeader>
-          <CardTitle>Customer Segment Breakdown</CardTitle>
+          <CardTitle className="text-sm print:text-xs">Customer Segment Breakdown</CardTitle>
         </CardHeader>
-        <CardContent className="p-6">
-           <ChartContainer config={chartConfigSegments} className="w-full h-[400px]">
+        <CardContent className="p-4 print:p-3">
+           <ChartContainer config={chartConfigSegments} className="w-full h-[300px] print:h-[250px]">
             <PieChart>
               <ChartTooltipContent nameKey="name" hideLabel />
               <Pie 
@@ -137,7 +137,7 @@ const MarketAnalysisTabContent: React.FC<MarketAnalysisTabContentProps> = ({ dat
                 nameKey="name" 
                 cx="50%" 
                 cy="50%" 
-                outerRadius={120} 
+                outerRadius={100} 
                 labelLine={false}
                 label={renderPieLabel(customerSegmentsWithColors)}
               >
@@ -151,15 +151,15 @@ const MarketAnalysisTabContent: React.FC<MarketAnalysisTabContentProps> = ({ dat
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="print:break-inside-avoid">
         <CardHeader>
-          <CardTitle>Geographic Opportunity</CardTitle>
+          <CardTitle className="text-sm print:text-xs">Geographic Opportunity</CardTitle>
         </CardHeader>
-        <CardContent className="p-6">
-          <ChartContainer config={chartConfigGeo} className="w-full h-[400px]">
+        <CardContent className="p-4 print:p-3">
+          <ChartContainer config={chartConfigGeo} className="w-full h-[300px] print:h-[250px]">
             <BarChart data={geographicOpportunityWithColors} layout="vertical">
               <XAxis type="number" />
-              <YAxis dataKey="name" type="category" width={100} />
+              <YAxis dataKey="name" type="category" width={80} />
               <ChartTooltipContent />
               <Legend />
               <Bar dataKey="value" radius={4}>
