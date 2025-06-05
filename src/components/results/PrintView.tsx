@@ -1,15 +1,7 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Printer, X } from 'lucide-react';
-import ResultsHeader from '@/components/results/ResultsHeader';
-import OverviewTabContent from '@/components/results/OverviewTabContent';
-import MarketAnalysisTabContent from '@/components/results/MarketAnalysisTabContent';
-import CompetitionTabContent from '@/components/results/CompetitionTabContent';
-import FinancialAnalysisTabContent from '@/components/results/FinancialAnalysisTabContent';
-import SWOTAnalysisTabContent from '@/components/results/SWOTAnalysisTabContent';
-import DetailedScoresTabContent from '@/components/results/DetailedScoresTabContent';
-import ActionItemsTabContent from '@/components/results/ActionItemsTabContent';
+import { Printer, X, FileText } from 'lucide-react';
+import EnhancedPrintView from './EnhancedPrintView';
 
 interface PrintViewProps {
   ideaName: string;
@@ -27,34 +19,32 @@ interface PrintViewProps {
   onClose: () => void;
 }
 
-const PrintView: React.FC<PrintViewProps> = ({
-  ideaName,
-  score,
-  recommendation,
-  analysisDate,
-  executiveSummary,
-  keyMetrics,
-  marketAnalysis,
-  competition,
-  financialAnalysis,
-  swot,
-  detailedScores,
-  actionItems,
-  onClose
-}) => {
+const PrintView: React.FC<PrintViewProps> = (props) => {
+  const [useEnhancedView, setUseEnhancedView] = React.useState(true);
+
   const handlePrint = () => {
     window.print();
   };
 
+  // Use the enhanced print view by default
+  if (useEnhancedView) {
+    return <EnhancedPrintView {...props} />;
+  }
+
+  // Keep the original print view as fallback
   return (
     <div className="min-h-screen bg-white">
       {/* Print controls - hidden when printing */}
       <div className="print:hidden fixed top-4 right-4 z-50 flex gap-2">
+        <Button onClick={() => setUseEnhancedView(true)} variant="outline" className="flex items-center gap-2">
+          <FileText className="h-4 w-4" />
+          Enhanced Layout
+        </Button>
         <Button onClick={handlePrint} className="flex items-center gap-2">
           <Printer className="h-4 w-4" />
           Print / Save as PDF
         </Button>
-        <Button variant="outline" onClick={onClose} className="flex items-center gap-2">
+        <Button variant="outline" onClick={props.onClose} className="flex items-center gap-2">
           <X className="h-4 w-4" />
           Close
         </Button>
