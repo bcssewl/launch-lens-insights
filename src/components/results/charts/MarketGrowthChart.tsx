@@ -25,7 +25,7 @@ const MarketGrowthChart: React.FC<MarketGrowthChartProps> = ({ data }) => {
             <YAxis />
             <ChartTooltipContent />
             <Legend />
-            <Line type="monotone" dataKey="growth" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={{ fill: "hsl(var(--chart-1))", r: 6 }}>
+            <Line type="monotone" dataKey="growth" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={false}>
               <LabelList dataKey="growth" position="top" formatter={(value: number) => `${value}%`} />
             </Line>
           </LineChart>
