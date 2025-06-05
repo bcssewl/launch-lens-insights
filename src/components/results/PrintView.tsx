@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Printer, X } from 'lucide-react';
@@ -72,7 +73,7 @@ const PrintView: React.FC<PrintViewProps> = ({
         </div>
 
         {/* Overview Section */}
-        <div className="space-y-4 print:break-before-page print:break-inside-avoid-page">
+        <div className="space-y-4 print:break-before-page print:break-inside-avoid">
           <h2 className="text-2xl font-bold text-gray-900 border-b border-gray-200 pb-2 print:break-after-avoid">
             Executive Overview
           </h2>
@@ -85,7 +86,7 @@ const PrintView: React.FC<PrintViewProps> = ({
         </div>
 
         {/* Market Analysis Section */}
-        <div className="space-y-4 print:break-before-page print:break-inside-avoid-page">
+        <div className="space-y-4 print:break-before-page print:break-inside-avoid">
           <h2 className="text-2xl font-bold text-gray-900 border-b border-gray-200 pb-2 print:break-after-avoid">
             Market Analysis
           </h2>
@@ -95,7 +96,7 @@ const PrintView: React.FC<PrintViewProps> = ({
         </div>
 
         {/* Competition Section */}
-        <div className="space-y-4 print:break-before-page print:break-inside-avoid-page">
+        <div className="space-y-4 print:break-before-page print:break-inside-avoid">
           <h2 className="text-2xl font-bold text-gray-900 border-b border-gray-200 pb-2 print:break-after-avoid">
             Competition Analysis
           </h2>
@@ -105,7 +106,7 @@ const PrintView: React.FC<PrintViewProps> = ({
         </div>
 
         {/* Financial Analysis Section */}
-        <div className="space-y-4 print:break-before-page print:break-inside-avoid-page">
+        <div className="space-y-4 print:break-before-page print:break-inside-avoid">
           <h2 className="text-2xl font-bold text-gray-900 border-b border-gray-200 pb-2 print:break-after-avoid">
             Financial Analysis
           </h2>
@@ -115,7 +116,7 @@ const PrintView: React.FC<PrintViewProps> = ({
         </div>
 
         {/* SWOT Analysis Section */}
-        <div className="space-y-4 print:break-before-page print:break-inside-avoid-page">
+        <div className="space-y-4 print:break-before-page print:break-inside-avoid">
           <h2 className="text-2xl font-bold text-gray-900 border-b border-gray-200 pb-2 print:break-after-avoid">
             SWOT Analysis
           </h2>
@@ -125,7 +126,7 @@ const PrintView: React.FC<PrintViewProps> = ({
         </div>
 
         {/* Detailed Scores Section */}
-        <div className="space-y-4 print:break-before-page print:break-inside-avoid-page">
+        <div className="space-y-4 print:break-before-page print:break-inside-avoid">
           <h2 className="text-2xl font-bold text-gray-900 border-b border-gray-200 pb-2 print:break-after-avoid">
             Detailed Scores
           </h2>
@@ -135,7 +136,7 @@ const PrintView: React.FC<PrintViewProps> = ({
         </div>
 
         {/* Action Items Section */}
-        <div className="space-y-4 print:break-before-page print:break-inside-avoid-page">
+        <div className="space-y-4 print:break-before-page print:break-inside-avoid">
           <h2 className="text-2xl font-bold text-gray-900 border-b border-gray-200 pb-2 print:break-after-avoid">
             Recommended Actions
           </h2>
@@ -177,10 +178,6 @@ const PrintView: React.FC<PrintViewProps> = ({
             break-inside: avoid;
           }
           
-          .print\\:break-inside-avoid-page {
-            break-inside: avoid-page;
-          }
-          
           /* Widow and orphan control */
           * {
             orphans: 3;
@@ -208,8 +205,11 @@ const PrintView: React.FC<PrintViewProps> = ({
             margin-top: 1.5rem;
           }
           
-          /* Ensure tables don't break poorly */
-          table {
+          /* Ensure content blocks stay together */
+          .space-y-4 > div,
+          .space-y-6 > div,
+          .grid > div,
+          [class*="Card"] {
             break-inside: avoid;
           }
           
@@ -218,13 +218,35 @@ const PrintView: React.FC<PrintViewProps> = ({
             break-inside: avoid;
           }
           
-          /* Optimize card layouts for print */
-          .grid {
+          /* Tables and data structures */
+          table,
+          .table-container {
             break-inside: avoid;
           }
           
-          /* Ensure action items stay together */
-          .space-y-4 > div {
+          /* Action items and list items */
+          .action-item,
+          .list-item {
+            break-inside: avoid;
+          }
+          
+          /* Ensure metric cards and similar small components stay together */
+          .metric-card,
+          .score-item,
+          .swot-item {
+            break-inside: avoid;
+          }
+          
+          /* Large content blocks that might need page breaks */
+          .large-content > * {
+            break-inside: avoid;
+          }
+          
+          /* Force page break for elements that would be cut */
+          .chart-container,
+          .large-table,
+          .financial-chart {
+            break-before: page;
             break-inside: avoid;
           }
         }
