@@ -48,11 +48,23 @@ const getChartColors = (count: number) => {
   return Array.from({ length: count }, (_, i) => colors[i % colors.length]);
 };
 
-// Custom label function with percentage calculation
+// Format numbers with B/M/K abbreviations and dollar sign
+const formatCurrency = (value: number) => {
+  if (value >= 1000000000) {
+    return `$${(value / 1000000000).toFixed(1)}B`;
+  } else if (value >= 1000000) {
+    return `$${(value / 1000000).toFixed(1)}M`;
+  } else if (value >= 1000) {
+    return `$${(value / 1000).toFixed(1)}K`;
+  }
+  return `$${value.toFixed(0)}`;
+};
+
+// Custom label function with percentage calculation and formatted currency
 const renderPieLabel = (data: any[]) => (entry: any) => {
   const total = data.reduce((sum, item) => sum + item.value, 0);
   const percent = ((entry.value / total) * 100).toFixed(1);
-  return `${entry.value}\n(${percent}%)`;
+  return `${formatCurrency(entry.value)}\n(${percent}%)`;
 };
 
 const MarketAnalysisTabContent: React.FC<MarketAnalysisTabContentProps> = ({ data }) => {
@@ -83,7 +95,11 @@ const MarketAnalysisTabContent: React.FC<MarketAnalysisTabContentProps> = ({ dat
         <CardContent className="p-4 print:p-3">
           <ChartContainer config={chartConfigTam} className="w-full h-[300px] print:h-[250px]">
             <PieChart>
-              <ChartTooltipContent nameKey="name" hideLabel />
+              <ChartTooltipContent 
+                nameKey="name" 
+                hideLabel 
+                formatter={(value: number) => [formatCurrency(value), ""]}
+              />
               <Pie 
                 data={tamSamSomWithColors} 
                 dataKey="value" 
