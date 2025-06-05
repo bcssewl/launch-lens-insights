@@ -16,9 +16,7 @@ interface MarketAnalysisTabContentProps {
 }
 
 const chartConfigTam = {
-  tam: { label: "TAM", color: "hsl(var(--chart-1))" },
-  sam: { label: "SAM", color: "hsl(var(--chart-2))" },
-  som: { label: "SOM", color: "hsl(var(--chart-3))" },
+  value: { label: "Market Size", color: "hsl(var(--primary))" },
 };
 
 const chartConfigGrowth = {
@@ -51,12 +49,6 @@ const getChartColors = (count: number) => {
   return Array.from({ length: count }, (_, i) => colors[i % colors.length]);
 };
 
-// Custom label function for pie charts
-const renderCustomizedLabel = (entry: any) => {
-  const percent = ((entry.value / entry.payload.total) * 100).toFixed(1);
-  return `${entry.value} (${percent}%)`;
-};
-
 // Custom label function with percentage calculation
 const renderPieLabel = (data: any[]) => (entry: any) => {
   const total = data.reduce((sum, item) => sum + item.value, 0);
@@ -65,10 +57,11 @@ const renderPieLabel = (data: any[]) => (entry: any) => {
 };
 
 const MarketAnalysisTabContent: React.FC<MarketAnalysisTabContentProps> = ({ data }) => {
-  // Assign colors to TAM/SAM/SOM data
-  const tamSamSomWithColors = data.tamSamSom.map((item, index) => ({
-    ...item,
-    fill: item.fill || getChartColors(data.tamSamSom.length)[index]
+  // Transform TAM/SAM/SOM data for line chart
+  const tamSamSomLineData = data.tamSamSom.map((item, index) => ({
+    name: item.name,
+    value: item.value,
+    order: index
   }));
 
   // Assign colors to customer segments data
@@ -91,25 +84,22 @@ const MarketAnalysisTabContent: React.FC<MarketAnalysisTabContentProps> = ({ dat
         </CardHeader>
         <CardContent className="p-6">
           <ChartContainer config={chartConfigTam} className="w-full h-[400px]">
-            <PieChart>
-              <ChartTooltipContent nameKey="name" hideLabel />
-              <Pie 
-                data={tamSamSomWithColors} 
-                dataKey="value" 
-                nameKey="name" 
-                cx="50%" 
-                cy="50%" 
-                outerRadius={120} 
-                innerRadius={60} 
-                labelLine={false}
-                label={renderPieLabel(tamSamSomWithColors)}
-              >
-                {tamSamSomWithColors.map((entry, index) => (
-                  <Cell key={`cell-${entry.name}`} fill={entry.fill} />
-                ))}
-              </Pie>
+            <LineChart data={tamSamSomLineData}>
+              <XAxis dataKey="name" />
+              <YAxis />
+              <ChartTooltipContent />
               <Legend />
-            </PieChart>
+              <Line 
+                type="monotone" 
+                dataKey="value" 
+                stroke="hsl(var(--primary))" 
+                strokeWidth={3} 
+                dot={{ fill: "hsl(var(--primary))", r: 8 }}
+                activeDot={{ r: 10, fill: "hsl(var(--primary))" }}
+              >
+                <LabelList dataKey="value" position="top" />
+              </Line>
+            </LineChart>
           </ChartContainer>
         </CardContent>
       </Card>
