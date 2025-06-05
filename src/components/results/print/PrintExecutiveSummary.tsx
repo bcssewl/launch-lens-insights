@@ -53,34 +53,33 @@ const PrintExecutiveSummary: React.FC<PrintExecutiveSummaryProps> = ({
 
   return (
     <div className="print-page-break print-section">
-      {/* Section Header with Icon */}
-      <div className="flex items-center gap-4 mb-8">
-        <div className="w-12 h-12 bg-gradient-to-br from-slate-600 to-slate-700 rounded-xl flex items-center justify-center">
-          <PrintIcon name="executive-summary" size={24} color="white" />
+      {/* Compact Section Header */}
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-10 h-10 bg-gradient-to-br from-slate-600 to-slate-700 rounded-xl flex items-center justify-center">
+          <PrintIcon name="executive-summary" size={20} color="white" />
         </div>
         <h2 className="print-title-2 text-slate-800">1.0 Executive Summary</h2>
       </div>
       
-      {/* Enhanced Strategic Recommendation Card */}
-      <div className="relative mb-8">
-        <div className="absolute inset-0 bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-lg"></div>
+      {/* Compressed Strategic Recommendation Card */}
+      <div className="relative mb-4">
         <div 
-          className="relative p-8 rounded-2xl border-l-8"
+          className="p-4 rounded-xl border-l-6"
           style={{ 
             backgroundColor: recData.bgColor,
             borderLeftColor: recData.borderColor
           }}
         >
-          <div className="flex justify-between items-start mb-6">
+          <div className="flex justify-between items-start mb-3">
             <div className="flex-1">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-sm">
-                  <PrintIcon name="insight" size={18} color={recData.color} />
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-6 h-6 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                  <PrintIcon name="insight" size={14} color={recData.color} />
                 </div>
-                <h3 className="print-title-3 text-gray-800">Strategic Recommendation</h3>
+                <h3 className="text-sm font-semibold text-gray-800">Strategic Recommendation</h3>
               </div>
               <div 
-                className="inline-block px-6 py-3 rounded-xl font-bold text-lg shadow-lg"
+                className="inline-block px-4 py-2 rounded-lg font-bold text-sm shadow-md"
                 style={{ 
                   backgroundColor: recData.color,
                   color: 'white'
@@ -88,9 +87,9 @@ const PrintExecutiveSummary: React.FC<PrintExecutiveSummaryProps> = ({
               >
                 {recData.status}
               </div>
-              <div className="mt-3">
+              <div className="mt-2">
                 <span 
-                  className="inline-block px-3 py-1 rounded-full text-xs font-semibold"
+                  className="inline-block px-2 py-1 rounded-full text-xs font-semibold"
                   style={{ 
                     backgroundColor: recData.color + '20',
                     color: recData.color
@@ -100,42 +99,42 @@ const PrintExecutiveSummary: React.FC<PrintExecutiveSummaryProps> = ({
                 </span>
               </div>
             </div>
-            <div className="text-right ml-6">
-              <div className="bg-white rounded-2xl p-4 shadow-md">
+            <div className="text-right ml-4">
+              <div className="bg-white rounded-xl p-3 shadow-md">
                 <div 
-                  className="text-4xl font-black mb-1"
+                  className="text-2xl font-black mb-1"
                   style={{ color: recData.color }}
                 >
                   {score.toFixed(1)}
                 </div>
-                <div className="text-sm text-gray-600 font-semibold">Overall Score</div>
+                <div className="text-xs text-gray-600 font-semibold">Overall Score</div>
               </div>
             </div>
           </div>
           
-          {/* Key Metrics Grid */}
-          <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-gray-200">
+          {/* Compact Key Metrics Grid */}
+          <div className="grid grid-cols-3 gap-3 mt-3 pt-3 border-t border-gray-200">
             <div className="text-center">
-              <div className="text-sm font-semibold text-gray-700 mb-1">Risk Level</div>
+              <div className="text-xs font-semibold text-gray-700 mb-1">Risk Level</div>
               <div 
-                className="text-lg font-bold"
+                className="text-sm font-bold"
                 style={{ color: recData.color }}
               >
                 {recData.risk}
               </div>
             </div>
             <div className="text-center">
-              <div className="text-sm font-semibold text-gray-700 mb-1">Confidence</div>
+              <div className="text-xs font-semibold text-gray-700 mb-1">Confidence</div>
               <div 
-                className="text-lg font-bold"
+                className="text-sm font-bold"
                 style={{ color: recData.color }}
               >
                 {recData.confidence}
               </div>
             </div>
             <div className="text-center">
-              <div className="text-sm font-semibold text-gray-700 mb-1">Market Timing</div>
-              <div className="text-lg font-bold text-emerald-600">
+              <div className="text-xs font-semibold text-gray-700 mb-1">Market Timing</div>
+              <div className="text-sm font-bold text-emerald-600">
                 Optimal
               </div>
             </div>
@@ -143,74 +142,66 @@ const PrintExecutiveSummary: React.FC<PrintExecutiveSummaryProps> = ({
         </div>
       </div>
 
-      {/* Business Concept Overview */}
-      <div className="print-avoid-break mb-8">
-        <h3 className="print-title-3 flex items-center gap-2 mb-4">
-          <PrintIcon name="market-analysis" size={18} color="#475569" />
-          Business Concept Overview
+      {/* Consolidated Analysis Section */}
+      <div className="print-avoid-break mb-4">
+        <h3 className="text-sm font-semibold flex items-center gap-2 mb-3 text-slate-700">
+          <PrintIcon name="market-analysis" size={16} color="#475569" />
+          Business Analysis & Recommendation
         </h3>
-        <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
-          <p className="print-body leading-relaxed text-gray-700">{summary}</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+            <h4 className="text-xs font-semibold text-gray-700 mb-2">Business Concept</h4>
+            <p className="text-xs leading-relaxed text-gray-700">{summary}</p>
+          </div>
+          <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+            <h4 className="text-xs font-semibold text-gray-700 mb-2">Detailed Recommendation</h4>
+            <p className="text-xs leading-relaxed text-gray-700">{recommendation}</p>
+          </div>
         </div>
       </div>
 
-      {/* Detailed Analysis & Recommendation */}
-      <div className="print-avoid-break mb-8">
-        <h3 className="print-title-3 flex items-center gap-2 mb-4">
-          <PrintIcon name="key-insights" size={18} color="#475569" />
-          Detailed Analysis & Recommendation
-        </h3>
-        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
-          <p className="print-body leading-relaxed text-gray-700">{recommendation}</p>
-        </div>
-      </div>
-
-      {/* Enhanced Key Takeaways */}
+      {/* Compact Key Takeaways */}
       <div className="print-avoid-break">
-        <h3 className="print-title-3 flex items-center gap-2 mb-4">
-          <PrintIcon name="insight" size={18} color="#475569" />
+        <h3 className="text-sm font-semibold flex items-center gap-2 mb-3 text-slate-700">
+          <PrintIcon name="insight" size={16} color="#475569" />
           Key Takeaways & Critical Success Factors
         </h3>
-        <div className="bg-gradient-to-br from-slate-50 to-gray-50 rounded-2xl p-6 border border-slate-200">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <PrintIcon name="strengths" size={14} color="white" />
-                </div>
-                <div>
-                  <span className="font-semibold text-gray-800">Primary Strength:</span>
-                  <span className="text-gray-700 ml-2">Market opportunity validation</span>
-                </div>
+        <div className="bg-gradient-to-br from-slate-50 to-gray-50 rounded-xl p-4 border border-slate-200">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="flex items-start gap-2">
+              <div className="w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <PrintIcon name="strengths" size={12} color="white" />
               </div>
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-slate-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <PrintIcon name="actions" size={14} color="white" />
-                </div>
-                <div>
-                  <span className="font-semibold text-gray-800">Next Step:</span>
-                  <span className="text-gray-700 ml-2">Market validation research</span>
-                </div>
+              <div>
+                <span className="text-xs font-semibold text-gray-800 block">Primary Strength</span>
+                <span className="text-xs text-gray-600">Market opportunity validation</span>
               </div>
             </div>
-            <div className="space-y-4">
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <PrintIcon name="weaknesses" size={14} color="white" />
-                </div>
-                <div>
-                  <span className="font-semibold text-gray-800">Main Challenge:</span>
-                  <span className="text-gray-700 ml-2">Competitive differentiation</span>
-                </div>
+            <div className="flex items-start gap-2">
+              <div className="w-5 h-5 bg-slate-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <PrintIcon name="actions" size={12} color="white" />
               </div>
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-violet-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <PrintIcon name="detailed-scores" size={14} color="white" />
-                </div>
-                <div>
-                  <span className="font-semibold text-gray-800">Timeline:</span>
-                  <span className="text-gray-700 ml-2">3-6 months to MVP</span>
-                </div>
+              <div>
+                <span className="text-xs font-semibold text-gray-800 block">Next Step</span>
+                <span className="text-xs text-gray-600">Market validation research</span>
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <div className="w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <PrintIcon name="weaknesses" size={12} color="white" />
+              </div>
+              <div>
+                <span className="text-xs font-semibold text-gray-800 block">Main Challenge</span>
+                <span className="text-xs text-gray-600">Competitive differentiation</span>
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <div className="w-5 h-5 bg-violet-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <PrintIcon name="detailed-scores" size={12} color="white" />
+              </div>
+              <div>
+                <span className="text-xs font-semibold text-gray-800 block">Timeline</span>
+                <span className="text-xs text-gray-600">3-6 months to MVP</span>
               </div>
             </div>
           </div>
