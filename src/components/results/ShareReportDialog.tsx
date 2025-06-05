@@ -48,6 +48,13 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
   const createShare = async () => {
     setLoading(true);
     try {
+      console.log('Creating share with params:', {
+        p_report_id: reportId,
+        p_shared_with: shareType === 'specific' && email ? email : null,
+        p_access_level: accessLevel,
+        p_expires_in_days: parseInt(expirationDays),
+      });
+
       const { data, error } = await supabase.rpc('create_report_share', {
         p_report_id: reportId,
         p_shared_with: shareType === 'specific' && email ? email : null,
@@ -55,22 +62,31 @@ const ShareReportDialog: React.FC<ShareReportDialogProps> = ({
         p_expires_in_days: parseInt(expirationDays),
       });
 
-      if (error) throw error;
+      console.log('RPC response:', { data, error });
+
+      if (error) {
+        console.error('RPC error:', error);
+        throw error;
+      }
 
       if (data && data.length > 0) {
-        setShareUrl(data[0].share_url);
+        const shareData = data[0];
+        console.log('Share data received:', shareData);
+        setShareUrl(shareData.share_url);
         toast({
           title: 'Share link created',
           description: shareType === 'specific' 
             ? `Report shared with ${email}` 
             : 'Public share link generated',
         });
+      } else {
+        throw new Error('No share data returned from function');
       }
     } catch (error) {
       console.error('Error creating share:', error);
       toast({
         title: 'Error',
-        description: 'Failed to create share link',
+        description: error instanceof Error ? error.message : 'Failed to create share link',
         variant: 'destructive',
       });
     } finally {
