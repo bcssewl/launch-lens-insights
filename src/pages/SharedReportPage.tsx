@@ -51,6 +51,8 @@ const SharedReportPage: React.FC = () => {
       try {
         setLoading(true);
         
+        console.log('Fetching shared report with token:', shareToken);
+        
         // Fetch the shared report using the share token
         const { data: shareData, error: shareError } = await supabase
           .from('report_shares')
@@ -70,7 +72,10 @@ const SharedReportPage: React.FC = () => {
           .eq('share_token', shareToken)
           .single();
 
+        console.log('Share query result:', { shareData, shareError });
+
         if (shareError) {
+          console.error('Share error:', shareError);
           if (shareError.code === 'PGRST116') {
             setError('Share link not found or has expired');
           } else {
@@ -96,10 +101,11 @@ const SharedReportPage: React.FC = () => {
           expires_at: shareData.expires_at,
         };
 
+        console.log('Transformed report:', transformedReport);
         setReport(transformedReport);
       } catch (err) {
-        setError('Failed to fetch shared report');
         console.error('Error fetching shared report:', err);
+        setError('Failed to fetch shared report');
       } finally {
         setLoading(false);
       }
