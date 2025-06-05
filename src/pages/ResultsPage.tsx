@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from '@/components/ui/button';
-import { Download, MessageSquare, PlusCircle, Save, ArrowLeft } from 'lucide-react';
+import { Printer, MessageSquare, PlusCircle, Save, ArrowLeft } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -15,6 +15,7 @@ import SWOTAnalysisTabContent from '@/components/results/SWOTAnalysisTabContent'
 import DetailedScoresTabContent from '@/components/results/DetailedScoresTabContent';
 import ActionItemsTabContent from '@/components/results/ActionItemsTabContent';
 import FinancialAnalysisTabContent from '@/components/results/FinancialAnalysisTabContent';
+import PrintView from '@/components/results/PrintView';
 import { useValidationReport } from '@/hooks/useValidationReport';
 import { generateReportPDF } from '@/utils/pdfGenerator';
 import { format } from 'date-fns';
@@ -23,6 +24,7 @@ const ResultsPage: React.FC = () => {
   const { reportId } = useParams<{ reportId: string }>();
   const navigate = useNavigate();
   const { report, loading, error } = useValidationReport(reportId || '');
+  const [showPrintView, setShowPrintView] = useState(false);
 
   const handleAIFollowUp = () => {
     navigate('/dashboard/assistant');
@@ -32,25 +34,12 @@ const ResultsPage: React.FC = () => {
     navigate('/dashboard/reports');
   };
 
-  const handleDownloadPDF = () => {
-    if (!report) return;
+  const handleOpenPrintView = () => {
+    setShowPrintView(true);
+  };
 
-    const pdfData = {
-      ideaName,
-      score,
-      recommendation,
-      analysisDate,
-      executiveSummary,
-      keyMetrics,
-      marketAnalysis,
-      competition,
-      financialAnalysis,
-      swot,
-      detailedScores,
-      actionItems
-    };
-
-    generateReportPDF(pdfData);
+  const handleClosePrintView = () => {
+    setShowPrintView(false);
   };
 
   if (loading) {
@@ -139,6 +128,27 @@ const ResultsPage: React.FC = () => {
   const detailedScores = reportData.detailedScores || [];
   const actionItems = reportData.actionItems || [];
 
+  // Show print view if requested
+  if (showPrintView) {
+    return (
+      <PrintView
+        ideaName={ideaName}
+        score={score}
+        recommendation={recommendation}
+        analysisDate={analysisDate}
+        executiveSummary={executiveSummary}
+        keyMetrics={keyMetrics}
+        marketAnalysis={marketAnalysis}
+        competition={competition}
+        financialAnalysis={financialAnalysis}
+        swot={swot}
+        detailedScores={detailedScores}
+        actionItems={actionItems}
+        onClose={handleClosePrintView}
+      />
+    );
+  }
+
   return (
     <DashboardLayout>
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
@@ -223,8 +233,8 @@ const ResultsPage: React.FC = () => {
 
           <div className="w-full border-t border-border/50 pt-8 mt-8">
             <div className="flex flex-col sm:flex-row gap-3 justify-end">
-              <Button variant="outline" size="sm" className="w-full sm:w-auto apple-button-outline" onClick={handleDownloadPDF}>
-                <Download className="mr-2 h-4 w-4" /> Download PDF
+              <Button variant="outline" size="sm" className="w-full sm:w-auto apple-button-outline" onClick={handleOpenPrintView}>
+                <Printer className="mr-2 h-4 w-4" /> Print / Save as PDF
               </Button>
               <Button variant="outline" size="sm" className="w-full sm:w-auto apple-button-outline" onClick={handleAIFollowUp}>
                 <MessageSquare className="mr-2 h-4 w-4" /> Ask AI Follow-up
