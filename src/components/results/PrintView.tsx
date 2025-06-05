@@ -73,7 +73,7 @@ const PrintView: React.FC<PrintViewProps> = ({
         </div>
 
         {/* Overview Section */}
-        <div className="space-y-4 print:break-after-page">
+        <div className="space-y-4 print:break-before-page">
           <h2 className="text-2xl font-bold text-gray-900 border-b border-gray-200 pb-2">
             Executive Overview
           </h2>
@@ -84,7 +84,7 @@ const PrintView: React.FC<PrintViewProps> = ({
         </div>
 
         {/* Market Analysis Section */}
-        <div className="space-y-4 print:break-after-page">
+        <div className="space-y-4 print:break-before-page">
           <h2 className="text-2xl font-bold text-gray-900 border-b border-gray-200 pb-2">
             Market Analysis
           </h2>
@@ -92,7 +92,7 @@ const PrintView: React.FC<PrintViewProps> = ({
         </div>
 
         {/* Competition Section */}
-        <div className="space-y-4 print:break-after-page">
+        <div className="space-y-4 print:break-before-page">
           <h2 className="text-2xl font-bold text-gray-900 border-b border-gray-200 pb-2">
             Competition Analysis
           </h2>
@@ -100,7 +100,7 @@ const PrintView: React.FC<PrintViewProps> = ({
         </div>
 
         {/* Financial Analysis Section */}
-        <div className="space-y-4 print:break-after-page">
+        <div className="space-y-4 print:break-before-page">
           <h2 className="text-2xl font-bold text-gray-900 border-b border-gray-200 pb-2">
             Financial Analysis
           </h2>
@@ -108,7 +108,7 @@ const PrintView: React.FC<PrintViewProps> = ({
         </div>
 
         {/* SWOT Analysis Section */}
-        <div className="space-y-4 print:break-after-page">
+        <div className="space-y-4 print:break-before-page">
           <h2 className="text-2xl font-bold text-gray-900 border-b border-gray-200 pb-2">
             SWOT Analysis
           </h2>
@@ -116,7 +116,7 @@ const PrintView: React.FC<PrintViewProps> = ({
         </div>
 
         {/* Detailed Scores Section */}
-        <div className="space-y-4 print:break-after-page">
+        <div className="space-y-4 print:break-before-page">
           <h2 className="text-2xl font-bold text-gray-900 border-b border-gray-200 pb-2">
             Detailed Scores
           </h2>
@@ -124,7 +124,7 @@ const PrintView: React.FC<PrintViewProps> = ({
         </div>
 
         {/* Action Items Section */}
-        <div className="space-y-4">
+        <div className="space-y-4 print:break-before-page">
           <h2 className="text-2xl font-bold text-gray-900 border-b border-gray-200 pb-2">
             Recommended Actions
           </h2>
@@ -138,6 +138,10 @@ const PrintView: React.FC<PrintViewProps> = ({
           body {
             -webkit-print-color-adjust: exact;
             color-adjust: exact;
+          }
+          
+          .print\\:break-before-page {
+            break-before: page;
           }
           
           .print\\:break-after-page {
