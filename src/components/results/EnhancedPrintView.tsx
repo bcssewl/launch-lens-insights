@@ -52,7 +52,7 @@ const EnhancedPrintView: React.FC<EnhancedPrintViewProps> = ({
     <>
       {/* Print controls - hidden when printing */}
       <div className="print:hidden fixed top-4 right-4 z-50 flex gap-2">
-        <Button onClick={handlePrint} className="flex items-center gap-2">
+        <Button onClick={handlePrint} className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
           <Printer className="h-4 w-4" />
           Print / Save as PDF
         </Button>
@@ -91,31 +91,34 @@ const EnhancedPrintView: React.FC<EnhancedPrintViewProps> = ({
 
       <PrintActionItems items={actionItems} />
 
-      {/* Enhanced Print Styles */}
+      {/* Enhanced Print Styles with Modern Typography and Design */}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
         
         @media print {
           @page {
             size: A4;
             margin: 1.5cm 2cm 2cm 2cm;
             @bottom-center {
-              content: counter(page);
+              content: "Page " counter(page);
               font-family: 'Inter', sans-serif;
               font-size: 10pt;
               color: #6b7280;
+              font-weight: 500;
             }
             @bottom-left {
-              content: "Idea Validation Report";
+              content: "Validator • Idea Validation Report";
               font-family: 'Inter', sans-serif;
-              font-size: 10pt;
+              font-size: 9pt;
               color: #6b7280;
+              font-weight: 400;
             }
             @bottom-right {
-              content: "Generated " attr(data-date);
+              content: "Confidential";
               font-family: 'Inter', sans-serif;
-              font-size: 10pt;
-              color: #6b7280;
+              font-size: 9pt;
+              color: #dc2626;
+              font-weight: 600;
             }
           }
           
@@ -128,11 +131,12 @@ const EnhancedPrintView: React.FC<EnhancedPrintViewProps> = ({
           body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             font-size: 11pt;
-            line-height: 1.5;
+            line-height: 1.6;
             color: #1f2937;
             background: white;
             margin: 0;
             padding: 0;
+            font-weight: 400;
           }
           
           /* Hide non-print elements */
@@ -161,197 +165,268 @@ const EnhancedPrintView: React.FC<EnhancedPrintViewProps> = ({
             widows: 3;
           }
           
-          /* Typography hierarchy */
+          /* Enhanced Typography hierarchy */
           .print-title-1 {
-            font-size: 24pt;
-            font-weight: 700;
-            line-height: 1.2;
+            font-size: 28pt;
+            font-weight: 900;
+            line-height: 1.1;
             color: #111827;
             margin-bottom: 24pt;
+            letter-spacing: -0.02em;
           }
           
           .print-title-2 {
-            font-size: 18pt;
-            font-weight: 600;
-            line-height: 1.3;
+            font-size: 20pt;
+            font-weight: 700;
+            line-height: 1.2;
             color: #1f2937;
-            margin-top: 20pt;
-            margin-bottom: 12pt;
-            border-bottom: 2pt solid #e5e7eb;
-            padding-bottom: 6pt;
+            margin-top: 24pt;
+            margin-bottom: 16pt;
+            border-bottom: 3pt solid #e5e7eb;
+            padding-bottom: 8pt;
+            letter-spacing: -0.01em;
           }
           
           .print-title-3 {
-            font-size: 14pt;
+            font-size: 16pt;
             font-weight: 600;
-            line-height: 1.4;
+            line-height: 1.3;
             color: #374151;
-            margin-top: 16pt;
-            margin-bottom: 8pt;
+            margin-top: 20pt;
+            margin-bottom: 12pt;
+            letter-spacing: -0.005em;
           }
           
           .print-body {
             font-size: 11pt;
-            line-height: 1.6;
+            line-height: 1.7;
             color: #4b5563;
-            margin-bottom: 12pt;
+            margin-bottom: 14pt;
+            font-weight: 400;
           }
           
           .print-caption {
             font-size: 9pt;
             color: #6b7280;
             font-style: italic;
-            margin-top: 4pt;
+            margin-top: 6pt;
+            font-weight: 400;
           }
           
-          /* Layout components */
+          /* Enhanced Layout components */
           .print-section {
-            margin-bottom: 24pt;
+            margin-bottom: 32pt;
             break-inside: avoid;
           }
           
           .print-grid-2 {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 16pt;
+            gap: 20pt;
             break-inside: avoid;
           }
           
           .print-grid-3 {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
-            gap: 12pt;
+            gap: 16pt;
             break-inside: avoid;
           }
           
           .print-card {
             border: 1pt solid #e5e7eb;
-            border-radius: 6pt;
-            padding: 12pt;
+            border-radius: 8pt;
+            padding: 16pt;
             background: #fafafa;
             break-inside: avoid;
-            margin-bottom: 12pt;
+            margin-bottom: 16pt;
+            box-shadow: 0 1pt 3pt rgba(0, 0, 0, 0.1);
           }
           
           .print-metric-card {
             text-align: center;
-            padding: 16pt 12pt;
+            padding: 20pt 16pt;
             border: 1pt solid #d1d5db;
-            border-radius: 8pt;
+            border-radius: 12pt;
             background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
             break-inside: avoid;
+            box-shadow: 0 2pt 4pt rgba(0, 0, 0, 0.05);
           }
           
           .print-metric-value {
-            font-size: 20pt;
-            font-weight: 700;
+            font-size: 24pt;
+            font-weight: 800;
             color: #059669;
             display: block;
-            margin-bottom: 4pt;
+            margin-bottom: 6pt;
+            letter-spacing: -0.02em;
           }
           
           .print-metric-label {
             font-size: 9pt;
             color: #6b7280;
             font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
           }
           
-          /* Charts and visual elements */
+          /* Enhanced Visual elements */
           .recharts-wrapper {
             break-inside: avoid;
-            margin: 12pt 0;
+            margin: 16pt 0;
           }
           
           .print-chart-container {
             background: white;
             border: 1pt solid #e5e7eb;
-            border-radius: 6pt;
-            padding: 12pt;
+            border-radius: 8pt;
+            padding: 16pt;
             break-inside: avoid;
+            box-shadow: 0 1pt 3pt rgba(0, 0, 0, 0.05);
           }
           
-          /* Tables */
+          /* Enhanced Tables */
           .print-table {
             width: 100%;
             border-collapse: collapse;
-            margin: 12pt 0;
+            margin: 16pt 0;
             break-inside: avoid;
+            font-size: 10pt;
           }
           
           .print-table th {
-            background: #f3f4f6;
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
             font-weight: 600;
-            padding: 8pt 12pt;
+            padding: 12pt 16pt;
             border: 1pt solid #d1d5db;
             text-align: left;
+            color: #374151;
           }
           
           .print-table td {
-            padding: 8pt 12pt;
+            padding: 10pt 16pt;
             border: 1pt solid #d1d5db;
+            background: white;
           }
           
-          /* Status indicators */
+          /* Enhanced Status indicators */
           .print-status-high {
-            background: #dcfce7;
+            background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
             color: #166534;
-            padding: 2pt 6pt;
-            border-radius: 4pt;
+            padding: 4pt 8pt;
+            border-radius: 6pt;
             font-size: 9pt;
-            font-weight: 500;
+            font-weight: 600;
+            border: 1pt solid #22c55e;
           }
           
           .print-status-medium {
-            background: #fef3c7;
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
             color: #92400e;
-            padding: 2pt 6pt;
-            border-radius: 4pt;
+            padding: 4pt 8pt;
+            border-radius: 6pt;
             font-size: 9pt;
-            font-weight: 500;
+            font-weight: 600;
+            border: 1pt solid #f59e0b;
           }
           
           .print-status-low {
-            background: #fee2e2;
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
             color: #991b1b;
-            padding: 2pt 6pt;
-            border-radius: 4pt;
+            padding: 4pt 8pt;
+            border-radius: 6pt;
             font-size: 9pt;
-            font-weight: 500;
+            font-weight: 600;
+            border: 1pt solid #ef4444;
           }
           
-          /* Branding elements */
+          /* Enhanced Branding elements */
           .print-watermark {
             position: fixed;
-            bottom: 20pt;
-            right: 20pt;
-            opacity: 0.1;
-            font-size: 48pt;
-            font-weight: 700;
+            bottom: 30pt;
+            right: 30pt;
+            opacity: 0.08;
+            font-size: 64pt;
+            font-weight: 900;
             color: #6b7280;
             transform: rotate(-45deg);
             pointer-events: none;
             z-index: -1;
+            font-family: 'Inter', sans-serif;
           }
           
           .print-header {
             border-bottom: 2pt solid #e5e7eb;
-            padding-bottom: 12pt;
-            margin-bottom: 24pt;
+            padding-bottom: 16pt;
+            margin-bottom: 32pt;
           }
           
           .print-footer {
             border-top: 1pt solid #e5e7eb;
-            padding-top: 12pt;
-            margin-top: 24pt;
+            padding-top: 16pt;
+            margin-top: 32pt;
             font-size: 9pt;
             color: #6b7280;
             text-align: center;
           }
+          
+          /* Glassmorphism effects (simplified for print) */
+          .backdrop-blur-sm,
+          .backdrop-blur-xl {
+            background: rgba(255, 255, 255, 0.9);
+          }
+          
+          /* Gradient text fallback */
+          .bg-clip-text {
+            background: linear-gradient(135deg, #1f2937 0%, #4b5563 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+          }
+          
+          /* Enhanced spacing and readability */
+          h1, h2, h3, h4, h5, h6 {
+            break-after: avoid;
+            orphans: 4;
+            widows: 4;
+          }
+          
+          p, li {
+            orphans: 3;
+            widows: 3;
+          }
+          
+          /* List styling */
+          ul, ol {
+            margin: 12pt 0;
+            padding-left: 20pt;
+          }
+          
+          li {
+            margin-bottom: 6pt;
+            line-height: 1.6;
+          }
+          
+          /* Link styling for digital viewing */
+          a {
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: 500;
+          }
+          
+          /* Code and monospace */
+          code, .font-mono {
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+            font-size: 9pt;
+            background: #f3f4f6;
+            padding: 2pt 4pt;
+            border-radius: 3pt;
+          }
         }
       `}</style>
       
-      {/* Watermark */}
-      <div className="print-watermark">CONFIDENTIAL</div>
+      {/* Enhanced Watermark */}
+      <div className="print-watermark">VALIDATOR</div>
     </>
   );
 };
