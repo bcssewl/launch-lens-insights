@@ -53,52 +53,57 @@ const SharedReportPage: React.FC = () => {
         
         console.log('Fetching shared report with token:', shareToken);
         
-        // Fetch the shared report using the share token
-        const { data: shareData, error: shareError } = await supabase
+        // First, fetch the share record to get the report_id
+        const { data: shareRecord, error: shareError } = await supabase
           .from('report_shares')
-          .select(`
-            access_level,
-            expires_at,
-            report_id,
-            validation_reports!inner(
-              *,
-              idea_validations!inner(
-                id,
-                idea_name,
-                one_line_description
-              )
-            )
-          `)
+          .select('*')
           .eq('share_token', shareToken)
           .single();
 
-        console.log('Share query result:', { shareData, shareError });
+        console.log('Share record result:', { shareRecord, shareError });
 
         if (shareError) {
           console.error('Share error:', shareError);
-          if (shareError.code === 'PGRST116') {
-            setError('Share link not found or has expired');
-          } else {
-            setError(shareError.message);
-          }
+          setError('Share link not found or has expired');
           return;
         }
 
         // Check if the share has expired
-        if (shareData.expires_at && new Date(shareData.expires_at) < new Date()) {
+        if (shareRecord.expires_at && new Date(shareRecord.expires_at) < new Date()) {
           setError('This share link has expired');
           return;
         }
 
+        // Now fetch the validation report using the report_id
+        const { data: reportData, error: reportError } = await supabase
+          .from('validation_reports')
+          .select(`
+            *,
+            idea_validations!inner(
+              id,
+              idea_name,
+              one_line_description
+            )
+          `)
+          .eq('id', shareRecord.report_id)
+          .single();
+
+        console.log('Report query result:', { reportData, reportError });
+
+        if (reportError) {
+          console.error('Report error:', reportError);
+          setError('Report not found');
+          return;
+        }
+
         // Transform the data
-        const reportData = shareData.validation_reports;
         const transformedReport: SharedReportData = {
           ...reportData,
           status: reportData.status as 'generating' | 'completed' | 'failed' | 'archived',
           idea_name: reportData.idea_validations?.idea_name,
           one_line_description: reportData.idea_validations?.one_line_description,
-          access_level: shareData.access_level as 'view' | 'comment' | 'edit',
-          expires_at: shareData.expires_at,
+          access_level: shareRecord.access_level as 'view' | 'comment' | 'edit',
+          expires_at: shareRecord.expires_at,
         };
 
         console.log('Transformed report:', transformedReport);
