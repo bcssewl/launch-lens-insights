@@ -74,12 +74,14 @@ const SharedReportPage: React.FC = () => {
           return;
         }
 
+        console.log('Report ID from share:', shareRecord.report_id);
+
         // Now fetch the validation report using the report_id
         const { data: reportData, error: reportError } = await supabase
           .from('validation_reports')
           .select(`
             *,
-            idea_validations!inner(
+            idea_validations(
               id,
               idea_name,
               one_line_description
@@ -92,7 +94,41 @@ const SharedReportPage: React.FC = () => {
 
         if (reportError) {
           console.error('Report error:', reportError);
-          setError('Report not found');
+          
+          // Try without the join first to see if the report exists
+          const { data: basicReport, error: basicError } = await supabase
+            .from('validation_reports')
+            .select('*')
+            .eq('id', shareRecord.report_id)
+            .single();
+          
+          console.log('Basic report check:', { basicReport, basicError });
+          
+          if (basicError) {
+            setError(`Report not found: ${reportError.message}`);
+          } else {
+            // Report exists but join failed, try to get idea validation separately
+            const { data: ideaData, error: ideaError } = await supabase
+              .from('idea_validations')
+              .select('id, idea_name, one_line_description')
+              .eq('id', basicReport.validation_id)
+              .single();
+            
+            console.log('Idea validation data:', { ideaData, ideaError });
+            
+            // Transform the data even if idea validation is missing
+            const transformedReport: SharedReportData = {
+              ...basicReport,
+              status: basicReport.status as 'generating' | 'completed' | 'failed' | 'archived',
+              idea_name: ideaData?.idea_name || 'Untitled Idea',
+              one_line_description: ideaData?.one_line_description || 'No description available',
+              access_level: shareRecord.access_level as 'view' | 'comment' | 'edit',
+              expires_at: shareRecord.expires_at,
+            };
+
+            console.log('Transformed report (fallback):', transformedReport);
+            setReport(transformedReport);
+          }
           return;
         }
 
@@ -100,8 +136,8 @@ const SharedReportPage: React.FC = () => {
         const transformedReport: SharedReportData = {
           ...reportData,
           status: reportData.status as 'generating' | 'completed' | 'failed' | 'archived',
-          idea_name: reportData.idea_validations?.idea_name,
-          one_line_description: reportData.idea_validations?.one_line_description,
+          idea_name: reportData.idea_validations?.idea_name || 'Untitled Idea',
+          one_line_description: reportData.idea_validations?.one_line_description || 'No description available',
           access_level: shareRecord.access_level as 'view' | 'comment' | 'edit',
           expires_at: shareRecord.expires_at,
         };
