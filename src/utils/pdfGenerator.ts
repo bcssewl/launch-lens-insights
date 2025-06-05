@@ -47,25 +47,34 @@ const captureElementAsImage = async (element: HTMLElement): Promise<string | nul
   try {
     console.log('Capturing element:', element.tagName, element.className);
     
-    // Ensure element is visible
+    // Ensure element is visible and has dimensions
     if (element.offsetWidth === 0 || element.offsetHeight === 0) {
-      console.warn('Element has no dimensions');
+      console.warn('Element has no dimensions, trying to make it visible');
       return null;
     }
 
-    // Wait a bit for any animations to complete
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Wait for any animations to complete
+    await new Promise(resolve => setTimeout(resolve, 100));
 
     const canvas = await html2canvas(element, {
-      scale: 2,
+      scale: 1.5,
       useCORS: true,
       allowTaint: false,
       backgroundColor: '#ffffff',
       logging: false,
       height: element.scrollHeight,
       width: element.scrollWidth,
+      onclone: (clonedDoc) => {
+        // Ensure all styles are properly applied in the clone
+        const clonedElement = clonedDoc.querySelector(`[data-tab-content]`);
+        if (clonedElement) {
+          (clonedElement as HTMLElement).style.display = 'block';
+          (clonedElement as HTMLElement).style.visibility = 'visible';
+        }
+      }
     });
     
+    console.log('Canvas created with dimensions:', canvas.width, 'x', canvas.height);
     return canvas.toDataURL('image/png', 0.9);
   } catch (error) {
     console.error('Error capturing element:', error);
@@ -73,30 +82,67 @@ const captureElementAsImage = async (element: HTMLElement): Promise<string | nul
   }
 };
 
-const addImageToPDF = (pdf: jsPDF, imageData: string, yPosition: number): number => {
+const addImageToPDF = (pdf: jsPDF, imageData: string, yPosition: number, title?: string): number => {
   try {
     const pageWidth = pdf.internal.pageSize.width;
     const pageHeight = pdf.internal.pageSize.height;
     const margin = 10;
     
+    // Add section title if provided
+    if (title) {
+      if (yPosition > pageHeight - 30) {
+        pdf.addPage();
+        yPosition = margin;
+      }
+      
+      pdf.setFontSize(16);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(title, margin, yPosition);
+      yPosition += 15;
+    }
+    
     // Create image to get dimensions
     const img = new Image();
     img.src = imageData;
     
-    // Calculate image dimensions
+    // Calculate image dimensions to fit page
     const maxWidth = pageWidth - 2 * margin;
-    const aspectRatio = img.naturalHeight / img.naturalWidth;
-    const imgWidth = Math.min(maxWidth, img.naturalWidth * 0.3); // Scale down for PDF
-    const imgHeight = imgWidth * aspectRatio;
+    const maxHeight = pageHeight - yPosition - margin;
+    
+    let imgWidth = img.width * 0.2; // Scale down significantly for PDF
+    let imgHeight = img.height * 0.2;
+    
+    // Ensure image fits within page bounds
+    if (imgWidth > maxWidth) {
+      const scale = maxWidth / imgWidth;
+      imgWidth = maxWidth;
+      imgHeight = imgHeight * scale;
+    }
+    
+    if (imgHeight > maxHeight) {
+      const scale = maxHeight / imgHeight;
+      imgHeight = maxHeight;
+      imgWidth = imgWidth * scale;
+    }
     
     // Check if we need a new page
     if (yPosition + imgHeight > pageHeight - margin) {
       pdf.addPage();
       yPosition = margin;
+      
+      // Re-add title on new page
+      if (title) {
+        pdf.setFontSize(16);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(title, margin, yPosition);
+        yPosition += 15;
+      }
     }
     
     // Add image to PDF
     pdf.addImage(imageData, 'PNG', margin, yPosition, imgWidth, imgHeight);
+    console.log(`Added image to PDF at position ${yPosition} with dimensions ${imgWidth}x${imgHeight}`);
+    
     return yPosition + imgHeight + 10;
   } catch (error) {
     console.error('Error adding image to PDF:', error);
@@ -104,32 +150,44 @@ const addImageToPDF = (pdf: jsPDF, imageData: string, yPosition: number): number
   }
 };
 
-const activateTab = async (tabValue: string): Promise<boolean> => {
-  return new Promise((resolve) => {
-    try {
-      console.log(`Attempting to activate tab: ${tabValue}`);
+const makeAllTabsVisible = () => {
+  // Find all tab content divs and make them visible
+  const tabContents = [
+    '[data-tab-overview]',
+    '[data-tab-market]', 
+    '[data-tab-competition]',
+    '[data-tab-financial]',
+    '[data-tab-swot]',
+    '[data-tab-scores]',
+    '[data-tab-actions]'
+  ];
+
+  const originalStyles: Array<{ element: HTMLElement; display: string; visibility: string }> = [];
+
+  tabContents.forEach(selector => {
+    const element = document.querySelector(selector) as HTMLElement;
+    if (element) {
+      // Store original styles
+      originalStyles.push({
+        element,
+        display: element.style.display,
+        visibility: element.style.visibility
+      });
       
-      // Find the tab trigger button
-      const tabTrigger = document.querySelector(`button[value="${tabValue}"]`) as HTMLButtonElement;
-      
-      if (tabTrigger) {
-        console.log(`Found tab trigger for ${tabValue}`);
-        tabTrigger.click();
-        
-        // Wait for tab content to load
-        setTimeout(() => {
-          console.log(`Tab ${tabValue} should be active now`);
-          resolve(true);
-        }, 1500);
-      } else {
-        console.warn(`Tab trigger not found for ${tabValue}`);
-        resolve(false);
-      }
-    } catch (error) {
-      console.error(`Error activating tab ${tabValue}:`, error);
-      resolve(false);
+      // Make visible
+      element.style.display = 'block';
+      element.style.visibility = 'visible';
+      element.style.opacity = '1';
     }
   });
+
+  return () => {
+    // Restore original styles
+    originalStyles.forEach(({ element, display, visibility }) => {
+      element.style.display = display;
+      element.style.visibility = visibility;
+    });
+  };
 };
 
 export const generateReportPDF = async (data: ReportData) => {
@@ -174,22 +232,28 @@ export const generateReportPDF = async (data: ReportData) => {
         const headerImage = await captureElementAsImage(resultsHeader);
         if (headerImage) {
           pdf.addPage();
-          yPosition = addImageToPDF(pdf, headerImage, 20);
+          yPosition = addImageToPDF(pdf, headerImage, 20, 'Report Summary');
         }
       }
     } catch (error) {
       console.error('Error capturing results header:', error);
     }
 
-    // Define tabs to capture
+    // Make all tabs visible temporarily
+    const restoreTabVisibility = makeAllTabsVisible();
+    
+    // Wait for DOM updates
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Define tabs to capture with their data attributes
     const tabsToCapture = [
-      { value: 'overview', selector: '[data-tab-overview]', title: 'Overview' },
-      { value: 'market', selector: '[data-tab-market]', title: 'Market Analysis' },
-      { value: 'competition', selector: '[data-tab-competition]', title: 'Competition Analysis' },
-      { value: 'financial', selector: '[data-tab-financial]', title: 'Financial Analysis' },
-      { value: 'swot', selector: '[data-tab-swot]', title: 'SWOT Analysis' },
-      { value: 'scores', selector: '[data-tab-scores]', title: 'Detailed Scores' },
-      { value: 'actions', selector: '[data-tab-actions]', title: 'Action Items' }
+      { selector: '[data-tab-overview]', title: 'Executive Overview' },
+      { selector: '[data-tab-market]', title: 'Market Analysis' },
+      { selector: '[data-tab-competition]', title: 'Competition Analysis' },
+      { selector: '[data-tab-financial]', title: 'Financial Analysis' },
+      { selector: '[data-tab-swot]', title: 'SWOT Analysis' },
+      { selector: '[data-tab-scores]', title: 'Detailed Scores' },
+      { selector: '[data-tab-actions]', title: 'Recommended Actions' }
     ];
 
     // Process each tab
@@ -197,14 +261,6 @@ export const generateReportPDF = async (data: ReportData) => {
       try {
         console.log(`Processing ${tab.title}...`);
         
-        // Activate the tab
-        const activated = await activateTab(tab.value);
-        if (!activated) {
-          console.warn(`Failed to activate ${tab.title} tab`);
-          continue;
-        }
-
-        // Find and capture the tab content
         const element = document.querySelector(tab.selector) as HTMLElement;
         if (element) {
           console.log(`Capturing ${tab.title} content...`);
@@ -212,16 +268,7 @@ export const generateReportPDF = async (data: ReportData) => {
           
           if (tabImage) {
             pdf.addPage();
-            yPosition = 20;
-            
-            // Add section title
-            pdf.setFontSize(16);
-            pdf.setFont('helvetica', 'bold');
-            yPosition = addText(tab.title, margin, yPosition);
-            yPosition += 10;
-            
-            // Add the captured image
-            yPosition = addImageToPDF(pdf, tabImage, yPosition);
+            yPosition = addImageToPDF(pdf, tabImage, 20, tab.title);
             console.log(`Successfully added ${tab.title} to PDF`);
           } else {
             console.warn(`Failed to capture image for ${tab.title}`);
@@ -233,6 +280,9 @@ export const generateReportPDF = async (data: ReportData) => {
         console.error(`Error processing ${tab.title}:`, error);
       }
     }
+
+    // Restore original tab visibility
+    restoreTabVisibility();
 
     // Save the PDF
     const fileName = `${data.ideaName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_validation_report.pdf`;
