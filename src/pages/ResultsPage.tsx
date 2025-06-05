@@ -155,12 +155,14 @@ const ResultsPage: React.FC = () => {
             </Button>
           </div>
 
-          <ResultsHeader 
-            ideaName={ideaName}
-            score={score}
-            recommendationText={recommendation}
-            analysisDate={analysisDate}
-          />
+          <div data-results-header>
+            <ResultsHeader 
+              ideaName={ideaName}
+              score={score}
+              recommendationText={recommendation}
+              analysisDate={analysisDate}
+            />
+          </div>
 
           <div className="apple-card border-0 shadow-lg">
             <Tabs defaultValue="overview" className="w-full">
@@ -178,28 +180,42 @@ const ResultsPage: React.FC = () => {
               
               <div className="w-full px-6 pb-6">
                 <TabsContent value="overview" className="mt-4 w-full">
-                  <OverviewTabContent 
-                    summary={executiveSummary}
-                    metrics={keyMetrics}
-                  />
+                  <div data-tab-overview>
+                    <OverviewTabContent 
+                      summary={executiveSummary}
+                      metrics={keyMetrics}
+                    />
+                  </div>
                 </TabsContent>
                 <TabsContent value="market" className="mt-4 w-full">
-                  <MarketAnalysisTabContent data={marketAnalysis} />
+                  <div data-tab-market>
+                    <MarketAnalysisTabContent data={marketAnalysis} />
+                  </div>
                 </TabsContent>
                 <TabsContent value="competition" className="mt-4 w-full">
-                  <CompetitionTabContent data={competition} />
+                  <div data-tab-competition>
+                    <CompetitionTabContent data={competition} />
+                  </div>
                 </TabsContent>
                 <TabsContent value="financial" className="mt-4 w-full">
-                  <FinancialAnalysisTabContent data={financialAnalysis} />
+                  <div data-tab-financial>
+                    <FinancialAnalysisTabContent data={financialAnalysis} />
+                  </div>
                 </TabsContent>
                 <TabsContent value="swot" className="mt-4 w-full">
-                  <SWOTAnalysisTabContent data={swot} />
+                  <div data-tab-swot>
+                    <SWOTAnalysisTabContent data={swot} />
+                  </div>
                 </TabsContent>
                 <TabsContent value="scores" className="mt-4 w-full">
-                  <DetailedScoresTabContent scores={detailedScores} />
+                  <div data-tab-scores>
+                    <DetailedScoresTabContent scores={detailedScores} />
+                  </div>
                 </TabsContent>
                 <TabsContent value="actions" className="mt-4 w-full">
-                  <ActionItemsTabContent items={actionItems} />
+                  <div data-tab-actions>
+                    <ActionItemsTabContent items={actionItems} />
+                  </div>
                 </TabsContent>
               </div>
             </Tabs>
