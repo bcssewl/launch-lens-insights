@@ -28,7 +28,18 @@ export const useReportSharing = (reportId: string) => {
         .order('created_at', { ascending: false });
 
       if (fetchError) throw fetchError;
-      setShares(data || []);
+      
+      // Type the data properly to match our interface
+      const typedShares: ReportShare[] = (data || []).map(share => ({
+        id: share.id,
+        shared_with: share.shared_with || undefined,
+        access_level: share.access_level as 'view' | 'comment' | 'edit',
+        share_token: share.share_token || undefined,
+        expires_at: share.expires_at || undefined,
+        created_at: share.created_at,
+      }));
+      
+      setShares(typedShares);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch shares');
     } finally {
