@@ -84,48 +84,70 @@ const SharedReportPage: React.FC = () => {
 
         console.log('Report ID from share:', shareRecord.report_id);
 
-        // Now fetch the validation report
-        const { data: reportData, error: reportError } = await supabase
+        // Debug: Check what reports exist in the table
+        const { data: allReports, error: debugError } = await supabase
           .from('validation_reports')
-          .select('*')
-          .eq('id', shareRecord.report_id)
-          .maybeSingle();
+          .select('id, status, created_at')
+          .limit(10);
+        
+        console.log('Debug - Sample reports in database:', { allReports, debugError });
 
-        console.log('Report data result:', { reportData, reportError });
+        // Now fetch the validation report with explicit RLS bypass for shared reports
+        // We need to temporarily disable RLS for this query since shared reports should be accessible
+        const { data: reportData, error: reportError } = await supabase
+          .rpc('get_shared_report', { 
+            p_report_id: shareRecord.report_id,
+            p_share_token: shareToken 
+          });
 
-        if (reportError) {
-          console.error('Report fetch error:', reportError);
-          setError(`Could not fetch report: ${reportError.message}`);
-          return;
+        console.log('RPC result for shared report:', { reportData, reportError });
+
+        // If RPC doesn't exist, fall back to direct query
+        if (reportError && reportError.message?.includes('function')) {
+          console.log('RPC not available, trying direct query...');
+          
+          const { data: directReportData, error: directReportError } = await supabase
+            .from('validation_reports')
+            .select('*')
+            .eq('id', shareRecord.report_id)
+            .maybeSingle();
+
+          console.log('Direct query result:', { directReportData, directReportError });
+
+          if (directReportError) {
+            console.error('Direct report fetch error:', directReportError);
+            setError(`Could not fetch report: ${directReportError.message}`);
+            return;
+          }
+
+          if (!directReportData) {
+            console.log('No report found for ID:', shareRecord.report_id);
+            setError('The report associated with this share link was not found. It may have been deleted.');
+            return;
+          }
+
+          // Now fetch the idea validation data
+          const { data: ideaData, error: ideaError } = await supabase
+            .from('idea_validations')
+            .select('id, idea_name, one_line_description')
+            .eq('id', directReportData.validation_id)
+            .maybeSingle();
+
+          console.log('Idea validation data:', { ideaData, ideaError });
+
+          // Transform the data
+          const transformedReport: SharedReportData = {
+            ...directReportData,
+            status: directReportData.status as 'generating' | 'completed' | 'failed' | 'archived',
+            idea_name: ideaData?.idea_name || 'Untitled Idea',
+            one_line_description: ideaData?.one_line_description || 'No description available',
+            access_level: shareRecord.access_level as 'view' | 'comment' | 'edit',
+            expires_at: shareRecord.expires_at,
+          };
+
+          console.log('Final transformed report:', transformedReport);
+          setReport(transformedReport);
         }
-
-        if (!reportData) {
-          console.log('No report found for ID:', shareRecord.report_id);
-          setError('The report associated with this share link was not found');
-          return;
-        }
-
-        // Now fetch the idea validation data
-        const { data: ideaData, error: ideaError } = await supabase
-          .from('idea_validations')
-          .select('id, idea_name, one_line_description')
-          .eq('id', reportData.validation_id)
-          .maybeSingle();
-
-        console.log('Idea validation data:', { ideaData, ideaError });
-
-        // Transform the data
-        const transformedReport: SharedReportData = {
-          ...reportData,
-          status: reportData.status as 'generating' | 'completed' | 'failed' | 'archived',
-          idea_name: ideaData?.idea_name || 'Untitled Idea',
-          one_line_description: ideaData?.one_line_description || 'No description available',
-          access_level: shareRecord.access_level as 'view' | 'comment' | 'edit',
-          expires_at: shareRecord.expires_at,
-        };
-
-        console.log('Final transformed report:', transformedReport);
-        setReport(transformedReport);
       } catch (err) {
         console.error('Unexpected error fetching shared report:', err);
         setError('An unexpected error occurred while loading the report');
