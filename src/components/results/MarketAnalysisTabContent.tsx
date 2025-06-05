@@ -32,7 +32,7 @@ const chartConfigSegments = {
 };
 
 const chartConfigGeo = {
-  opportunity: { label: "Opportunity", color: "hsl(var(--chart-1))" },
+  value: { label: "Market Size", color: "hsl(var(--chart-1))" },
 };
 
 // Generate colors from chart variables
@@ -88,16 +88,11 @@ const MarketAnalysisTabContent: React.FC<MarketAnalysisTabContentProps> = ({ dat
     fill: item.fill || getChartColors(data.customerSegments.length)[index]
   }));
 
-  // Transform geographic opportunity data to have individual properties for each region
-  const transformedGeoData = data.geographicOpportunity.reduce((acc, item, index) => {
-    const key = `region_${index}`;
-    if (!acc[0]) acc[0] = {};
-    acc[0][key] = item.value;
-    acc[0][`${key}_name`] = item.name;
-    return acc;
-  }, [{}]);
-
-  const geoColors = getChartColors(data.geographicOpportunity.length);
+  // Simple data transformation for geographic opportunity - just use the original data
+  const geoData = data.geographicOpportunity.map((item, index) => ({
+    ...item,
+    fill: getChartColors(data.geographicOpportunity.length)[index]
+  }));
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 print:gap-3">
@@ -195,38 +190,24 @@ const MarketAnalysisTabContent: React.FC<MarketAnalysisTabContentProps> = ({ dat
         </CardHeader>
         <CardContent className="p-4 print:p-3">
           <ChartContainer config={chartConfigGeo} className="w-full h-[300px] print:h-[250px]">
-            <BarChart data={transformedGeoData} layout="vertical">
+            <BarChart data={geoData} layout="vertical" margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
               <XAxis type="number" />
               <YAxis 
                 dataKey="name" 
                 type="category" 
-                width={80}
-                tickFormatter={() => ''}
-                axisLine={false}
-                tickLine={false}
+                width={100}
               />
               <ChartTooltipContent 
-                formatter={(value: number, name: string) => {
-                  const regionIndex = name.split('_')[1];
-                  const regionName = data.geographicOpportunity[parseInt(regionIndex)]?.name || name;
-                  return [value, regionName];
-                }}
+                formatter={(value: number, name: string) => [value, "Market Size"]}
               />
-              {data.geographicOpportunity.map((item, index) => (
-                <Bar 
-                  key={`region_${index}`}
-                  dataKey={`region_${index}`} 
-                  fill={geoColors[index]}
-                  radius={4}
-                  name={item.name}
-                >
-                  <LabelList 
-                    dataKey={`region_${index}`} 
-                    position="right"
-                    formatter={(value: number) => item.name}
-                  />
-                </Bar>
-              ))}
+              <Bar 
+                dataKey="value" 
+                radius={4}
+              >
+                {geoData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.fill} />
+                ))}
+              </Bar>
             </BarChart>
           </ChartContainer>
         </CardContent>
