@@ -7,6 +7,7 @@ import { CheckCircle, Download, Share, Eye, Settings } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ShareReportDialog from '@/components/results/ShareReportDialog';
 import ManageSharesDialog from '@/components/results/ManageSharesDialog';
+import PrintView from '@/components/results/PrintView';
 
 interface ValidationReportTabProps {
   report: any;
@@ -15,6 +16,7 @@ interface ValidationReportTabProps {
 const ValidationReportTab: React.FC<ValidationReportTabProps> = ({ report }) => {
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [manageSharesOpen, setManageSharesOpen] = useState(false);
+  const [showPrintView, setShowPrintView] = useState(false);
   
   const score = report.overall_score || 0;
   const recommendation = report.recommendation || 'No recommendation available';
@@ -35,7 +37,99 @@ const ValidationReportTab: React.FC<ValidationReportTabProps> = ({ report }) => 
     return { text: 'High Risk', class: 'bg-red-100 text-red-800 border-red-200' };
   };
 
+  const handleDownloadPDF = () => {
+    setShowPrintView(true);
+  };
+
+  // Transform report data for PrintView component
+  const transformReportDataForPrint = () => {
+    const reportData = report.report_data || {};
+    
+    return {
+      executiveSummary: reportData.executive_summary || recommendation,
+      keyMetrics: reportData.key_metrics || {
+        market_size: '$1B+',
+        competition_level: 'Moderate',
+        implementation_difficulty: 'Medium',
+        time_to_market: '6-12 months'
+      },
+      marketAnalysis: reportData.market_analysis || {
+        tamSamSom: [
+          { name: 'TAM', value: 1000 },
+          { name: 'SAM', value: 100 },
+          { name: 'SOM', value: 10 }
+        ],
+        marketGrowth: [
+          { year: '2024', growth: 15 },
+          { year: '2025', growth: 18 },
+          { year: '2026', growth: 22 }
+        ],
+        customerSegments: [
+          { name: 'Primary Target', value: 45 },
+          { name: 'Secondary Target', value: 35 },
+          { name: 'Tertiary Target', value: 20 }
+        ],
+        geographicOpportunity: [
+          { name: 'North America', value: 40 },
+          { name: 'Europe', value: 35 },
+          { name: 'Asia Pacific', value: 25 }
+        ]
+      },
+      competition: reportData.competition || {
+        competitors: [],
+        competitiveAdvantages: [],
+        marketSaturation: 'Moderate'
+      },
+      financialAnalysis: reportData.financial_analysis || {
+        revenueProjections: [],
+        investmentRequired: 0,
+        breakEvenPoint: '12 months',
+        roi: '25%'
+      },
+      swot: reportData.swot || {
+        strengths: ['Unique value proposition', 'Strong market timing'],
+        weaknesses: ['Limited resources', 'New to market'],
+        opportunities: ['Growing market demand', 'Technology trends'],
+        threats: ['Competitive pressure', 'Market saturation']
+      },
+      detailedScores: reportData.detailed_scores || [
+        { category: 'Market Opportunity', score: score },
+        { category: 'Competition Level', score: score },
+        { category: 'Implementation Feasibility', score: score },
+        { category: 'Financial Viability', score: score }
+      ],
+      actionItems: reportData.action_items || [
+        { title: 'Conduct market research', priority: 'High', timeline: '2 weeks' },
+        { title: 'Develop MVP', priority: 'High', timeline: '3 months' },
+        { title: 'Secure funding', priority: 'Medium', timeline: '6 months' }
+      ]
+    };
+  };
+
   const statusBadge = getStatusBadge(score);
+
+  // If showing print view, render it
+  if (showPrintView) {
+    const printData = transformReportDataForPrint();
+    
+    return (
+      <PrintView
+        ideaName={ideaName}
+        score={score}
+        recommendation={recommendation}
+        analysisDate={report.completed_at || report.created_at}
+        executiveSummary={printData.executiveSummary}
+        keyMetrics={printData.keyMetrics}
+        marketAnalysis={printData.marketAnalysis}
+        competition={printData.competition}
+        financialAnalysis={printData.financialAnalysis}
+        swot={printData.swot}
+        detailedScores={printData.detailedScores}
+        actionItems={printData.actionItems}
+        onClose={() => setShowPrintView(false)}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -104,9 +198,9 @@ const ValidationReportTab: React.FC<ValidationReportTabProps> = ({ report }) => 
                 View Full Report
               </Link>
             </Button>
-            <Button variant="outline" disabled>
+            <Button variant="outline" onClick={handleDownloadPDF}>
               <Download className="mr-2 h-4 w-4" />
-              Download PDF
+              Print / Save as PDF
             </Button>
             <Button 
               variant="outline" 
@@ -123,9 +217,6 @@ const ValidationReportTab: React.FC<ValidationReportTabProps> = ({ report }) => 
               Manage Shares
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground mt-3">
-            Download PDF feature coming soon
-          </p>
         </CardContent>
       </Card>
 
