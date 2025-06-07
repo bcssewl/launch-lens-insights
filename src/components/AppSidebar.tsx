@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
@@ -10,6 +11,7 @@ import {
   SidebarMenuButton,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarRail,
   useSidebar
 } from "@/components/ui/sidebar";
@@ -24,14 +26,23 @@ import {
 import { Button } from "@/components/ui/button";
 import { Logo } from '@/components/icons';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Home, Lightbulb, FileText, Bot, Settings as SettingsIcon, UserCircle, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Home, Lightbulb, FileText, Bot, Settings as SettingsIcon, UserCircle, LogOut, ChevronLeft, ChevronRight, FolderOpen, BarChart3, TrendingUp } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
-const navItems = [
+const mainNavItems = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
   { href: "/dashboard/validate", label: "Validate Idea", icon: Lightbulb },
-  { href: "/dashboard/reports", label: "My Reports", icon: FileText },
+];
+
+const projectNavItems = [
+  { href: "/dashboard/projects", label: "All Projects", icon: FolderOpen },
+  { href: "/dashboard/portfolio", label: "Portfolio Analytics", icon: BarChart3 },
+  { href: "/dashboard/benchmarking", label: "Benchmarking", icon: TrendingUp },
+];
+
+const legacyNavItems = [
+  { href: "/dashboard/reports", label: "Legacy Reports", icon: FileText },
   { href: "/dashboard/assistant", label: "AI Assistant", icon: Bot },
   { href: "/dashboard/settings", label: "Settings", icon: SettingsIcon },
 ];
@@ -74,6 +85,13 @@ export const AppSidebar: React.FC = () => {
     toggleSidebar();
   };
 
+  const isItemActive = (href: string) => {
+    if (href === "/dashboard") {
+      return location.pathname === "/dashboard";
+    }
+    return location.pathname.startsWith(href);
+  };
+
   return (
     <div className="relative">
       <Sidebar collapsible="icon" className="border-r">
@@ -84,14 +102,64 @@ export const AppSidebar: React.FC = () => {
         </SidebarHeader>
         
         <SidebarContent className="flex-grow">
+          {/* Main Navigation */}
           <SidebarGroup>
+            <SidebarGroupLabel className="group-data-[collapsible=icon]:sr-only">Main</SidebarGroupLabel>
             <SidebarGroupContent className="px-2 group-data-[collapsible=icon]:px-1">
               <SidebarMenu>
-                {navItems.map((item) => (
+                {mainNavItems.map((item) => (
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
                       asChild
-                      isActive={location.pathname === item.href || (item.href === "/dashboard" && location.pathname.startsWith("/dashboard") && location.pathname.split('/').length <= 2)}
+                      isActive={isItemActive(item.href)}
+                      tooltip={item.label}
+                      className="group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1"
+                    >
+                      <Link to={item.href} className="flex items-center gap-3 px-3 py-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 group-data-[collapsible=icon]:gap-0">
+                        <item.icon className="h-5 w-5 flex-shrink-0" />
+                        <span className="group-data-[collapsible=icon]:sr-only">{item.label}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+
+          {/* Project Management */}
+          <SidebarGroup>
+            <SidebarGroupLabel className="group-data-[collapsible=icon]:sr-only">Projects</SidebarGroupLabel>
+            <SidebarGroupContent className="px-2 group-data-[collapsible=icon]:px-1">
+              <SidebarMenu>
+                {projectNavItems.map((item) => (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isItemActive(item.href)}
+                      tooltip={item.label}
+                      className="group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1"
+                    >
+                      <Link to={item.href} className="flex items-center gap-3 px-3 py-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 group-data-[collapsible=icon]:gap-0">
+                        <item.icon className="h-5 w-5 flex-shrink-0" />
+                        <span className="group-data-[collapsible=icon]:sr-only">{item.label}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+
+          {/* Legacy & Tools */}
+          <SidebarGroup>
+            <SidebarGroupLabel className="group-data-[collapsible=icon]:sr-only">Tools</SidebarGroupLabel>
+            <SidebarGroupContent className="px-2 group-data-[collapsible=icon]:px-1">
+              <SidebarMenu>
+                {legacyNavItems.map((item) => (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isItemActive(item.href)}
                       tooltip={item.label}
                       className="group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1"
                     >
