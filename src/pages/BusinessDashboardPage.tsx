@@ -64,7 +64,7 @@ const BusinessDashboardPage: React.FC = () => {
     return 'High Risk';
   };
 
-  const ideaName = report.idea_validations?.idea_name || 'Untitled Business Idea';
+  const ideaName = report.idea_name || 'Untitled Business Idea';
   const score = report.overall_score || 0;
   const lastUpdated = report.completed_at || report.created_at;
 

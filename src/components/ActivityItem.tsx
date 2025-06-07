@@ -2,7 +2,7 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Download, Clock, CheckCircle, AlertCircle, XCircle } from 'lucide-react';
+import { Download, Clock, CheckCircle, AlertCircle, XCircle, FolderOpen } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface ActivityItemProps {
@@ -12,6 +12,7 @@ interface ActivityItemProps {
   statusText: string;
   statusColor: 'green' | 'yellow' | 'red';
   reportId?: string;
+  showDashboardLink?: boolean;
 }
 
 const ActivityItem: React.FC<ActivityItemProps> = ({
@@ -21,6 +22,7 @@ const ActivityItem: React.FC<ActivityItemProps> = ({
   statusText,
   statusColor,
   reportId,
+  showDashboardLink = false,
 }) => {
   const navigate = useNavigate();
   const isRunningExperiment = statusText === 'Analysis in Progress';
@@ -28,6 +30,12 @@ const ActivityItem: React.FC<ActivityItemProps> = ({
   const handleViewReport = () => {
     if (reportId) {
       navigate(`/results/${reportId}`);
+    }
+  };
+
+  const handleViewDashboard = () => {
+    if (reportId) {
+      navigate(`/dashboard/idea/${reportId}`);
     }
   };
 
@@ -94,14 +102,27 @@ const ActivityItem: React.FC<ActivityItemProps> = ({
 
         {/* Action Button */}
         {!isRunningExperiment && reportId && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-primary/10 hover:text-primary"
-            onClick={handleViewReport}
-          >
-            <Download className="h-4 w-4" />
-          </Button>
+          <div className="flex gap-2">
+            {showDashboardLink ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-primary/10 hover:text-primary"
+                onClick={handleViewDashboard}
+              >
+                <FolderOpen className="h-4 w-4" />
+              </Button>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-primary/10 hover:text-primary"
+                onClick={handleViewReport}
+              >
+                <Download className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         )}
       </div>
     </div>

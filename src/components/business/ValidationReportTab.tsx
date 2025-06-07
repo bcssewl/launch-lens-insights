@@ -13,8 +13,8 @@ interface ValidationReportTabProps {
 const ValidationReportTab: React.FC<ValidationReportTabProps> = ({ report }) => {
   const score = report.overall_score || 0;
   const recommendation = report.recommendation || 'No recommendation available';
-  const ideaName = report.idea_validations?.idea_name || 'Untitled Idea';
-  const description = report.idea_validations?.one_line_description || 'No description available';
+  const ideaName = report.idea_name || 'Untitled Idea';
+  const description = report.one_line_description || 'No description available';
 
   const getScoreColor = (score: number) => {
     if (score >= 7) return 'text-green-600';
