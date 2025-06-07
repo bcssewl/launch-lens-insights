@@ -1,16 +1,21 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Download, Share, Eye } from 'lucide-react';
+import { CheckCircle, Download, Share, Eye, Settings } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import ShareReportDialog from '@/components/results/ShareReportDialog';
+import ManageSharesDialog from '@/components/results/ManageSharesDialog';
 
 interface ValidationReportTabProps {
   report: any;
 }
 
 const ValidationReportTab: React.FC<ValidationReportTabProps> = ({ report }) => {
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [manageSharesOpen, setManageSharesOpen] = useState(false);
+  
   const score = report.overall_score || 0;
   const recommendation = report.recommendation || 'No recommendation available';
   const ideaName = report.idea_name || 'Untitled Idea';
@@ -103,13 +108,23 @@ const ValidationReportTab: React.FC<ValidationReportTabProps> = ({ report }) => 
               <Download className="mr-2 h-4 w-4" />
               Download PDF
             </Button>
-            <Button variant="outline" disabled>
+            <Button 
+              variant="outline" 
+              onClick={() => setShareDialogOpen(true)}
+            >
               <Share className="mr-2 h-4 w-4" />
               Share Report
             </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setManageSharesOpen(true)}
+            >
+              <Settings className="mr-2 h-4 w-4" />
+              Manage Shares
+            </Button>
           </div>
           <p className="text-xs text-muted-foreground mt-3">
-            Download and sharing features coming soon
+            Download PDF feature coming soon
           </p>
         </CardContent>
       </Card>
@@ -145,6 +160,20 @@ const ValidationReportTab: React.FC<ValidationReportTabProps> = ({ report }) => 
           </div>
         </CardContent>
       </Card>
+
+      {/* Share Dialogs */}
+      <ShareReportDialog
+        open={shareDialogOpen}
+        onOpenChange={setShareDialogOpen}
+        reportId={report.id}
+        reportTitle={ideaName}
+      />
+
+      <ManageSharesDialog
+        open={manageSharesOpen}
+        onOpenChange={setManageSharesOpen}
+        reportId={report.id}
+      />
     </div>
   );
 };
