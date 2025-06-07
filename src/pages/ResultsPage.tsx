@@ -19,6 +19,7 @@ import PrintView from '@/components/results/PrintView';
 import { useValidationReport } from '@/hooks/useValidationReport';
 import { generateReportPDF } from '@/utils/pdfGenerator';
 import { format } from 'date-fns';
+import { preparePrintData } from '@/utils/pdfDataProcessor';
 
 const ResultsPage: React.FC = () => {
   const { reportId } = useParams<{ reportId: string }>();
@@ -75,75 +76,25 @@ const ResultsPage: React.FC = () => {
     );
   }
 
-  // Get report data or use default structure
-  const reportData = report.report_data || {};
-  
-  const ideaName = report.idea_name || 'Untitled Idea';
-  const score = report.overall_score || 0;
-  const recommendation = report.recommendation || 'Analysis in progress';
-  const analysisDate = report.completed_at 
-    ? format(new Date(report.completed_at), 'MMM d, yyyy')
-    : format(new Date(report.created_at), 'MMM d, yyyy');
-
-  const executiveSummary = reportData.executiveSummary || report.one_line_description || 'No summary available';
-  const keyMetrics = reportData.keyMetrics || {
-    marketSize: { value: 'N/A' },
-    competitionLevel: { value: 'N/A' },
-    problemClarity: { value: 'N/A' },
-    revenuePotential: { value: 'N/A' }
-  };
-
-  const marketAnalysisData = reportData.marketAnalysis || {};
-  const marketAnalysis = {
-    tamSamSom: marketAnalysisData.tamSamSom || [],
-    marketGrowth: marketAnalysisData.marketGrowth || [],
-    customerSegments: marketAnalysisData.customerSegments || [],
-    geographicOpportunity: marketAnalysisData.geographicOpportunity || []
-  };
-
-  const competition = reportData.competition || {
-    competitors: [],
-    competitiveAdvantages: [],
-    marketSaturation: 'Unknown'
-  };
-  const financialAnalysis = reportData.financialAnalysis || {
-    startupCosts: [],
-    operatingCosts: [],
-    revenueProjections: [],
-    breakEvenAnalysis: [],
-    fundingRequirements: [],
-    keyMetrics: {
-      totalStartupCost: 0,
-      monthlyBurnRate: 0,
-      breakEvenMonth: 0,
-      fundingNeeded: 0
-    }
-  };
-  const swot = reportData.swot || {
-    strengths: [],
-    weaknesses: [],
-    opportunities: [],
-    threats: []
-  };
-  const detailedScores = reportData.detailedScores || [];
-  const actionItems = reportData.actionItems || [];
+  // Use the shared utility for consistent data preparation
+  const printData = preparePrintData(report);
 
   // Show print view if requested
   if (showPrintView) {
     return (
       <PrintView
-        ideaName={ideaName}
-        score={score}
-        recommendation={recommendation}
-        analysisDate={analysisDate}
-        executiveSummary={executiveSummary}
-        keyMetrics={keyMetrics}
-        marketAnalysis={marketAnalysis}
-        competition={competition}
-        financialAnalysis={financialAnalysis}
-        swot={swot}
-        detailedScores={detailedScores}
-        actionItems={actionItems}
+        ideaName={printData.ideaName}
+        score={printData.score}
+        recommendation={printData.recommendation}
+        analysisDate={printData.analysisDate}
+        executiveSummary={printData.executiveSummary}
+        keyMetrics={printData.keyMetrics}
+        marketAnalysis={printData.marketAnalysis}
+        competition={printData.competition}
+        financialAnalysis={printData.financialAnalysis}
+        swot={printData.swot}
+        detailedScores={printData.detailedScores}
+        actionItems={printData.actionItems}
         onClose={handleClosePrintView}
       />
     );
@@ -167,10 +118,10 @@ const ResultsPage: React.FC = () => {
 
           <div data-results-header>
             <ResultsHeader 
-              ideaName={ideaName}
-              score={score}
-              recommendationText={recommendation}
-              analysisDate={analysisDate}
+              ideaName={printData.ideaName}
+              score={printData.score}
+              recommendationText={printData.recommendation}
+              analysisDate={printData.analysisDate}
               reportId={reportId}
             />
           </div>
@@ -193,39 +144,39 @@ const ResultsPage: React.FC = () => {
                 <TabsContent value="overview" className="mt-4 w-full">
                   <div data-tab-overview>
                     <OverviewTabContent 
-                      summary={executiveSummary}
-                      metrics={keyMetrics}
+                      summary={printData.executiveSummary}
+                      metrics={printData.keyMetrics}
                     />
                   </div>
                 </TabsContent>
                 <TabsContent value="market" className="mt-4 w-full">
                   <div data-tab-market>
-                    <MarketAnalysisTabContent data={marketAnalysis} />
+                    <MarketAnalysisTabContent data={printData.marketAnalysis} />
                   </div>
                 </TabsContent>
                 <TabsContent value="competition" className="mt-4 w-full">
                   <div data-tab-competition>
-                    <CompetitionTabContent data={competition} />
+                    <CompetitionTabContent data={printData.competition} />
                   </div>
                 </TabsContent>
                 <TabsContent value="financial" className="mt-4 w-full">
                   <div data-tab-financial>
-                    <FinancialAnalysisTabContent data={financialAnalysis} />
+                    <FinancialAnalysisTabContent data={printData.financialAnalysis} />
                   </div>
                 </TabsContent>
                 <TabsContent value="swot" className="mt-4 w-full">
                   <div data-tab-swot>
-                    <SWOTAnalysisTabContent data={swot} />
+                    <SWOTAnalysisTabContent data={printData.swot} />
                   </div>
                 </TabsContent>
                 <TabsContent value="scores" className="mt-4 w-full">
                   <div data-tab-scores>
-                    <DetailedScoresTabContent scores={detailedScores} />
+                    <DetailedScoresTabContent scores={printData.detailedScores} />
                   </div>
                 </TabsContent>
                 <TabsContent value="actions" className="mt-4 w-full">
                   <div data-tab-actions>
-                    <ActionItemsTabContent items={actionItems} />
+                    <ActionItemsTabContent items={printData.actionItems} />
                   </div>
                 </TabsContent>
               </div>

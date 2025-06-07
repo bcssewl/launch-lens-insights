@@ -7,7 +7,7 @@ import ValidationStatusHeader from './validation/ValidationStatusHeader';
 import ValidationSummaryCard from './validation/ValidationSummaryCard';
 import ReportActionsCard from './validation/ReportActionsCard';
 import NextStepsTeaser from './validation/NextStepsTeaser';
-import { transformReportDataForPrint } from './validation/reportDataTransformer';
+import { preparePrintData } from '@/utils/pdfDataProcessor';
 
 interface ValidationReportTabProps {
   report: any;
@@ -27,16 +27,16 @@ const ValidationReportTab: React.FC<ValidationReportTabProps> = ({ report }) => 
     setShowPrintView(true);
   };
 
-  // If showing print view, render it
+  // If showing print view, use the shared utility for consistent data
   if (showPrintView) {
-    const printData = transformReportDataForPrint(report);
+    const printData = preparePrintData(report);
     
     return (
       <PrintView
-        ideaName={ideaName}
-        score={score}
-        recommendation={recommendation}
-        analysisDate={report.completed_at || report.created_at}
+        ideaName={printData.ideaName}
+        score={printData.score}
+        recommendation={printData.recommendation}
+        analysisDate={printData.analysisDate}
         executiveSummary={printData.executiveSummary}
         keyMetrics={printData.keyMetrics}
         marketAnalysis={printData.marketAnalysis}
