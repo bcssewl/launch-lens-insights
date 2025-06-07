@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -90,16 +89,24 @@ const ValidationReportTab: React.FC<ValidationReportTabProps> = ({ report }) => 
         competitiveAdvantages: [],
         marketSaturation: 'Moderate'
       },
-      financialAnalysis: reportData.financial_analysis || {
-        revenueProjections: [],
-        investmentRequired: 0,
-        breakEvenPoint: '12 months',
-        roi: '25%',
-        totalStartupCost: 50000,
-        monthlyOperatingCost: 5000,
-        projectedRevenueYear1: 100000,
-        projectedRevenueYear2: 250000,
-        projectedRevenueYear3: 500000
+      financialAnalysis: {
+        keyMetrics: {
+          totalStartupCost: reportData.financial_analysis?.totalStartupCost || 50000,
+          monthlyBurnRate: reportData.financial_analysis?.monthlyOperatingCost || 5000,
+          breakEvenMonth: reportData.financial_analysis?.breakEvenPoint ? 
+            parseInt(reportData.financial_analysis.breakEvenPoint.replace(/\D/g, '')) || 12 : 12,
+          fundingNeeded: reportData.financial_analysis?.investmentRequired || 75000
+        },
+        startupCosts: reportData.financial_analysis?.startupCosts || [],
+        revenueProjections: reportData.financial_analysis?.revenueProjections || [],
+        investmentRequired: reportData.financial_analysis?.investmentRequired || 0,
+        breakEvenPoint: reportData.financial_analysis?.breakEvenPoint || '12 months',
+        roi: reportData.financial_analysis?.roi || '25%',
+        totalStartupCost: reportData.financial_analysis?.totalStartupCost || 50000,
+        monthlyOperatingCost: reportData.financial_analysis?.monthlyOperatingCost || 5000,
+        projectedRevenueYear1: reportData.financial_analysis?.projectedRevenueYear1 || 100000,
+        projectedRevenueYear2: reportData.financial_analysis?.projectedRevenueYear2 || 250000,
+        projectedRevenueYear3: reportData.financial_analysis?.projectedRevenueYear3 || 500000
       },
       swot: reportData.swot || {
         strengths: ['Unique value proposition', 'Strong market timing'],
