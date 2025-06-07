@@ -14,7 +14,8 @@ import DashboardPage from "./pages/DashboardPage";
 import ValidateIdeaPage from "./pages/ValidateIdeaPage";
 import AnalyzingIdeaPage from "./pages/AnalyzingIdeaPage";
 import ResultsPage from "./pages/ResultsPage";
-import MyReportsPage from "./pages/MyReportsPage";
+import MyIdeasPage from "./pages/MyIdeasPage";
+import BusinessDashboardPage from "./pages/BusinessDashboardPage";
 import AIAssistantPage from "./pages/AIAssistantPage";
 import SettingsPage from "./pages/SettingsPage";
 import ProfilePage from "./pages/ProfilePage";
@@ -49,7 +50,9 @@ const App = () => (
               <Route path="/analyzing" element={<AnalyzingIdeaPage />} />
               <Route path="/results" element={<ResultsPage />} />
               <Route path="/results/:reportId" element={<ResultsPage />} />
-              <Route path="/dashboard/reports" element={<MyReportsPage />} />
+              <Route path="/dashboard/ideas" element={<MyIdeasPage />} />
+              <Route path="/dashboard/idea/:reportId" element={<BusinessDashboardPage />} />
+              <Route path="/dashboard/reports" element={<MyIdeasPage />} />
               <Route path="/dashboard/assistant" element={<AIAssistantPage />} />
               <Route path="/dashboard/experiments" element={<ExperimentsPage />} />
               <Route path="/dashboard/settings" element={<SettingsPage />} />
