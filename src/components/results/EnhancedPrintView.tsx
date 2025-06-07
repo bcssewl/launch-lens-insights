@@ -12,24 +12,9 @@ import PrintFinancialAnalysis from './print/PrintFinancialAnalysis';
 import PrintSWOTAnalysis from './print/PrintSWOTAnalysis';
 import PrintDetailedScores from './print/PrintDetailedScores';
 import PrintActionItems from './print/PrintActionItems';
+import type { PrintViewProps } from './print/types';
 
-interface EnhancedPrintViewProps {
-  ideaName: string;
-  score: number;
-  recommendation: string;
-  analysisDate: string;
-  executiveSummary: string;
-  keyMetrics: any;
-  marketAnalysis: any;
-  competition: any;
-  financialAnalysis: any;
-  swot: any;
-  detailedScores: any[];
-  actionItems: any[];
-  onClose: () => void;
-}
-
-const EnhancedPrintView: React.FC<EnhancedPrintViewProps> = ({
+const EnhancedPrintView: React.FC<PrintViewProps> = ({
   ideaName,
   score,
   recommendation,
