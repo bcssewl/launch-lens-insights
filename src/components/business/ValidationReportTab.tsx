@@ -41,17 +41,27 @@ const ValidationReportTab: React.FC<ValidationReportTabProps> = ({ report }) => 
     setShowPrintView(true);
   };
 
-  // Transform report data for PrintView component
+  // Transform report data for PrintView component with proper structure
   const transformReportDataForPrint = () => {
     const reportData = report.report_data || {};
     
     return {
       executiveSummary: reportData.executive_summary || recommendation,
-      keyMetrics: reportData.key_metrics || {
-        market_size: '$1B+',
-        competition_level: 'Moderate',
-        implementation_difficulty: 'Medium',
-        time_to_market: '6-12 months'
+      keyMetrics: {
+        marketSize: { 
+          value: reportData.key_metrics?.market_size || '$1B+',
+          label: 'Total addressable market'
+        },
+        competitionLevel: { 
+          value: reportData.key_metrics?.competition_level || 'Moderate',
+          subValue: 'Competitive intensity'
+        },
+        problemClarity: { 
+          value: reportData.key_metrics?.problem_clarity || 'High'
+        },
+        revenuePotential: { 
+          value: reportData.key_metrics?.revenue_potential || 'Strong'
+        }
       },
       marketAnalysis: reportData.market_analysis || {
         tamSamSom: [
@@ -84,7 +94,12 @@ const ValidationReportTab: React.FC<ValidationReportTabProps> = ({ report }) => 
         revenueProjections: [],
         investmentRequired: 0,
         breakEvenPoint: '12 months',
-        roi: '25%'
+        roi: '25%',
+        totalStartupCost: 50000,
+        monthlyOperatingCost: 5000,
+        projectedRevenueYear1: 100000,
+        projectedRevenueYear2: 250000,
+        projectedRevenueYear3: 500000
       },
       swot: reportData.swot || {
         strengths: ['Unique value proposition', 'Strong market timing'],
