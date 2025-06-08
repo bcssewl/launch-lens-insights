@@ -1,27 +1,13 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, Bar, LineChart, Line, AreaChart, Area, PieChart, Pie, Cell, ComposedChart, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend } from 'recharts';
-import { DollarSign, TrendingUp, Calculator, PiggyBank } from 'lucide-react';
-
-interface FinancialData {
-  startupCosts: Array<{ category: string; amount: number; description: string }>;
-  operatingCosts: Array<{ month: number; total: number; development: number; marketing: number; operations: number }>;
-  revenueProjections: Array<{ month: number; revenue: number; users: number }>;
-  breakEvenAnalysis: Array<{ month: number; revenue: number; costs: number; profit: number }>;
-  fundingRequirements: Array<{ category: string; amount: number; percentage: number; fill: string }>;
-  keyMetrics: {
-    totalStartupCost: number;
-    monthlyBurnRate: number;
-    breakEvenMonth: number;
-    fundingNeeded: number;
-  };
-}
+import { DollarSign, TrendingUp, Calculator, PiggyBank, Target, Users, Building } from 'lucide-react';
+import { parseFinancialAnalysis, formatCurrency, extractNumericValue, type ParsedFinancialAnalysis } from '@/utils/financialDataParser';
 
 interface FinancialAnalysisTabContentProps {
-  data: FinancialData;
+  data: any;
 }
 
 const chartConfig = {
@@ -29,29 +15,343 @@ const chartConfig = {
     label: "Revenue",
     color: "hsl(var(--primary))",
   },
-  costs: {
-    label: "Costs",
+  expenses: {
+    label: "Expenses",
     color: "hsl(var(--destructive))",
   },
-  profit: {
-    label: "Profit",
+  netIncome: {
+    label: "Net Income",
     color: "hsl(var(--success))",
   },
-  development: {
-    label: "Development",
-    color: "hsl(var(--primary))",
-  },
-  marketing: {
-    label: "Marketing",
-    color: "hsl(var(--primary) / 0.8)",
-  },
-  operations: {
-    label: "Operations",
-    color: "hsl(var(--primary) / 0.6)",
+  customers: {
+    label: "Customers",
+    color: "hsl(var(--secondary))",
   },
 };
 
 const FinancialAnalysisTabContent: React.FC<FinancialAnalysisTabContentProps> = ({ data }) => {
+  const parsedData = parseFinancialAnalysis(data);
+
+  // Fallback to legacy format if new format is not available
+  if (!parsedData) {
+    return <LegacyFinancialView data={data} />;
+  }
+
+  const { market_opportunity, revenue_model_analysis, pricing_strategy, financial_projections, funding_requirements } = parsedData;
+
+  // Prepare chart data for projections
+  const projectionsData = [
+    {
+      year: 'Year 1',
+      revenue: extractNumericValue(financial_projections.year_1.revenue.split('-')[0]),
+      expenses: extractNumericValue(financial_projections.year_1.expenses.split('-')[0]),
+      customers: extractNumericValue(financial_projections.year_1.customers.split('-')[0]),
+      netIncome: extractNumericValue(financial_projections.year_1.net_income.replace(/[()$]/g, '').split('-')[0]) * (financial_projections.year_1.net_income.includes('(') ? -1 : 1),
+    },
+    {
+      year: 'Year 2',
+      revenue: extractNumericValue(financial_projections.year_2.revenue.split('-')[0]),
+      expenses: extractNumericValue(financial_projections.year_2.expenses.split('-')[0]),
+      customers: extractNumericValue(financial_projections.year_2.customers.split('-')[0]),
+      netIncome: extractNumericValue(financial_projections.year_2.net_income.replace(/[()$]/g, '').split('-')[0]) * (financial_projections.year_2.net_income.includes('(') ? -1 : 1),
+    },
+    {
+      year: 'Year 3',
+      revenue: extractNumericValue(financial_projections.year_3.revenue.split('-')[0]),
+      expenses: extractNumericValue(financial_projections.year_3.expenses.split('-')[0]),
+      customers: extractNumericValue(financial_projections.year_3.customers.split('-')[0]),
+      netIncome: extractNumericValue(financial_projections.year_3.net_income.replace(/[()$]/g, '').split('-')[0]),
+    },
+  ];
+
+  // Prepare funding allocation data
+  const fundingData = [
+    { category: 'Product Development', amount: 40, fill: '#3b82f6' },
+    { category: 'Sales & Marketing', amount: 30, fill: '#10b981' },
+    { category: 'Operations', amount: 20, fill: '#f59e0b' },
+    { category: 'Reserve', amount: 10, fill: '#8b5cf6' },
+  ];
+
+  return (
+    <div className="space-y-6">
+      {/* Market Opportunity Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Target className="h-5 w-5" />
+            Market Opportunity
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="space-y-2">
+              <div className="text-sm text-muted-foreground">Total Addressable Market</div>
+              <div className="text-xl font-bold">{market_opportunity.total_addressable_market}</div>
+            </div>
+            <div className="space-y-2">
+              <div className="text-sm text-muted-foreground">Serviceable Market</div>
+              <div className="text-xl font-bold">{market_opportunity.serviceable_market_segment}</div>
+            </div>
+            <div className="space-y-2">
+              <div className="text-sm text-muted-foreground">Growth Rate</div>
+              <div className="text-xl font-bold text-green-600">{market_opportunity.annual_growth_rate}</div>
+            </div>
+            <div className="space-y-2">
+              <div className="text-sm text-muted-foreground">Key Drivers</div>
+              <div className="flex flex-wrap gap-1">
+                {market_opportunity.market_drivers.slice(0, 2).map((driver, index) => (
+                  <Badge key={index} variant="secondary" className="text-xs">
+                    {driver}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Revenue Model Analysis */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="h-5 w-5" />
+            Revenue Model Analysis
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="text-center">
+              <div className="text-3xl font-bold text-primary">{revenue_model_analysis.viability_score}/10</div>
+              <div className="text-sm text-muted-foreground">Viability Score</div>
+            </div>
+            <div className="space-y-2">
+              <div className="text-sm text-muted-foreground">Margins</div>
+              <div className="font-semibold">{revenue_model_analysis.estimated_margins}</div>
+            </div>
+            <div className="space-y-2">
+              <div className="text-sm text-muted-foreground">Scalability</div>
+              <div className="font-semibold">{revenue_model_analysis.scalability_potential}</div>
+            </div>
+            <div className="space-y-2">
+              <div className="text-sm text-muted-foreground">Model Fit</div>
+              <Badge variant="outline">{revenue_model_analysis.model_fit.split('-')[0].trim()}</Badge>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Pricing Strategy */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <DollarSign className="h-5 w-5" />
+            Pricing Strategy
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            {pricing_strategy.recommended_tiers.map((tier, index) => (
+              <div key={index} className="border rounded-lg p-4 space-y-3">
+                <div className="text-center">
+                  <h4 className="font-semibold text-lg">{tier.tier}</h4>
+                  <div className="text-2xl font-bold text-primary">{tier.price}</div>
+                  <div className="text-sm text-muted-foreground">{tier.target}</div>
+                </div>
+                <div className="text-sm">{tier.features}</div>
+              </div>
+            ))}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
+            <div>
+              <div className="text-sm text-muted-foreground">Annual Discount</div>
+              <div className="font-semibold">{pricing_strategy.annual_discount}</div>
+            </div>
+            <div>
+              <div className="text-sm text-muted-foreground">Competitive Position</div>
+              <div className="font-semibold">{pricing_strategy.competitive_positioning}</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Financial Projections Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>3-Year Revenue & Expense Projections</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer config={chartConfig} className="h-[300px]">
+              <ComposedChart data={projectionsData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="year" />
+                <YAxis tickFormatter={(value) => `$${(value / 1000000).toFixed(1)}M`} />
+                <ChartTooltip
+                  content={<ChartTooltipContent />}
+                  formatter={(value: number) => [formatCurrency(value), ""]}
+                />
+                <Bar dataKey="revenue" fill="var(--color-revenue)" name="Revenue" />
+                <Bar dataKey="expenses" fill="var(--color-expenses)" name="Expenses" />
+                <Line 
+                  type="monotone" 
+                  dataKey="netIncome" 
+                  stroke="var(--color-netIncome)" 
+                  strokeWidth={3}
+                  name="Net Income"
+                />
+              </ComposedChart>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Customer Growth Projection</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer config={chartConfig} className="h-[300px]">
+              <AreaChart data={projectionsData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="year" />
+                <YAxis />
+                <ChartTooltip
+                  content={<ChartTooltipContent />}
+                  formatter={(value: number) => [value.toLocaleString(), "Customers"]}
+                />
+                <Area 
+                  dataKey="customers" 
+                  stroke="var(--color-customers)" 
+                  fill="var(--color-customers)" 
+                  fillOpacity={0.6}
+                />
+              </AreaChart>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Funding Requirements */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <PiggyBank className="h-5 w-5" />
+            Funding Requirements
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="text-center p-4 bg-muted rounded-lg">
+                  <div className="text-2xl font-bold">{funding_requirements.seed_stage}</div>
+                  <div className="text-sm text-muted-foreground">Seed Stage</div>
+                </div>
+                <div className="text-center p-4 bg-muted rounded-lg">
+                  <div className="text-2xl font-bold">{funding_requirements.series_a_potential}</div>
+                  <div className="text-sm text-muted-foreground">Series A Potential</div>
+                </div>
+              </div>
+              
+              <div>
+                <h4 className="font-semibold mb-2">Key Milestones</h4>
+                <ul className="space-y-1">
+                  {funding_requirements.key_milestones.map((milestone, index) => (
+                    <li key={index} className="text-sm flex items-start gap-2">
+                      <span className="text-primary">•</span>
+                      {milestone}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="font-semibold mb-4">Funding Allocation</h4>
+              <ChartContainer config={chartConfig} className="h-[200px]">
+                <PieChart>
+                  <Pie
+                    data={fundingData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ category, amount }) => `${category}: ${amount}%`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="amount"
+                  >
+                    {fundingData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                  </Pie>
+                  <ChartTooltip />
+                </PieChart>
+              </ChartContainer>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Key Insights */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Key Financial Insights</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-3">
+              <h4 className="font-semibold text-green-600 flex items-center gap-2">
+                <TrendingUp className="h-4 w-4" />
+                Strengths
+              </h4>
+              <ul className="space-y-2 text-sm">
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600">•</span>
+                  High viability score ({revenue_model_analysis.viability_score}/10)
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600">•</span>
+                  Strong gross margins ({revenue_model_analysis.estimated_margins})
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600">•</span>
+                  Break-even expected in {financial_projections.break_even_point}
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600">•</span>
+                  {revenue_model_analysis.scalability_potential.toLowerCase()} scalability
+                </li>
+              </ul>
+            </div>
+            
+            <div className="space-y-3">
+              <h4 className="font-semibold text-orange-600 flex items-center gap-2">
+                <Calculator className="h-4 w-4" />
+                Key Metrics
+              </h4>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span>Market Growth Rate:</span>
+                  <span className="font-semibold">{market_opportunity.annual_growth_rate}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Competitive Position:</span>
+                  <span className="font-semibold">{pricing_strategy.competitive_positioning}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Model Fit Score:</span>
+                  <span className="font-semibold">{revenue_model_analysis.model_fit.split('-')[0].trim()}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+// Legacy component for backward compatibility
+const LegacyFinancialView: React.FC<{ data: any }> = ({ data }) => {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -63,237 +363,19 @@ const FinancialAnalysisTabContent: React.FC<FinancialAnalysisTabContentProps> = 
 
   return (
     <div className="space-y-6">
-      {/* Key Financial Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Startup Costs</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(data.keyMetrics.totalStartupCost)}</div>
-            <p className="text-xs text-muted-foreground">Initial investment needed</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Monthly Burn Rate</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(data.keyMetrics.monthlyBurnRate)}</div>
-            <p className="text-xs text-muted-foreground">Average monthly expenses</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Break-even Point</CardTitle>
-            <Calculator className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">Month {data.keyMetrics.breakEvenMonth}</div>
-            <p className="text-xs text-muted-foreground">When costs = revenue</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Funding Required</CardTitle>
-            <PiggyBank className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(data.keyMetrics.fundingNeeded)}</div>
-            <p className="text-xs text-muted-foreground">To reach profitability</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Startup Costs Breakdown */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Startup Costs Breakdown</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer config={chartConfig} className="h-[300px]">
-              <BarChart data={data.startupCosts}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="category" angle={-45} textAnchor="end" height={60} />
-                <YAxis tickFormatter={formatCurrency} />
-                <ChartTooltip
-                  content={<ChartTooltipContent />}
-                  formatter={(value: number) => [formatCurrency(value), "Amount"]}
-                />
-                <Bar dataKey="amount" fill="var(--color-development)" />
-              </BarChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-
-        {/* Monthly Operating Costs */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Monthly Operating Costs</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer config={chartConfig} className="h-[300px]">
-              <AreaChart data={data.operatingCosts}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis tickFormatter={formatCurrency} />
-                <ChartTooltip
-                  content={<ChartTooltipContent />}
-                  formatter={(value: number) => [formatCurrency(value), ""]}
-                />
-                <Area dataKey="development" stackId="1" stroke="var(--color-development)" fill="var(--color-development)" />
-                <Area dataKey="marketing" stackId="1" stroke="var(--color-marketing)" fill="var(--color-marketing)" />
-                <Area dataKey="operations" stackId="1" stroke="var(--color-operations)" fill="var(--color-operations)" />
-              </AreaChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-
-        {/* Revenue Projections */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Revenue Projections</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer config={chartConfig} className="h-[300px]">
-              <LineChart data={data.revenueProjections}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis tickFormatter={formatCurrency} />
-                <ChartTooltip
-                  content={<ChartTooltipContent />}
-                  formatter={(value: number) => [formatCurrency(value), "Revenue"]}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="revenue" 
-                  stroke="var(--color-revenue)" 
-                  strokeWidth={3}
-                  dot={{ fill: "var(--color-revenue)" }}
-                />
-              </LineChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-
-        {/* Break-even Analysis */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Break-even Analysis</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer config={chartConfig} className="h-[300px]">
-              <ComposedChart data={data.breakEvenAnalysis}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis tickFormatter={formatCurrency} />
-                <ChartTooltip
-                  content={<ChartTooltipContent />}
-                  formatter={(value: number) => [formatCurrency(value), ""]}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="revenue" 
-                  stroke="var(--color-revenue)" 
-                  strokeWidth={2}
-                  name="Revenue"
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="costs" 
-                  stroke="var(--color-costs)" 
-                  strokeWidth={2}
-                  name="Total Costs"
-                />
-                <Bar dataKey="profit" fill="var(--color-profit)" name="Profit/Loss" />
-              </ComposedChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Funding Requirements */}
       <Card>
         <CardHeader>
-          <CardTitle>Funding Requirements Allocation</CardTitle>
+          <CardTitle>Financial Analysis</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <ChartContainer config={chartConfig} className="h-[300px]">
-              <PieChart>
-                <Pie
-                  data={data.fundingRequirements}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percentage }) => `${name} ${percentage}%`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="amount"
-                >
-                  {data.fundingRequirements.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.fill} />
-                  ))}
-                </Pie>
-                <ChartTooltip
-                  content={<ChartTooltipContent />}
-                  formatter={(value: number) => [formatCurrency(value), "Amount"]}
-                />
-              </PieChart>
-            </ChartContainer>
-            
-            <div className="space-y-4">
-              <h4 className="font-semibold">Funding Breakdown</h4>
-              {data.fundingRequirements.map((item, index) => (
-                <div key={index} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div 
-                      className="w-3 h-3 rounded-full" 
-                      style={{ backgroundColor: item.fill }}
-                    />
-                    <span className="text-sm">{item.category}</span>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-medium">{formatCurrency(item.amount)}</div>
-                    <div className="text-xs text-muted-foreground">{item.percentage}%</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Financial Insights */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Key Financial Insights</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <h4 className="font-semibold text-green-600">Strengths</h4>
-              <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                <li>Moderate initial investment required</li>
-                <li>Scalable revenue model</li>
-                <li>Clear path to profitability</li>
-              </ul>
-            </div>
-            <div className="space-y-2">
-              <h4 className="font-semibold text-orange-600">Considerations</h4>
-              <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                <li>Customer acquisition costs need validation</li>
-                <li>Revenue assumptions require market testing</li>
-                <li>Consider seasonal revenue variations</li>
-              </ul>
-            </div>
+          <div className="text-center py-8">
+            <Building className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Legacy Financial Data</h3>
+            <p className="text-muted-foreground">
+              This report uses an older data format. For comprehensive financial analysis, 
+              please regenerate the report to see detailed market opportunity, pricing strategy, 
+              and multi-year projections.
+            </p>
           </div>
         </CardContent>
       </Card>
