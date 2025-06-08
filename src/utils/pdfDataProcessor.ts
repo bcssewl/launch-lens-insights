@@ -1,6 +1,5 @@
 
 import { format } from 'date-fns';
-import { parseFinancialAnalysis } from './financialDataParser';
 
 export const preparePrintData = (report: any) => {
   const reportData = report.report_data || {};
@@ -58,34 +57,24 @@ export const preparePrintData = (report: any) => {
     marketSaturation: reportData.market_saturation || reportData.marketSaturation || 'Moderate'
   };
   
-  // Enhanced financial analysis handling - check for new comprehensive format first
-  let financialAnalysis = reportData.financialAnalysis || reportData.financial_analysis;
-  
-  // Try to parse the new comprehensive format
-  const parsedFinancial = parseFinancialAnalysis(financialAnalysis);
-  if (parsedFinancial) {
-    // Use the new comprehensive format
-    financialAnalysis = parsedFinancial;
-  } else {
-    // Fallback to legacy format
-    financialAnalysis = financialAnalysis || {
-      startupCosts: reportData.startup_costs || [],
-      operatingCosts: reportData.operating_costs || [],
-      revenueProjections: reportData.revenue_projections || [
-        { period: 'Year 1', revenue: 50000, costs: 40000, profit: 10000 },
-        { period: 'Year 2', revenue: 150000, costs: 100000, profit: 50000 },
-        { period: 'Year 3', revenue: 350000, costs: 200000, profit: 150000 }
-      ],
-      breakEvenAnalysis: reportData.break_even_analysis || reportData.breakEvenAnalysis || [],
-      fundingRequirements: reportData.funding_requirements || reportData.fundingRequirements || [],
-      keyMetrics: reportData.financial_metrics || {
-        totalStartupCost: 50000,
-        monthlyBurnRate: 8000,
-        breakEvenMonth: 8,
-        fundingNeeded: 100000
-      }
-    };
-  }
+  // Extract financial analysis
+  const financialAnalysis = reportData.financialAnalysis || reportData.financial_analysis || {
+    startupCosts: reportData.startup_costs || [],
+    operatingCosts: reportData.operating_costs || [],
+    revenueProjections: reportData.revenue_projections || [
+      { period: 'Year 1', revenue: 50000, costs: 40000, profit: 10000 },
+      { period: 'Year 2', revenue: 150000, costs: 100000, profit: 50000 },
+      { period: 'Year 3', revenue: 350000, costs: 200000, profit: 150000 }
+    ],
+    breakEvenAnalysis: reportData.break_even_analysis || reportData.breakEvenAnalysis || [],
+    fundingRequirements: reportData.funding_requirements || reportData.fundingRequirements || [],
+    keyMetrics: reportData.financial_metrics || {
+      totalStartupCost: 50000,
+      monthlyBurnRate: 8000,
+      breakEvenMonth: 8,
+      fundingNeeded: 100000
+    }
+  };
   
   // Extract SWOT analysis
   const swot = reportData.swot || {
