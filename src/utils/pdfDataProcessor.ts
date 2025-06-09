@@ -1,5 +1,6 @@
 
 import { format } from 'date-fns';
+import { parseFinancialData } from './financialDataParser';
 
 export const preparePrintData = (report: any) => {
   const reportData = report.report_data || {};
@@ -57,18 +58,23 @@ export const preparePrintData = (report: any) => {
     marketSaturation: reportData.market_saturation || reportData.marketSaturation || 'Moderate'
   };
   
-  // Extract financial analysis
-  const financialAnalysis = reportData.financialAnalysis || reportData.financial_analysis || {
-    startupCosts: reportData.startup_costs || [],
-    operatingCosts: reportData.operating_costs || [],
-    revenueProjections: reportData.revenue_projections || [
+  // Parse financial analysis using the new parser
+  const rawFinancialData = reportData.financialAnalysis || reportData.financial_analysis || {};
+  const parsedFinancialData = parseFinancialData(rawFinancialData);
+  
+  const financialAnalysis = {
+    ...parsedFinancialData,
+    // Ensure backward compatibility by providing fallback data
+    startupCosts: parsedFinancialData.startupCosts || reportData.startup_costs || [],
+    operatingCosts: parsedFinancialData.operatingCosts || reportData.operating_costs || [],
+    revenueProjections: parsedFinancialData.revenueProjections || reportData.revenue_projections || [
       { period: 'Year 1', revenue: 50000, costs: 40000, profit: 10000 },
       { period: 'Year 2', revenue: 150000, costs: 100000, profit: 50000 },
       { period: 'Year 3', revenue: 350000, costs: 200000, profit: 150000 }
     ],
-    breakEvenAnalysis: reportData.break_even_analysis || reportData.breakEvenAnalysis || [],
-    fundingRequirements: reportData.funding_requirements || reportData.fundingRequirements || [],
-    keyMetrics: reportData.financial_metrics || {
+    breakEvenAnalysis: parsedFinancialData.breakEvenAnalysis || reportData.break_even_analysis || reportData.breakEvenAnalysis || [],
+    fundingRequirements: parsedFinancialData.fundingRequirements || reportData.funding_requirements || reportData.fundingRequirements || [],
+    keyMetrics: parsedFinancialData.keyMetrics || reportData.financial_metrics || {
       totalStartupCost: 50000,
       monthlyBurnRate: 8000,
       breakEvenMonth: 8,
