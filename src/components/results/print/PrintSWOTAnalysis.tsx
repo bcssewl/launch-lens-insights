@@ -1,3 +1,4 @@
+
 import React from 'react';
 import PrintIcon from './PrintIcon';
 
@@ -12,17 +13,30 @@ interface PrintSWOTAnalysisProps {
 
 const PrintSWOTAnalysis: React.FC<PrintSWOTAnalysisProps> = ({ data }) => {
   // Truncate items to 1-2 lines and merge related points
-  const truncateItems = (items: string[], maxItems: number = 5) => {
+  const truncateItems = (items: string[] | undefined, maxItems: number = 5) => {
+    // Add safety check for undefined or non-array items
+    if (!items || !Array.isArray(items)) {
+      return [];
+    }
+    
     return items.slice(0, maxItems).map(item => {
       // Keep items concise - max 70 characters
       return item.length > 70 ? item.substring(0, 67) + '...' : item;
     });
   };
 
+  // Provide safe fallbacks for SWOT data
+  const safeData = {
+    strengths: data?.strengths || [],
+    weaknesses: data?.weaknesses || [],
+    opportunities: data?.opportunities || [],
+    threats: data?.threats || []
+  };
+
   const swotSections = [
     {
       title: 'Strengths',
-      items: truncateItems(data.strengths),
+      items: truncateItems(safeData.strengths),
       color: '#059669',
       bgColor: '#ecfdf5',
       borderColor: '#34d399',
@@ -30,7 +44,7 @@ const PrintSWOTAnalysis: React.FC<PrintSWOTAnalysisProps> = ({ data }) => {
     },
     {
       title: 'Weaknesses', 
-      items: truncateItems(data.weaknesses),
+      items: truncateItems(safeData.weaknesses),
       color: '#dc2626',
       bgColor: '#fef2f2',
       borderColor: '#f87171',
@@ -38,7 +52,7 @@ const PrintSWOTAnalysis: React.FC<PrintSWOTAnalysisProps> = ({ data }) => {
     },
     {
       title: 'Opportunities',
-      items: truncateItems(data.opportunities),
+      items: truncateItems(safeData.opportunities),
       color: '#2563eb',
       bgColor: '#eff6ff',
       borderColor: '#60a5fa',
@@ -46,7 +60,7 @@ const PrintSWOTAnalysis: React.FC<PrintSWOTAnalysisProps> = ({ data }) => {
     },
     {
       title: 'Threats',
-      items: truncateItems(data.threats),
+      items: truncateItems(safeData.threats),
       color: '#d97706',
       bgColor: '#fffbeb',
       borderColor: '#fbbf24',
