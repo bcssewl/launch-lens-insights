@@ -39,6 +39,15 @@
     /* Custom success/warning */
     --success: 145 92% 30%;       /* #059669 */
     --warning: 30 95% 44%;        /* #D97706 */
+    
+    /* Liquid Glass Design System Variables */
+    --glass-bg: rgba(255, 255, 255, 0.08);
+    --glass-border: rgba(255, 255, 255, 0.18);
+    --glass-shadow: rgba(0, 0, 0, 0.1);
+    --glass-inner-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    --glass-backdrop: blur(20px);
+    --glow-primary: rgba(139, 92, 246, 0.3);
+    --glow-accent: rgba(168, 85, 247, 0.25);
   }
 
   .dark {
@@ -73,6 +82,15 @@
     /* Custom success/warning */
     --success: 158 81% 40%;      /* #10B981 */
     --warning: 36 93% 50%;       /* #F59E0B */
+    
+    /* Dark Mode Liquid Glass Variables */
+    --glass-bg: rgba(255, 255, 255, 0.05);
+    --glass-border: rgba(255, 255, 255, 0.12);
+    --glass-shadow: rgba(0, 0, 0, 0.25);
+    --glass-inner-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    --glass-backdrop: blur(24px);
+    --glow-primary: rgba(139, 92, 246, 0.4);
+    --glow-accent: rgba(168, 85, 247, 0.35);
   }
 }
 
@@ -91,7 +109,7 @@
   
   body {
     @apply bg-background text-foreground;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     min-height: 100vh;
@@ -99,6 +117,7 @@
     overflow-x: hidden;
     width: 100vw;
     max-width: 100%;
+    background: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--muted)) 100%);
   }
 
   #root {
@@ -108,7 +127,7 @@
   }
   
   h1, h2, h3, h4, h5, h6 {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
     font-weight: 600;
     letter-spacing: -0.02em;
     line-height: 1.2;
@@ -121,320 +140,289 @@
 }
 
 @layer components {
-  /* Mobile-first button styles with fluid sizing */
-  .apple-button {
-    @apply bg-gradient-to-r from-primary to-accent text-white font-medium rounded-xl transition-all duration-300 hover:shadow-lg hover:scale-105 border-0;
-    font-size: clamp(0.875rem, 3vw, 1rem); /* 14px to 16px */
-    padding: clamp(0.75rem, 3vw, 1rem) clamp(1rem, 4vw, 2rem); /* Responsive padding */
-    box-shadow: 0 2px 10px rgba(139, 92, 246, 0.3);
-    min-height: 44px; /* iOS touch target */
-    width: 100%;
-    max-width: 100%;
+  /* Apple Liquid Glass Design System */
+  
+  /* Core Glass Components */
+  .liquid-glass {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-backdrop);
+    -webkit-backdrop-filter: var(--glass-backdrop);
+    border: 1px solid var(--glass-border);
+    box-shadow: 
+      0 8px 32px var(--glass-shadow),
+      var(--glass-inner-shadow);
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    position: relative;
+    overflow: hidden;
   }
   
-  @media (min-width: 768px) {
-    .apple-button {
-      width: auto;
-      box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
-    }
+  .liquid-glass::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    pointer-events: none;
+  }
+  
+  .liquid-glass:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.25);
+    box-shadow: 
+      0 12px 48px var(--glass-shadow),
+      0 0 20px var(--glow-primary),
+      var(--glass-inner-shadow);
+    transform: translateY(-2px);
+  }
+  
+  .dark .liquid-glass:hover {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  /* Enhanced Cards */
+  .liquid-card {
+    @apply liquid-glass rounded-3xl p-6;
+    background: var(--glass-bg);
+  }
+  
+  .liquid-card-header {
+    @apply mb-6 pb-4;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    position: relative;
+  }
+  
+  .liquid-card-header::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.3), transparent);
+  }
+
+  /* Liquid Buttons */
+  .liquid-button {
+    @apply liquid-glass rounded-2xl px-6 py-3 font-medium transition-all duration-300;
+    background: linear-gradient(135deg, var(--glass-bg), rgba(139, 92, 246, 0.1));
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    color: hsl(var(--primary));
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .liquid-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+  
+  .liquid-button:hover::before {
+    left: 100%;
+  }
+  
+  .liquid-button:hover {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(168, 85, 247, 0.2));
+    border-color: rgba(139, 92, 246, 0.5);
+    box-shadow: 
+      0 8px 32px rgba(139, 92, 246, 0.3),
+      0 0 20px var(--glow-primary);
+    transform: translateY(-1px);
+  }
+
+  /* Primary Liquid Button */
+  .liquid-button-primary {
+    @apply liquid-button;
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
+    color: white;
+    border-color: transparent;
+  }
+  
+  .liquid-button-primary:hover {
+    box-shadow: 
+      0 12px 48px rgba(139, 92, 246, 0.4),
+      0 0 30px var(--glow-primary);
+    transform: translateY(-2px) scale(1.02);
+  }
+
+  /* Sidebar Liquid Glass */
+  .liquid-sidebar {
+    @apply liquid-glass;
+    background: rgba(255, 255, 255, 0.03);
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: none;
+  }
+  
+  .liquid-sidebar-item {
+    @apply rounded-xl transition-all duration-300 relative overflow-hidden;
+    background: transparent;
+  }
+  
+  .liquid-sidebar-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 16px rgba(139, 92, 246, 0.2);
+  }
+  
+  .liquid-sidebar-item[data-active="true"] {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(168, 85, 247, 0.15));
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    box-shadow: 
+      0 4px 16px rgba(139, 92, 246, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  /* Metric Cards with Glow */
+  .liquid-metric-card {
+    @apply liquid-card;
+    background: linear-gradient(135deg, var(--glass-bg), rgba(139, 92, 246, 0.05));
+  }
+  
+  .liquid-metric-card:hover {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(139, 92, 246, 0.1));
+    box-shadow: 
+      0 16px 64px rgba(139, 92, 246, 0.2),
+      0 0 30px var(--glow-primary),
+      var(--glass-inner-shadow);
+  }
+
+  /* Header with Frosted Glass */
+  .liquid-header {
+    @apply liquid-glass;
+    background: rgba(255, 255, 255, 0.05);
+    border: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px) saturate(180%);
+  }
+
+  /* Progress with Liquid Effect */
+  .liquid-progress {
+    @apply liquid-glass rounded-full h-3 p-1;
+    background: rgba(255, 255, 255, 0.1);
+  }
+  
+  .liquid-progress-bar {
+    background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--accent)));
+    border-radius: inherit;
+    height: 100%;
+    transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    box-shadow: 0 0 10px var(--glow-primary);
+  }
+
+  /* Avatar with Glass Effect */
+  .liquid-avatar {
+    @apply liquid-glass rounded-full p-1;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(139, 92, 246, 0.1));
+  }
+
+  /* Badge with Glow */
+  .liquid-badge {
+    @apply liquid-glass rounded-full px-3 py-1 text-xs font-medium;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(168, 85, 247, 0.15));
+    color: hsl(var(--primary));
+    border-color: rgba(139, 92, 246, 0.3);
+  }
+
+  /* Input with Glass Effect */
+  .liquid-input {
+    @apply liquid-glass rounded-2xl px-4 py-3;
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+  
+  .liquid-input:focus {
+    border-color: rgba(139, 92, 246, 0.5);
+    box-shadow: 
+      0 0 20px var(--glow-primary),
+      var(--glass-inner-shadow);
+    outline: none;
+  }
+
+  /* Dashboard Background */
+  .liquid-dashboard-bg {
+    background: 
+      linear-gradient(135deg, 
+        hsl(var(--background)) 0%, 
+        hsl(var(--muted)) 25%, 
+        hsl(var(--background)) 50%, 
+        hsl(var(--muted)) 75%, 
+        hsl(var(--background)) 100%);
+    background-size: 400% 400%;
+    animation: liquidFlow 20s ease infinite;
+    position: relative;
+  }
+  
+  .liquid-dashboard-bg::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+      radial-gradient(circle at 20% 20%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, rgba(168, 85, 247, 0.1) 0%, transparent 50%);
+    pointer-events: none;
+  }
+
+  /* Mobile optimizations */
+  .mobile-liquid-card {
+    @apply liquid-card;
+    border-radius: 1.5rem;
+    padding: 1rem;
+  }
+  
+  .mobile-liquid-button {
+    @apply liquid-button;
+    min-height: 44px;
+    width: 100%;
+  }
+
+  /* Legacy compatibility - maintain existing functionality */
+  .apple-button {
+    @apply liquid-button-primary;
   }
   
   .apple-button-outline {
-    @apply border border-primary/20 text-primary bg-white/90 backdrop-blur-xl font-medium rounded-xl transition-all duration-300 hover:bg-primary/5 hover:border-primary/40;
-    font-size: clamp(0.875rem, 3vw, 1rem); /* 14px to 16px */
-    padding: clamp(0.75rem, 3vw, 1rem) clamp(1rem, 4vw, 2rem); /* Responsive padding */
-    min-height: 44px; /* iOS touch target */
-    width: 100%;
-    max-width: 100%;
+    @apply liquid-button;
   }
   
-  @media (min-width: 768px) {
-    .apple-button-outline {
-      width: auto;
-    }
-  }
-  
-  .dark .apple-button-outline {
-    @apply bg-gray-900/90 text-white border-gray-600/30 hover:bg-gray-800/90;
-  }
-
-  /* Mobile-first card styles with overflow prevention */
   .apple-card {
-    @apply bg-white/95 backdrop-blur-xl border border-gray-200/30 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-500;
-    width: 100%;
-    max-width: 100%;
-    overflow-x: hidden;
+    @apply liquid-card;
   }
   
-  @media (min-width: 768px) {
-    .apple-card {
-      @apply rounded-3xl shadow-xl hover:shadow-2xl;
-    }
+  .enhanced-card {
+    @apply liquid-card;
   }
   
-  .dark .apple-card {
-    @apply bg-gray-900/90 border-gray-700/30;
-  }
-
-  /* Mobile dashboard specific styles with strict width control */
   .mobile-gradient-card {
-    @apply bg-white/95 backdrop-blur-xl border border-gray-200/30 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300;
-    width: 100%;
-    max-width: 100%;
-    overflow-x: hidden;
+    @apply mobile-liquid-card;
   }
   
-  @media (min-width: 768px) {
-    .mobile-gradient-card {
-      @apply rounded-3xl;
-    }
-  }
-  
-  .dark .mobile-gradient-card {
-    @apply bg-gray-900/95 border-gray-700/30;
-  }
-
   .mobile-stat-card {
-    @apply bg-white/95 backdrop-blur-xl border border-gray-200/30 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300;
-    width: 100%;
-    max-width: 100%;
-    overflow-x: hidden;
+    @apply mobile-liquid-card;
   }
   
-  @media (min-width: 768px) {
-    .mobile-stat-card {
-      @apply rounded-3xl;
-    }
-  }
-  
-  .dark .mobile-stat-card {
-    @apply bg-gray-900/95 border-gray-700/30;
-  }
-
   .mobile-activity-card {
-    @apply bg-white/95 backdrop-blur-xl border border-gray-200/30 rounded-2xl shadow-lg;
-    width: 100%;
-    max-width: 100%;
-    overflow-x: hidden;
+    @apply mobile-liquid-card;
   }
   
-  @media (min-width: 768px) {
-    .mobile-activity-card {
-      @apply rounded-3xl;
-    }
-  }
-  
-  .dark .mobile-activity-card {
-    @apply bg-gray-900/95 border-gray-700/30;
-  }
-
   .mobile-insights-card {
-    @apply bg-white/95 backdrop-blur-xl border border-gray-200/30 rounded-2xl shadow-lg;
-    width: 100%;
-    max-width: 100%;
-    overflow-x: hidden;
+    @apply mobile-liquid-card;
   }
   
-  @media (min-width: 768px) {
-    .mobile-insights-card {
-      @apply rounded-3xl;
-    }
-  }
-  
-  .dark .mobile-insights-card {
-    @apply bg-gray-900/95 border-gray-700/30;
-  }
-
   .mobile-assistant-card {
-    @apply bg-white/95 backdrop-blur-xl border border-gray-200/30 rounded-2xl shadow-lg;
-    width: 100%;
-    max-width: 100%;
-    overflow-x: hidden;
+    @apply mobile-liquid-card;
   }
+
+  /* ... keep existing code (all other utility classes and animations) */
   
-  @media (min-width: 768px) {
-    .mobile-assistant-card {
-      @apply rounded-3xl;
-    }
-  }
-  
-  .dark .mobile-assistant-card {
-    @apply bg-gray-900/95 border-gray-700/30;
-  }
-
-  .mobile-activity-item {
-    @apply bg-gray-50/50 backdrop-blur-sm hover:bg-gray-100/60 rounded-xl;
-    width: 100%;
-    max-width: 100%;
-    overflow-x: hidden;
-  }
-  
-  .dark .mobile-activity-item {
-    @apply bg-gray-800/50 hover:bg-gray-700/60;
-  }
-
-  .mobile-gradient-button {
-    @apply bg-gradient-to-r from-primary via-accent to-yellow-500 text-white font-medium rounded-xl transition-all duration-300 hover:shadow-lg hover:scale-[1.02] border-0;
-    font-size: clamp(0.875rem, 3vw, 1rem); /* 14px to 16px */
-    padding: clamp(0.75rem, 3vw, 1rem) clamp(1rem, 4vw, 2rem); /* Responsive padding */
-    box-shadow: 0 2px 10px rgba(139, 92, 246, 0.3);
-    min-height: 44px; /* iOS touch target */
-    width: 100%;
-    max-width: 100%;
-  }
-  
-  @media (min-width: 768px) {
-    .mobile-gradient-button {
-      @apply rounded-2xl;
-      box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
-    }
-  }
-
-  .mobile-gradient-progress {
-    @apply bg-gray-200/50 h-1.5;
-  }
-  
-  @media (min-width: 768px) {
-    .mobile-gradient-progress {
-      @apply h-2;
-    }
-  }
-  
-  .dark .mobile-gradient-progress {
-    @apply bg-gray-700/50;
-  }
-
-  .mobile-gradient-progress [role="progressbar"] {
-    background: linear-gradient(90deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 50%, #fbbf24 100%);
-  }
-
-  /* Mobile responsive spacing utilities with overflow prevention */
-  .mobile-spacing {
-    padding: clamp(1rem, 4vw, 2rem);
-    gap: clamp(0.75rem, 3vw, 1.5rem);
-    width: 100%;
-    max-width: 100%;
-    overflow-x: hidden;
-  }
-
-  /* Mobile typography with fluid scaling */
-  .mobile-heading {
-    font-size: clamp(1.125rem, 4vw, 1.25rem); /* 18px to 20px */
-    font-weight: 600;
-  }
-  
-  .mobile-subheading {
-    font-size: clamp(1rem, 3vw, 1.125rem); /* 16px to 18px */
-    font-weight: 500;
-  }
-
-  /* Touch target optimization */
-  .touch-target {
-    @apply min-h-[44px] min-w-[44px];
-  }
-
-  /* Prevent zoom on form elements in iOS */
-  input[type="text"],
-  input[type="email"],
-  input[type="password"],
-  input[type="number"],
-  textarea,
-  select {
-    font-size: 16px !important;
-    transform: scale(1);
-  }
-
-  /* Global overflow prevention */
-  .overflow-prevent {
-    overflow-x: hidden !important;
-    max-width: 100vw !important;
-    width: 100% !important;
-  }
-
-  /* ... keep existing code (all other CSS styles from animations to glassmorphism) */
-  
-  /* Landing Page Styles */
-  .hero-gradient {
-    background: linear-gradient(315deg, #0f0f23 0%, #1a1a2e 25%, #16213e 50%, #1a1a2e 75%, #0f0f23 100%);
-    background-size: 400% 400%;
-    animation: gradientShift 15s ease infinite;
-  }
-  
-  .dark .hero-gradient {
-    background: linear-gradient(315deg, #0f0f23 0%, #1a1a2e 25%, #16213e 50%, #1a1a2e 75%, #0f0f23 100%);
-    background-size: 400% 400%;
-    animation: gradientShift 15s ease infinite;
-  }
-
-  .apple-hero {
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%);
-  }
-  .dark .apple-hero {
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
-  }
-
-  /* Glassmorphism Styles */
-  .glass-card {
-    @apply bg-white/20 backdrop-blur-xl border border-white/30 shadow-2xl;
-  }
-  .dark .glass-card {
-    @apply bg-gray-900/20 border-gray-700/30;
-  }
-
-  .glass-recording {
-    @apply bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl;
-  }
-  .dark .glass-recording {
-    @apply bg-gray-800/10 border-gray-600/20;
-  }
-
-  .glass-controls {
-    @apply bg-white/5 backdrop-blur-md border border-white/10 rounded-xl;
-  }
-  .dark .glass-controls {
-    @apply bg-gray-700/5 border-gray-500/10;
-  }
-
-  /* Purple Glow Animation */
-  .recording-glow {
-    animation: purpleGlow 2s ease-in-out infinite alternate;
-    box-shadow: 0 0 20px rgba(139, 92, 246, 0.3), 0 0 40px rgba(139, 92, 246, 0.2), 0 0 60px rgba(139, 92, 246, 0.1);
-  }
-
-  .recording-border {
-    border: 2px solid;
-    border-image: linear-gradient(45deg, rgba(139, 92, 246, 0.6), rgba(168, 85, 247, 0.4), rgba(139, 92, 246, 0.6)) 1;
-    animation: borderPulse 2s ease-in-out infinite;
-  }
-
-  .recording-visualization {
-    @apply glass-recording p-6;
-  }
-
-  .apple-badge {
-    @apply inline-flex items-center px-4 py-2 rounded-2xl text-sm font-medium bg-primary/10 text-primary border border-primary/20 backdrop-blur-sm;
-  }
-
-  .apple-section {
-    @apply py-20 md:py-32;
-  }
-
-  .apple-container {
-    @apply max-w-6xl mx-auto px-6;
-  }
-
-  .apple-heading {
-    @apply text-4xl md:text-6xl font-semibold text-center mb-6 leading-tight;
-    letter-spacing: -0.03em;
-  }
-
-  .apple-subheading {
-    @apply text-xl md:text-2xl text-gray-600 text-center max-w-4xl mx-auto mb-12 leading-relaxed;
-  }
-  .dark .apple-subheading {
-    @apply text-gray-300;
-  }
-
   .floating-element {
     animation: float 8s ease-in-out infinite;
   }
@@ -447,121 +435,46 @@
     animation-delay: -4s;
   }
 
-  .apple-metric-card {
-    @apply bg-white/95 backdrop-blur-xl border border-gray-200/30 rounded-3xl p-6 hover:bg-white/90 transition-all duration-300 shadow-lg;
-  }
-  .dark .apple-metric-card {
-    @apply bg-gray-900/95 border-gray-700/30 hover:bg-gray-800/95;
-  }
-
-  /* Dashboard-specific Apple styles */
-  .enhanced-card {
-    @apply apple-card shadow-lg hover:shadow-xl;
-  }
-
-  .gradient-button {
-    @apply apple-button;
-  }
-
-  .hover-lift {
-    @apply transition-transform duration-200 hover:-translate-y-1;
-  }
-
-  .shadow-soft {
-    box-shadow: 0 4px 6px -1px rgba(139, 92, 246, 0.1), 0 2px 4px -1px rgba(139, 92, 246, 0.06);
-  }
-
   /* Chat interface styles */
   .chat-container {
-    @apply bg-white/95 backdrop-blur-xl border border-gray-200/30 rounded-3xl shadow-lg;
-  }
-  .dark .chat-container {
-    @apply bg-gray-900/95 border-gray-700/30;
-  }
-
-  /* Form styles */
-  .apple-input {
-    @apply rounded-2xl border-gray-200/50 bg-white/80 backdrop-blur-sm focus:border-primary/50 focus:ring-primary/20;
-  }
-  .dark .apple-input {
-    @apply border-gray-600/50 bg-gray-800/80 focus:border-primary/50;
+    @apply liquid-card;
   }
 
   /* Tab styles */
   .apple-tabs {
-    @apply bg-gray-100/50 rounded-2xl p-1;
-  }
-  .dark .apple-tabs {
-    @apply bg-gray-800/50;
+    @apply liquid-glass rounded-2xl p-1;
+    background: rgba(255, 255, 255, 0.05);
   }
 
   .apple-tab {
-    @apply rounded-xl px-4 py-2 text-sm font-medium transition-all duration-200;
+    @apply rounded-xl px-4 py-2 text-sm font-medium transition-all duration-300;
   }
 
   .apple-tab[data-state="active"] {
-    @apply bg-white text-primary shadow-sm;
-  }
-  .dark .apple-tab[data-state="active"] {
-    @apply bg-gray-700 text-white;
-  }
-
-  /* Apple-inspired dashboard background */
-  .apple-dashboard-bg {
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%, #f8fafc 100%);
-    background-size: 400% 400%;
-    animation: gradientShift 20s ease infinite;
-  }
-  .dark .apple-dashboard-bg {
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 25%, #334155 50%, #1e293b 75%, #0f172a 100%);
-    background-size: 400% 400%;
-    animation: gradientShift 20s ease infinite;
+    @apply liquid-glass;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(168, 85, 247, 0.15));
+    color: hsl(var(--primary));
+    box-shadow: 0 4px 16px rgba(139, 92, 246, 0.3);
   }
 
-  /* Apple-inspired glass morphism */
-  .apple-glass {
-    @apply bg-white/80 backdrop-blur-xl border border-white/20 shadow-2xl;
-  }
-  .dark .apple-glass {
-    @apply bg-gray-900/80 border-gray-700/20;
-  }
-
-  /* Refined cards for dashboard */
-  .apple-dashboard-card {
-    @apply bg-white/95 backdrop-blur-xl border border-gray-200/20 rounded-3xl shadow-xl hover:shadow-2xl hover:bg-white/98 transition-all duration-500;
-  }
-  .dark .apple-dashboard-card {
-    @apply bg-gray-900/95 border-gray-700/20 hover:bg-gray-800/95;
-  }
-
-  /* Animated Recording Sphere */
+  /* Animated Recording Sphere with Liquid Effect */
   .recording-sphere {
-    @apply w-24 h-24 rounded-full relative;
+    @apply w-24 h-24 rounded-full relative liquid-glass;
     background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 50%, hsl(var(--primary)) 100%);
     background-size: 200% 200%;
-    animation: sphereFloat 3s ease-in-out infinite, sphereGradient 4s ease-in-out infinite, spherePulse 2s ease-in-out infinite;
+    animation: sphereFloat 3s ease-in-out infinite, sphereGradient 4s ease-in-out infinite, liquidPulse 2s ease-in-out infinite;
     box-shadow: 
-      0 0 30px rgba(139, 92, 246, 0.4),
+      0 0 30px var(--glow-primary),
       0 0 60px rgba(139, 92, 246, 0.2),
       0 0 90px rgba(139, 92, 246, 0.1),
-      inset 0 0 30px rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(139, 92, 246, 0.3);
+      var(--glass-inner-shadow);
   }
 
   .recording-sphere::before {
     content: '';
     @apply absolute inset-2 rounded-full;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.05) 50%, rgba(255, 255, 255, 0.1) 100%);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0.2) 100%);
     backdrop-filter: blur(5px);
-  }
-
-  .recording-sphere-enter {
-    animation: sphereEnter 0.5s ease-out forwards;
-  }
-
-  .recording-sphere-exit {
-    animation: sphereExit 0.3s ease-in forwards;
   }
 }
 
@@ -595,37 +508,48 @@
   }
 }
 
-/* ... keep existing code (keyframes animations) */
+/* Enhanced Keyframes for Liquid Glass */
+@keyframes liquidFlow {
+  0%, 100% { 
+    background-position: 0% 50%; 
+    filter: hue-rotate(0deg);
+  }
+  25% { 
+    background-position: 100% 50%; 
+    filter: hue-rotate(90deg);
+  }
+  50% { 
+    background-position: 50% 100%; 
+    filter: hue-rotate(180deg);
+  }
+  75% { 
+    background-position: 0% 50%; 
+    filter: hue-rotate(270deg);
+  }
+}
+
+@keyframes liquidPulse {
+  0%, 100% { 
+    box-shadow: 
+      0 0 30px var(--glow-primary),
+      0 0 60px rgba(139, 92, 246, 0.2),
+      0 0 90px rgba(139, 92, 246, 0.1),
+      var(--glass-inner-shadow);
+    transform: scale(1);
+  }
+  50% { 
+    box-shadow: 
+      0 0 40px var(--glow-primary),
+      0 0 80px rgba(139, 92, 246, 0.3),
+      0 0 120px rgba(139, 92, 246, 0.15),
+      var(--glass-inner-shadow);
+    transform: scale(1.05);
+  }
+}
 
 @keyframes float {
   0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.7; }
   50% { transform: translateY(-15px) rotate(3deg); opacity: 1; }
-}
-
-@keyframes gradientShift {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-}
-
-@keyframes purpleGlow {
-  0% { 
-    box-shadow: 0 0 20px rgba(139, 92, 246, 0.3), 0 0 40px rgba(139, 92, 246, 0.2), 0 0 60px rgba(139, 92, 246, 0.1);
-  }
-  100% { 
-    box-shadow: 0 0 30px rgba(139, 92, 246, 0.5), 0 0 60px rgba(139, 92, 246, 0.3), 0 0 90px rgba(139, 92, 246, 0.2);
-  }
-}
-
-@keyframes borderPulse {
-  0% { 
-    border-color: rgba(139, 92, 246, 0.6);
-  }
-  50% { 
-    border-color: rgba(168, 85, 247, 0.8);
-  }
-  100% { 
-    border-color: rgba(139, 92, 246, 0.6);
-  }
 }
 
 @keyframes sphereFloat {
@@ -643,23 +567,6 @@
   }
   50% { 
     background-position: 100% 50%;
-  }
-}
-
-@keyframes spherePulse {
-  0%, 100% { 
-    box-shadow: 
-      0 0 30px rgba(139, 92, 246, 0.4),
-      0 0 60px rgba(139, 92, 246, 0.2),
-      0 0 90px rgba(139, 92, 246, 0.1),
-      inset 0 0 30px rgba(255, 255, 255, 0.1);
-  }
-  50% { 
-    box-shadow: 
-      0 0 40px rgba(139, 92, 246, 0.6),
-      0 0 80px rgba(139, 92, 246, 0.3),
-      0 0 120px rgba(139, 92, 246, 0.15),
-      inset 0 0 40px rgba(255, 255, 255, 0.15);
   }
 }
 

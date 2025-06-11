@@ -57,21 +57,21 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ children }) => {
   };
 
   return (
-    <header className="border-b bg-background">
-      <div className="flex items-center justify-between p-4 bg-card border-b">
+    <header className="liquid-header border-b-0">
+      <div className="flex items-center justify-between p-4 liquid-glass border-b border-white/10">
         <div className="flex flex-col">
-          <h1 className="text-2xl font-bold text-foreground">{children || 'Dashboard'}</h1>
+          <h1 className="text-2xl font-bold text-foreground text-shadow-subtle">{children || 'Dashboard'}</h1>
           <p className="text-sm text-muted-foreground">{currentDate}</p>
         </div>
         <div className="flex items-center space-x-4">
           <ThemeToggle />
-          <Button variant="ghost" size="icon" aria-label="Notifications">
+          <Button variant="ghost" size="icon" aria-label="Notifications" className="liquid-glass rounded-full hover:bg-white/10">
             <MessageCircle className="h-5 w-5" />
             <span className="sr-only">Notifications</span>
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+              <Button variant="ghost" className="relative h-8 w-8 rounded-full liquid-avatar">
                 <Avatar className="h-8 w-8">
                   <AvatarImage src={profile?.avatar_url} alt="User Avatar" />
                   <AvatarFallback>
@@ -80,9 +80,9 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ children }) => {
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuContent align="end" className="w-56 liquid-glass border-white/20">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
-              <DropdownMenuSeparator />
+              <DropdownMenuSeparator className="bg-white/10" />
               <DropdownMenuItem asChild>
                 <Link to="/dashboard/profile">
                   <UserCircle className="mr-2 h-4 w-4" />
@@ -95,7 +95,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ children }) => {
                   <span>Settings</span>
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
+              <DropdownMenuSeparator className="bg-white/10" />
               <DropdownMenuItem onClick={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log out</span>

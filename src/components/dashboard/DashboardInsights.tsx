@@ -19,8 +19,8 @@ const quickInsights = [
 const DashboardInsights: React.FC<DashboardInsightsProps> = ({ hasValidatedIdeas }) => {
   return (
     <div className="space-y-6">
-      <ShadcnCard className="apple-card border-0 shadow-lg">
-        <ShadcnCardHeader className="pb-4">
+      <div className="liquid-card">
+        <ShadcnCardHeader className="liquid-card-header">
           <ShadcnCardTitle className="text-xl font-semibold">Your Insights</ShadcnCardTitle>
         </ShadcnCardHeader>
         <ShadcnCardContent className="space-y-4">
@@ -34,31 +34,31 @@ const DashboardInsights: React.FC<DashboardInsightsProps> = ({ hasValidatedIdeas
             ))
           ) : (
             <div className="text-center py-8">
-              <div className="w-12 h-12 mx-auto mb-3 bg-primary/10 rounded-2xl flex items-center justify-center">
+              <div className="w-12 h-12 mx-auto mb-3 liquid-glass rounded-2xl flex items-center justify-center">
                 <BarChart3 className="w-6 h-6 text-primary" />
               </div>
               <p className="text-muted-foreground text-sm">Complete a few validations to see personalized insights.</p>
             </div>
           )}
         </ShadcnCardContent>
-      </ShadcnCard>
+      </div>
 
-      <ShadcnCard className="apple-card border-0 shadow-lg">
-        <ShadcnCardHeader className="pb-4">
+      <div className="liquid-card">
+        <ShadcnCardHeader className="liquid-card-header">
           <ShadcnCardTitle className="text-lg font-semibold">AI Assistant</ShadcnCardTitle>
         </ShadcnCardHeader>
         <ShadcnCardContent>
           <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
             Get personalized advice for your startup ideas
           </p>
-          <Button className="w-full apple-button shadow-lg hover:shadow-xl transition-all duration-300" asChild>
+          <Button className="w-full liquid-button-primary shadow-lg hover:shadow-xl transition-all duration-300" asChild>
             <Link to="/dashboard/assistant">
               <PlayCircle className="mr-2 h-4 w-4" />
               Start Chat
             </Link>
           </Button>
         </ShadcnCardContent>
-      </ShadcnCard>
+      </div>
     </div>
   );
 };

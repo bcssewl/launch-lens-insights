@@ -21,7 +21,7 @@ const DashboardPage: React.FC = () => {
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10 overflow-x-hidden">
+        <div className="min-h-screen liquid-dashboard-bg overflow-x-hidden">
           {isMobile ? <MobileDashboardHeader /> : <DashboardHeader />}
           <div className={isMobile ? "mobile-container space-y-4" : "p-4 md:p-6 lg:p-8 space-y-6 md:space-y-8"}>
             {/* Quick Action Section */}
@@ -31,16 +31,16 @@ const DashboardPage: React.FC = () => {
               </section>
             )}
 
-            {/* Loading skeletons */}
+            {/* Loading skeletons with liquid glass effect */}
             <section className="grid gap-3 md:gap-6 md:grid-cols-2 xl:grid-cols-4">
               {[...Array(isMobile ? 3 : 4)].map((_, i) => (
-                <Skeleton key={i} className="h-24 md:h-32 w-full rounded-2xl md:rounded-3xl" />
+                <div key={i} className="liquid-glass h-24 md:h-32 w-full rounded-2xl md:rounded-3xl animate-pulse" />
               ))}
             </section>
             
             <section className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-8">
-              <Skeleton className="lg:col-span-2 h-48 md:h-60 rounded-2xl md:rounded-3xl" />
-              <Skeleton className="h-48 md:h-60 rounded-2xl md:rounded-3xl" />
+              <div className="lg:col-span-2 liquid-glass h-48 md:h-60 rounded-2xl md:rounded-3xl animate-pulse" />
+              <div className="liquid-glass h-48 md:h-60 rounded-2xl md:rounded-3xl animate-pulse" />
             </section>
           </div>
         </div>
@@ -50,7 +50,7 @@ const DashboardPage: React.FC = () => {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10 overflow-x-hidden">
+      <div className="min-h-screen liquid-dashboard-bg overflow-x-hidden">
         {/* Conditional Header Rendering */}
         {isMobile ? <MobileDashboardHeader /> : <DashboardHeader />}
         
