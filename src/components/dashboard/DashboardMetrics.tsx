@@ -16,41 +16,33 @@ interface DashboardMetricsProps {
 const DashboardMetrics: React.FC<DashboardMetricsProps> = ({ stats }) => {
   return (
     <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-      <div className="liquid-metric-card">
-        <MetricCard
-          title="Ideas Validated"
-          value={stats.ideasValidated.toString()}
-          subtitle={stats.ideasValidated > 0 ? "Keep the momentum going!" : "Start your validation journey"}
-          icon={Lightbulb}
-        />
-      </div>
-      <div className="liquid-metric-card">
-        <MetricCard
-          title="Average Score"
-          value={stats.averageScore > 0 ? `${stats.averageScore}/10` : "N/A"}
-          subtitle={stats.averageScore > 0 ? (stats.averageScore >= 6 ? "↗ Trending upward" : "Room for improvement") : "No completed analyses yet"}
-          icon={BarChart3}
-          iconColor={stats.averageScore >= 6 ? "text-green-500" : "text-yellow-500"}
-        />
-      </div>
-      <div className="liquid-metric-card">
-        <MetricCard
-          title="Active Projects"
-          value={stats.activeProjects.toString()}
-          subtitle={stats.activeProjects > 0 ? "Business ideas in development" : "Complete validations to start"}
-          icon={FolderOpen}
-          iconColor="text-purple-500"
-        />
-      </div>
-      <div className="liquid-metric-card">
-        <MetricCard
-          title="Success Rate"
-          value={stats.successRate > 0 ? `${stats.successRate}%` : "N/A"}
-          subtitle={stats.successRate > 0 ? "vs 42% industry average" : "Complete more validations"}
-          icon={Target}
-          iconColor="text-yellow-500"
-        />
-      </div>
+      <MetricCard
+        title="Ideas Validated"
+        value={stats.ideasValidated.toString()}
+        subtitle={stats.ideasValidated > 0 ? "Keep the momentum going!" : "Start your validation journey"}
+        icon={Lightbulb}
+      />
+      <MetricCard
+        title="Average Score"
+        value={stats.averageScore > 0 ? `${stats.averageScore}/10` : "N/A"}
+        subtitle={stats.averageScore > 0 ? (stats.averageScore >= 6 ? "↗ Trending upward" : "Room for improvement") : "No completed analyses yet"}
+        icon={BarChart3}
+        iconColor={stats.averageScore >= 6 ? "text-green-500" : "text-yellow-500"}
+      />
+      <MetricCard
+        title="Active Projects"
+        value={stats.activeProjects.toString()}
+        subtitle={stats.activeProjects > 0 ? "Business ideas in development" : "Complete validations to start"}
+        icon={FolderOpen}
+        iconColor="text-purple-500"
+      />
+      <MetricCard
+        title="Success Rate"
+        value={stats.successRate > 0 ? `${stats.successRate}%` : "N/A"}
+        subtitle={stats.successRate > 0 ? "vs 42% industry average" : "Complete more validations"}
+        icon={Target}
+        iconColor="text-yellow-500"
+      />
     </section>
   );
 };

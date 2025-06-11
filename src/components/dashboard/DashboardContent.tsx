@@ -24,11 +24,11 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ recentActivities, h
   return (
     <section className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       {/* My Business Ideas Section */}
-      <div className="lg:col-span-2 liquid-card">
-        <ShadcnCardHeader className="liquid-card-header">
+      <ShadcnCard className="lg:col-span-2 apple-card border-0 shadow-lg">
+        <ShadcnCardHeader className="pb-4">
           <div className="flex items-center justify-between">
             <ShadcnCardTitle className="text-xl font-semibold">My Business Ideas</ShadcnCardTitle>
-            <Button variant="outline" size="sm" className="liquid-button" asChild>
+            <Button variant="outline" size="sm" asChild>
               <Link to="/dashboard/ideas">
                 <FolderOpen className="mr-2 h-4 w-4" />
                 View All
@@ -52,8 +52,8 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ recentActivities, h
                 />
               ))}
               {recentActivities.length >= 5 && (
-                <div className="pt-4 border-t border-white/10">
-                  <Button variant="outline" className="w-full liquid-button" asChild>
+                <div className="pt-4 border-t border-border">
+                  <Button variant="outline" className="w-full" asChild>
                     <Link to="/dashboard/ideas">
                       View All Business Ideas
                     </Link>
@@ -63,11 +63,11 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ recentActivities, h
             </>
           ) : (
             <div className="text-center py-12">
-              <div className="w-16 h-16 mx-auto mb-4 liquid-glass rounded-2xl flex items-center justify-center">
+              <div className="w-16 h-16 mx-auto mb-4 bg-primary/10 rounded-2xl flex items-center justify-center">
                 <Lightbulb className="w-8 h-8 text-primary" />
               </div>
               <p className="text-muted-foreground text-sm mb-4">No business ideas yet.</p>
-              <Button variant="outline" className="liquid-button" asChild>
+              <Button variant="outline" className="apple-button-outline" asChild>
                 <Link to="/dashboard/validate">
                   <Lightbulb className="mr-2 h-4 w-4" />
                   Validate Your First Idea
@@ -76,7 +76,7 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ recentActivities, h
             </div>
           )}
         </ShadcnCardContent>
-      </div>
+      </ShadcnCard>
 
       <DashboardInsights hasValidatedIdeas={hasValidatedIdeas} />
     </section>

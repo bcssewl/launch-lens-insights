@@ -10,7 +10,7 @@ interface DashboardLayoutProps {
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full liquid-dashboard-bg overflow-x-hidden">
+      <div className="min-h-screen flex w-full bg-gradient-to-br from-background via-background to-muted/10 overflow-x-hidden">
         <AppSidebar />
         <SidebarInset className="flex-1 flex flex-col overflow-x-hidden">
           <div className="flex flex-col h-full w-full overflow-x-hidden">

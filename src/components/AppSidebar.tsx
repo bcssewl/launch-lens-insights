@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
@@ -77,7 +76,7 @@ export const AppSidebar: React.FC = () => {
 
   return (
     <div className="relative">
-      <Sidebar collapsible="icon" className="liquid-sidebar border-r-0">
+      <Sidebar collapsible="icon" className="border-r">
         <SidebarHeader className="p-4">
           <div className="flex items-center justify-center group-data-[collapsible=icon]:justify-center px-3">
             <Logo />
@@ -88,41 +87,36 @@ export const AppSidebar: React.FC = () => {
           <SidebarGroup>
             <SidebarGroupContent className="px-2 group-data-[collapsible=icon]:px-1">
               <SidebarMenu>
-                {navItems.map((item) => {
-                  const isActive = location.pathname === item.href || (item.href === "/dashboard" && location.pathname.startsWith("/dashboard") && location.pathname.split('/').length <= 2);
-                  return (
-                    <SidebarMenuItem key={item.href}>
-                      <SidebarMenuButton
-                        asChild
-                        tooltip={item.label}
-                        className={`liquid-sidebar-item ${isActive ? 'data-[active=true]' : ''} group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1`}
-                        data-active={isActive}
-                      >
-                        <Link to={item.href} className="flex items-center gap-3 px-3 py-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 group-data-[collapsible=icon]:gap-0">
-                          <item.icon className="h-5 w-5 flex-shrink-0" />
-                          <span className="group-data-[collapsible=icon]:sr-only">{item.label}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
+                {navItems.map((item) => (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={location.pathname === item.href || (item.href === "/dashboard" && location.pathname.startsWith("/dashboard") && location.pathname.split('/').length <= 2)}
+                      tooltip={item.label}
+                      className="group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1"
+                    >
+                      <Link to={item.href} className="flex items-center gap-3 px-3 py-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 group-data-[collapsible=icon]:gap-0">
+                        <item.icon className="h-5 w-5 flex-shrink-0" />
+                        <span className="group-data-[collapsible=icon]:sr-only">{item.label}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>
         
-        <SidebarFooter className="p-4 border-t border-white/10">
+        <SidebarFooter className="p-4 border-t">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex items-center space-x-3 p-2 rounded-md hover:bg-white/10 w-full text-left group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:space-x-0 group-data-[collapsible=icon]:px-1 transition-all duration-300">
-                <div className="liquid-avatar h-8 w-8 flex-shrink-0">
-                  <Avatar className="h-full w-full">
-                    <AvatarImage src={profile?.avatar_url} alt="User Avatar" />
-                    <AvatarFallback>
-                      {user?.email?.charAt(0).toUpperCase() || 'U'}
-                    </AvatarFallback>
-                  </Avatar>
-                </div>
+              <button className="flex items-center space-x-3 p-2 rounded-md hover:bg-accent w-full text-left group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:space-x-0 group-data-[collapsible=icon]:px-1">
+                <Avatar className="h-8 w-8 flex-shrink-0">
+                  <AvatarImage src={profile?.avatar_url} alt="User Avatar" />
+                  <AvatarFallback>
+                    {user?.email?.charAt(0).toUpperCase() || 'U'}
+                  </AvatarFallback>
+                </Avatar>
                 <div className="group-data-[collapsible=icon]:sr-only">
                   <p className="text-sm font-medium text-foreground">
                     {profile?.full_name || user?.email || 'User'}
@@ -133,11 +127,11 @@ export const AppSidebar: React.FC = () => {
                 </div>
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent side="top" align="start" className="w-56 mb-2 ml-1 liquid-glass border-white/20">
+            <DropdownMenuContent side="top" align="start" className="w-56 mb-2 ml-1">
               <DropdownMenuLabel>
                 {profile?.full_name || user?.email || 'User'}
               </DropdownMenuLabel>
-              <DropdownMenuSeparator className="bg-white/10" />
+              <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
                 <Link to="/dashboard/profile" className="flex items-center">
                   <UserCircle className="mr-2 h-4 w-4" />
@@ -156,7 +150,7 @@ export const AppSidebar: React.FC = () => {
                   <span>Billing / Upgrade</span>
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-white/10" />
+              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log out</span>
@@ -168,13 +162,13 @@ export const AppSidebar: React.FC = () => {
         <SidebarRail />
       </Sidebar>
       
-      {/* Toggle button with liquid glass effect */}
+      {/* Toggle button positioned fixed on the right edge, vertically centered - only visible on desktop */}
       {!isMobile && (
         <Button
           variant="ghost"
           size="icon"
           onClick={handleToggleSidebar}
-          className="fixed top-1/2 left-[var(--sidebar-width)] transform -translate-y-1/2 -translate-x-4 h-8 w-8 rounded-full liquid-glass border-white/20 hover:bg-white/10 z-50 transition-all duration-300"
+          className="fixed top-1/2 left-[var(--sidebar-width)] transform -translate-y-1/2 -translate-x-4 h-8 w-8 rounded-full bg-background border border-border shadow-sm hover:bg-accent z-50 transition-all duration-200"
           style={{
             left: state === "expanded" ? "var(--sidebar-width)" : "var(--sidebar-width-icon)",
           }}
