@@ -6,7 +6,7 @@ import AIAvatar from '@/components/assistant/AIAvatar';
 const TypingIndicator: React.FC = () => {
   return (
     <div className="flex items-start space-x-3">
-      <AIAvatar className="w-8 h-8" />
+      <AIAvatar className="w-10 h-10" />
       <div className="bg-muted text-muted-foreground p-3 rounded-2xl rounded-bl-sm max-w-xs md:max-w-md lg:max-w-lg animate-pulse">
         <div className="flex items-center space-x-2">
           <Loader2 className="w-4 h-4 animate-spin" />

@@ -23,7 +23,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   return (
     <div className={cn("flex items-start gap-3 w-full", isAi ? "justify-start" : "justify-end")}>
       {isAi && (
-        <AIAvatar className="w-8 h-8 flex-shrink-0 mt-1" />
+        <AIAvatar className="w-10 h-10 flex-shrink-0 mt-1" />
       )}
       
       <div className={cn("flex flex-col", isAi ? "items-start" : "items-end")}>
@@ -58,7 +58,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
       </div>
 
       {!isAi && (
-        <UserAvatar className="h-8 w-8 flex-shrink-0 mt-1" />
+        <UserAvatar className="h-10 w-10 flex-shrink-0 mt-1" />
       )}
     </div>
   );
