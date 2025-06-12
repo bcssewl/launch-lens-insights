@@ -81,7 +81,7 @@ const ActionPlanAgent: React.FC<ActionPlanAgentProps> = ({ report }) => {
         {/* Input Area */}
         <div className="border-t border-border bg-muted/20 p-6 space-y-4">
           <ActionPlanSuggestions onSelectSuggestion={handleSendMessage} />
-          <ChatInput onSendMessage={handleSendMessage} disabled={!isConfigured} />
+          <ChatInput onSendMessage={handleSendMessage} isTyping={isTyping} />
         </div>
       </Card>
     </div>

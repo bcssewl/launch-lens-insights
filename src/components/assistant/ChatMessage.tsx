@@ -107,7 +107,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isActionPlanMode = f
           <span className="text-xs text-muted-foreground">
             {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </span>
-          {!isUser && <CopyButton text={cleanMessageText} />}
+          {!isUser && <CopyButton content={cleanMessageText} />}
         </div>
       </div>
       
