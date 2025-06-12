@@ -11,6 +11,7 @@ import TypingIndicator from '@/components/assistant/TypingIndicator';
 import { useChatSessions } from '@/hooks/useChatSessions';
 import { useChatHistory } from '@/hooks/useChatHistory';
 import { useMessages } from '@/hooks/useMessages';
+import { formatTimestamp } from '@/constants/aiAssistant';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const AIAssistantPage: React.FC = () => {
@@ -83,7 +84,7 @@ const AIAssistantPage: React.FC = () => {
               <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
                 <div className="p-6 space-y-6">
                   {messages.map((msg) => (
-                    <ChatMessage key={msg.id} message={msg} />
+                    <ChatMessage key={msg.id} message={{ ...msg, timestamp: formatTimestamp(msg.timestamp) }} />
                   ))}
                   {isTyping && <TypingIndicator />}
                 </div>

@@ -1,8 +1,6 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Share2, TrendingUp, CheckCircle, Settings, Target } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Share2, TrendingUp, CheckCircle, Settings } from 'lucide-react';
 import ScoreDisplay from './ScoreDisplay';
 import ShareReportDialog from './ShareReportDialog';
 import ManageSharesDialog from './ManageSharesDialog';
@@ -24,13 +22,6 @@ const ResultsHeader: React.FC<ResultsHeaderProps> = ({
 }) => {
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [manageSharesOpen, setManageSharesOpen] = useState(false);
-  const navigate = useNavigate();
-
-  const handleGenerateActionPlan = () => {
-    if (reportId) {
-      navigate(`/dashboard/action-plan/${reportId}`);
-    }
-  };
 
   // Parse recommendation to create better content
   const getRecommendationContent = (recommendation: string) => {
@@ -105,13 +96,6 @@ const ResultsHeader: React.FC<ResultsHeaderProps> = ({
         </div>
         
         <div className="flex flex-wrap gap-2 print:hidden">
-          <Button 
-            className="w-fit apple-button shadow-lg hover:shadow-xl transition-all duration-300"
-            onClick={handleGenerateActionPlan}
-          >
-            <Target className="mr-2 h-4 w-4" />
-            Generate Action Plan
-          </Button>
           <Button 
             variant="outline" 
             size="sm" 
