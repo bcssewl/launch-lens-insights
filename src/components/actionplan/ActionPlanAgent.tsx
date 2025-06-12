@@ -5,7 +5,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import ChatMessage from '@/components/assistant/ChatMessage';
 import ChatInput from '@/components/assistant/ChatInput';
 import TypingIndicator from '@/components/assistant/TypingIndicator';
-import ActionPlanSuggestions from './ActionPlanSuggestions';
 import ActionPlanViewer from './ActionPlanViewer';
 import { useActionPlanAgent } from '@/hooks/useActionPlanAgent';
 
@@ -79,8 +78,7 @@ const ActionPlanAgent: React.FC<ActionPlanAgentProps> = ({ report }) => {
         </ScrollArea>
 
         {/* Input Area */}
-        <div className="border-t border-border bg-muted/20 p-6 space-y-4">
-          <ActionPlanSuggestions onSelectSuggestion={handleSendMessage} />
+        <div className="border-t border-border bg-muted/20 p-6">
           <ChatInput onSendMessage={handleSendMessage} isTyping={isTyping} />
         </div>
       </Card>
