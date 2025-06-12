@@ -15,7 +15,7 @@ const AIAvatar: React.FC<AIAvatarProps> = ({ className }) => {
         className
       )}
     >
-      <Brain className="h-5 w-5" />
+      <Brain className="h-4 w-4 ml-0.5" />
     </div>
   );
 };
