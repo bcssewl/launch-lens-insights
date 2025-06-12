@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/layouts/DashboardLayout';
@@ -13,7 +14,6 @@ import MarketAnalysisTabContent from '@/components/results/MarketAnalysisTabCont
 import CompetitionTabContent from '@/components/results/CompetitionTabContent';
 import SWOTAnalysisTabContent from '@/components/results/SWOTAnalysisTabContent';
 import DetailedScoresTabContent from '@/components/results/DetailedScoresTabContent';
-import ActionItemsTabContent from '@/components/results/ActionItemsTabContent';
 import FinancialAnalysisTabContent from '@/components/results/FinancialAnalysisTabContent';
 import PrintView from '@/components/results/PrintView';
 import { useValidationReport } from '@/hooks/useValidationReport';
@@ -136,7 +136,6 @@ const ResultsPage: React.FC = () => {
                   <TabsTrigger value="financial" className="flex-shrink-0 text-xs sm:text-sm px-3 py-2 rounded-xl whitespace-nowrap">Financial</TabsTrigger>
                   <TabsTrigger value="swot" className="flex-shrink-0 text-xs sm:text-sm px-3 py-2 rounded-xl whitespace-nowrap">SWOT</TabsTrigger>
                   <TabsTrigger value="scores" className="flex-shrink-0 text-xs sm:text-sm px-3 py-2 rounded-xl whitespace-nowrap">Scores</TabsTrigger>
-                  <TabsTrigger value="actions" className="flex-shrink-0 text-xs sm:text-sm px-3 py-2 rounded-xl whitespace-nowrap">Actions</TabsTrigger>
                 </TabsList>
               </div>
               
@@ -172,11 +171,6 @@ const ResultsPage: React.FC = () => {
                 <TabsContent value="scores" className="mt-4 w-full">
                   <div data-tab-scores>
                     <DetailedScoresTabContent scores={printData.detailedScores} />
-                  </div>
-                </TabsContent>
-                <TabsContent value="actions" className="mt-4 w-full">
-                  <div data-tab-actions>
-                    <ActionItemsTabContent items={printData.actionItems} />
                   </div>
                 </TabsContent>
               </div>

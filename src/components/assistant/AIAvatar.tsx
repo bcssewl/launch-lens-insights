@@ -1,21 +1,18 @@
 
 import React from 'react';
-import { Brain } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 interface AIAvatarProps {
-  className?: string;
+  isActionPlan?: boolean;
 }
 
-const AIAvatar: React.FC<AIAvatarProps> = ({ className }) => {
+const AIAvatar: React.FC<AIAvatarProps> = ({ isActionPlan = false }) => {
   return (
-    <div
-      className={cn(
-        "h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center animate-pulse-glow shrink-0",
-        className
-      )}
-    >
-      <Brain className="h-6 w-6" />
+    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm ${
+      isActionPlan 
+        ? 'bg-gradient-to-br from-blue-500 to-indigo-600' 
+        : 'bg-gradient-to-br from-primary to-primary/80'
+    }`}>
+      {isActionPlan ? '🎯' : '🤖'}
     </div>
   );
 };

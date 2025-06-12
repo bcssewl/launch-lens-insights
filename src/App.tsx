@@ -14,6 +14,7 @@ import DashboardPage from "./pages/DashboardPage";
 import ValidateIdeaPage from "./pages/ValidateIdeaPage";
 import AnalyzingIdeaPage from "./pages/AnalyzingIdeaPage";
 import ResultsPage from "./pages/ResultsPage";
+import ActionPlanChatPage from "./pages/ActionPlanChatPage";
 import MyIdeasPage from "./pages/MyIdeasPage";
 import BusinessDashboardPage from "./pages/BusinessDashboardPage";
 import AIAssistantPage from "./pages/AIAssistantPage";
@@ -50,6 +51,7 @@ const App = () => (
               <Route path="/analyzing" element={<AnalyzingIdeaPage />} />
               <Route path="/results" element={<ResultsPage />} />
               <Route path="/results/:reportId" element={<ResultsPage />} />
+              <Route path="/dashboard/action-plan/:reportId" element={<ActionPlanChatPage />} />
               <Route path="/dashboard/ideas" element={<MyIdeasPage />} />
               <Route path="/dashboard/idea/:reportId" element={<BusinessDashboardPage />} />
               <Route path="/dashboard/reports" element={<MyIdeasPage />} />
