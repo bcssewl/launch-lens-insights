@@ -1,7 +1,7 @@
 
 import React from 'react';
 import MetricCard from '@/components/MetricCard';
-import { Lightbulb, BarChart3, FileText, Target, FolderOpen } from 'lucide-react';
+import { Lightbulb, BarChart3, FileText, Target } from 'lucide-react';
 
 interface DashboardMetricsProps {
   stats: {
@@ -9,7 +9,6 @@ interface DashboardMetricsProps {
     averageScore: number;
     businessPlans: number;
     successRate: number;
-    activeProjects: number;
   };
 }
 
@@ -30,11 +29,11 @@ const DashboardMetrics: React.FC<DashboardMetricsProps> = ({ stats }) => {
         iconColor={stats.averageScore >= 6 ? "text-green-500" : "text-yellow-500"}
       />
       <MetricCard
-        title="Active Projects"
-        value={stats.activeProjects.toString()}
-        subtitle={stats.activeProjects > 0 ? "Business ideas in development" : "Complete validations to start"}
-        icon={FolderOpen}
-        iconColor="text-purple-500"
+        title="Business Plans"
+        value={stats.businessPlans.toString()}
+        subtitle={stats.businessPlans > 0 ? "Plans generated" : "Feature coming soon"}
+        icon={FileText}
+        iconColor="text-blue-500"
       />
       <MetricCard
         title="Success Rate"

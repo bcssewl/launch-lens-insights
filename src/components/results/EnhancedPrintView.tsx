@@ -12,9 +12,24 @@ import PrintFinancialAnalysis from './print/PrintFinancialAnalysis';
 import PrintSWOTAnalysis from './print/PrintSWOTAnalysis';
 import PrintDetailedScores from './print/PrintDetailedScores';
 import PrintActionItems from './print/PrintActionItems';
-import type { PrintViewProps } from './print/types';
 
-const EnhancedPrintView: React.FC<PrintViewProps> = ({
+interface EnhancedPrintViewProps {
+  ideaName: string;
+  score: number;
+  recommendation: string;
+  analysisDate: string;
+  executiveSummary: string;
+  keyMetrics: any;
+  marketAnalysis: any;
+  competition: any;
+  financialAnalysis: any;
+  swot: any;
+  detailedScores: any[];
+  actionItems: any[];
+  onClose: () => void;
+}
+
+const EnhancedPrintView: React.FC<EnhancedPrintViewProps> = ({
   ideaName,
   score,
   recommendation,
@@ -37,7 +52,7 @@ const EnhancedPrintView: React.FC<PrintViewProps> = ({
     <>
       {/* Print controls - hidden when printing */}
       <div className="print:hidden fixed top-4 right-4 z-50 flex gap-2">
-        <Button onClick={handlePrint} className="flex items-center gap-2 bg-gradient-to-r from-slate-600 to-slate-700 hover:from-slate-700 hover:to-slate-800">
+        <Button onClick={handlePrint} className="flex items-center gap-2">
           <Printer className="h-4 w-4" />
           Print / Save as PDF
         </Button>
@@ -76,34 +91,31 @@ const EnhancedPrintView: React.FC<PrintViewProps> = ({
 
       <PrintActionItems items={actionItems} />
 
-      {/* Enhanced Print Styles with Modern Typography and Consistent Design */}
+      {/* Enhanced Print Styles */}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         
         @media print {
           @page {
             size: A4;
             margin: 1.5cm 2cm 2cm 2cm;
             @bottom-center {
-              content: "Page " counter(page);
+              content: counter(page);
               font-family: 'Inter', sans-serif;
               font-size: 10pt;
-              color: #64748b;
-              font-weight: 500;
+              color: #6b7280;
             }
             @bottom-left {
-              content: "Validator • Idea Validation Report";
+              content: "Idea Validation Report";
               font-family: 'Inter', sans-serif;
-              font-size: 9pt;
-              color: #64748b;
-              font-weight: 400;
+              font-size: 10pt;
+              color: #6b7280;
             }
             @bottom-right {
-              content: "Confidential";
+              content: "Generated " attr(data-date);
               font-family: 'Inter', sans-serif;
-              font-size: 9pt;
-              color: #dc2626;
-              font-weight: 600;
+              font-size: 10pt;
+              color: #6b7280;
             }
           }
           
@@ -116,12 +128,11 @@ const EnhancedPrintView: React.FC<PrintViewProps> = ({
           body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             font-size: 11pt;
-            line-height: 1.6;
+            line-height: 1.5;
             color: #1f2937;
             background: white;
             margin: 0;
             padding: 0;
-            font-weight: 400;
           }
           
           /* Hide non-print elements */
@@ -150,268 +161,197 @@ const EnhancedPrintView: React.FC<PrintViewProps> = ({
             widows: 3;
           }
           
-          /* Enhanced Typography hierarchy with consistent colors */
+          /* Typography hierarchy */
           .print-title-1 {
-            font-size: 28pt;
-            font-weight: 900;
-            line-height: 1.1;
+            font-size: 24pt;
+            font-weight: 700;
+            line-height: 1.2;
             color: #111827;
             margin-bottom: 24pt;
-            letter-spacing: -0.02em;
           }
           
           .print-title-2 {
-            font-size: 20pt;
-            font-weight: 700;
-            line-height: 1.2;
-            color: #334155;
-            margin-top: 24pt;
-            margin-bottom: 16pt;
-            border-bottom: 3pt solid #e2e8f0;
-            padding-bottom: 8pt;
-            letter-spacing: -0.01em;
+            font-size: 18pt;
+            font-weight: 600;
+            line-height: 1.3;
+            color: #1f2937;
+            margin-top: 20pt;
+            margin-bottom: 12pt;
+            border-bottom: 2pt solid #e5e7eb;
+            padding-bottom: 6pt;
           }
           
           .print-title-3 {
-            font-size: 16pt;
+            font-size: 14pt;
             font-weight: 600;
-            line-height: 1.3;
-            color: #475569;
-            margin-top: 20pt;
-            margin-bottom: 12pt;
-            letter-spacing: -0.005em;
+            line-height: 1.4;
+            color: #374151;
+            margin-top: 16pt;
+            margin-bottom: 8pt;
           }
           
           .print-body {
             font-size: 11pt;
-            line-height: 1.7;
+            line-height: 1.6;
             color: #4b5563;
-            margin-bottom: 14pt;
-            font-weight: 400;
+            margin-bottom: 12pt;
           }
           
           .print-caption {
             font-size: 9pt;
             color: #6b7280;
             font-style: italic;
-            margin-top: 6pt;
-            font-weight: 400;
+            margin-top: 4pt;
           }
           
-          /* Enhanced Layout components */
+          /* Layout components */
           .print-section {
-            margin-bottom: 32pt;
+            margin-bottom: 24pt;
             break-inside: avoid;
           }
           
           .print-grid-2 {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20pt;
+            gap: 16pt;
             break-inside: avoid;
           }
           
           .print-grid-3 {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
-            gap: 16pt;
+            gap: 12pt;
             break-inside: avoid;
           }
           
           .print-card {
-            border: 1pt solid #e2e8f0;
-            border-radius: 8pt;
-            padding: 16pt;
-            background: #f8fafc;
+            border: 1pt solid #e5e7eb;
+            border-radius: 6pt;
+            padding: 12pt;
+            background: #fafafa;
             break-inside: avoid;
-            margin-bottom: 16pt;
-            box-shadow: 0 1pt 3pt rgba(0, 0, 0, 0.1);
+            margin-bottom: 12pt;
           }
           
           .print-metric-card {
             text-align: center;
-            padding: 20pt 16pt;
+            padding: 16pt 12pt;
             border: 1pt solid #d1d5db;
-            border-radius: 12pt;
+            border-radius: 8pt;
             background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
             break-inside: avoid;
-            box-shadow: 0 2pt 4pt rgba(0, 0, 0, 0.05);
           }
           
           .print-metric-value {
-            font-size: 24pt;
-            font-weight: 800;
-            color: #475569;
+            font-size: 20pt;
+            font-weight: 700;
+            color: #059669;
             display: block;
-            margin-bottom: 6pt;
-            letter-spacing: -0.02em;
+            margin-bottom: 4pt;
           }
           
           .print-metric-label {
             font-size: 9pt;
-            color: #64748b;
+            color: #6b7280;
             font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
           }
           
-          /* Enhanced Visual elements */
+          /* Charts and visual elements */
           .recharts-wrapper {
             break-inside: avoid;
-            margin: 16pt 0;
+            margin: 12pt 0;
           }
           
           .print-chart-container {
             background: white;
-            border: 1pt solid #e2e8f0;
-            border-radius: 8pt;
-            padding: 16pt;
+            border: 1pt solid #e5e7eb;
+            border-radius: 6pt;
+            padding: 12pt;
             break-inside: avoid;
-            box-shadow: 0 1pt 3pt rgba(0, 0, 0, 0.05);
           }
           
-          /* Enhanced Tables */
+          /* Tables */
           .print-table {
             width: 100%;
             border-collapse: collapse;
-            margin: 16pt 0;
+            margin: 12pt 0;
             break-inside: avoid;
-            font-size: 10pt;
           }
           
           .print-table th {
-            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+            background: #f3f4f6;
             font-weight: 600;
-            padding: 12pt 16pt;
-            border: 1pt solid #cbd5e1;
+            padding: 8pt 12pt;
+            border: 1pt solid #d1d5db;
             text-align: left;
-            color: #334155;
           }
           
           .print-table td {
-            padding: 10pt 16pt;
-            border: 1pt solid #cbd5e1;
-            background: white;
+            padding: 8pt 12pt;
+            border: 1pt solid #d1d5db;
           }
           
-          /* Enhanced Status indicators with consistent colors */
+          /* Status indicators */
           .print-status-high {
-            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+            background: #dcfce7;
             color: #166534;
-            padding: 4pt 8pt;
-            border-radius: 6pt;
+            padding: 2pt 6pt;
+            border-radius: 4pt;
             font-size: 9pt;
-            font-weight: 600;
-            border: 1pt solid #22c55e;
-          }
-          
-          .print-status-medium {
-            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
-            color: #92400e;
-            padding: 4pt 8pt;
-            border-radius: 6pt;
-            font-size: 9pt;
-            font-weight: 600;
-            border: 1pt solid #f59e0b;
-          }
-          
-          .print-status-low {
-            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
-            color: #991b1b;
-            padding: 4pt 8pt;
-            border-radius: 6pt;
-            font-size: 9pt;
-            font-weight: 600;
-            border: 1pt solid #ef4444;
-          }
-          
-          /* Enhanced Branding elements */
-          .print-watermark {
-            position: fixed;
-            bottom: 30pt;
-            right: 30pt;
-            opacity: 0.05;
-            font-size: 64pt;
-            font-weight: 900;
-            color: #64748b;
-            transform: rotate(-45deg);
-            pointer-events: none;
-            z-index: -1;
-            font-family: 'Inter', sans-serif;
-          }
-          
-          .print-header {
-            border-bottom: 2pt solid #e2e8f0;
-            padding-bottom: 16pt;
-            margin-bottom: 32pt;
-          }
-          
-          .print-footer {
-            border-top: 1pt solid #e2e8f0;
-            padding-top: 16pt;
-            margin-top: 32pt;
-            font-size: 9pt;
-            color: #64748b;
-            text-align: center;
-          }
-          
-          /* Glassmorphism effects (simplified for print) */
-          .backdrop-blur-sm,
-          .backdrop-blur-xl {
-            background: rgba(255, 255, 255, 0.9);
-          }
-          
-          /* Gradient text fallback */
-          .bg-clip-text {
-            background: linear-gradient(135deg, #334155 0%, #475569 100%);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-          }
-          
-          /* Enhanced spacing and readability */
-          h1, h2, h3, h4, h5, h6 {
-            break-after: avoid;
-            orphans: 4;
-            widows: 4;
-          }
-          
-          p, li {
-            orphans: 3;
-            widows: 3;
-          }
-          
-          /* List styling */
-          ul, ol {
-            margin: 12pt 0;
-            padding-left: 20pt;
-          }
-          
-          li {
-            margin-bottom: 6pt;
-            line-height: 1.6;
-          }
-          
-          /* Link styling for digital viewing */
-          a {
-            color: #475569;
-            text-decoration: none;
             font-weight: 500;
           }
           
-          /* Code and monospace */
-          code, .font-mono {
-            font-family: 'JetBrains Mono', 'Courier New', monospace;
+          .print-status-medium {
+            background: #fef3c7;
+            color: #92400e;
+            padding: 2pt 6pt;
+            border-radius: 4pt;
             font-size: 9pt;
-            background: #f1f5f9;
-            padding: 2pt 4pt;
-            border-radius: 3pt;
+            font-weight: 500;
+          }
+          
+          .print-status-low {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 2pt 6pt;
+            border-radius: 4pt;
+            font-size: 9pt;
+            font-weight: 500;
+          }
+          
+          /* Branding elements */
+          .print-watermark {
+            position: fixed;
+            bottom: 20pt;
+            right: 20pt;
+            opacity: 0.1;
+            font-size: 48pt;
+            font-weight: 700;
+            color: #6b7280;
+            transform: rotate(-45deg);
+            pointer-events: none;
+            z-index: -1;
+          }
+          
+          .print-header {
+            border-bottom: 2pt solid #e5e7eb;
+            padding-bottom: 12pt;
+            margin-bottom: 24pt;
+          }
+          
+          .print-footer {
+            border-top: 1pt solid #e5e7eb;
+            padding-top: 12pt;
+            margin-top: 24pt;
+            font-size: 9pt;
+            color: #6b7280;
+            text-align: center;
           }
         }
       `}</style>
       
-      {/* Enhanced Watermark */}
-      <div className="print-watermark">VALIDATOR</div>
+      {/* Watermark */}
+      <div className="print-watermark">CONFIDENTIAL</div>
     </>
   );
 };

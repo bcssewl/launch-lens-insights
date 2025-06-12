@@ -31,7 +31,7 @@ import { supabase } from '@/integrations/supabase/client';
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
   { href: "/dashboard/validate", label: "Validate Idea", icon: Lightbulb },
-  { href: "/dashboard/ideas", label: "My Ideas", icon: FileText },
+  { href: "/dashboard/reports", label: "My Reports", icon: FileText },
   { href: "/dashboard/assistant", label: "AI Assistant", icon: Bot },
   { href: "/dashboard/settings", label: "Settings", icon: SettingsIcon },
 ];

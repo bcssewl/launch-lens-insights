@@ -11,11 +11,11 @@ const AIAvatar: React.FC<AIAvatarProps> = ({ className }) => {
   return (
     <div
       className={cn(
-        "h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center animate-pulse-glow shrink-0 overflow-visible",
+        "h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center animate-pulse-glow shrink-0",
         className
       )}
     >
-      <Brain className="h-4 w-4 ml-0.5" />
+      <Brain className="h-6 w-6" />
     </div>
   );
 };
