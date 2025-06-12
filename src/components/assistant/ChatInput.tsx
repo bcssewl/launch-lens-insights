@@ -3,8 +3,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
-import SuggestedPrompts from '@/components/assistant/SuggestedPrompts';
-import { suggestedPromptsData } from '@/constants/aiAssistant';
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
@@ -28,15 +26,11 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isTyping }) => {
     setInputValue('');
   };
 
-  const handlePromptClick = (prompt: string) => {
-    onSendMessage(prompt);
-  };
-
   const adjustTextareaHeight = () => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
       const scrollHeight = textareaRef.current.scrollHeight;
-      const maxHeight = 120; // Maximum height before scrolling
+      const maxHeight = 120;
       textareaRef.current.style.height = `${Math.min(scrollHeight, maxHeight)}px`;
     }
   };
@@ -45,19 +39,16 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isTyping }) => {
     adjustTextareaHeight();
   }, [inputValue]);
 
-  const suggestedPromptsStrings = suggestedPromptsData.map(p => p.text);
-
   return (
-    <div className="border-t bg-background p-4 flex-shrink-0 mt-auto">
-      <SuggestedPrompts prompts={suggestedPromptsStrings} onPromptClick={handlePromptClick} />
-      <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }} className="flex items-end space-x-2 mt-2">
+    <div className="max-w-3xl mx-auto">
+      <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }} className="flex items-end gap-3">
         <Textarea
           ref={textareaRef}
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Ask me anything about your startup ideas... (Press Shift+Enter for new line)"
-          className="flex-1 min-h-[40px] max-h-[120px] resize-none"
+          placeholder="Ask me anything about your startup ideas..."
+          className="flex-1 min-h-[48px] max-h-[120px] resize-none border-border rounded-xl px-4 py-3 text-base"
           disabled={isTyping}
           rows={1}
         />
@@ -65,7 +56,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isTyping }) => {
           type="submit" 
           size="icon" 
           disabled={isTyping || inputValue.trim() === ''} 
-          className="gradient-button flex-shrink-0"
+          className="h-12 w-12 rounded-xl bg-primary hover:bg-primary/90"
         >
           <ArrowRight className="h-5 w-5" />
         </Button>
