@@ -62,7 +62,7 @@ const FinancialAnalysisTabContent: React.FC<FinancialAnalysisTabContentProps> = 
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full overflow-hidden">
       {/* Key Financial Metrics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
@@ -111,172 +111,201 @@ const FinancialAnalysisTabContent: React.FC<FinancialAnalysisTabContentProps> = 
       </div>
 
       {/* Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
         {/* Startup Costs Breakdown */}
-        <Card>
+        <Card className="w-full">
           <CardHeader>
             <CardTitle>Startup Costs Breakdown</CardTitle>
           </CardHeader>
-          <CardContent>
-            <ChartContainer config={chartConfig} className="h-[300px]">
-              <BarChart data={data.startupCosts}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="category" angle={-45} textAnchor="end" height={60} />
-                <YAxis tickFormatter={formatCurrency} />
-                <ChartTooltip
-                  content={<ChartTooltipContent />}
-                  formatter={(value: number) => [formatCurrency(value), "Amount"]}
-                />
-                <Bar dataKey="amount" fill="var(--color-development)" />
-              </BarChart>
-            </ChartContainer>
+          <CardContent className="w-full">
+            <div className="w-full h-[300px] overflow-hidden">
+              <ChartContainer config={chartConfig} className="w-full h-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={data.startupCosts} margin={{ top: 5, right: 5, left: 5, bottom: 60 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis 
+                      dataKey="category" 
+                      angle={-45} 
+                      textAnchor="end" 
+                      height={60}
+                      interval={0}
+                      fontSize={12}
+                    />
+                    <YAxis tickFormatter={formatCurrency} fontSize={12} />
+                    <ChartTooltip
+                      content={<ChartTooltipContent />}
+                      formatter={(value: number) => [formatCurrency(value), "Amount"]}
+                    />
+                    <Bar dataKey="amount" fill="var(--color-development)" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            </div>
           </CardContent>
         </Card>
 
         {/* Monthly Operating Costs */}
-        <Card>
+        <Card className="w-full">
           <CardHeader>
             <CardTitle>Monthly Operating Costs</CardTitle>
           </CardHeader>
-          <CardContent>
-            <ChartContainer config={chartConfig} className="h-[300px]">
-              <AreaChart data={data.operatingCosts}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis tickFormatter={formatCurrency} />
-                <ChartTooltip
-                  content={<ChartTooltipContent />}
-                  formatter={(value: number) => [formatCurrency(value), ""]}
-                />
-                <Area dataKey="development" stackId="1" stroke="var(--color-development)" fill="var(--color-development)" />
-                <Area dataKey="marketing" stackId="1" stroke="var(--color-marketing)" fill="var(--color-marketing)" />
-                <Area dataKey="operations" stackId="1" stroke="var(--color-operations)" fill="var(--color-operations)" />
-              </AreaChart>
-            </ChartContainer>
+          <CardContent className="w-full">
+            <div className="w-full h-[300px] overflow-hidden">
+              <ChartContainer config={chartConfig} className="w-full h-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={data.operatingCosts} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" fontSize={12} />
+                    <YAxis tickFormatter={formatCurrency} fontSize={12} />
+                    <ChartTooltip
+                      content={<ChartTooltipContent />}
+                      formatter={(value: number) => [formatCurrency(value), ""]}
+                    />
+                    <Area dataKey="development" stackId="1" stroke="var(--color-development)" fill="var(--color-development)" />
+                    <Area dataKey="marketing" stackId="1" stroke="var(--color-marketing)" fill="var(--color-marketing)" />
+                    <Area dataKey="operations" stackId="1" stroke="var(--color-operations)" fill="var(--color-operations)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            </div>
           </CardContent>
         </Card>
 
         {/* Revenue Projections */}
-        <Card>
+        <Card className="w-full">
           <CardHeader>
             <CardTitle>Revenue Projections</CardTitle>
           </CardHeader>
-          <CardContent>
-            <ChartContainer config={chartConfig} className="h-[300px]">
-              <LineChart data={data.revenueProjections}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis tickFormatter={formatCurrency} />
-                <ChartTooltip
-                  content={<ChartTooltipContent />}
-                  formatter={(value: number) => [formatCurrency(value), "Revenue"]}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="revenue" 
-                  stroke="var(--color-revenue)" 
-                  strokeWidth={3}
-                  dot={{ fill: "var(--color-revenue)" }}
-                />
-              </LineChart>
-            </ChartContainer>
+          <CardContent className="w-full">
+            <div className="w-full h-[300px] overflow-hidden">
+              <ChartContainer config={chartConfig} className="w-full h-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={data.revenueProjections} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" fontSize={12} />
+                    <YAxis tickFormatter={formatCurrency} fontSize={12} />
+                    <ChartTooltip
+                      content={<ChartTooltipContent />}
+                      formatter={(value: number) => [formatCurrency(value), "Revenue"]}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="revenue" 
+                      stroke="var(--color-revenue)" 
+                      strokeWidth={3}
+                      dot={{ fill: "var(--color-revenue)" }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            </div>
           </CardContent>
         </Card>
 
         {/* Break-even Analysis */}
-        <Card>
+        <Card className="w-full">
           <CardHeader>
             <CardTitle>Break-even Analysis</CardTitle>
           </CardHeader>
-          <CardContent>
-            <ChartContainer config={chartConfig} className="h-[300px]">
-              <ComposedChart data={data.breakEvenAnalysis}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis tickFormatter={formatCurrency} />
-                <ChartTooltip
-                  content={<ChartTooltipContent />}
-                  formatter={(value: number) => [formatCurrency(value), ""]}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="revenue" 
-                  stroke="var(--color-revenue)" 
-                  strokeWidth={2}
-                  name="Revenue"
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="costs" 
-                  stroke="var(--color-costs)" 
-                  strokeWidth={2}
-                  name="Total Costs"
-                />
-                <Bar dataKey="profit" fill="var(--color-profit)" name="Profit/Loss" />
-              </ComposedChart>
-            </ChartContainer>
+          <CardContent className="w-full">
+            <div className="w-full h-[300px] overflow-hidden">
+              <ChartContainer config={chartConfig} className="w-full h-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={data.breakEvenAnalysis} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" fontSize={12} />
+                    <YAxis tickFormatter={formatCurrency} fontSize={12} />
+                    <ChartTooltip
+                      content={<ChartTooltipContent />}
+                      formatter={(value: number) => [formatCurrency(value), ""]}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="revenue" 
+                      stroke="var(--color-revenue)" 
+                      strokeWidth={2}
+                      name="Revenue"
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="costs" 
+                      stroke="var(--color-costs)" 
+                      strokeWidth={2}
+                      name="Total Costs"
+                    />
+                    <Bar dataKey="profit" fill="var(--color-profit)" name="Profit/Loss" />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Funding Requirements */}
-      <Card>
+      <Card className="w-full">
         <CardHeader>
           <CardTitle>Funding Requirements Allocation</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <ChartContainer config={chartConfig} className="h-[300px]">
-              <PieChart>
-                <Pie
-                  data={data.fundingRequirements}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percentage }) => `${name} ${percentage}%`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="amount"
-                >
-                  {data.fundingRequirements.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.fill} />
-                  ))}
-                </Pie>
-                <ChartTooltip
-                  content={<ChartTooltipContent />}
-                  formatter={(value: number) => [formatCurrency(value), "Amount"]}
-                />
-              </PieChart>
-            </ChartContainer>
-            
-            <div className="space-y-4">
-              <h4 className="font-semibold">Funding Breakdown</h4>
-              {data.fundingRequirements.map((item, index) => (
-                <div key={index} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div 
-                      className="w-3 h-3 rounded-full" 
-                      style={{ backgroundColor: item.fill }}
+        <CardContent className="w-full">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
+            <div className="w-full h-[300px] overflow-hidden">
+              <ChartContainer config={chartConfig} className="w-full h-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+                    <Pie
+                      data={data.fundingRequirements}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percentage }) => `${name} ${percentage}%`}
+                      outerRadius="80%"
+                      fill="#8884d8"
+                      dataKey="amount"
+                    >
+                      {data.fundingRequirements.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                      ))}
+                    </Pie>
+                    <ChartTooltip
+                      content={<ChartTooltipContent />}
+                      formatter={(value: number) => [formatCurrency(value), "Amount"]}
                     />
-                    <span className="text-sm">{item.category}</span>
+                  </PieChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            </div>
+            
+            <div className="space-y-4 w-full">
+              <h4 className="font-semibold">Funding Breakdown</h4>
+              <div className="space-y-3 max-h-[250px] overflow-y-auto">
+                {data.fundingRequirements.map((item, index) => (
+                  <div key={index} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <div 
+                        className="w-3 h-3 rounded-full flex-shrink-0" 
+                        style={{ backgroundColor: item.fill }}
+                      />
+                      <span className="text-sm truncate">{item.category}</span>
+                    </div>
+                    <div className="text-right flex-shrink-0 ml-2">
+                      <div className="font-medium">{formatCurrency(item.amount)}</div>
+                      <div className="text-xs text-muted-foreground">{item.percentage}%</div>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <div className="font-medium">{formatCurrency(item.amount)}</div>
-                    <div className="text-xs text-muted-foreground">{item.percentage}%</div>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
         </CardContent>
       </Card>
 
       {/* Financial Insights */}
-      <Card>
+      <Card className="w-full">
         <CardHeader>
           <CardTitle>Key Financial Insights</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="w-full">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <h4 className="font-semibold text-green-600">Strengths</h4>
