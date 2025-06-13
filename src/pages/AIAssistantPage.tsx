@@ -1,5 +1,7 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { Maximize2, Minimize2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import DashboardHeader from '@/components/DashboardHeader';
 import MobileDashboardHeader from '@/components/mobile/MobileDashboardHeader';
@@ -16,6 +18,8 @@ import { useIsMobile } from '@/hooks/use-mobile';
 
 const AIAssistantPage: React.FC = () => {
   const isMobile = useIsMobile();
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  
   const { 
     currentSessionId, 
     setCurrentSessionId, 
@@ -33,6 +37,21 @@ const AIAssistantPage: React.FC = () => {
     handleDownloadChat,
     isConfigured
   } = useMessages(currentSessionId);
+
+  // Handle keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'F11') {
+        event.preventDefault();
+        setIsFullscreen(!isFullscreen);
+      } else if (event.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFullscreen]);
 
   const handleSendMessageWithSession = async (text: string) => {
     // Create session if none exists
@@ -56,6 +75,80 @@ const AIAssistantPage: React.FC = () => {
     setCurrentSessionId(sessionId);
   };
 
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
+  };
+
+  // Fullscreen content
+  const chatContent = (
+    <div className={`flex ${isFullscreen ? 'h-screen' : 'h-[calc(100vh-120px)] md:h-[calc(100vh-120px)]'}`}>
+      <div className="flex-1 flex flex-col min-h-0">
+        {/* Subheader with fullscreen toggle */}
+        <div className="p-6 border-b border-border/50 bg-background/50 backdrop-blur-xl flex-shrink-0 rounded-t-3xl mx-4 mt-4 flex items-center justify-between">
+          <div>
+            <p className="text-sm text-muted-foreground">
+              {isConfigured ? 'AI-powered startup advisor' : 'AI service not configured'}
+              {currentSessionId && (
+                <span className="ml-2 px-3 py-1 bg-primary/10 text-primary text-xs rounded-full border border-primary/20">
+                  Active Session
+                </span>
+              )}
+            </p>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleFullscreen}
+            className="h-8 w-8"
+            aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+          >
+            {isFullscreen ? (
+              <Minimize2 className="h-4 w-4" />
+            ) : (
+              <Maximize2 className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
+
+        {/* Chat Area - Takes remaining space */}
+        <div className="flex-1 min-h-0 overflow-hidden mx-4 bg-background/30 backdrop-blur-xl border border-border/50 border-t-0 rounded-b-3xl">
+          <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
+            <div className="p-6 space-y-6">
+              {messages.map((msg) => (
+                <ChatMessage key={msg.id} message={{ ...msg, timestamp: formatTimestamp(msg.timestamp) }} />
+              ))}
+              {isTyping && <TypingIndicator />}
+            </div>
+          </ScrollArea>
+        </div>
+
+        {/* Input Area - Sticky at bottom */}
+        <div className="p-4">
+          <ChatInput onSendMessage={handleSendMessageWithSession} isTyping={isTyping} />
+        </div>
+      </div>
+
+      {/* Right Sidebar */}
+      <ChatSidebar 
+        onClearConversation={handleClearConversationWithHistory}
+        onDownloadChat={handleDownloadChat}
+        recentTopics={[]}
+        currentSessionId={currentSessionId}
+        onSessionSelect={handleSessionSelect}
+      />
+    </div>
+  );
+
+  // Fullscreen mode - render without dashboard layout
+  if (isFullscreen) {
+    return (
+      <div className="bg-gradient-to-br from-background via-background to-muted/10 min-h-screen">
+        {chatContent}
+      </div>
+    );
+  }
+
+  // Normal mode - render with dashboard layout
   return (
     <DashboardLayout>
       <div className="bg-gradient-to-br from-background via-background to-muted/10 min-h-screen">
@@ -65,47 +158,7 @@ const AIAssistantPage: React.FC = () => {
         {/* Desktop Header */}
         {!isMobile && <DashboardHeader>AI Assistant</DashboardHeader>}
         
-        <div className="flex h-[calc(100vh-120px)] md:h-[calc(100vh-120px)]">
-          <div className="flex-1 flex flex-col min-h-0">
-            {/* Subheader */}
-            <div className="p-6 border-b border-border/50 bg-background/50 backdrop-blur-xl flex-shrink-0 rounded-t-3xl mx-4 mt-4">
-              <p className="text-sm text-muted-foreground">
-                {isConfigured ? 'AI-powered startup advisor' : 'AI service not configured'}
-                {currentSessionId && (
-                  <span className="ml-2 px-3 py-1 bg-primary/10 text-primary text-xs rounded-full border border-primary/20">
-                    Active Session
-                  </span>
-                )}
-              </p>
-            </div>
-
-            {/* Chat Area - Takes remaining space */}
-            <div className="flex-1 min-h-0 overflow-hidden mx-4 bg-background/30 backdrop-blur-xl border border-border/50 border-t-0 rounded-b-3xl">
-              <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
-                <div className="p-6 space-y-6">
-                  {messages.map((msg) => (
-                    <ChatMessage key={msg.id} message={{ ...msg, timestamp: formatTimestamp(msg.timestamp) }} />
-                  ))}
-                  {isTyping && <TypingIndicator />}
-                </div>
-              </ScrollArea>
-            </div>
-
-            {/* Input Area - Sticky at bottom */}
-            <div className="p-4">
-              <ChatInput onSendMessage={handleSendMessageWithSession} isTyping={isTyping} />
-            </div>
-          </div>
-
-          {/* Right Sidebar */}
-          <ChatSidebar 
-            onClearConversation={handleClearConversationWithHistory}
-            onDownloadChat={handleDownloadChat}
-            recentTopics={[]}
-            currentSessionId={currentSessionId}
-            onSessionSelect={handleSessionSelect}
-          />
-        </div>
+        {chatContent}
       </div>
     </DashboardLayout>
   );
