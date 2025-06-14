@@ -23,9 +23,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useIdeaOperations } from '@/hooks/useIdeaOperations';
-import CompletionBadge from '@/components/dashboard/CompletionBadge';
-import ProgressIndicator from '@/components/dashboard/ProgressIndicator';
-import ComingSoonModal from '@/components/dashboard/ComingSoonModal';
 
 export interface Report {
   id: string;
@@ -46,11 +43,6 @@ const ReportCard: React.FC<ReportCardProps> = ({ report, onReportUpdated }) => {
   const navigate = useNavigate();
   const { archiveIdea, deleteIdea, unarchiveIdea, loading } = useIdeaOperations();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [showComingSoonModal, setShowComingSoonModal] = useState(false);
-  const [comingSoonFeature, setComingSoonFeature] = useState<{name: string, description: string}>({
-    name: '',
-    description: ''
-  });
 
   const getStatusColor = (status: Report['status']) => {
     switch (status) {
@@ -75,19 +67,6 @@ const ReportCard: React.FC<ReportCardProps> = ({ report, onReportUpdated }) => {
     if (percentage >= 70) return 'text-green-600 dark:text-green-400';
     if (percentage >= 50) return 'text-yellow-600 dark:text-yellow-400';
     return 'text-red-600 dark:text-red-400';
-  };
-
-  const getCompletionStatus = () => {
-    if (report.status === 'Archived') return 'completed';
-    if (report.score > 0) return 'completed';
-    return 'pending';
-  };
-
-  const getProjectProgress = () => {
-    // Simulate project completion: Validation Report (always 1 if exists) + 4 upcoming features
-    const completedSections = 1; // Validation report exists
-    const totalSections = 5; // Validation + Market Analysis + Financial + Competition + Business Plan
-    return { completed: completedSections, total: totalSections };
   };
 
   const handleDuplicate = () => {
@@ -116,13 +95,7 @@ const ReportCard: React.FC<ReportCardProps> = ({ report, onReportUpdated }) => {
     setShowDeleteDialog(false);
   };
 
-  const handleComingSoonClick = (featureName: string, description: string) => {
-    setComingSoonFeature({ name: featureName, description });
-    setShowComingSoonModal(true);
-  };
-
   const isArchived = report.status === 'Archived';
-  const progress = getProjectProgress();
 
   return (
     <>
@@ -173,45 +146,9 @@ const ReportCard: React.FC<ReportCardProps> = ({ report, onReportUpdated }) => {
           </div>
         </CardHeader>
         <CardContent className="pt-0 space-y-4">
-          <div className="flex items-center gap-2">
-            <Badge className={`${getStatusColor(report.status)} whitespace-nowrap`}>
-              {report.status}
-            </Badge>
-            <CompletionBadge status={getCompletionStatus()} />
-          </div>
-
-          {!isArchived && (
-            <div className="bg-muted/30 rounded-lg p-3">
-              <ProgressIndicator 
-                completed={progress.completed} 
-                total={progress.total} 
-                size="sm"
-                variant="default"
-              />
-              <div className="mt-2 flex gap-1 text-xs text-muted-foreground">
-                <button 
-                  onClick={() => handleComingSoonClick('Market Analysis', 'Deep dive into your target market with competitor research, market size analysis, and customer insights.')}
-                  className="hover:text-primary transition-colors"
-                >
-                  Market Analysis
-                </button>
-                <span>•</span>
-                <button 
-                  onClick={() => handleComingSoonClick('Financial Projections', 'Revenue forecasting, cost analysis, and financial modeling for your business idea.')}
-                  className="hover:text-primary transition-colors"
-                >
-                  Financial
-                </button>
-                <span>•</span>
-                <button 
-                  onClick={() => handleComingSoonClick('Business Plan Generator', 'AI-powered business plan creation with executive summary, strategy, and implementation roadmap.')}
-                  className="hover:text-primary transition-colors"
-                >
-                  Business Plan
-                </button>
-              </div>
-            </div>
-          )}
+          <Badge className={`${getStatusColor(report.status)} whitespace-nowrap`}>
+            {report.status}
+          </Badge>
           
           <p className="text-sm text-muted-foreground line-clamp-2">
             {report.preview}
@@ -236,14 +173,6 @@ const ReportCard: React.FC<ReportCardProps> = ({ report, onReportUpdated }) => {
           </div>
         </CardContent>
       </Card>
-
-      <ComingSoonModal
-        isOpen={showComingSoonModal}
-        onClose={() => setShowComingSoonModal(false)}
-        featureName={comingSoonFeature.name}
-        description={comingSoonFeature.description}
-        estimatedRelease="Q1 2025"
-      />
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>

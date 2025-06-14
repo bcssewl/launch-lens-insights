@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Maximize2, Minimize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -15,6 +14,7 @@ import { useChatHistory } from '@/hooks/useChatHistory';
 import { useMessages } from '@/hooks/useMessages';
 import { formatTimestamp } from '@/constants/aiAssistant';
 import { useIsMobile } from '@/hooks/use-mobile';
+import ChatEmptyState from '@/components/assistant/ChatEmptyState';
 
 const AIAssistantPage: React.FC = () => {
   const isMobile = useIsMobile();
@@ -81,10 +81,16 @@ const AIAssistantPage: React.FC = () => {
 
   // Fullscreen content
   const chatContent = (
-    <div className={`flex ${isFullscreen ? 'h-screen' : 'h-[calc(100vh-120px)] md:h-[calc(100vh-120px)]'}`}>
+    <div className={`
+      flex flex-col md:flex-row
+      ${isFullscreen ? 'h-screen' : 'h-[calc(100vh-120px)] md:h-[calc(100vh-120px)]'}
+      min-h-0 w-full relative
+      bg-gradient-to-br from-background via-background to-muted/10
+      transition-all
+    `}>
       <div className="flex-1 flex flex-col min-h-0">
         {/* Subheader with fullscreen toggle */}
-        <div className="p-6 border-b border-border/50 bg-background/50 backdrop-blur-xl flex-shrink-0 rounded-t-3xl mx-4 mt-4 flex items-center justify-between">
+        <div className="p-6 border-b border-border/50 bg-background/50 backdrop-blur-xl flex-shrink-0 rounded-t-3xl mx-4 mt-4 flex items-center justify-between z-10">
           <div>
             <p className="text-sm text-muted-foreground">
               {isConfigured ? 'AI-powered startup advisor' : 'AI service not configured'}
@@ -111,14 +117,24 @@ const AIAssistantPage: React.FC = () => {
         </div>
 
         {/* Chat Area - Takes remaining space */}
-        <div className="flex-1 min-h-0 overflow-hidden mx-4 bg-background/30 backdrop-blur-xl border border-border/50 border-t-0 rounded-b-3xl">
+        <div className="flex-1 min-h-0 overflow-hidden mx-4 bg-background/30 backdrop-blur-xl border border-border/50 border-t-0 rounded-b-3xl relative">
           <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
-            <div className="p-6 space-y-6">
-              {messages.map((msg) => (
-                <ChatMessage key={msg.id} message={{ ...msg, timestamp: formatTimestamp(msg.timestamp) }} />
-              ))}
-              {isTyping && <TypingIndicator />}
+            <div className="p-6 space-y-6 flex flex-col items-stretch min-h-full transition-all duration-150">
+              {messages.length <= 1 && !isTyping ? (
+                <ChatEmptyState />
+              ) : (
+                <>
+                  {messages.map((msg, idx) => (
+                    <ChatMessage key={msg.id} message={{ ...msg, timestamp: formatTimestamp(msg.timestamp) }} />
+                  ))}
+                  {isTyping && <TypingIndicator />}
+                </>
+              )}
             </div>
+            {/* Top fade for scroll */}
+            <div className="absolute left-0 top-0 w-full h-6 pointer-events-none z-10 bg-gradient-to-b from-background/90 via-background/80 to-transparent" />
+            {/* Bottom fade effect */}
+            <div className="absolute left-0 bottom-0 w-full h-10 pointer-events-none z-10 bg-gradient-to-t from-background/95 via-background/60 to-transparent" />
           </ScrollArea>
         </div>
 
@@ -128,14 +144,26 @@ const AIAssistantPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Right Sidebar */}
-      <ChatSidebar 
-        onClearConversation={handleClearConversationWithHistory}
-        onDownloadChat={handleDownloadChat}
-        recentTopics={[]}
-        currentSessionId={currentSessionId}
-        onSessionSelect={handleSessionSelect}
-      />
+      {/* Right Sidebar for desktop, floating drawer for mobile */}
+      <div className="hidden md:block md:w-80 lg:w-96 xl:w-[410px] flex-shrink-0 duration-200 transition-all">
+        <ChatSidebar 
+          onClearConversation={handleClearConversationWithHistory}
+          onDownloadChat={handleDownloadChat}
+          recentTopics={[]}
+          currentSessionId={currentSessionId}
+          onSessionSelect={handleSessionSelect}
+        />
+      </div>
+      {/* On mobile, sidebar handled by ChatSidebar itself */}
+      {isMobile && (
+        <ChatSidebar 
+          onClearConversation={handleClearConversationWithHistory}
+          onDownloadChat={handleDownloadChat}
+          recentTopics={[]}
+          currentSessionId={currentSessionId}
+          onSessionSelect={handleSessionSelect}
+        />
+      )}
     </div>
   );
 

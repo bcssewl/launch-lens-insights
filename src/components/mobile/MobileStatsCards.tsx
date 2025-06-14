@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { LucideIcon, Lightbulb, BarChart3, Target, FolderOpen } from 'lucide-react';
+import { LucideIcon, Lightbulb, BarChart3, Target } from 'lucide-react';
 
 interface MobileStatCardProps {
   title: string;
@@ -75,7 +75,6 @@ interface MobileStatsCardsProps {
     averageScore: number;
     businessPlans: number;
     successRate: number;
-    activeProjects: number;
   };
 }
 
@@ -101,13 +100,6 @@ const MobileStatsCards: React.FC<MobileStatsCardsProps> = ({ stats }) => {
         subtitle={stats.successRate > 0 ? "vs 42% industry average" : "Complete more validations"}
         icon={Target}
         iconColor="text-yellow-500"
-      />
-      <MobileStatCard
-        title="Active Projects"
-        value={stats.activeProjects.toString()}
-        subtitle={stats.activeProjects > 0 ? "Projects with dashboards" : "Create your first project"}
-        icon={FolderOpen}
-        iconColor="text-blue-500"
       />
     </div>
   );

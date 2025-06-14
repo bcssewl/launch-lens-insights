@@ -33,7 +33,7 @@ const DashboardPage: React.FC = () => {
 
             {/* Loading skeletons */}
             <section className="grid gap-3 md:gap-6 md:grid-cols-2 xl:grid-cols-4">
-              {[...Array(isMobile ? 4 : 4)].map((_, i) => (
+              {[...Array(isMobile ? 3 : 4)].map((_, i) => (
                 <Skeleton key={i} className="h-24 md:h-32 w-full rounded-2xl md:rounded-3xl" />
               ))}
             </section>

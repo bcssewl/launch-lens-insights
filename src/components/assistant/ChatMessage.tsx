@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { cn } from '@/lib/utils';
 import AIAvatar from './AIAvatar';
@@ -21,18 +20,29 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   const isAi = message.sender === 'ai';
 
   return (
-    <div className={cn("flex items-start gap-3 w-full", isAi ? "justify-start" : "justify-end")}>
+    <div
+      className={cn(
+        "flex items-start gap-3 w-full transition-all duration-150",
+        isAi ? "justify-start" : "justify-end"
+      )}
+      style={{
+        // Keep chat on a max-width for better readability
+        width: '100%',
+      }}
+    >
       {isAi && (
         <AIAvatar className="w-8 h-8 flex-shrink-0 mt-1" />
       )}
-      
+
       <div className={cn("flex flex-col", isAi ? "items-start" : "items-end")}>
         <div
           className={cn(
-            "group relative max-w-xs md:max-w-md lg:max-w-lg p-3 rounded-2xl shadow-sm",
+            "group relative shadow-md transition-all duration-200",
+            'max-w-[90vw] sm:max-w-[80vw] md:max-w-xl lg:max-w-2xl xl:max-w-3xl',
+            "p-3 rounded-2xl",
             isAi 
-              ? "bg-muted text-foreground rounded-tl-sm" 
-              : "bg-primary text-primary-foreground rounded-tr-sm"
+              ? "bg-muted text-foreground rounded-tl-sm border border-border shadow-lg"
+              : "bg-primary text-primary-foreground rounded-tr-sm border border-primary/30"
           )}
         >
           {isAi && (
@@ -40,7 +50,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
               <CopyButton content={message.text} />
             </div>
           )}
-          
+
           <div className={cn("text-sm leading-relaxed", isAi && "pr-8")}>
             {isAi ? (
               <MarkdownRenderer content={message.text} />
@@ -56,7 +66,6 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
           {message.timestamp}
         </p>
       </div>
-
       {!isAi && (
         <UserAvatar className="h-8 w-8 flex-shrink-0 mt-1" />
       )}
