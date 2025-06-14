@@ -13,9 +13,7 @@ export const WhyNowSection = () => {
   return (
     <section 
       ref={sectionRef} 
-      className={`apple-section bg-white/50 dark:bg-gray-900/50 min-h-screen flex items-center relative ${
-        isActive ? 'overflow-hidden' : ''
-      }`}
+      className="apple-section bg-white/50 dark:bg-gray-900/50 min-h-screen flex items-center relative"
     >
       <div className="apple-container">
         <div className="max-w-4xl mx-auto text-center">
@@ -31,7 +29,7 @@ export const WhyNowSection = () => {
               <div
                 key={index}
                 className={`absolute inset-0 flex items-center justify-center transition-all duration-700 ease-in-out ${
-                  activeStep >= index
+                  activeStep === index
                     ? 'opacity-100 transform translate-y-0'
                     : 'opacity-0 transform translate-y-4'
                 }`}

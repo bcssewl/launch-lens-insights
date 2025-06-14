@@ -17,12 +17,11 @@ export const useScrollAnimation = (totalSteps: number) => {
     if (e.deltaY > 0) {
       setActiveStep((prev) => {
         const next = prev + 1;
-        if (next >= totalSteps - 1) {
+        if (next >= totalSteps) {
           setIsComplete(true);
-          // Allow a small delay before releasing scroll lock
-          setTimeout(() => {
-            setIsActive(false);
-          }, 500);
+          setIsActive(false);
+          // Restore body scroll
+          document.body.style.overflow = 'auto';
           return totalSteps - 1;
         }
         return next;
@@ -32,43 +31,46 @@ export const useScrollAnimation = (totalSteps: number) => {
 
   useEffect(() => {
     const handleScroll = () => {
-      if (!sectionRef.current) return;
+      if (!sectionRef.current || isActive) return;
 
       const section = sectionRef.current;
       const rect = section.getBoundingClientRect();
       const windowHeight = window.innerHeight;
       
-      // Check if section is in viewport
-      const sectionTop = rect.top;
-      const sectionBottom = rect.bottom;
-      
       // Activate when section enters viewport from above
-      if (sectionTop <= windowHeight * 0.5 && sectionBottom > windowHeight * 0.5) {
-        if (!isActive && !isComplete) {
-          setIsActive(true);
-          setActiveStep(0);
-        }
-      } else if (sectionTop > windowHeight * 0.5) {
+      if (rect.top <= windowHeight * 0.3 && rect.bottom > windowHeight * 0.7 && !isComplete) {
+        setIsActive(true);
+        setActiveStep(0);
+        // Lock body scroll
+        document.body.style.overflow = 'hidden';
+      } else if (rect.top > windowHeight * 0.5) {
         // Reset when scrolling back up past the section
         setIsActive(false);
         setIsComplete(false);
         setActiveStep(0);
+        document.body.style.overflow = 'auto';
       }
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll(); // Check initial position
     
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      document.body.style.overflow = 'auto';
+    };
   }, [isActive, isComplete]);
 
   useEffect(() => {
+    if (!sectionRef.current) return;
+
+    const section = sectionRef.current;
+    
     if (isActive && !isComplete) {
-      // Add wheel event listener with passive: false to allow preventDefault
-      window.addEventListener('wheel', handleWheel, { passive: false });
+      section.addEventListener('wheel', handleWheel, { passive: false });
       
       return () => {
-        window.removeEventListener('wheel', handleWheel);
+        section.removeEventListener('wheel', handleWheel);
       };
     }
   }, [isActive, isComplete, handleWheel]);
