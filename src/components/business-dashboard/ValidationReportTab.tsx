@@ -99,10 +99,15 @@ const ValidationReportTab: React.FC<ValidationReportTabProps> = ({ report }) => 
         title: "Failed to generate PDF",
         description: "Try using the print view instead",
         variant: "destructive",
-        action: {
-          altText: "Open Print View",
-          onClick: () => setShowPrintView(true)
-        }
+        action: (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowPrintView(true)}
+          >
+            Open Print View
+          </Button>
+        )
       });
     } finally {
       setIsGeneratingPDF(false);
