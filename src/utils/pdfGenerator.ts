@@ -243,150 +243,53 @@ const createProfessionalPDFContent = (data: ReportData): HTMLElement => {
     </div>
   `;
 
-  // Key Metrics Page
-  const metricsPage = document.createElement('div');
-  metricsPage.style.cssText = `
-    min-height: 297mm;
-    padding: 40mm 20mm;
-    page-break-after: always;
-  `;
-
-  const createMetricCard = (title: string, value: string, icon: string, color: string) => `
-    <div style="background: linear-gradient(135deg, ${color}15 0%, ${color}05 100%); padding: 30px; border-radius: 16px; text-align: center; border: 2px solid ${color}30;">
-      <div style="font-size: 32px; margin-bottom: 15px;">${icon}</div>
-      <div style="font-size: 28px; font-weight: 800; color: ${color}; margin-bottom: 10px;">${value}</div>
-      <div style="font-size: 14px; font-weight: 600; color: #64748b;">${title}</div>
-    </div>
-  `;
-
-  metricsPage.innerHTML = `
-    <h1 style="font-size: 36px; font-weight: 700; color: #1a1a1a; margin-bottom: 40px; border-bottom: 3px solid #667eea; padding-bottom: 15px;">
-      Key Metrics & Insights
-    </h1>
-    
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 50px;">
-      ${createMetricCard('Market Size', data.keyMetrics.marketSize?.value || 'N/A', '📊', '#10b981')}
-      ${createMetricCard('Competition Level', data.keyMetrics.competitionLevel?.value || 'N/A', '⚔️', '#f59e0b')}
-      ${createMetricCard('Problem Clarity', data.keyMetrics.problemClarity?.value || 'N/A', '🎯', '#8b5cf6')}
-      ${createMetricCard('Revenue Potential', data.keyMetrics.revenuePotential?.value || 'N/A', '💰', '#06b6d4')}
-    </div>
-
-    <div style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); padding: 40px; border-radius: 16px; border: 1px solid #e2e8f0;">
-      <h3 style="font-size: 24px; font-weight: 600; color: #1e293b; margin-bottom: 30px;">Market Readiness Assessment</h3>
-      <div style="space-y: 20px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid #e2e8f0;">
-          <span style="font-size: 16px; font-weight: 500; color: #374151;">Market Timing</span>
-          <span style="background: #dcfce7; color: #166534; padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 14px;">Excellent</span>
-        </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid #e2e8f0;">
-          <span style="font-size: 16px; font-weight: 500; color: #374151;">Technology Readiness</span>
-          <span style="background: #dcfce7; color: #166534; padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 14px;">Ready</span>
-        </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid #e2e8f0;">
-          <span style="font-size: 16px; font-weight: 500; color: #374151;">Target Audience</span>
-          <span style="background: #fef3c7; color: #92400e; padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 14px;">Well-Defined</span>
-        </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0;">
-          <span style="font-size: 16px; font-weight: 500; color: #374151;">Business Model</span>
-          <span style="background: #fef3c7; color: #92400e; padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 14px;">Developing</span>
-        </div>
-      </div>
-    </div>
-  `;
-
-  // Market Analysis Page
-  const marketPage = document.createElement('div');
-  marketPage.style.cssText = `
-    min-height: 297mm;
-    padding: 40mm 20mm;
-    page-break-after: always;
-  `;
-
-  marketPage.innerHTML = `
-    <h1 style="font-size: 36px; font-weight: 700; color: #1a1a1a; margin-bottom: 40px; border-bottom: 3px solid #667eea; padding-bottom: 15px;">
-      Market Analysis
-    </h1>
-    
-    <div style="margin-bottom: 50px;">
-      <h3 style="font-size: 24px; font-weight: 600; color: #1e293b; margin-bottom: 25px;">Total Addressable Market (TAM/SAM/SOM)</h3>
-      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 25px;">
-        ${(data.marketAnalysis.tamSamSom || []).map((item: any) => `
-          <div style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); padding: 25px; border-radius: 12px; text-align: center; border: 2px solid #bfdbfe;">
-            <div style="font-size: 24px; font-weight: 800; color: #1d4ed8; margin-bottom: 10px;">
-              $${item.value?.toLocaleString() || 'N/A'}M
-            </div>
-            <div style="font-size: 14px; font-weight: 600; color: #64748b;">${item.name}</div>
-          </div>
-        `).join('')}
-      </div>
-    </div>
-
-    <div style="margin-bottom: 50px;">
-      <h3 style="font-size: 24px; font-weight: 600; color: #1e293b; margin-bottom: 25px;">Market Growth Trends</h3>
-      <div style="background: white; padding: 30px; border-radius: 12px; border: 2px solid #e2e8f0;">
-        <table style="width: 100%; border-collapse: collapse;">
-          <thead>
-            <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
-              <th style="padding: 15px; text-align: left; font-weight: 600; color: #374151;">Year</th>
-              <th style="padding: 15px; text-align: left; font-weight: 600; color: #374151;">Growth Rate</th>
-              <th style="padding: 15px; text-align: left; font-weight: 600; color: #374151;">Market Outlook</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${(data.marketAnalysis.marketGrowth || []).map((item: any, index: number) => `
-              <tr style="${index % 2 === 0 ? 'background: #f9fafb;' : 'background: white;'} border-bottom: 1px solid #e2e8f0;">
-                <td style="padding: 15px; color: #374151;">${item.year}</td>
-                <td style="padding: 15px; color: #374151; font-weight: 600;">${item.growth}%</td>
-                <td style="padding: 15px;">
-                  <span style="background: ${item.growth > 15 ? '#dcfce7' : item.growth > 8 ? '#fef3c7' : '#fee2e2'}; 
-                               color: ${item.growth > 15 ? '#166534' : item.growth > 8 ? '#92400e' : '#991b1b'}; 
-                               padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 12px;">
-                    ${item.growth > 15 ? 'Rapid Growth' : item.growth > 8 ? 'Steady Growth' : 'Slow Growth'}
-                  </span>
-                </td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <div>
-      <h3 style="font-size: 24px; font-weight: 600; color: #1e293b; margin-bottom: 25px;">Target Customer Segments</h3>
-      <div style="space-y: 15px;">
-        ${(data.marketAnalysis.customerSegments || []).map((segment: any) => `
-          <div style="display: flex; justify-content: space-between; align-items: center; padding: 20px; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: 10px; border: 1px solid #bae6fd;">
-            <span style="font-size: 16px; font-weight: 600; color: #0c4a6e;">${segment.name}</span>
-            <span style="font-size: 20px; font-weight: 800; color: #0284c7;">${segment.value}%</span>
-          </div>
-        `).join('')}
-      </div>
-    </div>
-  `;
-
-  // Continue with other sections...
-  const sections = [coverPage, tocPage, executivePage, metricsPage, marketPage];
-  
   // Add all sections to container
+  const sections = [coverPage, tocPage, executivePage];
   sections.forEach(section => container.appendChild(section));
 
   return container;
 };
 
+const waitForFonts = async (): Promise<void> => {
+  if (document.fonts && document.fonts.ready) {
+    await document.fonts.ready;
+  } else {
+    // Fallback for browsers that don't support document.fonts
+    await new Promise(resolve => setTimeout(resolve, 500));
+  }
+};
+
+const generatePDF = async (canvas: HTMLCanvasElement, pdf: jsPDF, pageHeight: number): Promise<void> => {
+  const imgData = canvas.toDataURL('image/png', 1.0);
+  const pdfWidth = pdf.internal.pageSize.getWidth();
+  const pdfHeight = pdf.internal.pageSize.getHeight();
+  
+  const imgWidth = canvas.width;
+  const imgHeight = canvas.height;
+  
+  const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+  const imgX = (pdfWidth - imgWidth * ratio) / 2;
+  const imgY = 0;
+  
+  pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
+};
+
 export const generateReportPDF = async (data: ReportData): Promise<void> => {
+  let content: HTMLElement | null = null;
+  
   try {
     console.log('Starting PDF generation with data:', data);
 
     // Create the professional PDF content
-    const content = createProfessionalPDFContent(data);
+    content = createProfessionalPDFContent(data);
     document.body.appendChild(content);
 
-    // Wait a moment for fonts and styles to load
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Wait for fonts to load
+    await waitForFonts();
 
-    // Generate canvas from HTML with high quality settings
+    // Generate canvas with optimized settings
     const canvas = await html2canvas(content, {
-      scale: 2,
+      scale: 1.5, // Reduced from 2 for better performance
       useCORS: true,
       allowTaint: true,
       backgroundColor: '#ffffff',
@@ -394,38 +297,41 @@ export const generateReportPDF = async (data: ReportData): Promise<void> => {
       height: content.scrollHeight,
       logging: false,
       imageTimeout: 15000,
-      removeContainer: true
+      removeContainer: true,
+      onclone: (clonedDoc) => {
+        // Ensure all images are loaded in the cloned document
+        const images = clonedDoc.getElementsByTagName('img');
+        return Promise.all(Array.from(images).map(img => {
+          const imgElement = img as HTMLImageElement;
+          if (imgElement.complete) return Promise.resolve();
+          return new Promise(resolve => {
+            imgElement.onload = resolve;
+            imgElement.onerror = resolve;
+          });
+        }));
+      }
     });
 
-    // Remove the temporary content
-    document.body.removeChild(content);
-
-    // Create PDF with professional settings
+    // Create PDF with metadata
     const pdf = new jsPDF('p', 'mm', 'a4');
-    const pdfWidth = 210; // A4 width in mm
-    const pdfHeight = 297; // A4 height in mm
-    
-    const canvasWidth = canvas.width;
-    const canvasHeight = canvas.height;
-    
-    // Calculate scaling to fit A4
-    const ratio = Math.min(pdfWidth / (canvasWidth * 0.264583), pdfHeight / (canvasHeight * 0.264583));
-    const imgWidth = canvasWidth * 0.264583 * ratio;
-    const imgHeight = canvasHeight * 0.264583 * ratio;
-    
-    let heightLeft = imgHeight;
-    let position = 0;
+    pdf.setProperties({
+      title: `${data.ideaName} - Business Validation Report`,
+      subject: 'Business Idea Validation',
+      author: 'Launch Lens Insights',
+      keywords: 'business validation, market analysis, startup',
+      creator: 'Launch Lens Insights'
+    });
 
-    // Add first page
-    pdf.addImage(canvas.toDataURL('image/png', 1.0), 'PNG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
-    heightLeft -= pdfHeight;
+    // Generate PDF with proper pagination
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const totalHeight = canvas.height;
+    const pageCount = Math.ceil(totalHeight / pageHeight);
 
-    // Add additional pages if needed
-    while (heightLeft >= 0) {
-      position = heightLeft - imgHeight;
-      pdf.addPage();
-      pdf.addImage(canvas.toDataURL('image/png', 1.0), 'PNG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
-      heightLeft -= pdfHeight;
+    for (let i = 0; i < pageCount; i++) {
+      if (i > 0) {
+        pdf.addPage();
+      }
+      await generatePDF(canvas, pdf, pageHeight);
     }
 
     // Generate filename
@@ -438,6 +344,11 @@ export const generateReportPDF = async (data: ReportData): Promise<void> => {
 
   } catch (error) {
     console.error('Error generating PDF:', error);
-    throw new Error('Failed to generate PDF. Please try using the print view instead.');
+    throw new Error(`Failed to generate PDF: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  } finally {
+    // Clean up
+    if (content && content.parentNode) {
+      content.parentNode.removeChild(content);
+    }
   }
 };
