@@ -8,10 +8,15 @@ export const WhyNowSection = () => {
     "Simply powerful. Powerfully simple. Welcome to the future."
   ];
 
-  const { activeStep, sectionRef } = useScrollAnimation(paragraphs.length);
+  const { activeStep, sectionRef, isActive } = useScrollAnimation(paragraphs.length);
 
   return (
-    <section ref={sectionRef} className="apple-section bg-white/50 dark:bg-gray-900/50 min-h-screen flex items-center">
+    <section 
+      ref={sectionRef} 
+      className={`apple-section bg-white/50 dark:bg-gray-900/50 min-h-screen flex items-center relative ${
+        isActive ? 'overflow-hidden' : ''
+      }`}
+    >
       <div className="apple-container">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl md:text-5xl font-semibold mb-8 text-foreground">
@@ -26,7 +31,7 @@ export const WhyNowSection = () => {
               <div
                 key={index}
                 className={`absolute inset-0 flex items-center justify-center transition-all duration-700 ease-in-out ${
-                  activeStep === index
+                  activeStep >= index
                     ? 'opacity-100 transform translate-y-0'
                     : 'opacity-0 transform translate-y-4'
                 }`}
@@ -50,6 +55,25 @@ export const WhyNowSection = () => {
               </div>
             ))}
           </div>
+          
+          {/* Scroll indicator */}
+          {isActive && (
+            <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2">
+              <div className="flex space-x-2">
+                {paragraphs.map((_, index) => (
+                  <div
+                    key={index}
+                    className={`w-2 h-2 rounded-full transition-colors duration-300 ${
+                      activeStep >= index ? 'bg-primary' : 'bg-gray-300'
+                    }`}
+                  />
+                ))}
+              </div>
+              <p className="text-sm text-muted-foreground mt-2">
+                Scroll to continue
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </section>
