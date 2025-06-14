@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -49,21 +49,9 @@ const BusinessIdeaCard: React.FC<BusinessIdeaCardProps> = ({ idea, onIdeaUpdated
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const getScoreColor = (score: number) => {
-    if (score >= 7) return 'text-green-600 dark:text-green-400';
-    if (score >= 4) return 'text-yellow-600 dark:text-yellow-400';
-    return 'text-red-600 dark:text-red-400';
-  };
-
-  const getScoreBadgeColor = (score: number) => {
-    if (score >= 7) return 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900 dark:text-green-300 border-green-300 dark:border-green-700';
-    if (score >= 4) return 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 dark:bg-yellow-900 dark:text-yellow-300 border-yellow-300 dark:border-yellow-700';
-    return 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900 dark:text-red-300 border-red-300 dark:border-red-700';
-  };
-
-  const getProgressColor = (percentage: number) => {
-    if (percentage >= 60) return 'bg-green-500';
-    if (percentage >= 30) return 'bg-yellow-500';
-    return 'bg-red-500';
+    if (score >= 7) return 'text-green-600';
+    if (score >= 4) return 'text-yellow-600';
+    return 'text-red-600';
   };
 
   const handleDuplicate = () => {
@@ -94,80 +82,93 @@ const BusinessIdeaCard: React.FC<BusinessIdeaCardProps> = ({ idea, onIdeaUpdated
 
   return (
     <>
-      <Card className={`group hover:shadow-lg transition-all duration-300 border hover:border-primary/20 ${idea.isArchived ? 'opacity-75' : ''}`}>
-        <CardHeader className="pb-3">
-          <div className="flex items-start justify-between">
-            <div className="flex-1 min-w-0">
-              <CardTitle className="text-lg font-semibold text-foreground truncate">
-                {idea.ideaName}
-              </CardTitle>
-              <p className="text-sm text-muted-foreground mt-1">{idea.dateValidated}</p>
-            </div>
-            <div className="flex items-center gap-2 ml-4">
-              <Badge className={`${getScoreBadgeColor(idea.validationScore)} whitespace-nowrap`}>
-                {idea.validationScore.toFixed(1)}/10
+      <Card className={`group hover:shadow-lg transition-all duration-300 border hover:border-primary/20 ${idea.isArchived ? 'opacity-75' : ''} relative`}>
+        <CardContent className="p-6">
+          {/* Header with Score and Menu */}
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className={`text-3xl font-bold ${getScoreColor(idea.validationScore)}`}>
+                {idea.validationScore.toFixed(1)}
+                <span className="text-lg font-normal text-muted-foreground">/10</span>
+              </div>
+              <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-200">
+                Validated
               </Badge>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {idea.isArchived ? (
-                    <DropdownMenuItem onClick={handleUnarchive} disabled={loading}>
-                      <ArchiveRestore className="mr-2 h-4 w-4" />
-                      Unarchive
-                    </DropdownMenuItem>
-                  ) : (
-                    <DropdownMenuItem onClick={handleArchive} disabled={loading}>
-                      <Archive className="mr-2 h-4 w-4" />
-                      Archive
-                    </DropdownMenuItem>
-                  )}
-                  <DropdownMenuItem onClick={handleDuplicate}>
-                    <Copy className="mr-2 h-4 w-4" />
-                    Duplicate & Edit
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem 
-                    onClick={() => setShowDeleteDialog(true)} 
-                    disabled={loading}
-                    className="text-red-600 focus:text-red-600"
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
             </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {idea.isArchived ? (
+                  <DropdownMenuItem onClick={handleUnarchive} disabled={loading}>
+                    <ArchiveRestore className="mr-2 h-4 w-4" />
+                    Unarchive
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem onClick={handleArchive} disabled={loading}>
+                    <Archive className="mr-2 h-4 w-4" />
+                    Archive
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onClick={handleDuplicate}>
+                  <Copy className="mr-2 h-4 w-4" />
+                  Duplicate & Edit
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={() => setShowDeleteDialog(true)} 
+                  disabled={loading}
+                  className="text-red-600 focus:text-red-600"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
-        </CardHeader>
-        <CardContent className="pt-0 space-y-4">
-          <p className="text-sm text-muted-foreground line-clamp-2">
-            {idea.oneLineDescription}
-          </p>
-          
+
+          {/* Title and Description */}
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-foreground mb-2 line-clamp-1">
+              {idea.ideaName}
+            </h3>
+            <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+              {idea.oneLineDescription}
+            </p>
+          </div>
+
           {/* Progress Section */}
-          <div className="space-y-2">
-            <div className="flex justify-between items-center text-xs text-muted-foreground">
-              <span>Progress: {idea.completedSections} of {idea.totalSections} sections</span>
-              <span>{Math.round(idea.completionPercentage)}%</span>
+          <div className="mb-6">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm font-medium text-foreground">Progress</span>
+              <span className="text-sm font-medium text-foreground">{Math.round(idea.completionPercentage)}%</span>
             </div>
             <Progress 
               value={idea.completionPercentage} 
-              className="h-2"
+              className="h-2 mb-2"
             />
+            <p className="text-xs text-muted-foreground">
+              {idea.completedSections} of {idea.totalSections} sections
+            </p>
           </div>
-          
-          <div className="flex gap-2 pt-2">
-            <Button asChild variant="default" size="sm" className="flex-1" disabled={idea.isArchived}>
+
+          {/* Action Button */}
+          <div className="mb-4">
+            <Button asChild className="w-full bg-primary hover:bg-primary/90" disabled={idea.isArchived}>
               <Link to={`/dashboard/business-idea/${idea.id}`}>
                 <Eye className="mr-2 h-4 w-4" />
                 View Dashboard
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
+          </div>
+
+          {/* Date */}
+          <div className="text-xs text-muted-foreground text-center">
+            {idea.dateValidated}
           </div>
         </CardContent>
       </Card>
