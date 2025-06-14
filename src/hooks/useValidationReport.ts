@@ -39,10 +39,16 @@ export const useValidationReport = (reportId: string) => {
             )
           `)
           .eq('id', reportId)
-          .single();
+          .maybeSingle();
 
         if (fetchError) {
+          console.error('Fetch error:', fetchError);
           setError(fetchError.message);
+          return;
+        }
+
+        if (!data) {
+          setError('Report not found');
           return;
         }
 
@@ -55,9 +61,10 @@ export const useValidationReport = (reportId: string) => {
         };
 
         setReport(transformedReport);
+        setError(null);
       } catch (err) {
-        setError('Failed to fetch validation report');
         console.error('Error fetching validation report:', err);
+        setError('Failed to fetch validation report');
       } finally {
         setLoading(false);
       }
