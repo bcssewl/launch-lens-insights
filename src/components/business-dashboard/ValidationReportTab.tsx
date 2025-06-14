@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,7 +9,7 @@ import ManageSharesDialog from '@/components/results/ManageSharesDialog';
 import PrintView from '@/components/results/PrintView';
 import { format } from 'date-fns';
 import { generateReportPDF } from '@/utils/pdfGenerator';
-import { toast } from 'sonner';
+import { useToast } from '@/hooks/use-toast';
 
 interface ValidationReportTabProps {
   report: any;
@@ -21,6 +20,7 @@ const ValidationReportTab: React.FC<ValidationReportTabProps> = ({ report }) => 
   const [manageSharesOpen, setManageSharesOpen] = useState(false);
   const [showPrintView, setShowPrintView] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const { toast } = useToast();
 
   const getScoreColor = (score: number) => {
     if (score >= 7) return 'text-green-600 dark:text-green-400';
@@ -36,7 +36,10 @@ const ValidationReportTab: React.FC<ValidationReportTabProps> = ({ report }) => 
 
   const handleExportPDF = async () => {
     setIsGeneratingPDF(true);
-    toast.info('Generating PDF...', { description: 'This may take a few seconds' });
+    toast({
+      title: "Generating PDF...",
+      description: "This may take a few seconds"
+    });
     
     try {
       // Prepare data for PDF generation
@@ -86,13 +89,18 @@ const ValidationReportTab: React.FC<ValidationReportTabProps> = ({ report }) => 
       };
 
       await generateReportPDF(pdfData);
-      toast.success('PDF downloaded successfully!');
+      toast({
+        title: "Success!",
+        description: "PDF downloaded successfully!"
+      });
     } catch (error) {
       console.error('PDF generation failed:', error);
-      toast.error('Failed to generate PDF', { 
-        description: 'Try using the print view instead',
+      toast({
+        title: "Failed to generate PDF",
+        description: "Try using the print view instead",
+        variant: "destructive",
         action: {
-          label: 'Open Print View',
+          altText: "Open Print View",
           onClick: () => setShowPrintView(true)
         }
       });
