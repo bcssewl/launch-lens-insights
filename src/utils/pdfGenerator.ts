@@ -139,7 +139,6 @@ export const generateReportPDF = async (data: ReportData): Promise<void> => {
       author: 'Launch Lens Insights',
       keywords: 'business validation, market analysis, startup',
       creator: 'Launch Lens Insights',
-      compression: true, // Enable PDF compression
     });
 
     // Generate optimized PDF
@@ -148,8 +147,8 @@ export const generateReportPDF = async (data: ReportData): Promise<void> => {
     // Generate clean filename
     const fileName = `${data.ideaName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_validation_report.pdf`;
     
-    // Save with compression
-    pdf.save(fileName, { compress: true });
+    // Save PDF
+    pdf.save(fileName);
 
     console.log('Optimized PDF generated successfully:', fileName);
 
