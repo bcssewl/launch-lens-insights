@@ -57,26 +57,17 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isTyping }) => {
           onChange={(e) => setInputValue(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Ask me anything about your startup ideas... (Press Shift+Enter for new line)"
-          className="flex-1 min-h-[40px] max-h-[120px] resize-none border-muted"
+          className="flex-1 min-h-[40px] max-h-[120px] resize-none"
           disabled={isTyping}
           rows={1}
         />
-        <Button
-          type="submit"
-          size="icon"
-          disabled={isTyping || inputValue.trim() === ''}
-          className={`gradient-button flex-shrink-0 transition-all duration-200 ${isTyping ? 'opacity-60 cursor-not-allowed' : ''}`}
-          aria-label="Send message"
+        <Button 
+          type="submit" 
+          size="icon" 
+          disabled={isTyping || inputValue.trim() === ''} 
+          className="gradient-button flex-shrink-0"
         >
-          {isTyping ? (
-            <span className="inline-block w-5 h-5">
-              <span className="block w-1 h-1 rounded-full bg-muted-foreground animate-bounce" style={{animationDelay: '0s'}}></span>
-              <span className="block w-1 h-1 rounded-full bg-muted-foreground animate-bounce ml-1" style={{animationDelay: '0.15s'}}></span>
-              <span className="block w-1 h-1 rounded-full bg-muted-foreground animate-bounce ml-1" style={{animationDelay: '0.3s'}}></span>
-            </span>
-          ) : (
-            <ArrowRight className="h-5 w-5" />
-          )}
+          <ArrowRight className="h-5 w-5" />
         </Button>
       </form>
     </div>
