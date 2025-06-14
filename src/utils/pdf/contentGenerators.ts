@@ -273,6 +273,191 @@ export const createMarketAnalysisPages = (data: ReportData): HTMLElement[] => {
   return pages;
 };
 
+export const createFinancialAnalysisPages = (data: ReportData): HTMLElement[] => {
+  const pages: HTMLElement[] = [];
+
+  // Financial Analysis Page 1
+  const financialPage1 = document.createElement('div');
+  financialPage1.style.cssText = `
+    min-height: 297mm;
+    padding: 30mm 20mm;
+    page-break-after: always;
+  `;
+  
+  financialPage1.innerHTML = `
+    <h1 style="font-size: 32px; font-weight: 700; color: #1a1a1a; margin-bottom: 30px; border-bottom: 3px solid #667eea; padding-bottom: 12px;">
+      Financial Analysis
+    </h1>
+    
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 30px;">
+      <div style="background: #f8fafc; padding: 25px; border-radius: 10px; text-align: center; border-left: 5px solid #3b82f6;">
+        <div style="font-size: 20px; margin-bottom: 8px;">💰</div>
+        <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">Startup Cost</div>
+        <div style="font-size: 20px; font-weight: 700; color: #1e293b;">$${data.financialAnalysis?.startupCost?.toLocaleString() || '50,000'}</div>
+      </div>
+      <div style="background: #f8fafc; padding: 25px; border-radius: 10px; text-align: center; border-left: 5px solid #10b981;">
+        <div style="font-size: 20px; margin-bottom: 8px;">🔥</div>
+        <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">Monthly Burn Rate</div>
+        <div style="font-size: 20px; font-weight: 700; color: #1e293b;">$${data.financialAnalysis?.monthlyBurn?.toLocaleString() || '15,000'}/mo</div>
+      </div>
+      <div style="background: #f8fafc; padding: 25px; border-radius: 10px; text-align: center; border-left: 5px solid #f59e0b;">
+        <div style="font-size: 20px; margin-bottom: 8px;">📈</div>
+        <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">Break-even Month</div>
+        <div style="font-size: 20px; font-weight: 700; color: #1e293b;">Month ${data.financialAnalysis?.breakEvenMonth || '18'}</div>
+      </div>
+      <div style="background: #f8fafc; padding: 25px; border-radius: 10px; text-align: center; border-left: 5px solid #8b5cf6;">
+        <div style="font-size: 20px; margin-bottom: 8px;">💸</div>
+        <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">Funding Needed</div>
+        <div style="font-size: 20px; font-weight: 700; color: #1e293b;">$${data.financialAnalysis?.fundingNeeded?.toLocaleString() || '500,000'}</div>
+      </div>
+    </div>
+    
+    <div style="margin-bottom: 30px;">
+      <h2 style="font-size: 20px; font-weight: 600; color: #1e293b; margin-bottom: 15px;">Revenue Projections</h2>
+    </div>
+  `;
+  
+  pages.push(financialPage1);
+
+  // Financial Analysis Page 2
+  const financialPage2 = document.createElement('div');
+  financialPage2.style.cssText = `
+    min-height: 297mm;
+    padding: 30mm 20mm;
+    page-break-after: always;
+  `;
+  
+  financialPage2.innerHTML = `
+    <h1 style="font-size: 32px; font-weight: 700; color: #1a1a1a; margin-bottom: 30px; border-bottom: 3px solid #667eea; padding-bottom: 12px;">
+      Financial Analysis (Continued)
+    </h1>
+    
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 30px;">
+      <div style="background: #f0f9ff; padding: 20px; border-radius: 10px; border: 1px solid #e0f2fe;">
+        <h3 style="font-size: 16px; font-weight: 600; color: #0c4a6e; margin-bottom: 15px;">Customer Acquisition</h3>
+        <div style="margin-bottom: 12px;">
+          <span style="font-size: 12px; color: #64748b;">Customer Acquisition Cost (CAC)</span>
+          <div style="font-size: 18px; font-weight: 700; color: #0c4a6e;">$${data.financialAnalysis?.cac || '75'}</div>
+        </div>
+        <div>
+          <span style="font-size: 12px; color: #64748b;">Customer Lifetime Value (LTV)</span>
+          <div style="font-size: 18px; font-weight: 700; color: #0c4a6e;">$${data.financialAnalysis?.ltv?.toLocaleString() || '1,200'}</div>
+        </div>
+      </div>
+      <div style="background: #f0fdf4; padding: 20px; border-radius: 10px; border: 1px solid #dcfce7;">
+        <h3 style="font-size: 16px; font-weight: 600; color: #14532d; margin-bottom: 15px;">Business Metrics</h3>
+        <div style="margin-bottom: 12px;">
+          <span style="font-size: 12px; color: #64748b;">Gross Margin</span>
+          <div style="font-size: 18px; font-weight: 700; color: #14532d;">${data.financialAnalysis?.grossMargin || '75'}%</div>
+        </div>
+        <div>
+          <span style="font-size: 12px; color: #64748b;">MRR Growth Rate</span>
+          <div style="font-size: 18px; font-weight: 700; color: #14532d;">${data.financialAnalysis?.mrrGrowth || '15'}% monthly</div>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  pages.push(financialPage2);
+
+  return pages;
+};
+
+export const createCompetitiveAnalysisPages = (data: ReportData): HTMLElement[] => {
+  const pages: HTMLElement[] = [];
+
+  // Competitive Analysis Page 1
+  const competitivePage1 = document.createElement('div');
+  competitivePage1.style.cssText = `
+    min-height: 297mm;
+    padding: 30mm 20mm;
+    page-break-after: always;
+  `;
+  
+  const competitors = data.competition?.competitors || [
+    { name: 'Competitor A', funding: '$2.5M', similarity: 85 },
+    { name: 'Competitor B', funding: '$1.2M', similarity: 72 },
+    { name: 'Competitor C', funding: '$850K', similarity: 68 }
+  ];
+  
+  competitivePage1.innerHTML = `
+    <h1 style="font-size: 32px; font-weight: 700; color: #1a1a1a; margin-bottom: 30px; border-bottom: 3px solid #667eea; padding-bottom: 12px;">
+      Competitive Analysis
+    </h1>
+    
+    <div style="margin-bottom: 30px;">
+      <h2 style="font-size: 20px; font-weight: 600; color: #1e293b; margin-bottom: 15px;">Key Competitors</h2>
+      <div style="background: #f8fafc; padding: 20px; border-radius: 10px; border: 1px solid #e2e8f0;">
+        ${competitors.map(comp => `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid #e2e8f0;">
+            <div>
+              <div style="font-size: 16px; font-weight: 600; color: #1e293b;">${comp.name}</div>
+              <div style="font-size: 12px; color: #64748b;">Funding: ${comp.funding}</div>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-size: 14px; font-weight: 600; color: #ef4444;">${comp.similarity}% Similar</div>
+              <div style="width: 60px; background: #e5e7eb; border-radius: 4px; height: 6px; margin-top: 4px;">
+                <div style="width: ${comp.similarity}%; background: #ef4444; height: 100%; border-radius: 4px;"></div>
+              </div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+    
+    <div style="margin-bottom: 30px;">
+      <h2 style="font-size: 20px; font-weight: 600; color: #1e293b; margin-bottom: 15px;">Market Saturation</h2>
+      <div style="background: #fef3c7; padding: 20px; border-radius: 10px; border-left: 5px solid #f59e0b;">
+        <div style="font-size: 14px; color: #92400e; line-height: 1.5;">
+          ${data.competition?.marketSaturation || 'The market shows moderate saturation with several established players, but there is still room for innovative solutions that address unmet customer needs.'}
+        </div>
+      </div>
+    </div>
+  `;
+  
+  pages.push(competitivePage1);
+
+  // Competitive Analysis Page 2
+  const competitivePage2 = document.createElement('div');
+  competitivePage2.style.cssText = `
+    min-height: 297mm;
+    padding: 30mm 20mm;
+    page-break-after: always;
+  `;
+  
+  const advantages = data.competition?.competitiveAdvantages || [
+    'First-mover advantage in specific niche',
+    'Superior technology architecture',
+    'Strong team expertise',
+    'Strategic partnerships',
+    'Cost-effective solution'
+  ];
+  
+  competitivePage2.innerHTML = `
+    <h1 style="font-size: 32px; font-weight: 700; color: #1a1a1a; margin-bottom: 30px; border-bottom: 3px solid #667eea; padding-bottom: 12px;">
+      Competitive Analysis (Continued)
+    </h1>
+    
+    <div style="margin-bottom: 30px;">
+      <h2 style="font-size: 20px; font-weight: 600; color: #1e293b; margin-bottom: 15px;">Competitive Advantages</h2>
+      <div style="background: #dcfce7; padding: 25px; border-radius: 10px; border-left: 5px solid #10b981;">
+        <ul style="list-style: none; padding: 0; margin: 0;">
+          ${advantages.map(advantage => `
+            <li style="margin-bottom: 12px; display: flex; align-items: flex-start;">
+              <span style="color: #10b981; margin-right: 10px; margin-top: 2px;">✓</span>
+              <span style="font-size: 14px; color: #14532d; line-height: 1.4;">${advantage}</span>
+            </li>
+          `).join('')}
+        </ul>
+      </div>
+    </div>
+  `;
+  
+  pages.push(competitivePage2);
+
+  return pages;
+};
+
 export const createSWOTAnalysisPage = (data: ReportData): HTMLElement => {
   const swotPage = document.createElement('div');
   swotPage.style.cssText = `
@@ -416,7 +601,7 @@ export const createActionItemsPage = (data: ReportData): HTMLElement => {
               </div>
             </div>
             <p style="color: #7f1d1d; margin-bottom: 8px; font-size: 12px;">${item.description}</p>
-            <div style="display: flex; gap: 12px; font-size: 11px; color: #991b1b;">
+            <div style="display: flex; gap: 12px; font-size: 11px; color: #991b1d;">
               <span><strong>Effort:</strong> ${item.effort}</span>
               <span><strong>Impact:</strong> ${item.impact}</span>
             </div>
@@ -427,6 +612,121 @@ export const createActionItemsPage = (data: ReportData): HTMLElement => {
   `;
 
   return actionItemsPage;
+};
+
+export const createRiskAssessmentPage = (data: ReportData): HTMLElement => {
+  const riskPage = document.createElement('div');
+  riskPage.style.cssText = `
+    min-height: 297mm;
+    padding: 30mm 20mm;
+    page-break-after: always;
+  `;
+  
+  const risks = data.riskAssessment?.risks || [
+    { category: 'Market Risk', level: 'Medium', description: 'Market adoption may be slower than expected due to customer education needs' },
+    { category: 'Technology Risk', level: 'Low', description: 'Core technology is proven and scalable with minimal technical risks' },
+    { category: 'Competitive Risk', level: 'High', description: 'Large competitors may enter the market with significant resources' },
+    { category: 'Financial Risk', level: 'Medium', description: 'Funding requirements may increase if customer acquisition costs are higher' },
+    { category: 'Regulatory Risk', level: 'Low', description: 'Minimal regulatory barriers in target markets' }
+  ];
+  
+  const getRiskColor = (level: string) => {
+    switch (level) {
+      case 'High': return { bg: '#fee2e2', color: '#991b1b', border: '#ef4444' };
+      case 'Medium': return { bg: '#fef3c7', color: '#92400e', border: '#f59e0b' };
+      case 'Low': return { bg: '#dcfce7', color: '#166534', border: '#10b981' };
+      default: return { bg: '#f3f4f6', color: '#374151', border: '#9ca3af' };
+    }
+  };
+  
+  riskPage.innerHTML = `
+    <h1 style="font-size: 32px; font-weight: 700; color: #1a1a1a; margin-bottom: 30px; border-bottom: 3px solid #667eea; padding-bottom: 12px;">
+      Risk Assessment
+    </h1>
+    
+    <div style="margin-bottom: 30px;">
+      ${risks.map(risk => {
+        const riskStyle = getRiskColor(risk.level);
+        return `
+          <div style="background: ${riskStyle.bg}; padding: 20px; border-radius: 10px; border-left: 5px solid ${riskStyle.border}; margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <h3 style="font-size: 16px; font-weight: 600; color: ${riskStyle.color}; margin: 0;">${risk.category}</h3>
+              <span style="background: ${riskStyle.border}; color: white; padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: 600;">
+                ${risk.level.toUpperCase()} RISK
+              </span>
+            </div>
+            <p style="font-size: 14px; color: ${riskStyle.color}; margin: 0; line-height: 1.4;">${risk.description}</p>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+
+  return riskPage;
+};
+
+export const createImplementationTimelinePage = (data: ReportData): HTMLElement => {
+  const timelinePage = document.createElement('div');
+  timelinePage.style.cssText = `
+    min-height: 297mm;
+    padding: 30mm 20mm;
+    page-break-after: always;
+  `;
+  
+  const timeline = data.implementation?.timeline || [
+    {
+      phase: 'Phase 1: Foundation',
+      timeline: '0-3 months',
+      tasks: ['Complete market validation', 'Finalize MVP development', 'Secure initial funding', 'Build core team']
+    },
+    {
+      phase: 'Phase 2: Launch',
+      timeline: '3-6 months',
+      tasks: ['Launch beta version', 'Acquire first 100 customers', 'Iterate based on feedback', 'Establish partnerships']
+    },
+    {
+      phase: 'Phase 3: Growth',
+      timeline: '6-12 months',
+      tasks: ['Scale marketing efforts', 'Expand to new markets', 'Raise Series A funding', 'Build advanced features']
+    },
+    {
+      phase: 'Phase 4: Scale',
+      timeline: '12+ months',
+      tasks: ['International expansion', 'Strategic acquisitions', 'IPO preparation', 'Market leadership']
+    }
+  ];
+  
+  timelinePage.innerHTML = `
+    <h1 style="font-size: 32px; font-weight: 700; color: #1a1a1a; margin-bottom: 30px; border-bottom: 3px solid #667eea; padding-bottom: 12px;">
+      Implementation Timeline
+    </h1>
+    
+    <div style="margin-bottom: 30px;">
+      ${timeline.map((phase, index) => `
+        <div style="background: #f8fafc; padding: 25px; border-radius: 10px; border-left: 5px solid #667eea; margin-bottom: 25px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h3 style="font-size: 18px; font-weight: 600; color: #1e293b; margin: 0;">${phase.phase}</h3>
+            <span style="background: #667eea; color: white; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600;">
+              ${phase.timeline}
+            </span>
+          </div>
+          <div style="margin-bottom: 15px;">
+            <h4 style="font-size: 14px; font-weight: 600; color: #475569; margin-bottom: 10px;">Key Tasks:</h4>
+            <ul style="list-style: none; padding: 0; margin: 0;">
+              ${phase.tasks.map(task => `
+                <li style="margin-bottom: 8px; display: flex; align-items: flex-start;">
+                  <span style="color: #667eea; margin-right: 8px; margin-top: 2px;">•</span>
+                  <span style="font-size: 13px; color: #374151; line-height: 1.4;">${task}</span>
+                </li>
+              `).join('')}
+            </ul>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+
+  return timelinePage;
 };
 
 export const createFinalRecommendationsPage = (data: ReportData): HTMLElement => {
