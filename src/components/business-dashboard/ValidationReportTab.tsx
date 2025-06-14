@@ -85,7 +85,9 @@ const ValidationReportTab: React.FC<ValidationReportTabProps> = ({ report }) => 
           threats: []
         },
         detailedScores: reportData.detailedScores || [],
-        actionItems: reportData.actionItems || []
+        actionItems: reportData.actionItems || [],
+        riskAssessment: reportData.riskAssessment || {},
+        implementation: reportData.implementation || {},
       };
 
       await generateReportPDF(pdfData);
