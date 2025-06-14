@@ -111,7 +111,7 @@ const MyBusinessIdeasTabContent: React.FC<MyBusinessIdeasTabContentProps> = ({ s
         </div>
 
         {/* Loading skeletons */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[...Array(6)].map((_, i) => (
             <Skeleton key={i} className="h-64 w-full" />
           ))}
@@ -213,7 +213,7 @@ const MyBusinessIdeasTabContent: React.FC<MyBusinessIdeasTabContentProps> = ({ s
 
       {/* Business Ideas Grid or Empty State */}
       {sortedIdeas.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {sortedIdeas.map(idea => (
             <BusinessIdeaCard 
               key={idea.id} 
