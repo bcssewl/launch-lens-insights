@@ -41,8 +41,7 @@ export const HeroSection = () => {
         </h1>
         
         {/* Subtitle */}
-        <p className="apple-subheading">Strategic insights. Powerful tools. Seamless execution. 
-The platform that grows with your vision.</p>
+        <p className="apple-subheading">Deep market insights. Strategic roadmaps. Intelligence that empowers better decisions</p>
         
         {/* CTA Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-20">
