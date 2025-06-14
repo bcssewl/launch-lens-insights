@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,6 +9,8 @@ import ShareReportDialog from '@/components/results/ShareReportDialog';
 import ManageSharesDialog from '@/components/results/ManageSharesDialog';
 import PrintView from '@/components/results/PrintView';
 import { format } from 'date-fns';
+import { generateReportPDF } from '@/utils/pdfGenerator';
+import { toast } from 'sonner';
 
 interface ValidationReportTabProps {
   report: any;
@@ -17,6 +20,7 @@ const ValidationReportTab: React.FC<ValidationReportTabProps> = ({ report }) => 
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [manageSharesOpen, setManageSharesOpen] = useState(false);
   const [showPrintView, setShowPrintView] = useState(false);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
   const getScoreColor = (score: number) => {
     if (score >= 7) return 'text-green-600 dark:text-green-400';
@@ -30,8 +34,71 @@ const ValidationReportTab: React.FC<ValidationReportTabProps> = ({ report }) => 
     return 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900 dark:text-red-300 border-red-300 dark:border-red-700';
   };
 
-  const handleExportPDF = () => {
-    setShowPrintView(true);
+  const handleExportPDF = async () => {
+    setIsGeneratingPDF(true);
+    toast.info('Generating PDF...', { description: 'This may take a few seconds' });
+    
+    try {
+      // Prepare data for PDF generation
+      const reportData = report.report_data || {};
+      
+      const pdfData = {
+        ideaName: report.idea_name || 'Untitled Idea',
+        score: report.overall_score || 0,
+        recommendation: report.recommendation || 'Analysis in progress',
+        analysisDate: report.completed_at 
+          ? format(new Date(report.completed_at), 'MMM d, yyyy')
+          : format(new Date(report.created_at), 'MMM d, yyyy'),
+        executiveSummary: reportData.executiveSummary || report.one_line_description || 'No summary available',
+        keyMetrics: reportData.keyMetrics || {
+          marketSize: { value: 'N/A' },
+          competitionLevel: { value: 'N/A' },
+          problemClarity: { value: 'N/A' },
+          revenuePotential: { value: 'N/A' }
+        },
+        marketAnalysis: reportData.marketAnalysis || {},
+        competition: reportData.competition || {
+          competitors: [],
+          competitiveAdvantages: [],
+          marketSaturation: 'Unknown'
+        },
+        financialAnalysis: reportData.financialAnalysis || {
+          startupCosts: [],
+          operatingCosts: [],
+          revenueProjections: [],
+          breakEvenAnalysis: [],
+          fundingRequirements: [],
+          keyMetrics: {
+            totalStartupCost: 0,
+            monthlyBurnRate: 0,
+            breakEvenMonth: 0,
+            fundingNeeded: 0
+          }
+        },
+        swot: reportData.swot || {
+          strengths: [],
+          weaknesses: [],
+          opportunities: [],
+          threats: []
+        },
+        detailedScores: reportData.detailedScores || [],
+        actionItems: reportData.actionItems || []
+      };
+
+      await generateReportPDF(pdfData);
+      toast.success('PDF downloaded successfully!');
+    } catch (error) {
+      console.error('PDF generation failed:', error);
+      toast.error('Failed to generate PDF', { 
+        description: 'Try using the print view instead',
+        action: {
+          label: 'Open Print View',
+          onClick: () => setShowPrintView(true)
+        }
+      });
+    } finally {
+      setIsGeneratingPDF(false);
+    }
   };
 
   const handleClosePrintView = () => {
@@ -145,9 +212,10 @@ const ValidationReportTab: React.FC<ValidationReportTabProps> = ({ report }) => 
                 size="sm" 
                 className="apple-button-outline hover-lift"
                 onClick={handleExportPDF}
+                disabled={isGeneratingPDF}
               >
                 <Download className="mr-2 h-4 w-4" />
-                Export PDF
+                {isGeneratingPDF ? 'Generating...' : 'Export PDF'}
               </Button>
               <Button 
                 variant="outline" 
