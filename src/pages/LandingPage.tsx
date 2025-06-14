@@ -2,6 +2,7 @@
 import { LandingNavbar } from "@/components/LandingNavbar";
 import { TestimonialsSectionDemo } from "@/components/ui/testimonials-with-marquee";
 import { HeroSection } from "@/components/landing/HeroSection";
+import { DashboardPreview } from "@/components/landing/DashboardPreview";
 import { WhyNowSection } from "@/components/landing/WhyNowSection";
 import { FeaturesSection } from "@/components/landing/FeaturesSection";
 import { HowItWorksSection } from "@/components/landing/HowItWorksSection";
@@ -13,6 +14,7 @@ export default function LandingPage() {
       <LandingNavbar />
       <main className="flex-grow">
         <HeroSection />
+        <DashboardPreview />
         <WhyNowSection />
         <FeaturesSection />
         <TestimonialsSectionDemo />

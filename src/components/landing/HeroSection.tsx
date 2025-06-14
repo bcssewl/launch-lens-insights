@@ -1,14 +1,14 @@
+
 import { Button } from "@/components/ui/button";
 import { ArrowRight, CheckCircle } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { FloatingElements } from "./FloatingElements";
-import { DashboardPreview } from "./DashboardPreview";
 import { useAuth } from "@/contexts/AuthContext";
+
 export const HeroSection = () => {
-  const {
-    user
-  } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
+  
   const handleSeeHowItWorks = () => {
     try {
       if (user) {
@@ -21,7 +21,9 @@ export const HeroSection = () => {
       navigate('/login');
     }
   };
-  return <section className="relative min-h-screen apple-hero flex items-center justify-center overflow-hidden pt-24 md:pt-32">
+
+  return (
+    <section className="relative min-h-screen apple-hero flex items-center justify-center overflow-hidden pt-24 md:pt-32">
       <FloatingElements />
       
       <div className="apple-container relative z-10 text-center">
@@ -44,7 +46,7 @@ export const HeroSection = () => {
         <p className="apple-subheading">Deep market insights. Strategic roadmaps. Intelligence that empowers better decisions</p>
         
         {/* CTA Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-20">
+        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
           <Button size="lg" className="apple-button text-lg min-w-[220px]" asChild>
             <Link to="/signup">
               Validate My Idea
@@ -55,9 +57,7 @@ export const HeroSection = () => {
             See How It Works
           </Button>
         </div>
-        
-        {/* Dashboard Preview */}
-        <DashboardPreview />
       </div>
-    </section>;
+    </section>
+  );
 };
