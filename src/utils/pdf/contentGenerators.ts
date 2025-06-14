@@ -581,6 +581,29 @@ export const createActionItemsPage = (data: ReportData): HTMLElement => {
     page-break-after: always;
   `;
   
+  const getPriorityStyle = (priority: string) => {
+    switch (priority) {
+      case 'High':
+        return { bg: '#fef2f2', color: '#991b1b', border: '#ef4444', label: 'HIGH PRIORITY' };
+      case 'Medium':
+        return { bg: '#fef3c7', color: '#92400e', border: '#f59e0b', label: 'MEDIUM PRIORITY' };
+      case 'Low':
+        return { bg: '#dcfce7', color: '#166534', border: '#10b981', label: 'LOW PRIORITY' };
+      default:
+        return { bg: '#f3f4f6', color: '#374151', border: '#9ca3af', label: 'PRIORITY' };
+    }
+  };
+
+  const defaultItems = [
+    { title: 'Conduct customer validation interviews', description: 'Interview 20-30 potential customers to validate problem-solution fit', effort: 'Medium', impact: 'High', priority: 'High' },
+    { title: 'Develop MVP prototype', description: 'Create a minimum viable product to test core functionality', effort: 'High', impact: 'High', priority: 'High' },
+    { title: 'Market research and competitor analysis', description: 'Analyze market trends and identify key competitors', effort: 'Medium', impact: 'Medium', priority: 'Medium' },
+    { title: 'Financial planning and budgeting', description: 'Create detailed financial projections and budget allocation', effort: 'Medium', impact: 'Medium', priority: 'Medium' },
+    { title: 'Documentation and knowledge base', description: 'Create comprehensive documentation for future reference', effort: 'Low', impact: 'Medium', priority: 'Low' }
+  ];
+
+  const items = data.actionItems || defaultItems;
+  
   actionItemsPage.innerHTML = `
     <h1 style="font-size: 32px; font-weight: 700; color: #1a1a1a; margin-bottom: 30px; border-bottom: 3px solid #667eea; padding-bottom: 12px;">
       Action Items & Recommendations
@@ -589,24 +612,24 @@ export const createActionItemsPage = (data: ReportData): HTMLElement => {
     <div style="margin-bottom: 30px;">
       <h2 style="font-size: 20px; font-weight: 600; color: #1e293b; margin-bottom: 15px;">Immediate Actions (Next 30 Days)</h2>
       <div style="margin-bottom: 25px;">
-        ${(data.actionItems?.filter(item => item.priority === 'High') || [
-          { title: 'Conduct customer validation interviews', description: 'Interview 20-30 potential customers to validate problem-solution fit', effort: 'Medium', impact: 'High', priority: 'High' },
-          { title: 'Develop MVP prototype', description: 'Create a minimum viable product to test core functionality', effort: 'High', impact: 'High', priority: 'High' }
-        ]).map((item, index) => `
-          <div style="background: #fef2f2; border-left: 5px solid #ef4444; padding: 18px; border-radius: 6px; margin-bottom: 12px;">
-            <div style="display: flex; justify-content: between; align-items: flex-start; margin-bottom: 8px;">
-              <h3 style="font-size: 14px; font-weight: 600; color: #991b1b; margin: 0; flex: 1;">${index + 1}. ${item.title}</h3>
-              <div style="display: flex; gap: 8px; margin-left: 15px;">
-                <span style="background: #dc2626; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: 500;">HIGH PRIORITY</span>
+        ${items.map((item, index) => {
+          const style = getPriorityStyle(item.priority);
+          return `
+            <div style="background: ${style.bg}; border-left: 5px solid ${style.border}; padding: 18px; border-radius: 6px; margin-bottom: 12px;">
+              <div style="display: flex; justify-content: between; align-items: flex-start; margin-bottom: 8px;">
+                <h3 style="font-size: 14px; font-weight: 600; color: ${style.color}; margin: 0; flex: 1;">${index + 1}. ${item.title}</h3>
+                <div style="display: flex; gap: 8px; margin-left: 15px;">
+                  <span style="background: ${style.border}; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: 500;">${style.label}</span>
+                </div>
+              </div>
+              <p style="color: ${style.color}; margin-bottom: 8px; font-size: 12px;">${item.description}</p>
+              <div style="display: flex; gap: 12px; font-size: 11px; color: ${style.color};">
+                <span><strong>Effort:</strong> ${item.effort}</span>
+                <span><strong>Impact:</strong> ${item.impact}</span>
               </div>
             </div>
-            <p style="color: #7f1d1d; margin-bottom: 8px; font-size: 12px;">${item.description}</p>
-            <div style="display: flex; gap: 12px; font-size: 11px; color: #991b1d;">
-              <span><strong>Effort:</strong> ${item.effort}</span>
-              <span><strong>Impact:</strong> ${item.impact}</span>
-            </div>
-          </div>
-        `).join('')}
+          `;
+        }).join('')}
       </div>
     </div>
   `;
