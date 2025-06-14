@@ -15,6 +15,7 @@ import ValidateIdeaPage from "./pages/ValidateIdeaPage";
 import AnalyzingIdeaPage from "./pages/AnalyzingIdeaPage";
 import ResultsPage from "./pages/ResultsPage";
 import MyBusinessIdeasPage from "./pages/MyBusinessIdeasPage";
+import MyReportsPage from "./pages/MyReportsPage";
 import BusinessDashboardPage from "./pages/BusinessDashboardPage";
 import AIAssistantPage from "./pages/AIAssistantPage";
 import SettingsPage from "./pages/SettingsPage";
@@ -51,15 +52,13 @@ const App = () => (
               <Route path="/results" element={<ResultsPage />} />
               <Route path="/results/:reportId" element={<ResultsPage />} />
               <Route path="/dashboard/ideas" element={<MyBusinessIdeasPage />} />
+              <Route path="/dashboard/reports" element={<MyReportsPage />} />
               <Route path="/dashboard/business-idea/:ideaId" element={<BusinessDashboardPage />} />
               <Route path="/dashboard/assistant" element={<AIAssistantPage />} />
               <Route path="/dashboard/experiments" element={<ExperimentsPage />} />
               <Route path="/dashboard/settings" element={<SettingsPage />} />
               <Route path="/dashboard/profile" element={<ProfilePage />} />
               <Route path="/dashboard/billing" element={<BillingPage />} />
-              
-              {/* Legacy routes for backward compatibility */}
-              <Route path="/dashboard/reports" element={<Navigate to="/dashboard/ideas" replace />} />
               
               {/* Shared Report Route */}
               <Route path="/shared-report/:shareToken" element={<SharedReportPage />} />
