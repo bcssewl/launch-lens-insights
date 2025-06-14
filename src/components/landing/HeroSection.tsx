@@ -1,15 +1,14 @@
-
 import { Button } from "@/components/ui/button";
 import { ArrowRight, CheckCircle } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { FloatingElements } from "./FloatingElements";
 import { DashboardPreview } from "./DashboardPreview";
 import { useAuth } from "@/contexts/AuthContext";
-
 export const HeroSection = () => {
-  const { user } = useAuth();
+  const {
+    user
+  } = useAuth();
   const navigate = useNavigate();
-
   const handleSeeHowItWorks = () => {
     try {
       if (user) {
@@ -22,9 +21,7 @@ export const HeroSection = () => {
       navigate('/login');
     }
   };
-
-  return (
-    <section className="relative min-h-screen apple-hero flex items-center justify-center overflow-hidden pt-24 md:pt-32">
+  return <section className="relative min-h-screen apple-hero flex items-center justify-center overflow-hidden pt-24 md:pt-32">
       <FloatingElements />
       
       <div className="apple-container relative z-10 text-center">
@@ -44,10 +41,8 @@ export const HeroSection = () => {
         </h1>
         
         {/* Subtitle */}
-        <p className="apple-subheading">
-          AI-powered validation that separates winning ideas from expensive mistakes. 
-          Validate any business idea in days, not months, with evidence.
-        </p>
+        <p className="apple-subheading">Strategic insights. Powerful tools. Seamless execution. 
+The platform that grows with your vision.</p>
         
         {/* CTA Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-20">
@@ -57,12 +52,7 @@ export const HeroSection = () => {
               <ArrowRight className="ml-2 w-5 h-5" />
             </Link>
           </Button>
-          <Button 
-            size="lg" 
-            variant="outline" 
-            className="apple-button-outline text-lg min-w-[220px]" 
-            onClick={handleSeeHowItWorks}
-          >
+          <Button size="lg" variant="outline" className="apple-button-outline text-lg min-w-[220px]" onClick={handleSeeHowItWorks}>
             See How It Works
           </Button>
         </div>
@@ -70,6 +60,5 @@ export const HeroSection = () => {
         {/* Dashboard Preview */}
         <DashboardPreview />
       </div>
-    </section>
-  );
+    </section>;
 };
