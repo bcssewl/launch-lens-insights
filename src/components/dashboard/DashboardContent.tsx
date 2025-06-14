@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Lightbulb } from 'lucide-react';
+import { Lightbulb, FolderOpen } from 'lucide-react';
 import ActivityItem from '@/components/ActivityItem';
 import { Card as ShadcnCard, CardContent as ShadcnCardContent, CardHeader as ShadcnCardHeader, CardTitle as ShadcnCardTitle } from '@/components/ui/card';
 import { Link } from 'react-router-dom';
@@ -26,7 +26,17 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ recentActivities, h
       {/* Recent Activity Feed */}
       <ShadcnCard className="lg:col-span-2 apple-card border-0 shadow-lg">
         <ShadcnCardHeader className="pb-4">
-          <ShadcnCardTitle className="text-xl font-semibold">Recent Activity</ShadcnCardTitle>
+          <div className="flex items-center justify-between">
+            <ShadcnCardTitle className="text-xl font-semibold">Recent Activity</ShadcnCardTitle>
+            {hasValidatedIdeas && (
+              <Button asChild variant="outline" size="sm">
+                <Link to="/dashboard/ideas">
+                  <FolderOpen className="mr-2 h-4 w-4" />
+                  View All Ideas
+                </Link>
+              </Button>
+            )}
+          </div>
         </ShadcnCardHeader>
         <ShadcnCardContent className="space-y-2">
           {recentActivities.length > 0 ? (
