@@ -25,6 +25,24 @@ const optimizeCanvasSettings = {
   removeContainer: true,
   pixelRatio: 2,
   foreignObjectRendering: true,
+  onclone: (clonedDoc) => {
+    // Set white background for all elements
+    const elements = clonedDoc.getElementsByTagName('*');
+    for (let i = 0; i < elements.length; i++) {
+      const element = elements[i] as HTMLElement;
+      if (element.style.backgroundColor === '') {
+        element.style.backgroundColor = '#ffffff';
+      }
+    }
+    
+    // Ensure SVG elements are properly rendered
+    const svgs = clonedDoc.getElementsByTagName('svg');
+    for (let i = 0; i < svgs.length; i++) {
+      const svg = svgs[i] as SVGElement;
+      svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+      svg.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+    }
+  }
 };
 
 const generateOptimizedPDF = async (content: HTMLElement, pdf: jsPDF): Promise<void> => {
@@ -37,20 +55,7 @@ const generateOptimizedPDF = async (content: HTMLElement, pdf: jsPDF): Promise<v
   const actualHeight = Math.min(content.scrollHeight, PDF_CONFIG.maxHeight);
   
   // Generate canvas with optimized settings
-  const canvas = await html2canvas(content, {
-    ...optimizeCanvasSettings,
-    height: actualHeight,
-    onclone: (clonedDoc) => {
-      // Set white background for all elements
-      const elements = clonedDoc.getElementsByTagName('*');
-      for (let i = 0; i < elements.length; i++) {
-        const element = elements[i] as HTMLElement;
-        if (element.style.backgroundColor === '') {
-          element.style.backgroundColor = '#ffffff';
-        }
-      }
-    }
-  });
+  const canvas = await html2canvas(content, optimizeCanvasSettings);
 
   console.log(`Canvas dimensions: ${canvas.width}x${canvas.height}`);
   
@@ -77,7 +82,7 @@ const generateOptimizedPDF = async (content: HTMLElement, pdf: jsPDF): Promise<v
     pageCanvas.width = canvas.width;
     pageCanvas.height = sourceHeight;
     
-    const pageCtx = pageCanvas.getContext('2d');
+    const pageCtx = pageCanvas.getContext('2d', { alpha: false });
     if (pageCtx) {
       // Set white background for each page
       pageCtx.fillStyle = '#ffffff';
@@ -103,7 +108,9 @@ const generateOptimizedPDF = async (content: HTMLElement, pdf: jsPDF): Promise<v
         'PNG', 
         0, 0, 
         PDF_CONFIG.pageWidthMM, 
-        (sourceHeight / canvas.width) * PDF_CONFIG.pageWidthMM
+        (sourceHeight / canvas.width) * PDF_CONFIG.pageWidthMM,
+        undefined,
+        'FAST'
       );
       
       // Clean up page canvas immediately
