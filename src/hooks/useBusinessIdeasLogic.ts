@@ -25,7 +25,7 @@ export const useBusinessIdeasLogic = ({ showArchivedOnly }: UseBusinessIdeasLogi
       const completionPercentage = (completedSections / totalSections) * 100;
 
       return {
-        id: report.id,
+        id: report.validation_id, // Use validation_id instead of report.id for dashboard navigation
         ideaName: report.idea_name || 'Untitled Idea',
         oneLineDescription: report.one_line_description || 'No description available',
         validationScore: report.overall_score || 0,
