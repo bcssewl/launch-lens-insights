@@ -8,6 +8,7 @@ interface DashboardStats {
   averageScore: number;
   businessPlans: number;
   successRate: number;
+  activeProjects: number;
 }
 
 interface RecentActivity {
@@ -18,6 +19,7 @@ interface RecentActivity {
   statusText: string;
   statusColor: 'green' | 'yellow' | 'red';
   reportId?: string;
+  completionStatus?: 'completed' | 'in-progress' | 'pending';
 }
 
 export const useDashboardData = () => {
@@ -26,6 +28,7 @@ export const useDashboardData = () => {
     averageScore: 0,
     businessPlans: 0,
     successRate: 0,
+    activeProjects: 0,
   });
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,7 +58,8 @@ export const useDashboardData = () => {
             id,
             idea_name,
             one_line_description,
-            user_id
+            user_id,
+            archived_at
           )
         `)
         .eq('idea_validations.user_id', user.id)
@@ -66,6 +70,12 @@ export const useDashboardData = () => {
       // Calculate stats
       const completedReports = reports?.filter(r => r.status === 'completed') || [];
       const totalReports = reports?.length || 0;
+      
+      // Calculate active projects (non-archived ideas with validation reports)
+      const activeProjects = reports?.filter(r => 
+        r.idea_validations?.archived_at === null
+      ).length || 0;
+
       const scores = completedReports
         .map(r => r.overall_score)
         .filter(score => score !== null) as number[];
@@ -83,6 +93,7 @@ export const useDashboardData = () => {
         averageScore: Math.round(averageScore * 10) / 10,
         businessPlans: businessPlans,
         successRate: Math.round(successRate),
+        activeProjects: activeProjects,
       });
 
       // Create recent activities from reports
@@ -90,12 +101,15 @@ export const useDashboardData = () => {
         const score = report.overall_score || 0;
         let statusText = 'Unknown';
         let statusColor: 'green' | 'yellow' | 'red' = 'yellow';
+        let completionStatus: 'completed' | 'in-progress' | 'pending' = 'pending';
 
         // Only show as "in progress" if the status is "generating"
         if (report.status === 'generating') {
           statusText = 'Analysis in Progress';
           statusColor = 'yellow';
+          completionStatus = 'in-progress';
         } else if (report.status === 'completed') {
+          completionStatus = 'completed';
           if (score >= 7) {
             statusText = 'High Potential';
             statusColor = 'green';
@@ -112,9 +126,11 @@ export const useDashboardData = () => {
         } else if (report.status === 'failed') {
           statusText = 'Analysis Failed';
           statusColor = 'red';
+          completionStatus = 'pending';
         } else if (report.status === 'archived') {
           statusText = 'Archived';
           statusColor = 'red';
+          completionStatus = 'completed';
         }
 
         return {
@@ -127,6 +143,7 @@ export const useDashboardData = () => {
           created_at: report.created_at,
           reportId: report.id,
           status: report.status,
+          completionStatus,
         };
       });
 
