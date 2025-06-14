@@ -5,11 +5,11 @@ import { createComprehensivePDFContent } from './pdf/pdfContentBuilder';
 import { waitForFonts } from './pdf/pdfHelpers';
 
 const PDF_CONFIG = {
-  scale: 1.2, // Increased from 0.8 to 1.2 for better quality
-  quality: 0.95, // Increased quality
+  scale: 1.2,
+  quality: 0.95,
   format: 'JPEG',
   maxWidth: 794,
-  maxHeight: 16000, // Doubled from 8000 to allow more content
+  maxHeight: 16000,
   pageHeightMM: 297,
   pageWidthMM: 210,
 };
@@ -18,13 +18,13 @@ const optimizeCanvasSettings = {
   scale: PDF_CONFIG.scale,
   useCORS: true,
   allowTaint: true,
-  backgroundColor: '#ffffff',
+  backgroundColor: null,
   width: PDF_CONFIG.maxWidth,
-  logging: true, // Enable logging for debugging
-  imageTimeout: 15000, // Increased timeout
+  logging: true,
+  imageTimeout: 15000,
   removeContainer: true,
-  pixelRatio: 2, // Increased for better quality
-  foreignObjectRendering: true, // Enable for better rendering
+  pixelRatio: 2,
+  foreignObjectRendering: true,
 };
 
 const generateOptimizedPDF = async (content: HTMLElement, pdf: jsPDF): Promise<void> => {
@@ -37,12 +37,22 @@ const generateOptimizedPDF = async (content: HTMLElement, pdf: jsPDF): Promise<v
   const canvas = await html2canvas(content, {
     ...optimizeCanvasSettings,
     height: actualHeight,
+    onclone: (clonedDoc) => {
+      // Ensure background colors are preserved in the cloned document
+      const elements = clonedDoc.getElementsByTagName('*');
+      for (let i = 0; i < elements.length; i++) {
+        const element = elements[i] as HTMLElement;
+        if (element.style.backgroundColor === '') {
+          element.style.backgroundColor = '#ffffff';
+        }
+      }
+    }
   });
 
   console.log(`Canvas dimensions: ${canvas.width}x${canvas.height}`);
   
   // Calculate optimal page handling
-  const pageHeightPx = (PDF_CONFIG.pageHeightMM / 210) * canvas.width; // Maintain aspect ratio
+  const pageHeightPx = (PDF_CONFIG.pageHeightMM / 210) * canvas.width;
   const totalPages = Math.ceil(canvas.height / pageHeightPx);
   
   console.log(`Total pages to generate: ${totalPages}`);
@@ -57,7 +67,7 @@ const generateOptimizedPDF = async (content: HTMLElement, pdf: jsPDF): Promise<v
     const sourceY = pageIndex * pageHeightPx;
     const sourceHeight = Math.min(pageHeightPx, canvas.height - sourceY);
     
-    if (sourceHeight <= 0) break; // Skip empty pages
+    if (sourceHeight <= 0) break;
     
     // Create optimized page canvas
     const pageCanvas = document.createElement('canvas');
@@ -66,9 +76,13 @@ const generateOptimizedPDF = async (content: HTMLElement, pdf: jsPDF): Promise<v
     
     const pageCtx = pageCanvas.getContext('2d');
     if (pageCtx) {
+      // Set white background for each page
+      pageCtx.fillStyle = '#ffffff';
+      pageCtx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+      
       // Optimize canvas context settings
       pageCtx.imageSmoothingEnabled = true;
-      pageCtx.imageSmoothingQuality = 'medium';
+      pageCtx.imageSmoothingQuality = 'high';
       
       // Draw the page content
       pageCtx.drawImage(
@@ -92,11 +106,6 @@ const generateOptimizedPDF = async (content: HTMLElement, pdf: jsPDF): Promise<v
       // Clean up page canvas immediately
       pageCanvas.width = 0;
       pageCanvas.height = 0;
-    }
-    
-    // Force garbage collection hint
-    if (pageIndex % 3 === 0 && typeof window !== 'undefined' && window.gc) {
-      window.gc();
     }
   }
   
@@ -124,13 +133,13 @@ export const generateReportPDF = async (data: ReportData): Promise<void> => {
       position: absolute;
       left: -9999px;
       top: 0;
+      background: #ffffff;
     `;
     
     document.body.appendChild(content);
 
     // Wait for fonts and content to settle
     await waitForFonts();
-    // Increased settle time to ensure all content is rendered
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     // Create PDF with optimized metadata
