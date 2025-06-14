@@ -18,20 +18,22 @@ import {
 
 export const createComprehensivePDFContent = (data: ReportData): HTMLElement => {
   const container = document.createElement('div');
+  
+  // Use pixel-based styling for better html2canvas compatibility
   container.style.cssText = `
-    width: 210mm;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    background: white;
+    width: 794px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #ffffff;
     color: #1a1a1a;
     line-height: 1.6;
-    position: absolute;
-    left: -9999px;
-    top: 0;
     padding: 0;
     margin: 0;
+    box-sizing: border-box;
   `;
 
-  // Create all sections for comprehensive report
+  console.log('PDF Content: Building comprehensive report');
+
+  // Create all sections
   const sections = [
     createCoverPage(data),
     createTableOfContents(),
@@ -48,7 +50,11 @@ export const createComprehensivePDFContent = (data: ReportData): HTMLElement => 
     createFinalRecommendationsPage(data)
   ];
   
-  sections.forEach(section => container.appendChild(section));
+  sections.forEach((section, index) => {
+    console.log(`PDF Content: Adding section ${index + 1}/${sections.length}`);
+    container.appendChild(section);
+  });
 
+  console.log('PDF Content: Comprehensive report built successfully');
   return container;
 };

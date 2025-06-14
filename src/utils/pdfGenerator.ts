@@ -1,3 +1,4 @@
+
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { ReportData } from './pdf/types';
@@ -5,7 +6,7 @@ import { createComprehensivePDFContent } from './pdf/pdfContentBuilder';
 import { waitForFonts } from './pdf/pdfHelpers';
 
 const PDF_CONFIG = {
-  scale: 1.2,
+  scale: 1.5,
   quality: 1.0,
   format: 'PNG',
   maxWidth: 794,
@@ -23,86 +24,124 @@ const optimizeCanvasSettings = {
   logging: true,
   imageTimeout: 15000,
   removeContainer: true,
-  pixelRatio: 2,
-  foreignObjectRendering: true,
-  onclone: (clonedDoc) => {
-    // Set white background for all elements
-    const elements = clonedDoc.getElementsByTagName('*');
-    for (let i = 0; i < elements.length; i++) {
-      const element = elements[i] as HTMLElement;
-      if (element.style.backgroundColor === '') {
+  pixelRatio: 1,
+  foreignObjectRendering: false,
+  onclone: (clonedDoc: Document) => {
+    console.log('PDF: Cloning document for capture');
+    
+    // Make all content visible by removing hidden styles
+    const hiddenElements = clonedDoc.querySelectorAll('[style*="visibility: hidden"], [style*="display: none"]');
+    hiddenElements.forEach((element: Element) => {
+      const htmlElement = element as HTMLElement;
+      htmlElement.style.visibility = 'visible';
+      htmlElement.style.display = 'block';
+    });
+    
+    // Ensure all text is visible with proper contrast
+    const allElements = clonedDoc.getElementsByTagName('*');
+    for (let i = 0; i < allElements.length; i++) {
+      const element = allElements[i] as HTMLElement;
+      
+      // Set default text color if not specified
+      if (!element.style.color || element.style.color === 'transparent') {
+        element.style.color = '#000000';
+      }
+      
+      // Ensure backgrounds are properly set
+      if (element.tagName === 'BODY' || element.tagName === 'HTML') {
         element.style.backgroundColor = '#ffffff';
       }
     }
     
-    // Ensure SVG elements are properly rendered
+    // Fix SVG elements
     const svgs = clonedDoc.getElementsByTagName('svg');
     for (let i = 0; i < svgs.length; i++) {
       const svg = svgs[i] as SVGElement;
       svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-      svg.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+      svg.style.backgroundColor = 'transparent';
     }
+    
+    console.log('PDF: Document cloning completed');
   }
 };
 
 const generateOptimizedPDF = async (content: HTMLElement, pdf: jsPDF): Promise<void> => {
-  console.log('Generating optimized PDF with improved settings...');
+  console.log('PDF: Starting generation with content dimensions:', {
+    width: content.offsetWidth,
+    height: content.offsetHeight,
+    scrollHeight: content.scrollHeight
+  });
   
-  // Set white background for the content
+  // Make content visible for capture
+  content.style.visibility = 'visible';
+  content.style.position = 'static';
+  content.style.left = 'auto';
+  content.style.top = 'auto';
   content.style.backgroundColor = '#ffffff';
+  content.style.color = '#000000';
   
-  // Measure actual content height and apply reasonable limits
-  const actualHeight = Math.min(content.scrollHeight, PDF_CONFIG.maxHeight);
+  // Force a layout recalculation
+  content.offsetHeight;
+  
+  console.log('PDF: Content prepared for capture');
   
   // Generate canvas with optimized settings
   const canvas = await html2canvas(content, optimizeCanvasSettings);
 
-  console.log(`Canvas dimensions: ${canvas.width}x${canvas.height}`);
+  console.log(`PDF: Canvas generated - ${canvas.width}x${canvas.height}`);
   
-  // Calculate optimal page handling
-  const pageHeightPx = (PDF_CONFIG.pageHeightMM / 210) * canvas.width;
+  // Verify canvas has content
+  const ctx = canvas.getContext('2d');
+  const imageData = ctx?.getImageData(0, 0, Math.min(100, canvas.width), Math.min(100, canvas.height));
+  const hasContent = imageData?.data.some((value, index) => {
+    // Check if any pixel is not white (255,255,255) or transparent
+    if (index % 4 === 3) return false; // Skip alpha channel
+    return value < 255;
+  });
+  
+  console.log('PDF: Canvas content check:', hasContent ? 'Content detected' : 'No content detected');
+  
+  // Calculate page handling
+  const pageHeightPx = (PDF_CONFIG.pageHeightMM / PDF_CONFIG.pageWidthMM) * canvas.width;
   const totalPages = Math.ceil(canvas.height / pageHeightPx);
   
-  console.log(`Total pages to generate: ${totalPages}`);
+  console.log(`PDF: Will generate ${totalPages} pages`);
 
-  // Process pages more efficiently
+  // Process pages
   for (let pageIndex = 0; pageIndex < totalPages; pageIndex++) {
     if (pageIndex > 0) {
       pdf.addPage();
     }
     
-    // Calculate source coordinates for this page
     const sourceY = pageIndex * pageHeightPx;
     const sourceHeight = Math.min(pageHeightPx, canvas.height - sourceY);
     
     if (sourceHeight <= 0) break;
     
-    // Create optimized page canvas
+    console.log(`PDF: Processing page ${pageIndex + 1}/${totalPages}`);
+    
+    // Create page canvas
     const pageCanvas = document.createElement('canvas');
     pageCanvas.width = canvas.width;
     pageCanvas.height = sourceHeight;
     
     const pageCtx = pageCanvas.getContext('2d', { alpha: false });
     if (pageCtx) {
-      // Set white background for each page
+      // White background
       pageCtx.fillStyle = '#ffffff';
       pageCtx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
       
-      // Optimize canvas context settings
-      pageCtx.imageSmoothingEnabled = true;
-      pageCtx.imageSmoothingQuality = 'high';
-      
-      // Draw the page content
+      // Draw content
       pageCtx.drawImage(
         canvas, 
         0, sourceY, canvas.width, sourceHeight,
         0, 0, canvas.width, sourceHeight
       );
       
-      // Convert to PNG with maximum quality
+      // Convert to image
       const pageImgData = pageCanvas.toDataURL('image/png', 1.0);
       
-      // Add to PDF with proper scaling
+      // Add to PDF
       pdf.addImage(
         pageImgData, 
         'PNG', 
@@ -113,90 +152,68 @@ const generateOptimizedPDF = async (content: HTMLElement, pdf: jsPDF): Promise<v
         'FAST'
       );
       
-      // Clean up page canvas immediately
-      pageCanvas.width = 0;
-      pageCanvas.height = 0;
+      console.log(`PDF: Page ${pageIndex + 1} added successfully`);
     }
   }
   
-  // Clean up main canvas
-  canvas.width = 0;
-  canvas.height = 0;
-  
-  console.log('PDF generation completed with optimized settings');
+  console.log('PDF: Generation completed successfully');
 };
 
 export const generateReportPDF = async (data: ReportData): Promise<void> => {
   let content: HTMLElement | null = null;
   
   try {
-    console.log('Starting optimized PDF generation with data:', data);
+    console.log('PDF: Starting report generation');
 
-    // Create the comprehensive PDF content
+    // Create content
     content = createComprehensivePDFContent(data);
     
-    // Apply size optimizations to content
-    content.style.cssText += `
-      max-width: ${PDF_CONFIG.maxWidth}px;
-      overflow: visible;
-      word-wrap: break-word;
-      position: absolute;
-      left: -9999px;
-      top: 0;
+    // Apply proper styling for PDF generation
+    content.style.cssText = `
+      width: ${PDF_CONFIG.maxWidth}px;
+      min-height: 1000px;
       background: #ffffff;
       color: #000000;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      padding: 20px;
+      margin: 0;
+      position: static;
+      visibility: hidden;
+      overflow: visible;
     `;
     
     document.body.appendChild(content);
+    console.log('PDF: Content appended to document');
 
-    // Wait for fonts and content to settle
+    // Wait for content to settle
     await waitForFonts();
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
-    // Create PDF with optimized metadata
+    // Create PDF
     const pdf = new jsPDF('p', 'mm', 'a4');
     pdf.setProperties({
       title: `${data.ideaName} - Business Validation Report`,
       subject: 'Business Idea Validation',
       author: 'Launch Lens Insights',
-      keywords: 'business validation, market analysis, startup',
       creator: 'Launch Lens Insights',
     });
 
-    // Generate optimized PDF
+    // Generate PDF
     await generateOptimizedPDF(content, pdf);
 
-    // Generate clean filename
+    // Save
     const fileName = `${data.ideaName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_validation_report.pdf`;
-    
-    // Save PDF
     pdf.save(fileName);
 
-    console.log('Optimized PDF generated successfully:', fileName);
+    console.log('PDF: Report saved successfully as', fileName);
 
   } catch (error) {
-    console.error('Error generating optimized PDF:', error);
+    console.error('PDF: Generation failed:', error);
     throw new Error(`Failed to generate PDF: ${error instanceof Error ? error.message : 'Unknown error'}`);
   } finally {
-    // Comprehensive cleanup
     if (content && content.parentNode) {
       content.parentNode.removeChild(content);
-    }
-    
-    // Force cleanup
-    if (typeof window !== 'undefined') {
-      // Trigger garbage collection if available
-      if (window.gc) {
-        window.gc();
-      }
-      
-      // Clear any cached images
-      const images = document.querySelectorAll('img[src^="data:"]');
-      images.forEach(img => {
-        if (img instanceof HTMLImageElement) {
-          img.src = '';
-        }
-      });
+      console.log('PDF: Cleanup completed');
     }
   }
 };
