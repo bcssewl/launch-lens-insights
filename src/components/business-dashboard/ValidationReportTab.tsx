@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,6 +6,8 @@ import { ExternalLink, Download, Share2, Calendar, TrendingUp, BarChart3, Settin
 import { Link } from 'react-router-dom';
 import ShareReportDialog from '@/components/results/ShareReportDialog';
 import ManageSharesDialog from '@/components/results/ManageSharesDialog';
+import PrintView from '@/components/results/PrintView';
+import { format } from 'date-fns';
 
 interface ValidationReportTabProps {
   report: any;
@@ -15,6 +16,7 @@ interface ValidationReportTabProps {
 const ValidationReportTab: React.FC<ValidationReportTabProps> = ({ report }) => {
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [manageSharesOpen, setManageSharesOpen] = useState(false);
+  const [showPrintView, setShowPrintView] = useState(false);
 
   const getScoreColor = (score: number) => {
     if (score >= 7) return 'text-green-600 dark:text-green-400';
@@ -29,8 +31,11 @@ const ValidationReportTab: React.FC<ValidationReportTabProps> = ({ report }) => 
   };
 
   const handleExportPDF = () => {
-    // Redirect to the full results page for PDF export functionality
-    window.open(`/results/${report.id}`, '_blank');
+    setShowPrintView(true);
+  };
+
+  const handleClosePrintView = () => {
+    setShowPrintView(false);
   };
 
   const handleShare = () => {
@@ -40,6 +45,80 @@ const ValidationReportTab: React.FC<ValidationReportTabProps> = ({ report }) => 
   const handleManageShares = () => {
     setManageSharesOpen(true);
   };
+
+  // Prepare data for print view (same format as ResultsPage)
+  const reportData = report.report_data || {};
+  
+  const ideaName = report.idea_name || 'Untitled Idea';
+  const score = report.overall_score || 0;
+  const recommendation = report.recommendation || 'Analysis in progress';
+  const analysisDate = report.completed_at 
+    ? format(new Date(report.completed_at), 'MMM d, yyyy')
+    : format(new Date(report.created_at), 'MMM d, yyyy');
+
+  const executiveSummary = reportData.executiveSummary || report.one_line_description || 'No summary available';
+  const keyMetrics = reportData.keyMetrics || {
+    marketSize: { value: 'N/A' },
+    competitionLevel: { value: 'N/A' },
+    problemClarity: { value: 'N/A' },
+    revenuePotential: { value: 'N/A' }
+  };
+
+  const marketAnalysisData = reportData.marketAnalysis || {};
+  const marketAnalysis = {
+    tamSamSom: marketAnalysisData.tamSamSom || [],
+    marketGrowth: marketAnalysisData.marketGrowth || [],
+    customerSegments: marketAnalysisData.customerSegments || [],
+    geographicOpportunity: marketAnalysisData.geographicOpportunity || []
+  };
+
+  const competition = reportData.competition || {
+    competitors: [],
+    competitiveAdvantages: [],
+    marketSaturation: 'Unknown'
+  };
+  const financialAnalysis = reportData.financialAnalysis || {
+    startupCosts: [],
+    operatingCosts: [],
+    revenueProjections: [],
+    breakEvenAnalysis: [],
+    fundingRequirements: [],
+    keyMetrics: {
+      totalStartupCost: 0,
+      monthlyBurnRate: 0,
+      breakEvenMonth: 0,
+      fundingNeeded: 0
+    }
+  };
+  const swot = reportData.swot || {
+    strengths: [],
+    weaknesses: [],
+    opportunities: [],
+    threats: []
+  };
+  const detailedScores = reportData.detailedScores || [];
+  const actionItems = reportData.actionItems || [];
+
+  // Show print view if requested
+  if (showPrintView) {
+    return (
+      <PrintView
+        ideaName={ideaName}
+        score={score}
+        recommendation={recommendation}
+        analysisDate={analysisDate}
+        executiveSummary={executiveSummary}
+        keyMetrics={keyMetrics}
+        marketAnalysis={marketAnalysis}
+        competition={competition}
+        financialAnalysis={financialAnalysis}
+        swot={swot}
+        detailedScores={detailedScores}
+        actionItems={actionItems}
+        onClose={handleClosePrintView}
+      />
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
