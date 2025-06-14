@@ -1,20 +1,11 @@
 
 import { TrendingUp, BarChart3, Award, Brain } from "lucide-react";
-import { useHeroScrollTrigger } from "@/hooks/useHeroScrollTrigger";
 
 export const DashboardPreview = () => {
-  const hasScrolledPastHero = useHeroScrollTrigger();
-
   return (
     <section className="apple-section bg-white/30 dark:bg-gray-900/30">
       <div className="apple-container">
-        <div 
-          className={`max-w-5xl mx-auto apple-card p-8 transition-all duration-1000 ease-out ${
-            hasScrolledPastHero 
-              ? 'transform scale-90 opacity-90' 
-              : 'transform scale-100 opacity-100'
-          }`}
-        >
+        <div className="max-w-5xl mx-auto apple-card p-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <div className="apple-metric-card">
               <div className="flex items-center justify-between mb-3">
