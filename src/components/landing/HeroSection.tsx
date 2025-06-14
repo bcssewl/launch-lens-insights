@@ -36,10 +36,10 @@ export const HeroSection = () => {
         
         {/* Main Headline */}
         <h1 className="apple-heading">
-          Don't Build What
+          Presenting the future of
           <br />
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-accent to-primary">
-            Nobody Wants
+            business guidance
           </span>
         </h1>
         
