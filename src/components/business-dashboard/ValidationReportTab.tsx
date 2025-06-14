@@ -1,16 +1,21 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ExternalLink, Download, Share2, Calendar, TrendingUp, BarChart3 } from 'lucide-react';
+import { ExternalLink, Download, Share2, Calendar, TrendingUp, BarChart3, Settings } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import ShareReportDialog from '@/components/results/ShareReportDialog';
+import ManageSharesDialog from '@/components/results/ManageSharesDialog';
 
 interface ValidationReportTabProps {
   report: any;
 }
 
 const ValidationReportTab: React.FC<ValidationReportTabProps> = ({ report }) => {
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [manageSharesOpen, setManageSharesOpen] = useState(false);
+
   const getScoreColor = (score: number) => {
     if (score >= 7) return 'text-green-600 dark:text-green-400';
     if (score >= 4) return 'text-yellow-600 dark:text-yellow-400';
@@ -21,6 +26,19 @@ const ValidationReportTab: React.FC<ValidationReportTabProps> = ({ report }) => 
     if (score >= 7) return 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900 dark:text-green-300 border-green-300 dark:border-green-700';
     if (score >= 4) return 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 dark:bg-yellow-900 dark:text-yellow-300 border-yellow-300 dark:border-yellow-700';
     return 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900 dark:text-red-300 border-red-300 dark:border-red-700';
+  };
+
+  const handleExportPDF = () => {
+    // Redirect to the full results page for PDF export functionality
+    window.open(`/results/${report.id}`, '_blank');
+  };
+
+  const handleShare = () => {
+    setShareDialogOpen(true);
+  };
+
+  const handleManageShares = () => {
+    setManageSharesOpen(true);
   };
 
   return (
@@ -43,13 +61,32 @@ const ValidationReportTab: React.FC<ValidationReportTabProps> = ({ report }) => 
                   Full Report
                 </Link>
               </Button>
-              <Button variant="outline" size="sm" className="apple-button-outline hover-lift">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="apple-button-outline hover-lift"
+                onClick={handleExportPDF}
+              >
                 <Download className="mr-2 h-4 w-4" />
                 Export PDF
               </Button>
-              <Button variant="outline" size="sm" className="apple-button-outline hover-lift">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="apple-button-outline hover-lift"
+                onClick={handleShare}
+              >
                 <Share2 className="mr-2 h-4 w-4" />
                 Share
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="apple-button-outline hover-lift"
+                onClick={handleManageShares}
+              >
+                <Settings className="mr-2 h-4 w-4" />
+                Manage Shares
               </Button>
             </div>
           </div>
@@ -167,6 +204,20 @@ const ValidationReportTab: React.FC<ValidationReportTabProps> = ({ report }) => 
           </CardContent>
         </Card>
       </div>
+
+      {/* Share and Manage Shares Dialogs */}
+      <ShareReportDialog
+        open={shareDialogOpen}
+        onOpenChange={setShareDialogOpen}
+        reportId={report.id}
+        reportTitle={report.idea_name || 'Business Idea Report'}
+      />
+      
+      <ManageSharesDialog
+        open={manageSharesOpen}
+        onOpenChange={setManageSharesOpen}
+        reportId={report.id}
+      />
     </div>
   );
 };
