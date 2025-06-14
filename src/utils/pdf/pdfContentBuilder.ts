@@ -6,9 +6,13 @@ import {
   createExecutiveSummary,
   createKeyMetricsPage,
   createMarketAnalysisPages,
+  createFinancialAnalysisPages,
+  createCompetitiveAnalysisPages,
   createSWOTAnalysisPage,
   createDetailedScoresPage,
+  createRiskAssessmentPage,
   createActionItemsPage,
+  createImplementationTimelinePage,
   createFinalRecommendationsPage
 } from './contentGenerators';
 
@@ -27,16 +31,20 @@ export const createComprehensivePDFContent = (data: ReportData): HTMLElement => 
     margin: 0;
   `;
 
-  // Create all sections
+  // Create all sections for comprehensive report
   const sections = [
     createCoverPage(data),
     createTableOfContents(),
     createExecutiveSummary(data),
     createKeyMetricsPage(data),
     ...createMarketAnalysisPages(data),
+    ...createFinancialAnalysisPages(data),
+    ...createCompetitiveAnalysisPages(data),
     createSWOTAnalysisPage(data),
+    createRiskAssessmentPage(data),
     createDetailedScoresPage(data),
     createActionItemsPage(data),
+    createImplementationTimelinePage(data),
     createFinalRecommendationsPage(data)
   ];
   

@@ -84,12 +84,24 @@ export const createTableOfContents = (): HTMLElement => {
         <span style="margin-left: auto;">11</span>
       </div>
       <div style="display: flex; justify-content: between; margin-bottom: 12px; border-bottom: 1px dotted #ccc; padding-bottom: 8px;">
-        <span style="font-weight: 600;">Detailed Score Breakdown</span>
+        <span style="font-weight: 600;">Risk Assessment</span>
         <span style="margin-left: auto;">12</span>
       </div>
       <div style="display: flex; justify-content: between; margin-bottom: 12px; border-bottom: 1px dotted #ccc; padding-bottom: 8px;">
-        <span style="font-weight: 600;">Action Items & Recommendations</span>
+        <span style="font-weight: 600;">Detailed Score Breakdown</span>
         <span style="margin-left: auto;">13</span>
+      </div>
+      <div style="display: flex; justify-content: between; margin-bottom: 12px; border-bottom: 1px dotted #ccc; padding-bottom: 8px;">
+        <span style="font-weight: 600;">Action Items & Recommendations</span>
+        <span style="margin-left: auto;">14</span>
+      </div>
+      <div style="display: flex; justify-content: between; margin-bottom: 12px; border-bottom: 1px dotted #ccc; padding-bottom: 8px;">
+        <span style="font-weight: 600;">Implementation Timeline</span>
+        <span style="margin-left: auto;">16</span>
+      </div>
+      <div style="display: flex; justify-content: between; margin-bottom: 12px; border-bottom: 1px dotted #ccc; padding-bottom: 8px;">
+        <span style="font-weight: 600;">Final Recommendations</span>
+        <span style="margin-left: auto;">17</span>
       </div>
     </div>
   `;
