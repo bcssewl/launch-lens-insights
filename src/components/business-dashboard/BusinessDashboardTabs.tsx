@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { CheckCircle, Clock, FileText, TrendingUp, DollarSign, Target } from 'lucide-react';
+import { CheckCircle, FileText, TrendingUp, DollarSign, Target } from 'lucide-react';
 import ValidationReportTab from '@/components/business-dashboard/ValidationReportTab';
 import ComingSoonTab from '@/components/business-dashboard/ComingSoonTab';
 
@@ -50,22 +50,19 @@ const BusinessDashboardTabs: React.FC<BusinessDashboardTabsProps> = ({ report })
 
   return (
     <Tabs defaultValue="validation" className="w-full">
-      <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 h-auto p-1">
+      <TabsList className="inline-flex h-auto items-center justify-start rounded-lg bg-muted/50 p-1 text-muted-foreground w-auto">
         {tabs.map((tab) => (
           <TabsTrigger 
             key={tab.id} 
             value={tab.id} 
-            className="flex flex-col items-center gap-1 p-3 h-auto text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+            className="inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm whitespace-nowrap"
           >
-            <div className="flex items-center gap-2">
-              {tab.completed ? (
-                <CheckCircle className="w-4 h-4 text-green-500" />
-              ) : (
-                <Clock className="w-4 h-4 text-muted-foreground" />
-              )}
-              <tab.icon className="w-4 h-4" />
-            </div>
-            <span className="text-center leading-tight">{tab.label}</span>
+            <div className={`w-2 h-2 rounded-full ${
+              tab.completed 
+                ? 'bg-green-500' 
+                : 'bg-muted-foreground/30'
+            }`} />
+            <span>{tab.label}</span>
           </TabsTrigger>
         ))}
       </TabsList>
