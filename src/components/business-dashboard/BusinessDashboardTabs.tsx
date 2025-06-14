@@ -50,80 +50,84 @@ const BusinessDashboardTabs: React.FC<BusinessDashboardTabsProps> = ({ report })
 
   return (
     <Tabs defaultValue="validation" className="w-full">
-      <TabsList className="inline-flex h-auto items-center justify-start rounded-lg bg-muted/50 p-1 text-muted-foreground w-auto">
-        {tabs.map((tab) => (
-          <TabsTrigger 
-            key={tab.id} 
-            value={tab.id} 
-            className="inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm whitespace-nowrap"
-          >
-            <div className={`w-2 h-2 rounded-full ${
-              tab.completed 
-                ? 'bg-green-500' 
-                : 'bg-muted-foreground/30'
-            }`} />
-            <span>{tab.label}</span>
-          </TabsTrigger>
-        ))}
-      </TabsList>
+      {/* Enhanced Tab Navigation */}
+      <div className="border-b border-muted/30 px-6 pt-6">
+        <TabsList className="inline-flex h-auto items-center justify-start rounded-xl bg-muted/30 p-1 text-muted-foreground w-auto gap-1">
+          {tabs.map((tab) => (
+            <TabsTrigger 
+              key={tab.id} 
+              value={tab.id} 
+              className="inline-flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm whitespace-nowrap hover:bg-muted/40"
+            >
+              <div className={`w-2 h-2 rounded-full transition-colors ${
+                tab.completed 
+                  ? 'bg-green-500 shadow-sm' 
+                  : 'bg-muted-foreground/30'
+              }`} />
+              <span className="font-medium">{tab.label}</span>
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </div>
 
-      <div className="mt-6">
-        <TabsContent value="validation" className="mt-0">
+      {/* Tab Content */}
+      <div className="mt-0">
+        <TabsContent value="validation" className="mt-0 border-0 p-0">
           <ValidationReportTab report={report} />
         </TabsContent>
         
-        <TabsContent value="business-plan" className="mt-0">
+        <TabsContent value="business-plan" className="mt-0 border-0 p-0">
           <ComingSoonTab 
             title="Business Plan Generation"
-            description="Get a comprehensive AI-generated business plan based on your validated idea. This will include executive summary, market analysis, operations plan, and more."
+            description="Get a comprehensive AI-generated business plan based on your validated idea. This will include executive summary, market analysis, operations plan, and strategic roadmap to turn your concept into a thriving business."
             features={[
-              "Executive Summary",
-              "Market Analysis & Strategy", 
+              "Executive Summary & Vision Statement",
+              "Comprehensive Market Analysis & Strategy", 
               "Operations & Management Plan",
-              "Financial Planning & Projections",
-              "Risk Analysis & Mitigation"
+              "Financial Planning & Revenue Projections",
+              "Risk Analysis & Mitigation Strategies"
             ]}
           />
         </TabsContent>
         
-        <TabsContent value="marketing" className="mt-0">
+        <TabsContent value="marketing" className="mt-0 border-0 p-0">
           <ComingSoonTab 
             title="Marketing Analysis & Strategy"
-            description="Discover your target audience and get personalized marketing recommendations to reach your ideal customers effectively."
+            description="Discover your target audience and get personalized marketing recommendations to reach your ideal customers effectively. Build a data-driven marketing strategy that converts."
             features={[
-              "Target Audience Profiling",
-              "Competitor Marketing Analysis",
-              "Channel Recommendations",
-              "Content Strategy Ideas",
-              "Budget & Timeline Planning"
+              "Detailed Target Audience Profiling",
+              "Comprehensive Competitor Marketing Analysis",
+              "Multi-Channel Marketing Recommendations",
+              "Content Strategy & Campaign Ideas",
+              "Budget Optimization & Timeline Planning"
             ]}
           />
         </TabsContent>
         
-        <TabsContent value="financial" className="mt-0">
+        <TabsContent value="financial" className="mt-0 border-0 p-0">
           <ComingSoonTab 
             title="Financial Projections & Analysis"
-            description="Get detailed financial forecasts and understand the investment requirements for your business idea."
+            description="Get detailed financial forecasts and understand the investment requirements for your business idea. Make informed decisions with comprehensive financial modeling."
             features={[
-              "Revenue & Growth Projections",
-              "Cost Structure Analysis",
-              "Break-even Analysis",
-              "Funding Requirements",
-              "ROI Calculations"
+              "5-Year Revenue & Growth Projections",
+              "Detailed Cost Structure Analysis",
+              "Break-even Analysis & Profitability Timeline",
+              "Funding Requirements & Investment Strategy",
+              "ROI Calculations & Financial Metrics"
             ]}
           />
         </TabsContent>
         
-        <TabsContent value="action-items" className="mt-0">
+        <TabsContent value="action-items" className="mt-0 border-0 p-0">
           <ComingSoonTab 
             title="Actionable Next Steps"
-            description="Get a prioritized roadmap of specific actions to take your validated idea from concept to launch."
+            description="Get a prioritized roadmap of specific actions to take your validated idea from concept to launch. Transform insights into executable plans with clear milestones."
             features={[
-              "Prioritized Task List",
-              "Timeline & Milestones",
-              "Resource Requirements",
-              "Success Metrics",
-              "Risk Checkpoints"
+              "Prioritized Task List with Dependencies",
+              "Timeline & Milestone Planning",
+              "Resource Requirements & Team Building",
+              "Success Metrics & KPI Tracking",
+              "Risk Checkpoints & Contingency Plans"
             ]}
           />
         </TabsContent>
