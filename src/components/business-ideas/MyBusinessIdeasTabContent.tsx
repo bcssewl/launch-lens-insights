@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import BusinessIdeaCard, { BusinessIdea } from '@/components/business-ideas/BusinessIdeaCard';
 import { Button } from '@/components/ui/button';
@@ -207,7 +206,7 @@ const MyBusinessIdeasTabContent: React.FC<MyBusinessIdeasTabContentProps> = ({ s
             <SelectItem value="all_progress">All Progress</SelectItem>
             <SelectItem value="high">High Progress (60%+)</SelectItem>
             <SelectItem value="medium">Medium Progress (30-60%)</SelectItem>
-            <SelectItem value="low">Low Progress (<30%)</SelectItem>
+            <SelectItem value="low">Low Progress (&lt;30%)</SelectItem>
           </SelectContent>
         </Select>
       </div>
