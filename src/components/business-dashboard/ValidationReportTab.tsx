@@ -217,7 +217,7 @@ const ValidationReportTab: React.FC<ValidationReportTabProps> = ({ report }) => 
             </CardTitle>
             <div className="flex flex-wrap gap-2">
               <Button asChild variant="outline" size="sm" className="apple-button-outline hover-lift">
-                <Link to={`/results/${report.id}`}>
+                <Link to={`/results/${report.id}?from=business-dashboard&ideaId=${report.validation_id}`}>
                   <ExternalLink className="mr-2 h-4 w-4" />
                   Full Report
                 </Link>
@@ -336,7 +336,7 @@ const ValidationReportTab: React.FC<ValidationReportTabProps> = ({ report }) => 
           </CardHeader>
           <CardContent className="space-y-3">
             <Button asChild className="w-full justify-start apple-button" variant="default">
-              <Link to={`/results/${report.id}`}>
+              <Link to={`/results/${report.id}?from=business-dashboard&ideaId=${report.validation_id}`}>
                 <ExternalLink className="mr-2 h-4 w-4" />
                 View Complete Report
               </Link>

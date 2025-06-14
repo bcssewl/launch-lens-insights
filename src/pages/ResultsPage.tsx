@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,7 @@ import { format } from 'date-fns';
 const ResultsPage: React.FC = () => {
   const { reportId } = useParams<{ reportId: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { report, loading, error } = useValidationReport(reportId || '');
   const [showPrintView, setShowPrintView] = useState(false);
 
@@ -31,7 +32,14 @@ const ResultsPage: React.FC = () => {
   };
 
   const handleGoBack = () => {
-    navigate('/dashboard/reports');
+    const from = searchParams.get('from');
+    const ideaId = searchParams.get('ideaId');
+    
+    if (from === 'business-dashboard' && ideaId) {
+      navigate(`/dashboard/business-idea/${ideaId}`);
+    } else {
+      navigate('/dashboard/reports');
+    }
   };
 
   const handleOpenPrintView = () => {
@@ -149,6 +157,10 @@ const ResultsPage: React.FC = () => {
     );
   }
 
+  const backButtonText = searchParams.get('from') === 'business-dashboard' 
+    ? 'Back to Business Dashboard' 
+    : 'Back to Reports';
+
   return (
     <DashboardLayout>
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
@@ -161,7 +173,7 @@ const ResultsPage: React.FC = () => {
               className="flex items-center gap-2 hover:bg-muted/50"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back to Reports
+              {backButtonText}
             </Button>
           </div>
 
