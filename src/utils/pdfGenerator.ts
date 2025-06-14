@@ -6,8 +6,8 @@ import { waitForFonts } from './pdf/pdfHelpers';
 
 const PDF_CONFIG = {
   scale: 1.2,
-  quality: 0.95,
-  format: 'JPEG',
+  quality: 1.0,
+  format: 'PNG',
   maxWidth: 794,
   maxHeight: 16000,
   pageHeightMM: 297,
@@ -18,7 +18,7 @@ const optimizeCanvasSettings = {
   scale: PDF_CONFIG.scale,
   useCORS: true,
   allowTaint: true,
-  backgroundColor: null,
+  backgroundColor: '#ffffff',
   width: PDF_CONFIG.maxWidth,
   logging: true,
   imageTimeout: 15000,
@@ -30,6 +30,9 @@ const optimizeCanvasSettings = {
 const generateOptimizedPDF = async (content: HTMLElement, pdf: jsPDF): Promise<void> => {
   console.log('Generating optimized PDF with improved settings...');
   
+  // Set white background for the content
+  content.style.backgroundColor = '#ffffff';
+  
   // Measure actual content height and apply reasonable limits
   const actualHeight = Math.min(content.scrollHeight, PDF_CONFIG.maxHeight);
   
@@ -38,7 +41,7 @@ const generateOptimizedPDF = async (content: HTMLElement, pdf: jsPDF): Promise<v
     ...optimizeCanvasSettings,
     height: actualHeight,
     onclone: (clonedDoc) => {
-      // Ensure background colors are preserved in the cloned document
+      // Set white background for all elements
       const elements = clonedDoc.getElementsByTagName('*');
       for (let i = 0; i < elements.length; i++) {
         const element = elements[i] as HTMLElement;
@@ -91,13 +94,13 @@ const generateOptimizedPDF = async (content: HTMLElement, pdf: jsPDF): Promise<v
         0, 0, canvas.width, sourceHeight
       );
       
-      // Convert to optimized JPEG
-      const pageImgData = pageCanvas.toDataURL(`image/${PDF_CONFIG.format.toLowerCase()}`, PDF_CONFIG.quality);
+      // Convert to PNG with maximum quality
+      const pageImgData = pageCanvas.toDataURL('image/png', 1.0);
       
       // Add to PDF with proper scaling
       pdf.addImage(
         pageImgData, 
-        PDF_CONFIG.format, 
+        'PNG', 
         0, 0, 
         PDF_CONFIG.pageWidthMM, 
         (sourceHeight / canvas.width) * PDF_CONFIG.pageWidthMM
@@ -134,6 +137,7 @@ export const generateReportPDF = async (data: ReportData): Promise<void> => {
       left: -9999px;
       top: 0;
       background: #ffffff;
+      color: #000000;
     `;
     
     document.body.appendChild(content);
