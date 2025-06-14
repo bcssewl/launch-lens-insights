@@ -10,13 +10,16 @@ import MobileInsightsSection from '@/components/mobile/MobileInsightsSection';
 import DashboardQuickActions from '@/components/dashboard/DashboardQuickActions';
 import DashboardMetrics from '@/components/dashboard/DashboardMetrics';
 import DashboardContent from '@/components/dashboard/DashboardContent';
+import WelcomeAnimation from '@/components/WelcomeAnimation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useWelcomeAnimation } from '@/hooks/useWelcomeAnimation';
 
 const DashboardPage: React.FC = () => {
   const { stats, recentActivities, loading, refreshData } = useDashboardData();
   const isMobile = useIsMobile();
+  const { showWelcome, hideWelcome } = useWelcomeAnimation();
 
   if (loading) {
     return (
@@ -101,6 +104,9 @@ const DashboardPage: React.FC = () => {
             />
           )}
         </div>
+
+        {/* Welcome Animation */}
+        {showWelcome && <WelcomeAnimation onComplete={hideWelcome} />}
       </div>
     </DashboardLayout>
   );

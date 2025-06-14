@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { useNavigate } from 'react-router-dom';
@@ -36,6 +37,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+
+        // Clear welcome animation flag on sign in to show it again
+        if (event === 'SIGNED_IN' && session?.user) {
+          sessionStorage.removeItem('welcome-shown');
+        }
       }
     );
 
@@ -78,6 +84,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signIn = async (email: string, password: string) => {
     try {
+      // Clear any existing welcome animation flag before signing in
+      sessionStorage.removeItem('welcome-shown');
+      
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -100,6 +109,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Always clear local state regardless of server response
     setSession(null);
     setUser(null);
+    
+    // Clear welcome animation flag on sign out
+    sessionStorage.removeItem('welcome-shown');
     
     // Redirect to landing page
     navigate('/');
