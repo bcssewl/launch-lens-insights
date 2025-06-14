@@ -1,4 +1,3 @@
-
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { ReportData } from './pdf/types';
@@ -6,13 +5,13 @@ import { createComprehensivePDFContent } from './pdf/pdfContentBuilder';
 import { waitForFonts } from './pdf/pdfHelpers';
 
 const PDF_CONFIG = {
-  scale: 0.8, // Reduced from 1.5 to 0.8
-  quality: 0.75, // Optimized JPEG quality
-  format: 'JPEG', // Changed from PNG to JPEG
-  maxWidth: 794, // A4 width at 96 DPI
-  maxHeight: 8000, // Reasonable max height to prevent massive canvases
-  pageHeightMM: 297, // A4 height in mm
-  pageWidthMM: 210, // A4 width in mm
+  scale: 1.2, // Increased from 0.8 to 1.2 for better quality
+  quality: 0.95, // Increased quality
+  format: 'JPEG',
+  maxWidth: 794,
+  maxHeight: 16000, // Doubled from 8000 to allow more content
+  pageHeightMM: 297,
+  pageWidthMM: 210,
 };
 
 const optimizeCanvasSettings = {
@@ -21,12 +20,11 @@ const optimizeCanvasSettings = {
   allowTaint: true,
   backgroundColor: '#ffffff',
   width: PDF_CONFIG.maxWidth,
-  logging: false,
-  imageTimeout: 10000,
+  logging: true, // Enable logging for debugging
+  imageTimeout: 15000, // Increased timeout
   removeContainer: true,
-  // Optimize for smaller file size
-  pixelRatio: 1,
-  foreignObjectRendering: false,
+  pixelRatio: 2, // Increased for better quality
+  foreignObjectRendering: true, // Enable for better rendering
 };
 
 const generateOptimizedPDF = async (content: HTMLElement, pdf: jsPDF): Promise<void> => {
@@ -121,15 +119,19 @@ export const generateReportPDF = async (data: ReportData): Promise<void> => {
     // Apply size optimizations to content
     content.style.cssText += `
       max-width: ${PDF_CONFIG.maxWidth}px;
-      overflow: hidden;
+      overflow: visible;
       word-wrap: break-word;
+      position: absolute;
+      left: -9999px;
+      top: 0;
     `;
     
     document.body.appendChild(content);
 
     // Wait for fonts and content to settle
     await waitForFonts();
-    await new Promise(resolve => setTimeout(resolve, 300)); // Brief settle time
+    // Increased settle time to ensure all content is rendered
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
     // Create PDF with optimized metadata
     const pdf = new jsPDF('p', 'mm', 'a4');
