@@ -6,31 +6,65 @@ import { toast } from '@/hooks/use-toast';
 export const useIdeaOperations = () => {
   const [loading, setLoading] = useState(false);
 
+  const findReportByIdOrValidationId = async (id: string) => {
+    console.log('Finding report by ID:', id);
+    
+    // First try to find by report ID
+    let { data: report, error: reportError } = await supabase
+      .from('validation_reports')
+      .select(`
+        id,
+        validation_id,
+        idea_validations!inner(
+          id,
+          user_id
+        )
+      `)
+      .eq('id', id)
+      .maybeSingle();
+
+    if (report) {
+      console.log('Found report by report ID:', report);
+      return { report, error: null };
+    }
+
+    // If not found by report ID, try to find by validation ID
+    console.log('Report not found by ID, trying validation_id:', id);
+    const { data: reportByValidation, error: validationError } = await supabase
+      .from('validation_reports')
+      .select(`
+        id,
+        validation_id,
+        idea_validations!inner(
+          id,
+          user_id
+        )
+      `)
+      .eq('validation_id', id)
+      .maybeSingle();
+
+    if (reportByValidation) {
+      console.log('Found report by validation_id:', reportByValidation);
+      return { report: reportByValidation, error: null };
+    }
+
+    console.log('Report not found by either ID or validation_id');
+    return { 
+      report: null, 
+      error: reportError || validationError || new Error('Report not found') 
+    };
+  };
+
   const archiveIdea = async (reportId: string) => {
     try {
       setLoading(true);
-      console.log('Archiving idea with reportId:', reportId);
+      console.log('Archiving idea with ID:', reportId);
 
-      // First get the validation_id from the report and verify ownership
-      const { data: report, error: reportError } = await supabase
-        .from('validation_reports')
-        .select(`
-          validation_id,
-          idea_validations!inner(
-            id,
-            user_id
-          )
-        `)
-        .eq('id', reportId)
-        .maybeSingle();
+      const { report, error: findError } = await findReportByIdOrValidationId(reportId);
 
-      if (reportError) {
-        console.error('Error fetching report:', reportError);
-        throw new Error(`Failed to fetch report: ${reportError.message}`);
-      }
-
-      if (!report) {
-        throw new Error('Report not found or you do not have permission to access it');
+      if (findError || !report) {
+        console.error('Error finding report:', findError);
+        throw new Error(`Report not found or you do not have permission to access it`);
       }
 
       console.log('Found report for archiving:', report);
@@ -69,28 +103,13 @@ export const useIdeaOperations = () => {
   const deleteIdea = async (reportId: string) => {
     try {
       setLoading(true);
-      console.log('Deleting idea with reportId:', reportId);
+      console.log('Deleting idea with ID:', reportId);
 
-      // First get the validation_id from the report and verify ownership
-      const { data: report, error: reportError } = await supabase
-        .from('validation_reports')
-        .select(`
-          validation_id,
-          idea_validations!inner(
-            id,
-            user_id
-          )
-        `)
-        .eq('id', reportId)
-        .maybeSingle();
+      const { report, error: findError } = await findReportByIdOrValidationId(reportId);
 
-      if (reportError) {
-        console.error('Error fetching report:', reportError);
-        throw new Error(`Failed to fetch report: ${reportError.message}`);
-      }
-
-      if (!report) {
-        throw new Error('Report not found or you do not have permission to access it');
+      if (findError || !report) {
+        console.error('Error finding report:', findError);
+        throw new Error(`Report not found or you do not have permission to access it`);
       }
 
       console.log('Found report for deletion:', report);
@@ -129,28 +148,13 @@ export const useIdeaOperations = () => {
   const unarchiveIdea = async (reportId: string) => {
     try {
       setLoading(true);
-      console.log('Unarchiving idea with reportId:', reportId);
+      console.log('Unarchiving idea with ID:', reportId);
 
-      // First get the validation_id from the report and verify ownership
-      const { data: report, error: reportError } = await supabase
-        .from('validation_reports')
-        .select(`
-          validation_id,
-          idea_validations!inner(
-            id,
-            user_id
-          )
-        `)
-        .eq('id', reportId)
-        .maybeSingle();
+      const { report, error: findError } = await findReportByIdOrValidationId(reportId);
 
-      if (reportError) {
-        console.error('Error fetching report:', reportError);
-        throw new Error(`Failed to fetch report: ${reportError.message}`);
-      }
-
-      if (!report) {
-        throw new Error('Report not found or you do not have permission to access it');
+      if (findError || !report) {
+        console.error('Error finding report:', findError);
+        throw new Error(`Report not found or you do not have permission to access it`);
       }
 
       console.log('Found report for unarchiving:', report);
