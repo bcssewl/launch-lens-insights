@@ -89,35 +89,24 @@ export const usePitchDeckUpload = () => {
       console.log('Upload record created:', uploadRecord);
       setUploadProgress(75);
 
-      // Send file to n8n webhook for processing
-      const webhookUrl = 'https://n8n-launchlens.botica.it.com/webhook/presentation-transcribe-form';
-      
-      const webhookPayload = {
-        file_url: fileUrl,
-        upload_id: uploadRecord.id,
-        user_id: user.id,
-        file_name: file.name,
-        file_type: file.type
-      };
-
-      console.log('Sending to n8n webhook:', webhookPayload);
-
-      const response = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(webhookPayload),
+      // Use Supabase Edge Function to send to n8n webhook
+      const { data: webhookResponse, error: webhookError } = await supabase.functions.invoke('n8n-webhook', {
+        body: {
+          type: 'pitch_deck',
+          file_url: fileUrl,
+          upload_id: uploadRecord.id,
+          user_id: user.id,
+          file_name: file.name,
+          file_type: file.type
+        }
       });
 
-      if (!response.ok) {
-        console.error('Webhook response not ok:', response.status, response.statusText);
-        throw new Error(`Webhook failed: ${response.status}`);
+      if (webhookError) {
+        console.error('Webhook error:', webhookError);
+        throw webhookError;
       }
 
-      const webhookResult = await response.json();
-      console.log('Webhook response:', webhookResult);
-
+      console.log('Webhook response:', webhookResponse);
       setUploadProgress(100);
 
       toast({
