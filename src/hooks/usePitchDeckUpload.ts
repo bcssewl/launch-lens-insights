@@ -89,7 +89,7 @@ export const usePitchDeckUpload = () => {
       console.log('Upload record created:', uploadRecord);
       setUploadProgress(75);
 
-      // Use Supabase Edge Function to send to n8n webhook
+      // Use Supabase Edge Function to send to n8n webhook with proper authentication
       const { data: webhookResponse, error: webhookError } = await supabase.functions.invoke('n8n-webhook', {
         body: {
           type: 'pitch_deck',
@@ -97,7 +97,13 @@ export const usePitchDeckUpload = () => {
           upload_id: uploadRecord.id,
           user_id: user.id,
           file_name: file.name,
-          file_type: file.type
+          file_type: file.type,
+          user: {
+            id: user.id,
+            email: user.email,
+            full_name: user.user_metadata?.full_name || null,
+            created_at: user.created_at
+          }
         }
       });
 
