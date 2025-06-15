@@ -26,7 +26,7 @@ const DashboardMetrics: React.FC<DashboardMetricsProps> = ({ stats }) => {
         value={stats.averageScore > 0 ? `${stats.averageScore}/10` : "N/A"}
         subtitle={stats.averageScore > 0 ? (stats.averageScore >= 6 ? "↗ Trending upward" : "Room for improvement") : "No completed analyses yet"}
         icon={BarChart3}
-        iconColor={stats.averageScore >= 6 ? "text-green-500" : "text-yellow-500"}
+        iconColor={stats.averageScore >= 6 ? "text-green-500" : "text-warning"}
       />
       <MetricCard
         title="Business Plans"
@@ -40,7 +40,7 @@ const DashboardMetrics: React.FC<DashboardMetricsProps> = ({ stats }) => {
         value={stats.successRate > 0 ? `${stats.successRate}%` : "N/A"}
         subtitle={stats.successRate > 0 ? "vs 42% industry average" : "Complete more validations"}
         icon={Target}
-        iconColor="text-yellow-500"
+        iconColor="text-warning"
       />
     </section>
   );

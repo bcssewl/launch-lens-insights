@@ -21,7 +21,7 @@ const DashboardInsights: React.FC<DashboardInsightsProps> = ({ hasValidatedIdeas
     <div className="space-y-6">
       <ShadcnCard className="apple-card border-0 shadow-lg">
         <ShadcnCardHeader className="pb-4">
-          <ShadcnCardTitle className="text-xl font-semibold">Your Insights</ShadcnCardTitle>
+          <ShadcnCardTitle className="text-xl font-semibold text-primary">Your Insights</ShadcnCardTitle>
         </ShadcnCardHeader>
         <ShadcnCardContent className="space-y-4">
           {hasValidatedIdeas ? (
@@ -37,7 +37,7 @@ const DashboardInsights: React.FC<DashboardInsightsProps> = ({ hasValidatedIdeas
               <div className="w-12 h-12 mx-auto mb-3 bg-primary/10 rounded-2xl flex items-center justify-center">
                 <BarChart3 className="w-6 h-6 text-primary" />
               </div>
-              <p className="text-muted-foreground text-sm">Complete a few validations to see personalized insights.</p>
+              <p className="text-secondary text-sm">Complete a few validations to see personalized insights.</p>
             </div>
           )}
         </ShadcnCardContent>
@@ -45,10 +45,10 @@ const DashboardInsights: React.FC<DashboardInsightsProps> = ({ hasValidatedIdeas
 
       <ShadcnCard className="apple-card border-0 shadow-lg">
         <ShadcnCardHeader className="pb-4">
-          <ShadcnCardTitle className="text-lg font-semibold">AI Assistant</ShadcnCardTitle>
+          <ShadcnCardTitle className="text-lg font-semibold text-primary">AI Assistant</ShadcnCardTitle>
         </ShadcnCardHeader>
         <ShadcnCardContent>
-          <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
+          <p className="text-sm text-secondary mb-4 leading-relaxed">
             Get personalized advice for your startup ideas
           </p>
           <Button className="w-full apple-button shadow-lg hover:shadow-xl transition-all duration-300" asChild>

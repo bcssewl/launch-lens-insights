@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -78,6 +77,7 @@ export default {
           secondary: "hsl(var(--text-secondary))",
           tertiary: "hsl(var(--text-tertiary))",
           disabled: "hsl(var(--text-disabled))",
+          inverse: "hsl(var(--text-inverse))",
         },
         // Success/Warning colors
         success: "hsl(var(--success))",

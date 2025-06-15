@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Share2, TrendingUp, CheckCircle, Settings } from 'lucide-react';
@@ -61,7 +62,7 @@ const ResultsHeader: React.FC<ResultsHeaderProps> = ({
     <div className="w-full p-4 bg-card rounded-lg shadow space-y-4">
       <div className="w-full">
         <h1 className="text-2xl md:text-3xl font-bold text-primary break-words">{ideaName}</h1>
-        <p className="text-sm text-muted-foreground mt-1">Analysis Date: {analysisDate}</p>
+        <p className="text-sm text-tertiary mt-1">Analysis Date: {analysisDate}</p>
       </div>
       
       <div className="flex flex-col gap-4">
@@ -74,20 +75,20 @@ const ResultsHeader: React.FC<ResultsHeaderProps> = ({
               {/* Header with Icon */}
               <div className="flex items-center gap-3">
                 {recommendation.icon}
-                <h3 className="text-lg font-semibold text-foreground">Strategic Recommendation</h3>
+                <h3 className="text-lg font-semibold text-primary">Strategic Recommendation</h3>
               </div>
               
               {/* Main Content */}
-              <p className="text-sm text-muted-foreground leading-relaxed">
+              <p className="text-sm text-secondary leading-relaxed">
                 {recommendation.content}
               </p>
               
               {/* Footer with Status and Score */}
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-2 border-t border-border/30">
-                <span className="text-sm font-medium text-foreground">
+                <span className="text-sm font-medium text-primary">
                   {recommendation.status}
                 </span>
-                <span className="text-sm text-muted-foreground">
+                <span className="text-sm text-tertiary">
                   Score: {score.toFixed(1)}/10
                 </span>
               </div>

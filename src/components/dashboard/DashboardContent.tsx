@@ -27,7 +27,7 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ recentActivities, h
       <ShadcnCard className="lg:col-span-2 apple-card border-0 shadow-lg">
         <ShadcnCardHeader className="pb-4">
           <div className="flex items-center justify-between">
-            <ShadcnCardTitle className="text-xl font-semibold">Recent Activity</ShadcnCardTitle>
+            <ShadcnCardTitle className="text-xl font-semibold text-primary">Recent Activity</ShadcnCardTitle>
             {hasValidatedIdeas && (
               <Button asChild variant="outline" size="sm">
                 <Link to="/dashboard/ideas">
@@ -56,7 +56,7 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ recentActivities, h
               <div className="w-16 h-16 mx-auto mb-4 bg-primary/10 rounded-2xl flex items-center justify-center">
                 <Lightbulb className="w-8 h-8 text-primary" />
               </div>
-              <p className="text-muted-foreground text-sm mb-4">No recent activity yet.</p>
+              <p className="text-secondary text-sm mb-4">No recent activity yet.</p>
               <Button variant="outline" className="apple-button-outline" asChild>
                 <Link to="/dashboard/validate">
                   <Lightbulb className="mr-2 h-4 w-4" />
