@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, RefreshCw } from 'lucide-react';
 import DashboardHeader from '@/components/DashboardHeader';
 import { useReportStatus } from '@/hooks/useReportStatus';
-import SimpleReportProgress from '@/components/SimpleReportProgress';
+import EnhancedAnalysisLoader from '@/components/analysis/EnhancedAnalysisLoader';
 import { toast } from '@/hooks/use-toast';
 
 const AnalyzingIdeaPage: React.FC = () => {
@@ -55,13 +55,13 @@ const AnalyzingIdeaPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen apple-dashboard-bg">
         <DashboardHeader>Analyzing Your Idea</DashboardHeader>
         <div className="container mx-auto p-6">
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
-              <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4" />
-              <p>Loading analysis status...</p>
+              <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+              <p className="text-gray-600">Loading analysis status...</p>
             </div>
           </div>
         </div>
@@ -71,10 +71,10 @@ const AnalyzingIdeaPage: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen apple-dashboard-bg">
         <DashboardHeader>Analysis Error</DashboardHeader>
         <div className="container mx-auto p-6">
-          <Card className="max-w-2xl mx-auto">
+          <Card className="max-w-2xl mx-auto apple-card">
             <CardHeader>
               <CardTitle className="text-red-600">Error Loading Analysis</CardTitle>
             </CardHeader>
@@ -87,7 +87,7 @@ const AnalyzingIdeaPage: React.FC = () => {
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Back to Dashboard
                 </Button>
-                <Button onClick={handleRetry}>
+                <Button onClick={handleRetry} className="gradient-button">
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Retry Analysis
                 </Button>
@@ -100,55 +100,66 @@ const AnalyzingIdeaPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen apple-dashboard-bg">
       <DashboardHeader>Analyzing Your Idea</DashboardHeader>
       <div className="container mx-auto p-6">
         <div className="max-w-4xl mx-auto space-y-6">
-          <Card>
-            <CardHeader className="text-center">
-              <CardTitle className="text-2xl font-bold text-primary">
-                🔍 AI Analysis in Progress
-              </CardTitle>
-              <p className="text-muted-foreground">
-                Our AI system is analyzing your startup idea across multiple dimensions.
-                This usually takes 2-5 minutes.
-              </p>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                {reportStatus && (
-                  <SimpleReportProgress 
-                    status={reportStatus.status} 
-                    useAnimation={true}
-                  />
-                )}
+          {/* Enhanced Analysis Loader */}
+          {reportStatus && (
+            <EnhancedAnalysisLoader 
+              status={reportStatus.status} 
+              useAnimation={true}
+            />
+          )}
 
-                <div className="bg-muted/50 p-4 rounded-lg">
-                  <h3 className="font-semibold mb-2">What's happening now:</h3>
-                  <ul className="text-sm text-muted-foreground space-y-1">
-                    <li>• Market research agents are gathering industry data</li>
-                    <li>• Competition analysis is identifying key competitors</li>
-                    <li>• Financial models are calculating market opportunity</li>
-                    <li>• SWOT analysis is evaluating strengths and risks</li>
-                    <li>• Comprehensive scoring across multiple factors</li>
-                  </ul>
-                </div>
-
-                <div className="flex justify-center space-x-4">
-                  <Button onClick={() => navigate('/dashboard')} variant="outline">
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Back to Dashboard
-                  </Button>
-                  {reportStatus?.status === 'failed' && (
-                    <Button onClick={handleRetry}>
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                      Retry Analysis
-                    </Button>
-                  )}
+          {/* What's Happening Section */}
+          <Card className="apple-card bg-white/80 backdrop-blur-xl border-0">
+            <CardContent className="p-6">
+              <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-2xl">
+                <h3 className="font-semibold text-gray-900 mb-4 text-lg">What's happening behind the scenes:</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                      <span className="text-sm text-gray-700">Market research agents gathering industry data</span>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
+                      <span className="text-sm text-gray-700">Competition analysis identifying key players</span>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
+                      <span className="text-sm text-gray-700">Financial models calculating market opportunity</span>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" style={{animationDelay: '0.6s'}}></div>
+                      <span className="text-sm text-gray-700">SWOT analysis evaluating strengths and risks</span>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <div className="w-2 h-2 bg-violet-500 rounded-full animate-pulse" style={{animationDelay: '0.8s'}}></div>
+                      <span className="text-sm text-gray-700">Comprehensive scoring across multiple factors</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </CardContent>
           </Card>
+
+          {/* Action Buttons */}
+          <div className="flex justify-center space-x-4">
+            <Button onClick={() => navigate('/dashboard')} variant="outline" className="apple-button-outline">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Dashboard
+            </Button>
+            {reportStatus?.status === 'failed' && (
+              <Button onClick={handleRetry} className="gradient-button">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Retry Analysis
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </div>
