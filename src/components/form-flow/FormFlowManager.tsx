@@ -43,48 +43,72 @@ const FormFlowManager: React.FC<FormFlowManagerProps> = ({
     }
   };
 
-  const parseFormDataFromTranscription = (transcriptionText: string): Partial<IdeaValidationFormData> => {
-    console.log('Parsing form data from transcription text:', transcriptionText);
+  const parseFormDataFromTranscription = (transcriptionData: any): Partial<IdeaValidationFormData> => {
+    console.log('Parsing form data from transcription data:', transcriptionData);
     
-    // Try to parse JSON if the transcription contains structured data
-    try {
-      // Look for JSON-like structure in the transcription
-      const jsonMatch = transcriptionText.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const extractedJson = JSON.parse(jsonMatch[0]);
-        console.log('Found JSON structure in transcription:', extractedJson);
-        
-        // Map the extracted JSON to our form structure
-        const structuredData: Partial<IdeaValidationFormData> = {
-          ideaName: extractedJson.ideaName || "Extracted from document",
-          oneLineDescription: extractedJson.oneLineDescription || "An innovative solution extracted from your document",
-          problemStatement: extractedJson.problemStatement || "Problem identified from your document",
-          solutionDescription: extractedJson.solutionDescription || "Solution described in your document",
-          targetCustomer: extractedJson.targetCustomer || "B2C",
-          customerSegment: extractedJson.customerSegment || "Target audience from your document",
-          geographicFocus: Array.isArray(extractedJson.geographicFocus) ? extractedJson.geographicFocus : 
-                          (extractedJson.geographicFocus === "Global") ? ["Global"] : ["United States"],
-          revenueModel: extractedJson.revenueModel || "One-time Purchase",
-          expectedPricing: typeof extractedJson.expectedPricing === 'number' ? extractedJson.expectedPricing : 25,
-          knownCompetitors: extractedJson.knownCompetitors || "",
-          primaryGoal: extractedJson.primaryGoal || "Validate Market Demand",
-          timeline: extractedJson.timeline || "Building this month",
-          additionalContext: extractedJson.additionalContext || ""
-        };
-        
-        console.log('Final structured data from transcription:', structuredData);
-        return structuredData;
-      }
-    } catch (error) {
-      console.log('No valid JSON found in transcription, using fallback');
+    // Check if transcriptionData is already a structured object
+    if (typeof transcriptionData === 'object' && transcriptionData !== null) {
+      console.log('Found structured object in transcription:', transcriptionData);
+      
+      // Map the extracted object to our form structure
+      const structuredData: Partial<IdeaValidationFormData> = {
+        ideaName: transcriptionData.ideaName || "Extracted from document",
+        oneLineDescription: transcriptionData.oneLineDescription || "An innovative solution extracted from your document",
+        problemStatement: transcriptionData.problemStatement || "Problem identified from your document",
+        solutionDescription: transcriptionData.solutionDescription || "Solution described in your document",
+        targetCustomer: transcriptionData.targetCustomer || "B2C",
+        customerSegment: transcriptionData.customerSegment || "Target audience from your document",
+        geographicFocus: Array.isArray(transcriptionData.geographicFocus) ? transcriptionData.geographicFocus : 
+                        (transcriptionData.geographicFocus === "Global") ? ["Global"] : ["United States"],
+        revenueModel: transcriptionData.revenueModel || "One-time Purchase",
+        expectedPricing: typeof transcriptionData.expectedPricing === 'number' ? transcriptionData.expectedPricing : 25,
+        knownCompetitors: transcriptionData.knownCompetitors || "",
+        primaryGoal: transcriptionData.primaryGoal || "Validate Market Demand",
+        timeline: transcriptionData.timeline || "Building this month",
+        additionalContext: transcriptionData.additionalContext || ""
+      };
+      
+      console.log('Final structured data from transcription:', structuredData);
+      return structuredData;
     }
     
-    // Fallback for plain text transcription
+    // Handle string input (fallback for voice recordings)
+    if (typeof transcriptionData === 'string') {
+      // Try to parse JSON if the transcription contains structured data
+      try {
+        const jsonMatch = transcriptionData.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const extractedJson = JSON.parse(jsonMatch[0]);
+          console.log('Found JSON structure in transcription text:', extractedJson);
+          return parseFormDataFromTranscription(extractedJson); // Recursive call with parsed object
+        }
+      } catch (error) {
+        console.log('No valid JSON found in transcription, using fallback');
+      }
+      
+      // Fallback for plain text transcription
+      return {
+        ideaName: "Document-based Idea",
+        oneLineDescription: "Please review and edit the extracted information",
+        problemStatement: transcriptionData.substring(0, 200) + (transcriptionData.length > 200 ? "..." : ""),
+        solutionDescription: "Please describe your solution based on your document",
+        targetCustomer: "B2C",
+        customerSegment: "Please specify your target customer segment",
+        geographicFocus: ["United States"],
+        revenueModel: "One-time Purchase",
+        expectedPricing: 25,
+        knownCompetitors: "",
+        primaryGoal: "Validate Market Demand",
+        timeline: "Building this month"
+      };
+    }
+    
+    // Final fallback
     return {
       ideaName: "Document-based Idea",
       oneLineDescription: "Please review and edit the extracted information",
-      problemStatement: transcriptionText.substring(0, 200) + (transcriptionText.length > 200 ? "..." : ""),
-      solutionDescription: "Please describe your solution based on your document",
+      problemStatement: "Please describe your problem statement",
+      solutionDescription: "Please describe your solution",
       targetCustomer: "B2C",
       customerSegment: "Please specify your target customer segment",
       geographicFocus: ["United States"],
@@ -182,13 +206,13 @@ const FormFlowManager: React.FC<FormFlowManagerProps> = ({
     setCurrentFlow('form_steps');
   };
 
-  const handlePitchDeckComplete = async (uploadId: string, transcriptionText?: string) => {
-    console.log('Pitch deck upload completed:', { uploadId, transcriptionText });
+  const handlePitchDeckComplete = async (uploadId: string, transcriptionData?: any) => {
+    console.log('Pitch deck upload completed:', { uploadId, transcriptionData });
     setPitchDeckUploadId(uploadId);
     
-    if (transcriptionText) {
+    if (transcriptionData) {
       // Parse the extracted data from the transcription
-      const parsedFormData = parseFormDataFromTranscription(transcriptionText);
+      const parsedFormData = parseFormDataFromTranscription(transcriptionData);
       setExtractedData(parsedFormData);
     } else {
       // Use fallback data if no transcription
