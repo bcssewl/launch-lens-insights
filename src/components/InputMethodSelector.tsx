@@ -17,7 +17,7 @@ const InputMethodSelector: React.FC<InputMethodSelectorProps> = ({ onMethodSelec
       </div>
       
       <div className="flex flex-col space-y-4 w-full">
-        <Card className="mobile-gradient-card hover:shadow-lg transition-shadow cursor-pointer w-full" onClick={() => onMethodSelect('form')}>
+        <Card className="mobile-gradient-card border-0 hover:shadow-lg transition-shadow cursor-pointer w-full" onClick={() => onMethodSelect('form')}>
           <CardHeader className="text-center pb-3">
             <FileText className="h-10 w-10 mx-auto text-primary mb-2" />
             <CardTitle className="mobile-subheading">Fill Form</CardTitle>
@@ -32,7 +32,7 @@ const InputMethodSelector: React.FC<InputMethodSelectorProps> = ({ onMethodSelec
           </CardContent>
         </Card>
 
-        <Card className="mobile-gradient-card hover:shadow-lg transition-shadow cursor-pointer w-full" onClick={() => onMethodSelect('voice')}>
+        <Card className="mobile-gradient-card border-0 hover:shadow-lg transition-shadow cursor-pointer w-full" onClick={() => onMethodSelect('voice')}>
           <CardHeader className="text-center pb-3">
             <Mic className="h-10 w-10 mx-auto text-primary mb-2" />
             <CardTitle className="mobile-subheading">Voice Recording</CardTitle>
@@ -47,7 +47,7 @@ const InputMethodSelector: React.FC<InputMethodSelectorProps> = ({ onMethodSelec
           </CardContent>
         </Card>
 
-        <Card className="mobile-gradient-card hover:shadow-lg transition-shadow cursor-pointer w-full" onClick={() => onMethodSelect('pitch_deck')}>
+        <Card className="mobile-gradient-card border-0 hover:shadow-lg transition-shadow cursor-pointer w-full" onClick={() => onMethodSelect('pitch_deck')}>
           <CardHeader className="text-center pb-3">
             <Upload className="h-10 w-10 mx-auto text-primary mb-2" />
             <CardTitle className="mobile-subheading">Upload Pitch Deck</CardTitle>
