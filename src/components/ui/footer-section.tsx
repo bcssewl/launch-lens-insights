@@ -90,7 +90,7 @@ export function Footer() {
 				<AnimatedContainer className="space-y-4">
 					<Frame className="size-8" />
 					<p className="text-muted-foreground mt-8 text-sm md:mt-0">
-						© {new Date().getFullYear()} Asme. All rights reserved.
+						© {new Date().getFullYear()} Launch Lens. All rights reserved.
 					</p>
 				</AnimatedContainer>
 
