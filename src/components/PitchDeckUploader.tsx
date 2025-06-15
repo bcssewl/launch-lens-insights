@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,16 +20,12 @@ const PitchDeckUploader: React.FC<PitchDeckUploaderProps> = ({ onComplete, onBac
   const { uploadPitchDeck, isUploading, uploadProgress } = usePitchDeckUpload();
 
   const acceptedTypes = [
-    'application/pdf',
-    'application/vnd.ms-powerpoint',
-    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    'application/pdf'
   ];
 
   const handleFileSelect = (file: File) => {
     if (!acceptedTypes.includes(file.type)) {
-      alert('Please upload a PDF, PowerPoint, or Word document');
+      alert('Please upload a PDF document only');
       return;
     }
 
@@ -97,11 +94,7 @@ const PitchDeckUploader: React.FC<PitchDeckUploaderProps> = ({ onComplete, onBac
   };
 
   const getFileIcon = (fileType: string) => {
-    if (fileType.includes('pdf')) return '📄';
-    if (fileType.includes('presentation')) return '📊';
-    if (fileType.includes('powerpoint')) return '📊';
-    if (fileType.includes('word')) return '📝';
-    return '📄';
+    return '📄'; // PDF icon for all files since we only accept PDF
   };
 
   return (
@@ -109,7 +102,7 @@ const PitchDeckUploader: React.FC<PitchDeckUploaderProps> = ({ onComplete, onBac
       <CardHeader className="text-center">
         <CardTitle className="text-2xl font-bold text-primary">Upload Your Pitch Deck</CardTitle>
         <p className="text-muted-foreground">
-          Share your existing presentation or business plan document
+          Share your existing presentation or business plan document (PDF only)
         </p>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -125,15 +118,15 @@ const PitchDeckUploader: React.FC<PitchDeckUploaderProps> = ({ onComplete, onBac
             onDragLeave={handleDragLeave}
           >
             <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Drop your file here</h3>
+            <h3 className="text-lg font-semibold mb-2">Drop your PDF file here</h3>
             <p className="text-muted-foreground mb-4">
               or click to browse your files
             </p>
             <Button onClick={() => fileInputRef.current?.click()}>
-              Choose File
+              Choose PDF File
             </Button>
             <p className="text-xs text-muted-foreground mt-4">
-              Supported formats: PDF, PowerPoint, Word • Max size: 10MB
+              Supported format: PDF • Max size: 10MB
             </p>
           </div>
         ) : (
@@ -166,15 +159,15 @@ const PitchDeckUploader: React.FC<PitchDeckUploaderProps> = ({ onComplete, onBac
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">
-                    {uploadProgress < 50 ? 'Uploading file...' : 
+                    {uploadProgress < 50 ? 'Uploading PDF...' : 
                      uploadProgress < 75 ? 'Processing upload...' : 
-                     'Analyzing document...'}
+                     'Analyzing PDF content...'}
                   </span>
                   <span className="text-sm text-muted-foreground">{uploadProgress}%</span>
                 </div>
                 <Progress value={uploadProgress} className="w-full" />
                 <p className="text-xs text-muted-foreground text-center">
-                  This may take up to 30 seconds to process your document
+                  This may take up to 30 seconds to process your PDF
                 </p>
               </div>
             )}
@@ -182,7 +175,7 @@ const PitchDeckUploader: React.FC<PitchDeckUploaderProps> = ({ onComplete, onBac
             {uploadCompleted && (
               <div className="text-center">
                 <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-2" />
-                <p className="font-medium text-green-600">Document processed successfully!</p>
+                <p className="font-medium text-green-600">PDF processed successfully!</p>
                 <p className="text-sm text-muted-foreground">Proceeding to form...</p>
               </div>
             )}
@@ -193,7 +186,7 @@ const PitchDeckUploader: React.FC<PitchDeckUploaderProps> = ({ onComplete, onBac
                   <div className="flex items-start space-x-3">
                     <FileText className="h-5 w-5 text-primary mt-0.5" />
                     <div>
-                      <h4 className="font-medium">What we'll extract:</h4>
+                      <h4 className="font-medium">What we'll extract from your PDF:</h4>
                       <ul className="text-sm text-muted-foreground mt-1 space-y-1">
                         <li>• Business concept and problem statement</li>
                         <li>• Target market and customer segments</li>
@@ -210,7 +203,7 @@ const PitchDeckUploader: React.FC<PitchDeckUploaderProps> = ({ onComplete, onBac
                   size="lg"
                   disabled={isUploading}
                 >
-                  Upload & Process Document
+                  Upload & Process PDF
                 </Button>
               </div>
             )}
@@ -227,7 +220,7 @@ const PitchDeckUploader: React.FC<PitchDeckUploaderProps> = ({ onComplete, onBac
           ref={fileInputRef}
           type="file"
           className="hidden"
-          accept=".pdf,.ppt,.pptx,.doc,.docx"
+          accept=".pdf"
           onChange={handleFileInputChange}
         />
       </CardContent>
