@@ -63,45 +63,31 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        // Premium Surface System
         surface: {
           DEFAULT: "hsl(var(--surface))",
           elevated: "hsl(var(--surface-elevated))",
+          "elevated-2": "hsl(var(--surface-elevated-2))",
         },
-        // Custom Launch Lens colors - Updated to match new palette
-        launchlens: {
-          // Dark Mode
-          "primary-dark": "#8B5CF6",      // Consistent with main primary
-          "background-dark": "#111111",   // Updated background
-          "surface-dark": "#1F1F1F",      // Updated surface
-          "surface-elevated-dark": "#262626", // New elevated surface
-          "accent-dark": "#A855F7",       // Updated accent
-          "accent-hover-dark": "#C084FC", // New accent hover
-          "success-dark": "#10B981",      // Emerald
-          "warning-dark": "#F59E0B",      // Amber
-          "danger-dark": "#EF4444",       // Rose
-          "text-primary-dark": "#FFFFFF",
-          "text-secondary-dark": "#D1D5DB",
-          // Light Mode
-          "primary-light": "#8B5CF6",     // Consistent primary
-          "primary-hover-light": "#7C3AED", // New primary hover
-          "primary-active-light": "#6D28D9", // New primary active
-          "background-light": "#FFFFFF",  // Pure white
-          "surface-light": "#FAFAFA",     // Updated surface
-          "surface-elevated-light": "#FFFFFF", // Elevated surface
-          "accent-light": "#DDD6FE",      // Lavender
-          "accent-hover-light": "#C4B5FD", // New accent hover
-          "success-light": "#059669",     // Green
-          "warning-light": "#D97706",     // Orange
-          "danger-light": "#DC2626",      // Red
-          "text-primary-light": "#111827",
-          "text-secondary-light": "#6B7280",
-        }
+        // Premium Border System
+        "border-subtle": "hsl(var(--border-subtle))",
+        "border-strong": "hsl(var(--border-strong))",
+        // Premium Text Hierarchy
+        text: {
+          primary: "hsl(var(--text-primary))",
+          secondary: "hsl(var(--text-secondary))",
+          tertiary: "hsl(var(--text-tertiary))",
+          disabled: "hsl(var(--text-disabled))",
+        },
+        // Success/Warning colors
+        success: "hsl(var(--success))",
+        warning: "hsl(var(--warning))",
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
-        xl: "calc(var(--radius) + 4px)", // For 16px from 0.5rem (8px) base
+        xl: "calc(var(--radius) + 4px)",
       },
       boxShadow: {
         'glass': '0 4px 30px rgba(0, 0, 0, 0.1)',
