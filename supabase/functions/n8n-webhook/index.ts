@@ -54,6 +54,7 @@ serve(async (req) => {
           full_name: user.user_metadata?.full_name || null,
           created_at: user.created_at
         },
+        auth_token: token,
         ...payload
       }
     } else if (type === 'audio') {
@@ -66,6 +67,7 @@ serve(async (req) => {
           full_name: user.user_metadata?.full_name || null,
           created_at: user.created_at
         },
+        auth_token: token,
         voice_url: payload.voice_url,
         recording_id: payload.recording_id,
         user_id: payload.user_id,
@@ -82,6 +84,7 @@ serve(async (req) => {
           full_name: user.user_metadata?.full_name || null,
           created_at: user.created_at
         },
+        auth_token: token,
         file_url: payload.file_url,
         upload_id: payload.upload_id,
         user_id: payload.user_id,
