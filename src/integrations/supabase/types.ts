@@ -160,6 +160,51 @@ export type Database = {
           },
         ]
       }
+      pitch_deck_uploads: {
+        Row: {
+          created_at: string
+          file_name: string
+          file_path: string
+          file_size: number | null
+          file_type: string
+          id: string
+          processing_status: string
+          transcription_completed_at: string | null
+          transcription_text: string | null
+          updated_at: string
+          user_id: string
+          validation_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          file_type: string
+          id?: string
+          processing_status?: string
+          transcription_completed_at?: string | null
+          transcription_text?: string | null
+          updated_at?: string
+          user_id: string
+          validation_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          file_type?: string
+          id?: string
+          processing_status?: string
+          transcription_completed_at?: string | null
+          transcription_text?: string | null
+          updated_at?: string
+          user_id?: string
+          validation_id?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null

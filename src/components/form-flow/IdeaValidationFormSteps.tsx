@@ -35,6 +35,7 @@ interface IdeaValidationFormStepsProps {
   inputMethod: 'form' | 'voice' | 'pitch_deck';
   onBackToMethodSelection: () => void;
   audioRecordingId?: string | null;
+  pitchDeckUploadId?: string | null;
 }
 
 const IdeaValidationFormSteps: React.FC<IdeaValidationFormStepsProps> = ({
@@ -44,7 +45,8 @@ const IdeaValidationFormSteps: React.FC<IdeaValidationFormStepsProps> = ({
   extractedData,
   inputMethod,
   onBackToMethodSelection,
-  audioRecordingId
+  audioRecordingId,
+  pitchDeckUploadId
 }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const { form } = useIdeaValidationForm();
@@ -78,11 +80,12 @@ const IdeaValidationFormSteps: React.FC<IdeaValidationFormStepsProps> = ({
     if (currentStep < steps.length - 1) {
       setCurrentStep(step => step + 1);
     } else {
-      // Include audio recording ID in the form submission if available
+      // Include audio recording ID or pitch deck upload ID in the form submission if available
       const formData = form.getValues();
       const submissionData = {
         ...formData,
-        audioRecordingId: audioRecordingId || undefined
+        audioRecordingId: audioRecordingId || undefined,
+        pitchDeckUploadId: pitchDeckUploadId || undefined
       };
       form.handleSubmit(() => onFormComplete(submissionData))();
     }

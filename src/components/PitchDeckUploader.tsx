@@ -2,20 +2,22 @@
 import React, { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Upload, FileText, X, CheckCircle } from 'lucide-react';
+import { Upload, FileText, X, CheckCircle, AlertCircle } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { usePitchDeckUpload } from '@/hooks/usePitchDeckUpload';
 
 interface PitchDeckUploaderProps {
-  onComplete: (file: File) => void;
+  onComplete: (uploadId: string) => void;
   onBack: () => void;
 }
 
 const PitchDeckUploader: React.FC<PitchDeckUploaderProps> = ({ onComplete, onBack }) => {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [processingProgress, setProcessingProgress] = useState(0);
+  const [uploadCompleted, setUploadCompleted] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const { uploadPitchDeck, isUploading, uploadProgress } = usePitchDeckUpload();
 
   const acceptedTypes = [
     'application/pdf',
@@ -37,6 +39,7 @@ const PitchDeckUploader: React.FC<PitchDeckUploaderProps> = ({ onComplete, onBac
     }
 
     setUploadedFile(file);
+    setUploadCompleted(false);
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -68,30 +71,24 @@ const PitchDeckUploader: React.FC<PitchDeckUploaderProps> = ({ onComplete, onBac
 
   const removeFile = () => {
     setUploadedFile(null);
-    setIsProcessing(false);
-    setProcessingProgress(0);
+    setUploadCompleted(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
-  const processDocument = () => {
+  const processDocument = async () => {
     if (!uploadedFile) return;
 
-    setIsProcessing(true);
-    setProcessingProgress(0);
-
-    // Simulate processing with progress
-    const interval = setInterval(() => {
-      setProcessingProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setTimeout(() => onComplete(uploadedFile), 500);
-          return 100;
-        }
-        return prev + 10;
-      });
-    }, 200);
+    const uploadId = await uploadPitchDeck(uploadedFile);
+    
+    if (uploadId) {
+      setUploadCompleted(true);
+      // Wait a moment to show the success state, then proceed
+      setTimeout(() => {
+        onComplete(uploadId);
+      }, 1000);
+    }
   };
 
   const formatFileSize = (bytes: number) => {
@@ -153,7 +150,7 @@ const PitchDeckUploader: React.FC<PitchDeckUploaderProps> = ({ onComplete, onBac
                     </p>
                   </div>
                 </div>
-                {!isProcessing && (
+                {!isUploading && !uploadCompleted && (
                   <Button
                     variant="outline"
                     size="sm"
@@ -166,17 +163,29 @@ const PitchDeckUploader: React.FC<PitchDeckUploaderProps> = ({ onComplete, onBac
               </div>
             </div>
 
-            {isProcessing && (
+            {isUploading && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Processing document...</span>
-                  <span className="text-sm text-muted-foreground">{processingProgress}%</span>
+                  <span className="text-sm font-medium">
+                    {uploadProgress < 50 ? 'Uploading file...' : 
+                     uploadProgress < 75 ? 'Processing upload...' : 
+                     'Sending for analysis...'}
+                  </span>
+                  <span className="text-sm text-muted-foreground">{uploadProgress}%</span>
                 </div>
-                <Progress value={processingProgress} className="w-full" />
+                <Progress value={uploadProgress} className="w-full" />
               </div>
             )}
 
-            {!isProcessing && processingProgress === 0 && (
+            {uploadCompleted && (
+              <div className="text-center">
+                <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-2" />
+                <p className="font-medium text-green-600">Upload completed successfully!</p>
+                <p className="text-sm text-muted-foreground">Processing your document...</p>
+              </div>
+            )}
+
+            {!isUploading && !uploadCompleted && (
               <div className="space-y-4">
                 <div className="bg-muted/50 rounded-lg p-4">
                   <div className="flex items-start space-x-3">
@@ -197,23 +206,17 @@ const PitchDeckUploader: React.FC<PitchDeckUploaderProps> = ({ onComplete, onBac
                   onClick={processDocument} 
                   className="w-full gradient-button"
                   size="lg"
+                  disabled={isUploading}
                 >
-                  Process Document
+                  Upload & Process Document
                 </Button>
-              </div>
-            )}
-
-            {processingProgress === 100 && (
-              <div className="text-center">
-                <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-2" />
-                <p className="font-medium text-green-600">Document processed successfully!</p>
               </div>
             )}
           </div>
         )}
 
         <div className="flex justify-between">
-          <Button variant="outline" onClick={onBack}>
+          <Button variant="outline" onClick={onBack} disabled={isUploading}>
             Back to Options
           </Button>
         </div>

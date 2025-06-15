@@ -31,6 +31,7 @@ const FormFlowManager: React.FC<FormFlowManagerProps> = ({
   const [inputMethod, setInputMethod] = useState<InputMethod>('form');
   const [extractedData, setExtractedData] = useState<Partial<IdeaValidationFormData>>({});
   const [audioRecordingId, setAudioRecordingId] = useState<string | null>(null);
+  const [pitchDeckUploadId, setPitchDeckUploadId] = useState<string | null>(null);
 
   const handleMethodSelect = (method: InputMethod) => {
     setInputMethod(method);
@@ -56,12 +57,12 @@ const FormFlowManager: React.FC<FormFlowManagerProps> = ({
         
         // Map the extracted JSON to our form structure
         const structuredData: Partial<IdeaValidationFormData> = {
-          ideaName: extractedJson.ideaName || "Voice-recorded Idea",
-          oneLineDescription: extractedJson.oneLineDescription || "An innovative solution extracted from voice recording",
-          problemStatement: extractedJson.problemStatement || "Problem identified from your voice recording",
-          solutionDescription: extractedJson.solutionDescription || "Solution described in your recording",
+          ideaName: extractedJson.ideaName || "Extracted from document",
+          oneLineDescription: extractedJson.oneLineDescription || "An innovative solution extracted from your document",
+          problemStatement: extractedJson.problemStatement || "Problem identified from your document",
+          solutionDescription: extractedJson.solutionDescription || "Solution described in your document",
           targetCustomer: extractedJson.targetCustomer || "B2C",
-          customerSegment: extractedJson.customerSegment || "Target audience from your description",
+          customerSegment: extractedJson.customerSegment || "Target audience from your document",
           geographicFocus: Array.isArray(extractedJson.geographicFocus) ? extractedJson.geographicFocus : 
                           (extractedJson.geographicFocus === "Global") ? ["Global"] : ["United States"],
           revenueModel: extractedJson.revenueModel || "One-time Purchase",
@@ -81,10 +82,10 @@ const FormFlowManager: React.FC<FormFlowManagerProps> = ({
     
     // Fallback for plain text transcription
     return {
-      ideaName: "Voice-recorded Idea",
+      ideaName: "Document-based Idea",
       oneLineDescription: "Please review and edit the extracted information",
       problemStatement: transcriptionText.substring(0, 200) + (transcriptionText.length > 200 ? "..." : ""),
-      solutionDescription: "Please describe your solution based on your recording",
+      solutionDescription: "Please describe your solution based on your document",
       targetCustomer: "B2C",
       customerSegment: "Please specify your target customer segment",
       geographicFocus: ["United States"],
@@ -119,7 +120,6 @@ const FormFlowManager: React.FC<FormFlowManagerProps> = ({
           console.log('Transcription found:', recording.transcription_text);
           
           // Parse the form data directly from the transcription text
-          // The n8n webhook should have already processed and structured the data
           const parsedFormData = parseFormDataFromTranscription(recording.transcription_text);
           
           if (parsedFormData) {
@@ -183,25 +183,109 @@ const FormFlowManager: React.FC<FormFlowManagerProps> = ({
     setCurrentFlow('form_steps');
   };
 
-  const handlePitchDeckComplete = (file: File) => {
-    // Mock extracted data from pitch deck - using exact enum values
-    const mockExtracted: Partial<IdeaValidationFormData> = {
-      ideaName: "EcoCommute Solutions",
-      oneLineDescription: "Smart carpooling platform that reduces urban traffic congestion and carbon emissions",
-      problemStatement: "Urban areas face increasing traffic congestion and air pollution, while many commuters travel alone in private vehicles",
-      solutionDescription: "AI-powered matching system that connects commuters with similar routes, optimizing carpooling for maximum efficiency and convenience",
-      targetCustomer: "B2B",
-      customerSegment: "Daily commuters in metropolitan areas aged 25-45",
-      geographicFocus: ["United States"],
-      revenueModel: "Subscription",
-      expectedPricing: 15,
-      knownCompetitors: "Uber Pool, traditional carpooling apps, public transportation",
-      primaryGoal: "Market Sizing",
-      timeline: "In 6+ months"
-    };
+  const handlePitchDeckComplete = async (uploadId: string) => {
+    console.log('Pitch deck upload completed:', uploadId);
+    setPitchDeckUploadId(uploadId);
     
-    setExtractedData(mockExtracted);
-    setCurrentFlow('form_steps');
+    try {
+      // Poll for transcription completion
+      const maxAttempts = 30; // 5 minutes max wait time (10 seconds * 30)
+      let attempts = 0;
+      
+      const pollForTranscription = async (): Promise<void> => {
+        attempts++;
+        console.log(`Polling for transcription, attempt ${attempts}/${maxAttempts}`);
+        
+        const { data: upload, error } = await supabase
+          .from('pitch_deck_uploads')
+          .select('transcription_text, processing_status')
+          .eq('id', uploadId)
+          .single();
+        
+        if (error) {
+          console.error('Error fetching upload status:', error);
+          throw error;
+        }
+        
+        console.log('Upload status:', upload);
+        
+        if (upload.transcription_text && upload.processing_status === 'completed') {
+          console.log('Transcription completed:', upload.transcription_text);
+          
+          // Parse the extracted data from the transcription
+          const parsedFormData = parseFormDataFromTranscription(upload.transcription_text);
+          setExtractedData(parsedFormData);
+          setCurrentFlow('form_steps');
+          return;
+        }
+        
+        if (upload.processing_status === 'failed') {
+          console.error('Processing failed for upload:', uploadId);
+          // Use fallback data
+          setExtractedData({
+            ideaName: "Document-based Idea",
+            oneLineDescription: "Processing failed - please fill in manually",
+            problemStatement: "Please describe your problem statement",
+            solutionDescription: "Please describe your solution",
+            targetCustomer: "B2C",
+            customerSegment: "Please specify your target customer segment",
+            geographicFocus: ["United States"],
+            revenueModel: "One-time Purchase",
+            expectedPricing: 25,
+            knownCompetitors: "",
+            primaryGoal: "Validate Market Demand",
+            timeline: "Building this month"
+          });
+          setCurrentFlow('form_steps');
+          return;
+        }
+        
+        if (attempts < maxAttempts) {
+          // Continue polling
+          setTimeout(pollForTranscription, 10000); // Poll every 10 seconds
+        } else {
+          console.warn('Transcription polling timed out');
+          // Use fallback data and proceed
+          setExtractedData({
+            ideaName: "Document-based Idea", 
+            oneLineDescription: "Processing is taking longer than expected - please fill in manually",
+            problemStatement: "Please describe your problem statement",
+            solutionDescription: "Please describe your solution",
+            targetCustomer: "B2C",
+            customerSegment: "Please specify your target customer segment",
+            geographicFocus: ["United States"],
+            revenueModel: "One-time Purchase",
+            expectedPricing: 25,
+            knownCompetitors: "",
+            primaryGoal: "Validate Market Demand",
+            timeline: "Building this month"
+          });
+          setCurrentFlow('form_steps');
+        }
+      };
+      
+      // Start polling
+      pollForTranscription();
+      
+    } catch (error) {
+      console.error('Error processing pitch deck upload:', error);
+      // Use fallback data and proceed
+      setExtractedData({
+        ideaName: "Document-based Idea",
+        oneLineDescription: "An error occurred during processing - please fill in manually",
+        problemStatement: "Please describe your problem statement",
+        solutionDescription: "Please describe your solution",
+        targetCustomer: "B2C",
+        customerSegment: "Please specify your target customer segment",
+        geographicFocus: ["United States"],
+        revenueModel: "One-time Purchase",
+        expectedPricing: 25,
+        knownCompetitors: "",
+        primaryGoal: "Validate Market Demand",
+        timeline: "Building this month"
+      });
+      setCurrentFlow('form_steps');
+    }
   };
 
   const handleDataReviewConfirm = (data: Partial<IdeaValidationFormData>) => {
@@ -218,6 +302,7 @@ const FormFlowManager: React.FC<FormFlowManagerProps> = ({
     setInputMethod('form');
     setExtractedData({});
     setAudioRecordingId(null);
+    setPitchDeckUploadId(null);
   };
 
   // Render based on current flow
@@ -264,6 +349,7 @@ const FormFlowManager: React.FC<FormFlowManagerProps> = ({
       inputMethod={inputMethod}
       onBackToMethodSelection={handleBackToMethodSelection}
       audioRecordingId={audioRecordingId}
+      pitchDeckUploadId={pitchDeckUploadId}
     />
   );
 };
