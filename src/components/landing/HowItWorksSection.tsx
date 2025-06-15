@@ -1,8 +1,6 @@
 import { FileText, Brain, BarChart3, Rocket, ArrowDown } from "lucide-react";
 import { HowItWorksStep } from "./HowItWorksStep";
-
-export const HowItWorksSection = () => (
-  <section className="apple-section">
+export const HowItWorksSection = () => <section className="apple-section">
     <div className="apple-container">
       <div className="text-center mb-16">
         <h2 className="apple-heading">
@@ -19,72 +17,32 @@ export const HowItWorksSection = () => (
           {/* Connecting Lines */}
           <div className="absolute top-1/2 left-0 right-0 h-0.5 -translate-y-1/2 z-0">
             <div className="w-full h-full flex justify-between items-center px-16">
-              <div className="flex-1 border-t-2 border-dashed border-primary/30"></div>
+              
             </div>
           </div>
 
-          <HowItWorksStep
-            icon={FileText}
-            step={1}
-            title="Describe Your Idea"
-            description="Tell us about your startup concept, target market, and problem you're solving."
-          />
-          <HowItWorksStep
-            icon={Brain}
-            step={2}
-            title="AI Analyzes"
-            description="Our algorithms assess market viability, competition, and potential challenges."
-          />
-          <HowItWorksStep
-            icon={BarChart3}
-            step={3}
-            title="Get Score & Insights"
-            description="Receive a validation score, detailed report, and SWOT analysis."
-          />
-          <HowItWorksStep
-            icon={Rocket}
-            step={4}
-            title="Launch Experiments"
-            description="Follow tailored recommendations to test assumptions and refine your idea."
-          />
+          <HowItWorksStep icon={FileText} step={1} title="Describe Your Idea" description="Tell us about your startup concept, target market, and problem you're solving." />
+          <HowItWorksStep icon={Brain} step={2} title="AI Analyzes" description="Our algorithms assess market viability, competition, and potential challenges." />
+          <HowItWorksStep icon={BarChart3} step={3} title="Get Score & Insights" description="Receive a validation score, detailed report, and SWOT analysis." />
+          <HowItWorksStep icon={Rocket} step={4} title="Launch Experiments" description="Follow tailored recommendations to test assumptions and refine your idea." />
         </div>
       </div>
 
       {/* Mobile Vertical Layout */}
       <div className="md:hidden space-y-8">
-        <HowItWorksStep
-          icon={FileText}
-          step={1}
-          title="Describe Your Idea"
-          description="Tell us about your startup concept, target market, and problem you're solving."
-        />
+        <HowItWorksStep icon={FileText} step={1} title="Describe Your Idea" description="Tell us about your startup concept, target market, and problem you're solving." />
         <div className="flex justify-center">
           <ArrowDown className="w-6 h-6 text-primary/50" />
         </div>
-        <HowItWorksStep
-          icon={Brain}
-          step={2}
-          title="AI Analyzes"
-          description="Our algorithms assess market viability, competition, and potential challenges."
-        />
+        <HowItWorksStep icon={Brain} step={2} title="AI Analyzes" description="Our algorithms assess market viability, competition, and potential challenges." />
         <div className="flex justify-center">
           <ArrowDown className="w-6 h-6 text-primary/50" />
         </div>
-        <HowItWorksStep
-          icon={BarChart3}
-          step={3}
-          title="Get Score & Insights"
-          description="Receive a validation score, detailed report, and SWOT analysis."
-        />
+        <HowItWorksStep icon={BarChart3} step={3} title="Get Score & Insights" description="Receive a validation score, detailed report, and SWOT analysis." />
         <div className="flex justify-center">
           <ArrowDown className="w-6 h-6 text-primary/50" />
         </div>
-        <HowItWorksStep
-          icon={Rocket}
-          step={4}
-          title="Launch Experiments"
-          description="Follow tailored recommendations to test assumptions and refine your idea."
-        />
+        <HowItWorksStep icon={Rocket} step={4} title="Launch Experiments" description="Follow tailored recommendations to test assumptions and refine your idea." />
       </div>
 
       {/* Call to Action */}
@@ -107,5 +65,4 @@ export const HowItWorksSection = () => (
         </div>
       </div>
     </div>
-  </section>
-);
+  </section>;
