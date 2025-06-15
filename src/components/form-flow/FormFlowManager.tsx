@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { IdeaValidationFormData } from '@/hooks/useIdeaValidationForm';
 import { supabase } from '@/integrations/supabase/client';
@@ -188,8 +187,8 @@ const FormFlowManager: React.FC<FormFlowManagerProps> = ({
     setPitchDeckUploadId(uploadId);
     
     try {
-      // Poll for transcription completion
-      const maxAttempts = 30; // 5 minutes max wait time (10 seconds * 30)
+      // Poll for transcription completion with longer timeout for document processing
+      const maxAttempts = 120; // 20 minutes max wait time (10 seconds * 120)
       let attempts = 0;
       
       const pollForTranscription = async (): Promise<void> => {
@@ -244,7 +243,7 @@ const FormFlowManager: React.FC<FormFlowManagerProps> = ({
           // Continue polling
           setTimeout(pollForTranscription, 10000); // Poll every 10 seconds
         } else {
-          console.warn('Transcription polling timed out');
+          console.warn('Transcription polling timed out after 20 minutes');
           // Use fallback data and proceed
           setExtractedData({
             ideaName: "Document-based Idea", 
