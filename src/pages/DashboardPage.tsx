@@ -24,7 +24,8 @@ const DashboardPage: React.FC = () => {
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="min-h-screen bg-gradient-to-br from-surface via-surface to-surface-elevated overflow-x-hidden">
+        <div className="apple-dashboard">
+          <div className="floating-elements-dashboard"></div>
           {isMobile ? <MobileDashboardHeader /> : <DashboardHeader />}
           <div className={isMobile ? "mobile-container space-y-4" : "p-4 md:p-6 lg:p-8 space-y-6 md:space-y-8"}>
             {/* Quick Action Section */}
@@ -53,7 +54,8 @@ const DashboardPage: React.FC = () => {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-gradient-to-br from-surface via-surface to-surface-elevated overflow-x-hidden">
+      <div className="apple-dashboard">
+        <div className="floating-elements-dashboard"></div>
         {/* Conditional Header Rendering */}
         {isMobile ? <MobileDashboardHeader /> : <DashboardHeader />}
         

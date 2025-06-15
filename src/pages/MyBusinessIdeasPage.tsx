@@ -10,22 +10,25 @@ import BusinessIdeasTabNavigation from '@/components/business-ideas/BusinessIdea
 const MyBusinessIdeasPage: React.FC = () => {
   return (
     <DashboardLayout>
-      <DashboardHeader>My Business Ideas</DashboardHeader>
-      <div className="p-4 md:p-6">
-        <Tabs defaultValue="ideas" className="w-full">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-            <BusinessIdeasPageHeader />
-            <BusinessIdeasTabNavigation />
-          </div>
-          
-          <TabsContent value="ideas" className="mt-0">
-            <MyBusinessIdeasTabContent />
-          </TabsContent>
-          
-          <TabsContent value="archived" className="mt-0">
-            <MyBusinessIdeasTabContent showArchivedOnly={true} />
-          </TabsContent>
-        </Tabs>
+      <div className="apple-settings">
+        <div className="floating-elements-dashboard"></div>
+        <DashboardHeader>My Business Ideas</DashboardHeader>
+        <div className="p-4 md:p-6">
+          <Tabs defaultValue="ideas" className="w-full">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+              <BusinessIdeasPageHeader />
+              <BusinessIdeasTabNavigation />
+            </div>
+            
+            <TabsContent value="ideas" className="mt-0">
+              <MyBusinessIdeasTabContent />
+            </TabsContent>
+            
+            <TabsContent value="archived" className="mt-0">
+              <MyBusinessIdeasTabContent showArchivedOnly={true} />
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
     </DashboardLayout>
   );

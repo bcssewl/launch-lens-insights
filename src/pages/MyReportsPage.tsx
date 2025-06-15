@@ -11,22 +11,25 @@ import ReportsTabNavigation from '@/components/reports/ReportsTabNavigation';
 const MyReportsPage: React.FC = () => {
   return (
     <DashboardLayout>
-      <DashboardHeader>My Reports</DashboardHeader>
-      <div className="p-4 md:p-6">
-        <Tabs defaultValue="reports" className="w-full">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-            <ReportsPageHeader />
-            <ReportsTabNavigation />
-          </div>
-          
-          <TabsContent value="reports" className="mt-0">
-            <MyReportsTabContent />
-          </TabsContent>
-          
-          <TabsContent value="business-plans" className="mt-0">
-            <MyBusinessPlansTabContent />
-          </TabsContent>
-        </Tabs>
+      <div className="apple-results">
+        <div className="floating-elements-dashboard"></div>
+        <DashboardHeader>My Reports</DashboardHeader>
+        <div className="p-4 md:p-6">
+          <Tabs defaultValue="reports" className="w-full">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+              <ReportsPageHeader />
+              <ReportsTabNavigation />
+            </div>
+            
+            <TabsContent value="reports" className="mt-0">
+              <MyReportsTabContent />
+            </TabsContent>
+            
+            <TabsContent value="business-plans" className="mt-0">
+              <MyBusinessPlansTabContent />
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
     </DashboardLayout>
   );

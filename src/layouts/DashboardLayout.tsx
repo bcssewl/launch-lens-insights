@@ -13,13 +13,13 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     <>
       <SkipNav href="#main-content">Skip to main content</SkipNav>
       <SidebarProvider>
-        <div className="min-h-screen flex w-full bg-gradient-to-br from-surface via-surface to-surface-elevated overflow-x-hidden">
+        <div className="min-h-screen flex w-full overflow-x-hidden">
           <AppSidebar />
-          <SidebarInset className="flex-1 flex flex-col overflow-x-hidden bg-surface">
+          <SidebarInset className="flex-1 flex flex-col overflow-x-hidden">
             <div className="flex flex-col h-full w-full overflow-x-hidden">
               <main 
                 id="main-content"
-                className="flex-1 overflow-y-auto overflow-x-hidden bg-surface"
+                className="flex-1 overflow-y-auto overflow-x-hidden"
                 role="main"
                 aria-label="Main content"
               >
