@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,7 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { usePitchDeckUpload } from '@/hooks/usePitchDeckUpload';
 
 interface PitchDeckUploaderProps {
-  onComplete: (uploadId: string) => void;
+  onComplete: (uploadId: string, transcriptionText?: string) => void;
   onBack: () => void;
 }
 
@@ -80,13 +79,13 @@ const PitchDeckUploader: React.FC<PitchDeckUploaderProps> = ({ onComplete, onBac
   const processDocument = async () => {
     if (!uploadedFile) return;
 
-    const uploadId = await uploadPitchDeck(uploadedFile);
+    const result = await uploadPitchDeck(uploadedFile);
     
-    if (uploadId) {
+    if (result) {
       setUploadCompleted(true);
       // Wait a moment to show the success state, then proceed
       setTimeout(() => {
-        onComplete(uploadId);
+        onComplete(result.uploadId, result.transcriptionText);
       }, 1000);
     }
   };
@@ -169,19 +168,22 @@ const PitchDeckUploader: React.FC<PitchDeckUploaderProps> = ({ onComplete, onBac
                   <span className="text-sm font-medium">
                     {uploadProgress < 50 ? 'Uploading file...' : 
                      uploadProgress < 75 ? 'Processing upload...' : 
-                     'Sending for analysis...'}
+                     'Analyzing document...'}
                   </span>
                   <span className="text-sm text-muted-foreground">{uploadProgress}%</span>
                 </div>
                 <Progress value={uploadProgress} className="w-full" />
+                <p className="text-xs text-muted-foreground text-center">
+                  This may take up to 30 seconds to process your document
+                </p>
               </div>
             )}
 
             {uploadCompleted && (
               <div className="text-center">
                 <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-2" />
-                <p className="font-medium text-green-600">Upload completed successfully!</p>
-                <p className="text-sm text-muted-foreground">Processing your document...</p>
+                <p className="font-medium text-green-600">Document processed successfully!</p>
+                <p className="text-sm text-muted-foreground">Proceeding to form...</p>
               </div>
             )}
 

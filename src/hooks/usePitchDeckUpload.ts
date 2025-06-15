@@ -23,7 +23,7 @@ export const usePitchDeckUpload = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const { user } = useAuth();
 
-  const uploadPitchDeck = async (file: File): Promise<string | null> => {
+  const uploadPitchDeck = async (file: File): Promise<{ uploadId: string; transcriptionText: string } | null> => {
     if (!user) {
       toast({
         title: "Authentication required",
@@ -92,11 +92,11 @@ export const usePitchDeckUpload = () => {
 
       console.log('Signed URL created for pitch deck:', urlData.signedUrl);
 
-      // Use Supabase Edge Function to send to n8n webhook with proper authentication
+      // Use Supabase Edge Function to send to n8n webhook and wait for response
       const { data: webhookResponse, error: webhookError } = await supabase.functions.invoke('n8n-webhook', {
         body: {
           type: 'pitch_deck',
-          file_url: urlData.signedUrl, // Use signed URL instead of public URL
+          file_url: urlData.signedUrl,
           upload_id: uploadRecord.id,
           user_id: user.id,
           file_name: file.name,
@@ -120,10 +120,14 @@ export const usePitchDeckUpload = () => {
 
       toast({
         title: "Upload successful",
-        description: "Your pitch deck is being processed. You'll be notified when it's ready.",
+        description: "Your pitch deck has been processed successfully.",
       });
 
-      return uploadRecord.id;
+      // Return both upload ID and transcription text from webhook response
+      return {
+        uploadId: uploadRecord.id,
+        transcriptionText: webhookResponse.result || ''
+      };
 
     } catch (error) {
       console.error('Upload failed:', error);

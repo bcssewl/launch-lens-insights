@@ -182,96 +182,19 @@ const FormFlowManager: React.FC<FormFlowManagerProps> = ({
     setCurrentFlow('form_steps');
   };
 
-  const handlePitchDeckComplete = async (uploadId: string) => {
-    console.log('Pitch deck upload completed:', uploadId);
+  const handlePitchDeckComplete = async (uploadId: string, transcriptionText?: string) => {
+    console.log('Pitch deck upload completed:', { uploadId, transcriptionText });
     setPitchDeckUploadId(uploadId);
     
-    try {
-      // Poll for transcription completion with longer timeout for document processing
-      const maxAttempts = 120; // 20 minutes max wait time (10 seconds * 120)
-      let attempts = 0;
-      
-      const pollForTranscription = async (): Promise<void> => {
-        attempts++;
-        console.log(`Polling for transcription, attempt ${attempts}/${maxAttempts}`);
-        
-        const { data: upload, error } = await supabase
-          .from('pitch_deck_uploads')
-          .select('transcription_text, processing_status')
-          .eq('id', uploadId)
-          .single();
-        
-        if (error) {
-          console.error('Error fetching upload status:', error);
-          throw error;
-        }
-        
-        console.log('Upload status:', upload);
-        
-        if (upload.transcription_text && upload.processing_status === 'completed') {
-          console.log('Transcription completed:', upload.transcription_text);
-          
-          // Parse the extracted data from the transcription
-          const parsedFormData = parseFormDataFromTranscription(upload.transcription_text);
-          setExtractedData(parsedFormData);
-          setCurrentFlow('form_steps');
-          return;
-        }
-        
-        if (upload.processing_status === 'failed') {
-          console.error('Processing failed for upload:', uploadId);
-          // Use fallback data
-          setExtractedData({
-            ideaName: "Document-based Idea",
-            oneLineDescription: "Processing failed - please fill in manually",
-            problemStatement: "Please describe your problem statement",
-            solutionDescription: "Please describe your solution",
-            targetCustomer: "B2C",
-            customerSegment: "Please specify your target customer segment",
-            geographicFocus: ["United States"],
-            revenueModel: "One-time Purchase",
-            expectedPricing: 25,
-            knownCompetitors: "",
-            primaryGoal: "Validate Market Demand",
-            timeline: "Building this month"
-          });
-          setCurrentFlow('form_steps');
-          return;
-        }
-        
-        if (attempts < maxAttempts) {
-          // Continue polling
-          setTimeout(pollForTranscription, 10000); // Poll every 10 seconds
-        } else {
-          console.warn('Transcription polling timed out after 20 minutes');
-          // Use fallback data and proceed
-          setExtractedData({
-            ideaName: "Document-based Idea", 
-            oneLineDescription: "Processing is taking longer than expected - please fill in manually",
-            problemStatement: "Please describe your problem statement",
-            solutionDescription: "Please describe your solution",
-            targetCustomer: "B2C",
-            customerSegment: "Please specify your target customer segment",
-            geographicFocus: ["United States"],
-            revenueModel: "One-time Purchase",
-            expectedPricing: 25,
-            knownCompetitors: "",
-            primaryGoal: "Validate Market Demand",
-            timeline: "Building this month"
-          });
-          setCurrentFlow('form_steps');
-        }
-      };
-      
-      // Start polling
-      pollForTranscription();
-      
-    } catch (error) {
-      console.error('Error processing pitch deck upload:', error);
-      // Use fallback data and proceed
+    if (transcriptionText) {
+      // Parse the extracted data from the transcription
+      const parsedFormData = parseFormDataFromTranscription(transcriptionText);
+      setExtractedData(parsedFormData);
+    } else {
+      // Use fallback data if no transcription
       setExtractedData({
         ideaName: "Document-based Idea",
-        oneLineDescription: "An error occurred during processing - please fill in manually",
+        oneLineDescription: "Please review and edit the extracted information",
         problemStatement: "Please describe your problem statement",
         solutionDescription: "Please describe your solution",
         targetCustomer: "B2C",
@@ -283,8 +206,9 @@ const FormFlowManager: React.FC<FormFlowManagerProps> = ({
         primaryGoal: "Validate Market Demand",
         timeline: "Building this month"
       });
-      setCurrentFlow('form_steps');
     }
+    
+    setCurrentFlow('form_steps');
   };
 
   const handleDataReviewConfirm = (data: Partial<IdeaValidationFormData>) => {
