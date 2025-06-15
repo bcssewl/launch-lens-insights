@@ -44,16 +44,19 @@ serve(async (req) => {
     let webhookUrl = ''
     let webhookPayload = {}
 
+    // Create base user object
+    const baseUser = userInfo || {
+      id: user.id,
+      email: user.email,
+      full_name: user.user_metadata?.full_name || null,
+      created_at: user.created_at
+    }
+
     if (type === 'validation') {
       // Original validation webhook
       webhookUrl = Deno.env.get('N8N_WEBHOOK_URL') ?? ''
       webhookPayload = {
-        user: userInfo || {
-          id: user.id,
-          email: user.email,
-          full_name: user.user_metadata?.full_name || null,
-          created_at: user.created_at
-        },
+        user: baseUser,
         auth_token: token,
         ...payload
       }
@@ -61,12 +64,7 @@ serve(async (req) => {
       // Audio recording webhook
       webhookUrl = 'https://n8n-launchlens.botica.it.com/webhook/voice-transcribe-form'
       webhookPayload = {
-        user: userInfo || {
-          id: user.id,
-          email: user.email,
-          full_name: user.user_metadata?.full_name || null,
-          created_at: user.created_at
-        },
+        user: baseUser,
         auth_token: token,
         voice_url: payload.voice_url,
         recording_id: payload.recording_id,
@@ -78,12 +76,7 @@ serve(async (req) => {
       // Pitch deck upload webhook
       webhookUrl = 'https://n8n-launchlens.botica.it.com/webhook/presentation-transcribe-form'
       webhookPayload = {
-        user: userInfo || {
-          id: user.id,
-          email: user.email,
-          full_name: user.user_metadata?.full_name || null,
-          created_at: user.created_at
-        },
+        user: baseUser,
         auth_token: token,
         file_url: payload.file_url,
         upload_id: payload.upload_id,
@@ -96,7 +89,7 @@ serve(async (req) => {
     }
 
     console.log(`Sending ${type} webhook to:`, webhookUrl)
-    console.log('Request body:', webhookPayload)
+    console.log('Request body:', JSON.stringify(webhookPayload, null, 2))
 
     const response = await fetch(webhookUrl, {
       method: 'POST',
