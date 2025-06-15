@@ -24,34 +24,34 @@ export const HeroSection = () => {
   };
 
   return (
-    <section className="relative min-h-screen apple-hero flex items-center justify-center overflow-hidden pt-16 md:pt-20">
+    <section className="relative min-h-screen apple-hero flex items-center justify-center overflow-hidden pt-24 md:pt-32">
       <FloatingElements />
       
       <div className="apple-container relative z-10 text-center">
         {/* Social Proof Bar */}
-        <div className="flex flex-wrap justify-center items-center gap-4 mb-6 text-xs text-muted-foreground">
-          <div className="flex items-center gap-1.5">
-            <Users className="w-3 h-3" />
+        <div className="flex flex-wrap justify-center items-center gap-6 mb-8 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <Users className="w-4 h-4" />
             <span>10,000+ founders</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <Star className="w-3 h-3 text-yellow-500" />
+          <div className="flex items-center gap-2">
+            <Star className="w-4 h-4 text-yellow-500" />
             <span>4.9/5 rating</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <Zap className="w-3 h-3 text-primary" />
+          <div className="flex items-center gap-2">
+            <Zap className="w-4 h-4 text-primary" />
             <span>5-minute setup</span>
           </div>
         </div>
 
         {/* Badge */}
-        <div className="apple-badge mb-6 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs">
-          <CheckCircle className="w-3 h-3" />
+        <div className="apple-badge mb-8 inline-flex items-center gap-2">
+          <CheckCircle className="w-4 h-4" />
           <span>Trusted by 10,000+ founders</span>
         </div>
         
         {/* Main Headline */}
-        <h1 className="text-3xl md:text-4xl lg:text-5xl font-semibold mb-6 max-w-3xl mx-auto leading-tight">
+        <h1 className="apple-heading max-w-4xl mx-auto">
           Presenting the future of
           <br />
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-accent to-primary">
@@ -60,37 +60,37 @@ export const HeroSection = () => {
         </h1>
         
         {/* Subtitle with better line length */}
-        <div className="max-w-xl mx-auto mb-8">
-          <p className="text-base md:text-lg text-muted-foreground mb-4 leading-relaxed">
+        <div className="max-w-2xl mx-auto mb-12">
+          <p className="apple-subheading mb-6">
             Deep market insights. Strategic roadmaps. Intelligence that empowers better decisions
           </p>
           
           {/* Key Benefits List */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs text-muted-foreground">
-            <div className="flex items-center justify-center gap-1.5">
-              <CheckCircle className="w-3 h-3 text-green-500" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-muted-foreground">
+            <div className="flex items-center justify-center gap-2">
+              <CheckCircle className="w-4 h-4 text-green-500" />
               <span>Instant validation</span>
             </div>
-            <div className="flex items-center justify-center gap-1.5">
-              <CheckCircle className="w-3 h-3 text-green-500" />
+            <div className="flex items-center justify-center gap-2">
+              <CheckCircle className="w-4 h-4 text-green-500" />
               <span>Market analysis</span>
             </div>
-            <div className="flex items-center justify-center gap-1.5">
-              <CheckCircle className="w-3 h-3 text-green-500" />
+            <div className="flex items-center justify-center gap-2">
+              <CheckCircle className="w-4 h-4 text-green-500" />
               <span>Strategic roadmap</span>
             </div>
           </div>
         </div>
         
         {/* CTA Buttons */}
-        <div className="flex flex-col sm:flex-row gap-3 justify-center items-center mb-12">
-          <Button size="default" className="apple-button min-w-[180px]" asChild>
+        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-20">
+          <Button size="lg" className="apple-button text-lg min-w-[220px]" asChild>
             <Link to="/signup">
               Validate My Idea
-              <ArrowRight className="ml-2 w-4 h-4" />
+              <ArrowRight className="ml-2 w-5 h-5" />
             </Link>
           </Button>
-          <Button size="default" variant="outline" className="apple-button-outline min-w-[180px]" onClick={handleSeeHowItWorks}>
+          <Button size="lg" variant="outline" className="apple-button-outline text-lg min-w-[220px]" onClick={handleSeeHowItWorks}>
             See How It Works
           </Button>
         </div>
