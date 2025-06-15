@@ -4,6 +4,7 @@ import DashboardLayout from '@/layouts/DashboardLayout';
 import IdeaValidationForm from '@/components/IdeaValidationForm';
 import DashboardHeader from '@/components/DashboardHeader';
 import MobileDashboardHeader from '@/components/mobile/MobileDashboardHeader';
+import { FloatingElements } from '@/components/landing/FloatingElements';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const ValidateIdeaPage: React.FC = () => {
@@ -11,7 +12,8 @@ const ValidateIdeaPage: React.FC = () => {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10 overflow-x-hidden">
+      <div className="apple-hero overflow-x-hidden">
+        <FloatingElements />
         {isMobile ? (
           <MobileDashboardHeader title="Idea Validation" />
         ) : (

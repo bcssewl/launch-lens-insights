@@ -2,6 +2,7 @@
 import React from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import DashboardHeader from '@/components/DashboardHeader';
+import { FloatingElements } from '@/components/landing/FloatingElements';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 import MyReportsTabContent from '@/components/reports/MyReportsTabContent';
 import MyBusinessPlansTabContent from '@/components/reports/MyBusinessPlansTabContent';
@@ -11,8 +12,8 @@ import ReportsTabNavigation from '@/components/reports/ReportsTabNavigation';
 const MyReportsPage: React.FC = () => {
   return (
     <DashboardLayout>
-      <div className="apple-results">
-        <div className="floating-elements-dashboard"></div>
+      <div className="apple-hero">
+        <FloatingElements />
         <DashboardHeader>My Reports</DashboardHeader>
         <div className="p-4 md:p-6">
           <Tabs defaultValue="reports" className="w-full">

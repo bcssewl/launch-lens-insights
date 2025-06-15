@@ -11,6 +11,7 @@ import DashboardQuickActions from '@/components/dashboard/DashboardQuickActions'
 import DashboardMetrics from '@/components/dashboard/DashboardMetrics';
 import DashboardContent from '@/components/dashboard/DashboardContent';
 import WelcomeAnimation from '@/components/WelcomeAnimation';
+import { FloatingElements } from '@/components/landing/FloatingElements';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -24,8 +25,8 @@ const DashboardPage: React.FC = () => {
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="apple-dashboard">
-          <div className="floating-elements-dashboard"></div>
+        <div className="apple-hero">
+          <FloatingElements />
           {isMobile ? <MobileDashboardHeader /> : <DashboardHeader />}
           <div className={isMobile ? "mobile-container space-y-4" : "p-4 md:p-6 lg:p-8 space-y-6 md:space-y-8"}>
             {/* Quick Action Section */}
@@ -54,8 +55,8 @@ const DashboardPage: React.FC = () => {
 
   return (
     <DashboardLayout>
-      <div className="apple-dashboard">
-        <div className="floating-elements-dashboard"></div>
+      <div className="apple-hero">
+        <FloatingElements />
         {/* Conditional Header Rendering */}
         {isMobile ? <MobileDashboardHeader /> : <DashboardHeader />}
         
