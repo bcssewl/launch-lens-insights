@@ -1,9 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { Maximize2, Minimize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import DashboardLayout from '@/layouts/DashboardLayout';
-import DashboardHeader from '@/components/DashboardHeader';
-import MobileDashboardHeader from '@/components/mobile/MobileDashboardHeader';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import ChatMessage from '@/components/assistant/ChatMessage';
 import ChatSidebar from '@/components/assistant/ChatSidebar';
@@ -15,6 +13,8 @@ import { useMessages } from '@/hooks/useMessages';
 import { formatTimestamp } from '@/constants/aiAssistant';
 import { useIsMobile } from '@/hooks/use-mobile';
 import ChatEmptyState from '@/components/assistant/ChatEmptyState';
+import { AppSidebar } from '@/components/AppSidebar';
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 
 const AIAssistantPage: React.FC = () => {
   const isMobile = useIsMobile();
@@ -92,6 +92,7 @@ const AIAssistantPage: React.FC = () => {
         {/* Subheader with fullscreen toggle */}
         <div className="p-6 border-b border-border/50 bg-background/50 backdrop-blur-xl flex-shrink-0 rounded-t-3xl mx-4 mt-4 flex items-center justify-between z-10">
           <div>
+            <h1 className="text-2xl font-semibold text-primary mb-1">AI Assistant</h1>
             <p className="text-sm text-muted-foreground">
               {isConfigured ? 'AI-powered startup advisor' : 'AI service not configured'}
               {currentSessionId && (
@@ -167,7 +168,7 @@ const AIAssistantPage: React.FC = () => {
     </div>
   );
 
-  // Fullscreen mode - render without dashboard layout
+  // Fullscreen mode - render without any layout wrapper
   if (isFullscreen) {
     return (
       <div className="bg-gradient-to-br from-background via-background to-muted/10 min-h-screen">
@@ -176,19 +177,18 @@ const AIAssistantPage: React.FC = () => {
     );
   }
 
-  // Normal mode - render with dashboard layout
+  // Normal mode - render with main sidebar but independent layout
   return (
-    <DashboardLayout>
-      <div className="bg-gradient-to-br from-background via-background to-muted/10 min-h-screen">
-        {/* Mobile Header */}
-        {isMobile && <MobileDashboardHeader title="AI Assistant" />}
-        
-        {/* Desktop Header */}
-        {!isMobile && <DashboardHeader>AI Assistant</DashboardHeader>}
-        
-        {chatContent}
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full overflow-x-hidden">
+        <AppSidebar />
+        <SidebarInset className="flex-1 flex flex-col overflow-x-hidden">
+          <div className="bg-gradient-to-br from-background via-background to-muted/10 min-h-screen">
+            {chatContent}
+          </div>
+        </SidebarInset>
       </div>
-    </DashboardLayout>
+    </SidebarProvider>
   );
 };
 
