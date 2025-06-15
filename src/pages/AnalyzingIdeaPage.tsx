@@ -49,26 +49,10 @@ const AnalyzingIdeaPage: React.FC = () => {
       title: "Retrying Analysis",
       description: "Starting a new analysis of your idea...",
     });
-    // Navigate back to validation form to retry
     navigate('/dashboard/validate');
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen apple-dashboard-bg">
-        <DashboardHeader>Analyzing Your Idea</DashboardHeader>
-        <div className="container mx-auto p-6">
-          <div className="flex items-center justify-center h-64">
-            <div className="text-center">
-              <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
-              <p className="text-gray-600">Loading analysis status...</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
+  // Show error state if there's an error
   if (error) {
     return (
       <div className="min-h-screen apple-dashboard-bg">
@@ -99,18 +83,19 @@ const AnalyzingIdeaPage: React.FC = () => {
     );
   }
 
+  // Default to 'generating' status if no reportStatus yet
+  const currentStatus = reportStatus?.status || 'generating';
+
   return (
     <div className="min-h-screen apple-dashboard-bg">
       <DashboardHeader>Analyzing Your Idea</DashboardHeader>
       <div className="container mx-auto p-6">
         <div className="max-w-4xl mx-auto space-y-6">
-          {/* Enhanced Analysis Loader */}
-          {reportStatus && (
-            <EnhancedAnalysisLoader 
-              status={reportStatus.status} 
-              useAnimation={true}
-            />
-          )}
+          {/* Enhanced Analysis Loader - now shows by default */}
+          <EnhancedAnalysisLoader 
+            status={currentStatus} 
+            useAnimation={true}
+          />
 
           {/* What's Happening Section */}
           <Card className="apple-card bg-white/80 backdrop-blur-xl border-0">
