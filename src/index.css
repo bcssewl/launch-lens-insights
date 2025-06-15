@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -5,29 +6,35 @@
 @layer base {
   :root {
     /* Light Mode (Default) */
-    --background: 255 100% 100%; /* #FFFFFF */
+    --background: 0 0% 100%; /* #FFFFFF */
     --foreground: 220 29% 10%;    /* #111827 */
 
-    --card: 245 100% 99%;        /* #F9FAFB */
+    --card: 0 0% 98%;        /* #FAFAFA - Updated surface color */
     --card-foreground: 220 29% 10%; /* #111827 */
 
-    --popover: 255 100% 100%;     /* #FFFFFF */
+    --popover: 0 0% 100%;     /* #FFFFFF */
     --popover-foreground: 220 29% 10%; /* #111827 */
 
     --primary: 251 91% 69%;       /* #8B5CF6 */
-    --primary-foreground: 255 100% 100%; /* #FFFFFF */
+    --primary-foreground: 0 0% 100%; /* #FFFFFF */
+    --primary-hover: 251 95% 63%;    /* #7C3AED */
+    --primary-active: 253 97% 57%;   /* #6D28D9 */
 
-    --secondary: 245 100% 99%;     /* #F9FAFB */
+    --secondary: 0 0% 98%;     /* #FAFAFA */
     --secondary-foreground: 220 29% 10%; /* #111827 */
 
-    --muted: 245 100% 99%;          /* #F9FAFB */
+    --muted: 0 0% 98%;          /* #FAFAFA */
     --muted-foreground: 220 10% 40%; /* #6B7280 */
 
     --accent: 246 100% 94%;        /* #DDD6FE */
     --accent-foreground: 251 91% 69%; /* #8B5CF6 */
+    --accent-hover: 249 100% 88%;    /* #C4B5FD */
+
+    --surface: 0 0% 98%;           /* #FAFAFA */
+    --surface-elevated: 0 0% 100%; /* #FFFFFF */
 
     --destructive: 0 72% 51%;     /* #DC2626 */
-    --destructive-foreground: 255 100% 100%; /* #FFFFFF */
+    --destructive-foreground: 0 0% 100%; /* #FFFFFF */
 
     --border: 240 6% 90%;         /* #E5E7EB */
     --input: 240 6% 90%;          /* #E5E7EB */
@@ -41,32 +48,38 @@
   }
 
   .dark {
-    --background: 240 0% 6%;      /* #0F0F0F */
+    --background: 0 0% 7%;      /* #111111 - Updated background */
     --foreground: 0 0% 100%;       /* #FFFFFF */
 
-    --card: 240 0% 10%;         /* #1A1A1A */
+    --card: 0 0% 12%;         /* #1F1F1F - Updated surface */
     --card-foreground: 0 0% 100%;  /* #FFFFFF */
 
-    --popover: 240 0% 6%;       /* #0F0F0F */
+    --popover: 0 0% 7%;       /* #111111 */
     --popover-foreground: 0 0% 100%; /* #FFFFFF */
 
-    --primary: 279 97% 40%;      /* #6A0DAD */
+    --primary: 251 91% 69%;      /* #8B5CF6 - Keep consistent */
     --primary-foreground: 0 0% 100%; /* #FFFFFF */
+    --primary-hover: 250 100% 76%;   /* #A78BFA */
+    --primary-active: 249 100% 88%;  /* #C4B5FD */
 
-    --secondary: 240 0% 10%;      /* #1A1A1A */
+    --secondary: 0 0% 12%;      /* #1F1F1F */
     --secondary-foreground: 0 0% 100%; /* #FFFFFF */
 
-    --muted: 240 0% 10%;           /* #1A1A1A */
+    --muted: 0 0% 12%;           /* #1F1F1F */
     --muted-foreground: 240 5% 84%; /* #D1D5DB */
 
     --accent: 271 91% 65%;       /* #A855F7 */
     --accent-foreground: 0 0% 100%; /* #FFFFFF */
+    --accent-hover: 270 95% 75%;     /* #C084FC */
+
+    --surface: 0 0% 12%;           /* #1F1F1F */
+    --surface-elevated: 0 0% 15%;  /* #262626 */
 
     --destructive: 0 84% 60%;    /* #EF4444 */
     --destructive-foreground: 0 0% 100%; /* #FFFFFF */
 
-    --border: 240 0% 15%;        /* #262626 */
-    --input: 240 0% 15%;         /* #262626 */
+    --border: 0 0% 15%;        /* #262626 */
+    --input: 0 0% 15%;         /* #262626 */
     --ring: 271 91% 65%;         /* #A855F7 */
 
     /* Custom success/warning */

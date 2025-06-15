@@ -35,6 +35,8 @@ export default {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          hover: "hsl(var(--primary-hover))",
+          active: "hsl(var(--primary-active))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -51,6 +53,7 @@ export default {
         accent: {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
+          hover: "hsl(var(--accent-hover))",
         },
         popover: {
           DEFAULT: "hsl(var(--popover))",
@@ -60,23 +63,33 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // Custom Launch Lens colors
+        surface: {
+          DEFAULT: "hsl(var(--surface))",
+          elevated: "hsl(var(--surface-elevated))",
+        },
+        // Custom Launch Lens colors - Updated to match new palette
         launchlens: {
           // Dark Mode
-          "primary-dark": "#6A0DAD",      // Deep violet
-          "background-dark": "#0F0F0F",   // Rich charcoal
-          "surface-dark": "#1A1A1A",      // Elevated dark
-          "accent-dark": "#A855F7",       // Electric purple
+          "primary-dark": "#8B5CF6",      // Consistent with main primary
+          "background-dark": "#111111",   // Updated background
+          "surface-dark": "#1F1F1F",      // Updated surface
+          "surface-elevated-dark": "#262626", // New elevated surface
+          "accent-dark": "#A855F7",       // Updated accent
+          "accent-hover-dark": "#C084FC", // New accent hover
           "success-dark": "#10B981",      // Emerald
           "warning-dark": "#F59E0B",      // Amber
           "danger-dark": "#EF4444",       // Rose
           "text-primary-dark": "#FFFFFF",
           "text-secondary-dark": "#D1D5DB",
           // Light Mode
-          "primary-light": "#8B5CF6",     // Refined violet
+          "primary-light": "#8B5CF6",     // Consistent primary
+          "primary-hover-light": "#7C3AED", // New primary hover
+          "primary-active-light": "#6D28D9", // New primary active
           "background-light": "#FFFFFF",  // Pure white
-          "surface-light": "#F9FAFB",     // Soft gray
+          "surface-light": "#FAFAFA",     // Updated surface
+          "surface-elevated-light": "#FFFFFF", // Elevated surface
           "accent-light": "#DDD6FE",      // Lavender
+          "accent-hover-light": "#C4B5FD", // New accent hover
           "success-light": "#059669",     // Green
           "warning-light": "#D97706",     // Orange
           "danger-light": "#DC2626",      // Red
