@@ -1,4 +1,3 @@
-
 import { cn } from "@/lib/utils"
 import { TestimonialCard, TestimonialAuthor } from "@/components/ui/testimonial-card"
 
@@ -21,7 +20,7 @@ export function TestimonialsSection({
 }: TestimonialsSectionProps) {
   return (
     <section className={cn(
-      "apple-section bg-gray-200/80 dark:bg-gray-900/95",
+      "apple-section",
       className
     )}>
       <div className="apple-container">

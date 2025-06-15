@@ -1,9 +1,8 @@
-
 import { TrendingUp, Clock, DollarSign, Users } from "lucide-react";
 
 export const WhyNowSection = () => {
   return (
-    <section className="apple-section bg-white/50 dark:bg-gray-900/50">
+    <section className="apple-section">
       <div className="apple-container">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
