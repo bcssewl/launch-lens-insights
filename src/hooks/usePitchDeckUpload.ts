@@ -59,14 +59,6 @@ export const usePitchDeckUpload = () => {
       console.log('File uploaded successfully:', uploadData);
       setUploadProgress(50);
 
-      // Get the public URL for the uploaded file
-      const { data: urlData } = supabase.storage
-        .from('pitch-deck-files')
-        .getPublicUrl(fileName);
-
-      const fileUrl = urlData.publicUrl;
-      console.log('File URL:', fileUrl);
-
       // Create record in pitch_deck_uploads table
       const { data: uploadRecord, error: recordError } = await supabase
         .from('pitch_deck_uploads')
@@ -89,11 +81,22 @@ export const usePitchDeckUpload = () => {
       console.log('Upload record created:', uploadRecord);
       setUploadProgress(75);
 
+      // Create a signed URL for the uploaded file (1 hour expiry)
+      const { data: urlData } = await supabase.storage
+        .from('pitch-deck-files')
+        .createSignedUrl(fileName, 3600); // 1 hour expiry
+
+      if (!urlData?.signedUrl) {
+        throw new Error('Failed to get file URL');
+      }
+
+      console.log('Signed URL created for pitch deck:', urlData.signedUrl);
+
       // Use Supabase Edge Function to send to n8n webhook with proper authentication
       const { data: webhookResponse, error: webhookError } = await supabase.functions.invoke('n8n-webhook', {
         body: {
           type: 'pitch_deck',
-          file_url: fileUrl,
+          file_url: urlData.signedUrl, // Use signed URL instead of public URL
           upload_id: uploadRecord.id,
           user_id: user.id,
           file_name: file.name,
