@@ -8,28 +8,27 @@ interface RecommendationBadgeProps {
 }
 
 const RecommendationBadge: React.FC<RecommendationBadgeProps> = ({ recommendation }) => {
-  let badgeVariant: "default" | "destructive" | "secondary" = "secondary";
-  let textColor = "text-foreground";
+  let badgeVariant: "default" | "destructive" | "success" | "warning" | "error" | "info" = "info";
   let badgeText = recommendation.toUpperCase();
 
   if (recommendation.toLowerCase().includes("proceed")) {
-    badgeVariant = "default"; // Uses primary color
-    textColor = "text-primary-foreground";
+    badgeVariant = "success";
     badgeText = `🟢 ${badgeText}`;
   } else if (recommendation.toLowerCase().includes("high risk")) {
-    badgeVariant = "destructive";
-    textColor = "text-destructive-foreground";
+    badgeVariant = "error";
     badgeText = `🔴 ${badgeText}`;
   } else if (recommendation.toLowerCase().includes("mixed signals")) {
-    // Using secondary for yellow-ish, assuming theme supports it
-    // Or could use outline with a specific yellow border/text if theme doesn't have a good yellow
-    badgeVariant = "secondary" 
-    textColor = "text-yellow-600 dark:text-yellow-400 border border-yellow-500/50";
+    badgeVariant = "warning";
     badgeText = `🟡 ${badgeText}`;
   }
 
   return (
-    <Badge variant={badgeVariant} className={cn("text-xs sm:text-sm px-3 py-1.5 break-words whitespace-normal text-center max-w-full", textColor)}>
+    <Badge 
+      variant={badgeVariant} 
+      className={cn(
+        "text-xs sm:text-sm px-3 py-1.5 break-words whitespace-normal text-center max-w-full"
+      )}
+    >
       {badgeText}
     </Badge>
   );

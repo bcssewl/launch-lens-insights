@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -79,9 +80,31 @@ export default {
           disabled: "hsl(var(--text-disabled))",
           inverse: "hsl(var(--text-inverse))",
         },
-        // Success/Warning colors
-        success: "hsl(var(--success))",
-        warning: "hsl(var(--warning))",
+        // Refined Status Colors
+        success: {
+          DEFAULT: "hsl(var(--success))",
+          foreground: "hsl(var(--success-foreground))",
+          background: "hsl(var(--success-background))",
+          border: "hsl(var(--success-border))",
+        },
+        warning: {
+          DEFAULT: "hsl(var(--warning))",
+          foreground: "hsl(var(--warning-foreground))",
+          background: "hsl(var(--warning-background))",
+          border: "hsl(var(--warning-border))",
+        },
+        error: {
+          DEFAULT: "hsl(var(--error))",
+          foreground: "hsl(var(--error-foreground))",
+          background: "hsl(var(--error-background))",
+          border: "hsl(var(--error-border))",
+        },
+        info: {
+          DEFAULT: "hsl(var(--info))",
+          foreground: "hsl(var(--info-foreground))",
+          background: "hsl(var(--info-background))",
+          border: "hsl(var(--info-border))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

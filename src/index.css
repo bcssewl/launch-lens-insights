@@ -51,9 +51,26 @@
 
     --radius: 0.5rem;
 
-    /* Custom success/warning */
-    --success: 145 92% 30%;           /* #059669 */
-    --warning: 30 95% 44%;            /* #D97706 */
+    /* Refined Status Colors - Light Mode */
+    --success: 158 100% 40%;          /* #059669 */
+    --success-foreground: 0 0% 100%;  /* #FFFFFF */
+    --success-background: 154 60% 93%; /* #D1FAE5 */
+    --success-border: 158 93% 35%;    /* #047857 */
+
+    --warning: 32 95% 44%;            /* #D97706 */
+    --warning-foreground: 0 0% 100%;  /* #FFFFFF */
+    --warning-background: 48 96% 89%; /* #FEF3C7 */
+    --warning-border: 33 100% 38%;    /* #B45309 */
+
+    --error: 0 72% 51%;               /* #DC2626 */
+    --error-foreground: 0 0% 100%;    /* #FFFFFF */
+    --error-background: 0 86% 93%;    /* #FEE2E2 */
+    --error-border: 0 73% 42%;        /* #B91C1C */
+
+    --info: 221 83% 53%;              /* #2563EB */
+    --info-foreground: 0 0% 100%;     /* #FFFFFF */
+    --info-background: 214 95% 93%;   /* #DBEAFE */
+    --info-border: 224 87% 48%;       /* #1D4ED8 */
   }
 
   .dark {
@@ -103,9 +120,26 @@
     --text-disabled: 220 13% 46%;     /* #6B7280 - Disabled states */
     --text-inverse: 220 29% 10%;      /* #111827 - On light backgrounds */
 
-    /* Custom success/warning */
+    /* Refined Status Colors - Dark Mode */
     --success: 158 81% 40%;           /* #10B981 */
+    --success-foreground: 0 0% 100%;  /* #FFFFFF */
+    --success-background: 158 90% 15%; /* #064E3B */
+    --success-border: 158 93% 35%;    /* #047857 */
+
     --warning: 36 93% 50%;            /* #F59E0B */
+    --warning-foreground: 0 0% 100%;  /* #FFFFFF */
+    --warning-background: 33 100% 23%; /* #78350F */
+    --warning-border: 32 95% 44%;     /* #D97706 */
+
+    --error: 0 84% 60%;               /* #EF4444 */
+    --error-foreground: 0 0% 100%;    /* #FFFFFF */
+    --error-background: 0 75% 25%;    /* #7F1D1D */
+    --error-border: 0 72% 51%;        /* #DC2626 */
+
+    --info: 214 95% 68%;              /* #3B82F6 */
+    --info-foreground: 0 0% 100%;     /* #FFFFFF */
+    --info-background: 223 87% 23%;   /* #1E3A8A */
+    --info-border: 221 83% 53%;       /* #2563EB */
   }
 }
 
