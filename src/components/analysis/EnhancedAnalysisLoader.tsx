@@ -76,9 +76,7 @@ const EnhancedAnalysisLoader: React.FC<EnhancedAnalysisLoaderProps> = ({
             </div>
             
             <div className="mt-6 space-y-2">
-              <h2 className="font-semibold tracking-tight text-[launchlens-background-light] text-zinc-600">
-                AI Analysis in Progress
-              </h2>
+              <h2 className="font-semibold tracking-tight text-[launchlens-background-light] text-zinc-600">Analyzing Your Vision</h2>
               <p className="text-lg text-gray-600">
                 Analyzing your startup idea across multiple dimensions
               </p>
