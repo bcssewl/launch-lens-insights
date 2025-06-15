@@ -6,10 +6,12 @@ import { WhyNowSection } from "@/components/landing/WhyNowSection";
 import { FeaturesSection } from "@/components/landing/FeaturesSection";
 import { HowItWorksSection } from "@/components/landing/HowItWorksSection";
 import { PricingSection } from "@/components/landing/PricingSection";
+import { FloatingElements } from "@/components/landing/FloatingElements";
 
 export default function LandingPage() {
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen apple-hero">
+      <FloatingElements />
       <LandingNavbar />
       <main className="flex-grow">
         <HeroSection />
