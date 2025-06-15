@@ -24,10 +24,10 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ recentActivities, h
   return (
     <section className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       {/* Recent Activity Feed */}
-      <ShadcnCard className="lg:col-span-2 apple-card border-0 shadow-lg">
+      <ShadcnCard className="lg:col-span-2 bg-surface-elevated border-border-subtle shadow-lg hover:bg-surface-elevated-2 transition-colors">
         <ShadcnCardHeader className="pb-4">
           <div className="flex items-center justify-between">
-            <ShadcnCardTitle className="text-xl font-semibold text-primary">Recent Activity</ShadcnCardTitle>
+            <ShadcnCardTitle className="text-xl font-semibold text-text-primary">Recent Activity</ShadcnCardTitle>
             {hasValidatedIdeas && (
               <Button asChild variant="outline" size="sm">
                 <Link to="/dashboard/ideas">
@@ -56,8 +56,8 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ recentActivities, h
               <div className="w-16 h-16 mx-auto mb-4 bg-primary/10 rounded-2xl flex items-center justify-center">
                 <Lightbulb className="w-8 h-8 text-primary" />
               </div>
-              <p className="text-secondary text-sm mb-4">No recent activity yet.</p>
-              <Button variant="outline" className="apple-button-outline" asChild>
+              <p className="text-text-secondary text-sm mb-4">No recent activity yet.</p>
+              <Button variant="outline" className="border-border-subtle hover:bg-surface-elevated-2" asChild>
                 <Link to="/dashboard/validate">
                   <Lightbulb className="mr-2 h-4 w-4" />
                   Validate Your First Idea

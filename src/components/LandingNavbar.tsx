@@ -34,7 +34,7 @@ export function LandingNavbar() {
       <nav 
         className={`fixed top-0 left-0 right-0 z-50 px-6 md:px-10 transition-all duration-300 ${
           isScrolled 
-            ? 'py-2 bg-background/95 backdrop-blur-md shadow-md border-b border-border' 
+            ? 'py-2 bg-surface/95 backdrop-blur-md shadow-md border-b border-border-subtle' 
             : 'py-4 bg-transparent backdrop-blur-sm'
         }`}
       >
@@ -45,19 +45,19 @@ export function LandingNavbar() {
           <div className="hidden md:flex items-center space-x-4">
             {user ? (
               <>
-                <Button variant="ghost" asChild>
+                <Button variant="ghost" asChild className="text-text-secondary hover:text-text-primary">
                   <Link to="/dashboard">Dashboard</Link>
                 </Button>
-                <Button variant="outline" onClick={handleSignOut}>
+                <Button variant="outline" onClick={handleSignOut} className="border-border-subtle hover:bg-surface-elevated">
                   Sign Out
                 </Button>
               </>
             ) : (
               <>
-                <Button variant="ghost" asChild>
+                <Button variant="ghost" asChild className="text-text-secondary hover:text-text-primary">
                   <Link to="/login">Login</Link>
                 </Button>
-                <Button className="gradient-button" asChild>
+                <Button className="bg-primary text-primary-foreground hover:bg-primary-hover" asChild>
                   <Link to="/signup">Sign Up</Link>
                 </Button>
               </>
@@ -72,7 +72,7 @@ export function LandingNavbar() {
               variant="ghost"
               size="icon"
               onClick={() => setIsMobileMenuOpen(true)}
-              className="text-foreground"
+              className="text-text-primary"
             >
               <Menu className="h-6 w-6" />
             </Button>
@@ -82,10 +82,10 @@ export function LandingNavbar() {
 
       {/* Mobile Drawer */}
       <Drawer open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-        <DrawerContent className="h-full max-h-[100vh] w-[60%] ml-auto bg-background border-l border-border rounded-none">
-          <DrawerHeader className="border-b border-border">
+        <DrawerContent className="h-full max-h-[100vh] w-[60%] ml-auto bg-surface-elevated border-l border-border-subtle rounded-none">
+          <DrawerHeader className="border-b border-border-subtle">
             <div className="flex items-center justify-between">
-              <DrawerTitle className="text-lg font-semibold">Menu</DrawerTitle>
+              <DrawerTitle className="text-lg font-semibold text-text-primary">Menu</DrawerTitle>
               <DrawerClose asChild>
                 <Button variant="ghost" size="icon">
                   <X className="h-5 w-5" />
@@ -97,23 +97,23 @@ export function LandingNavbar() {
           <div className="flex flex-col p-6 space-y-4 flex-1">
             {user ? (
               <>
-                <Button variant="ghost" asChild className="justify-start">
+                <Button variant="ghost" asChild className="justify-start text-text-secondary hover:text-text-primary">
                   <Link to="/dashboard" onClick={closeMobileMenu}>
                     Dashboard
                   </Link>
                 </Button>
-                <Button variant="outline" onClick={handleSignOut} className="justify-start">
+                <Button variant="outline" onClick={handleSignOut} className="justify-start border-border-subtle hover:bg-surface-elevated-2">
                   Sign Out
                 </Button>
               </>
             ) : (
               <>
-                <Button variant="ghost" asChild className="justify-start">
+                <Button variant="ghost" asChild className="justify-start text-text-secondary hover:text-text-primary">
                   <Link to="/login" onClick={closeMobileMenu}>
                     Login
                   </Link>
                 </Button>
-                <Button className="gradient-button justify-start" asChild>
+                <Button className="justify-start bg-primary text-primary-foreground hover:bg-primary-hover" asChild>
                   <Link to="/signup" onClick={closeMobileMenu}>
                     Sign Up
                   </Link>
