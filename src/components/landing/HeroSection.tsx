@@ -1,14 +1,15 @@
+
 import { Button } from "@/components/ui/button";
-import { ArrowRight, CheckCircle } from "lucide-react";
+import { ArrowRight, CheckCircle, Users, Star, Zap } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { FloatingElements } from "./FloatingElements";
 import { DashboardPreview } from "./DashboardPreview";
 import { useAuth } from "@/contexts/AuthContext";
+
 export const HeroSection = () => {
-  const {
-    user
-  } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
+  
   const handleSeeHowItWorks = () => {
     try {
       if (user) {
@@ -21,10 +22,28 @@ export const HeroSection = () => {
       navigate('/login');
     }
   };
-  return <section className="relative min-h-screen apple-hero flex items-center justify-center overflow-hidden pt-24 md:pt-32">
+
+  return (
+    <section className="relative min-h-screen apple-hero flex items-center justify-center overflow-hidden pt-24 md:pt-32">
       <FloatingElements />
       
       <div className="apple-container relative z-10 text-center">
+        {/* Social Proof Bar */}
+        <div className="flex flex-wrap justify-center items-center gap-6 mb-8 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <Users className="w-4 h-4" />
+            <span>10,000+ founders</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Star className="w-4 h-4 text-yellow-500" />
+            <span>4.9/5 rating</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Zap className="w-4 h-4 text-primary" />
+            <span>5-minute setup</span>
+          </div>
+        </div>
+
         {/* Badge */}
         <div className="apple-badge mb-8 inline-flex items-center gap-2">
           <CheckCircle className="w-4 h-4" />
@@ -32,7 +51,7 @@ export const HeroSection = () => {
         </div>
         
         {/* Main Headline */}
-        <h1 className="apple-heading">
+        <h1 className="apple-heading max-w-4xl mx-auto">
           Presenting the future of
           <br />
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-accent to-primary">
@@ -40,8 +59,28 @@ export const HeroSection = () => {
           </span>
         </h1>
         
-        {/* Subtitle */}
-        <p className="apple-subheading">Deep market insights. Strategic roadmaps. Intelligence that empowers better decisions</p>
+        {/* Subtitle with better line length */}
+        <div className="max-w-2xl mx-auto mb-12">
+          <p className="apple-subheading mb-6">
+            Deep market insights. Strategic roadmaps. Intelligence that empowers better decisions
+          </p>
+          
+          {/* Key Benefits List */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-muted-foreground">
+            <div className="flex items-center justify-center gap-2">
+              <CheckCircle className="w-4 h-4 text-green-500" />
+              <span>Instant validation</span>
+            </div>
+            <div className="flex items-center justify-center gap-2">
+              <CheckCircle className="w-4 h-4 text-green-500" />
+              <span>Market analysis</span>
+            </div>
+            <div className="flex items-center justify-center gap-2">
+              <CheckCircle className="w-4 h-4 text-green-500" />
+              <span>Strategic roadmap</span>
+            </div>
+          </div>
+        </div>
         
         {/* CTA Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-20">
@@ -59,5 +98,6 @@ export const HeroSection = () => {
         {/* Dashboard Preview */}
         <DashboardPreview />
       </div>
-    </section>;
+    </section>
+  );
 };
