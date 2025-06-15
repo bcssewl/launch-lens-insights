@@ -1,20 +1,16 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { CheckCircle, Brain } from 'lucide-react';
-
 interface EnhancedAnalysisLoaderProps {
   status: 'generating' | 'completed' | 'failed' | 'archived';
   useAnimation?: boolean;
 }
-
-const EnhancedAnalysisLoader: React.FC<EnhancedAnalysisLoaderProps> = ({ 
-  status, 
-  useAnimation = false 
+const EnhancedAnalysisLoader: React.FC<EnhancedAnalysisLoaderProps> = ({
+  status,
+  useAnimation = false
 }) => {
   const [animatedProgress, setAnimatedProgress] = useState(10);
-
   useEffect(() => {
     if (!useAnimation || status !== 'generating') {
       return;
@@ -26,28 +22,22 @@ const EnhancedAnalysisLoader: React.FC<EnhancedAnalysisLoaderProps> = ({
     const endProgress = 95;
     const progressRange = endProgress - startProgress;
     const startTime = Date.now();
-
     const animateProgress = () => {
       const elapsed = Date.now() - startTime;
       const progressRatio = Math.min(elapsed / totalDuration, 1);
-      
+
       // Smooth easing function for more realistic progress
       const easeOutQuart = 1 - Math.pow(1 - progressRatio, 4);
-      const newProgress = startProgress + (progressRange * easeOutQuart);
-      
+      const newProgress = startProgress + progressRange * easeOutQuart;
       setAnimatedProgress(Math.round(newProgress));
-
       if (progressRatio < 1) {
         requestAnimationFrame(animateProgress);
       }
     };
-
     animateProgress();
   }, [status, useAnimation]);
-
   if (status === 'completed') {
-    return (
-      <Card className="apple-card border-0 bg-white/95 backdrop-blur-xl">
+    return <Card className="apple-card border-0 bg-white/95 backdrop-blur-xl">
         <CardContent className="p-8 text-center">
           <div className="space-y-6">
             <div className="relative">
@@ -62,12 +52,9 @@ const EnhancedAnalysisLoader: React.FC<EnhancedAnalysisLoaderProps> = ({
             </div>
           </div>
         </CardContent>
-      </Card>
-    );
+      </Card>;
   }
-
-  return (
-    <Card className="apple-card border-0 bg-white/95 backdrop-blur-xl shadow-2xl">
+  return <Card className="apple-card border-0 bg-white/95 backdrop-blur-xl shadow-2xl">
       <CardContent className="p-8">
         <div className="space-y-8">
           {/* Central AI Brain Icon */}
@@ -79,23 +66,17 @@ const EnhancedAnalysisLoader: React.FC<EnhancedAnalysisLoaderProps> = ({
               
               {/* Floating particles around the brain */}
               <div className="absolute inset-0 pointer-events-none">
-                {[...Array(6)].map((_, i) => (
-                  <div
-                    key={i}
-                    className={`absolute w-2 h-2 bg-primary/30 rounded-full animate-float floating-element`}
-                    style={{
-                      top: `${20 + (i * 10)}%`,
-                      left: `${10 + (i * 15)}%`,
-                      animationDelay: `${i * 0.5}s`,
-                      animationDuration: `${3 + (i * 0.5)}s`
-                    }}
-                  ></div>
-                ))}
+                {[...Array(6)].map((_, i) => <div key={i} className={`absolute w-2 h-2 bg-primary/30 rounded-full animate-float floating-element`} style={{
+                top: `${20 + i * 10}%`,
+                left: `${10 + i * 15}%`,
+                animationDelay: `${i * 0.5}s`,
+                animationDuration: `${3 + i * 0.5}s`
+              }}></div>)}
               </div>
             </div>
             
             <div className="mt-6 space-y-2">
-              <h2 className="text-3xl font-semibold text-gray-900 tracking-tight">
+              <h2 className="font-semibold tracking-tight text-[launchlens-background-light] text-zinc-600">
                 AI Analysis in Progress
               </h2>
               <p className="text-lg text-gray-600">
@@ -113,10 +94,7 @@ const EnhancedAnalysisLoader: React.FC<EnhancedAnalysisLoaderProps> = ({
               </span>
             </div>
             <div className="relative">
-              <Progress 
-                value={useAnimation ? animatedProgress : 60} 
-                className="h-3 bg-gray-100"
-              />
+              <Progress value={useAnimation ? animatedProgress : 60} className="h-3 bg-gray-100" />
               <div className="absolute inset-0 bg-gradient-to-r from-primary via-accent to-primary opacity-20 rounded-full animate-pulse h-3"></div>
             </div>
           </div>
@@ -129,8 +107,6 @@ const EnhancedAnalysisLoader: React.FC<EnhancedAnalysisLoaderProps> = ({
           </div>
         </div>
       </CardContent>
-    </Card>
-  );
+    </Card>;
 };
-
 export default EnhancedAnalysisLoader;
