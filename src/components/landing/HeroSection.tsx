@@ -1,15 +1,14 @@
-
 import { Button } from "@/components/ui/button";
 import { ArrowRight, CheckCircle, Users, Star, Zap } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { FloatingElements } from "./FloatingElements";
 import { DashboardPreview } from "./DashboardPreview";
 import { useAuth } from "@/contexts/AuthContext";
-
 export const HeroSection = () => {
-  const { user } = useAuth();
+  const {
+    user
+  } = useAuth();
   const navigate = useNavigate();
-  
   const handleSeeHowItWorks = () => {
     try {
       if (user) {
@@ -22,27 +21,12 @@ export const HeroSection = () => {
       navigate('/login');
     }
   };
-
-  return (
-    <section className="relative min-h-screen apple-hero flex items-center justify-center overflow-hidden pt-24 md:pt-32">
+  return <section className="relative min-h-screen apple-hero flex items-center justify-center overflow-hidden pt-24 md:pt-32">
       <FloatingElements />
       
       <div className="apple-container relative z-10 text-center">
         {/* Social Proof Bar */}
-        <div className="flex flex-wrap justify-center items-center gap-6 mb-8 text-sm text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <Users className="w-4 h-4" />
-            <span>10,000+ founders</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Star className="w-4 h-4 text-yellow-500" />
-            <span>4.9/5 rating</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Zap className="w-4 h-4 text-primary" />
-            <span>5-minute setup</span>
-          </div>
-        </div>
+        
 
         {/* Badge */}
         <div className="apple-badge mb-8 inline-flex items-center gap-2">
@@ -98,6 +82,5 @@ export const HeroSection = () => {
         {/* Dashboard Preview */}
         <DashboardPreview />
       </div>
-    </section>
-  );
+    </section>;
 };
