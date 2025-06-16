@@ -25,7 +25,7 @@ const ChatSubheader: React.FC<ChatSubheaderProps> = ({
   onSessionSelect
 }) => {
   return (
-    <div className="p-6 border-b border-border/50 bg-background/50 backdrop-blur-xl flex-shrink-0 rounded-t-3xl mx-4 mt-4 flex items-center justify-between z-10">
+    <div className="p-6 border-b border-border flex-shrink-0 flex items-center justify-between">
       <div>
         <p className="text-sm text-muted-foreground">
           {isConfigured ? 'AI-powered startup advisor' : 'AI service not configured'}

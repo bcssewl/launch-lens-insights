@@ -23,7 +23,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   return (
     <div className="flex flex-col flex-1 min-h-0 w-full relative">
       {/* Chat Messages Area */}
-      <div className="flex-1 min-h-0 overflow-hidden mx-4 bg-background/30 backdrop-blur-xl border border-border/50 border-t-0 rounded-b-3xl relative">
+      <div className="flex-1 min-h-0 overflow-hidden mx-6 bg-card border border-border rounded-xl relative">
         <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
           <div className="p-6 space-y-6 flex flex-col items-stretch min-h-full transition-all duration-150">
             {messages.length <= 1 && !isTyping ? (
@@ -37,13 +37,11 @@ const ChatArea: React.FC<ChatAreaProps> = ({
               </>
             )}
           </div>
-          <div className="absolute left-0 top-0 w-full h-6 pointer-events-none z-10 bg-gradient-to-b from-background/90 via-background/80 to-transparent" />
-          <div className="absolute left-0 bottom-0 w-full h-10 pointer-events-none z-10 bg-gradient-to-t from-background/95 via-background/60 to-transparent" />
         </ScrollArea>
       </div>
 
       {/* Input Area */}
-      <div className="p-4">
+      <div className="p-6">
         <ChatInput onSendMessage={onSendMessage} isTyping={isTyping} />
       </div>
     </div>
