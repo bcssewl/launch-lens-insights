@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { AppSidebar } from '@/components/AppSidebar';
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import { FloatingElements } from '@/components/landing/FloatingElements';
 import DashboardHeader from '@/components/DashboardHeader';
 import MobileDashboardHeader from '@/components/mobile/MobileDashboardHeader';
 import ChatSubheader from '@/components/assistant/ChatSubheader';
@@ -96,10 +97,11 @@ const AIAssistantPage: React.FC = () => {
   // Normal mode with sidebar
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-gradient-to-br from-background via-background to-muted/10">
+      <div className="min-h-screen flex w-full bg-gradient-to-br from-background via-background to-muted/10 apple-hero relative">
+        <FloatingElements />
         <AppSidebar />
         
-        <SidebarInset className="flex-1 flex flex-col">
+        <SidebarInset className="flex-1 flex flex-col relative z-10">
           {isMobile ? (
             <MobileDashboardHeader title="AI Assistant" />
           ) : (
