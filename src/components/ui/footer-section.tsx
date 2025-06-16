@@ -1,3 +1,4 @@
+
 'use client';
 import React from 'react';
 import type { ComponentProps, ReactNode } from 'react';
@@ -90,7 +91,7 @@ export function Footer() {
 				<AnimatedContainer className="space-y-4">
 					<Logo className="h-8" />
 					<p className="text-muted-foreground mt-8 text-sm md:mt-0">
-						© {new Date().getFullYear()} Launch Lens. All rights reserved.
+						© {new Date().getFullYear()} Optivise. All rights reserved.
 					</p>
 				</AnimatedContainer>
 

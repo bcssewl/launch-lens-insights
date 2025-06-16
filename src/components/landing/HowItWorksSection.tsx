@@ -1,3 +1,4 @@
+
 import { FileText, Brain, BarChart3, Rocket, ArrowDown } from "lucide-react";
 import { HowItWorksStep } from "./HowItWorksStep";
 export const HowItWorksSection = () => <section className="apple-section">
@@ -51,7 +52,7 @@ export const HowItWorksSection = () => <section className="apple-section">
           Ready to validate your idea?
         </h3>
         <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-          Join thousands of founders who've accelerated their journey with Launch Lens
+          Join thousands of founders who've accelerated their journey with Optivise
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <div className="px-4 py-2 bg-surface/50 rounded-lg border border-border-subtle">

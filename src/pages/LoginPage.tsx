@@ -7,7 +7,7 @@ const LoginPage: React.FC = () => {
   return (
     <AuthLayout
       title="Welcome Back"
-      subtitle="Sign in to your Launch Lens account"
+      subtitle="Sign in to your Optivise account"
       footerText="Don't have an account?"
       footerLinkText="Sign up"
       footerLinkTo="/signup"

@@ -18,7 +18,7 @@ export const Logo = ({ className }: { className?: string }) => {
       <Lightbulb className="h-7 w-7 text-primary flex-shrink-0" />
       {!isCollapsed && (
         <span className="font-heading text-2xl font-bold text-foreground">
-          Launch Lens
+          Optivise
         </span>
       )}
     </div>

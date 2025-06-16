@@ -1,3 +1,4 @@
+
 import { cn } from "@/lib/utils"
 import { TestimonialCard, TestimonialAuthor } from "@/components/ui/testimonial-card"
 
@@ -60,7 +61,7 @@ const testimonials = [
       handle: "@emmaai",
       avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face"
     },
-    text: "Launch Lens transformed how we validate ideas. The AI insights are incredibly accurate and saved us months of guesswork.",
+    text: "Optivise transformed how we validate ideas. The AI insights are incredibly accurate and saved us months of guesswork.",
     href: "https://twitter.com/emmaai"
   },
   {
@@ -69,7 +70,7 @@ const testimonials = [
       handle: "@davidtech",
       avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face"
     },
-    text: "We avoided a costly mistake thanks to Launch Lens. The market analysis showed us why our initial approach wouldn't work.",
+    text: "We avoided a costly mistake thanks to Optivise. The market analysis showed us why our initial approach wouldn't work.",
     href: "https://twitter.com/davidtech"
   },
   {

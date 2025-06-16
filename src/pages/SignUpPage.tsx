@@ -6,7 +6,7 @@ import { SignUpForm } from '@/components/SignUpForm';
 const SignUpPage: React.FC = () => {
   return (
     <AuthLayout
-      title="Join Launch Lens"
+      title="Join Optivise"
       subtitle="Start validating your ideas today"
       footerText="Already have an account?"
       footerLinkText="Sign in"
