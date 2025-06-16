@@ -1,4 +1,5 @@
 
+
 export interface ReportData {
   ideaName: string;
   score: number;
@@ -17,4 +18,19 @@ export interface ReportData {
   swot?: any;
   detailedScores?: any[];
   actionItems?: any[];
+  riskAssessment?: {
+    risks: Array<{
+      category: string;
+      level: string;
+      description: string;
+    }>;
+  };
+  implementation?: {
+    timeline: Array<{
+      phase: string;
+      timeline: string;
+      tasks: string[];
+    }>;
+  };
 }
+

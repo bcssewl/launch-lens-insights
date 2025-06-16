@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import DashboardLayout from '@/layouts/DashboardLayout';
@@ -18,6 +19,7 @@ import FinancialAnalysisTabContent from '@/components/results/FinancialAnalysisT
 import PrintView from '@/components/results/PrintView';
 import { useValidationReport } from '@/hooks/useValidationReport';
 import { generateReportPDF } from '@/utils/pdfGenerator';
+import { ReportData } from '@/utils/pdf/types';
 import { format } from 'date-fns';
 
 const ResultsPage: React.FC = () => {
