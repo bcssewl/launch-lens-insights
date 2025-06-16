@@ -13,6 +13,41 @@ export const waitForFonts = async (): Promise<void> => {
   await new Promise(resolve => setTimeout(resolve, 500));
 };
 
+export const getScoreColor = (score: number): string => {
+  if (score >= 8) return '#059669';
+  if (score >= 6) return '#d97706';
+  return '#dc2626';
+};
+
+export const getScoreLabel = (score: number): string => {
+  if (score >= 8) return 'Excellent';
+  if (score >= 6) return 'Good';
+  if (score >= 4) return 'Fair';
+  return 'Poor';
+};
+
+export const getRecommendationStyle = (recommendation: string, score: number) => {
+  if (score >= 8) {
+    return {
+      status: 'PROCEED WITH CONFIDENCE',
+      bg: '#dcfce7',
+      color: '#166534'
+    };
+  }
+  if (score >= 6) {
+    return {
+      status: 'PROCEED WITH CAUTION',
+      bg: '#fef3c7',
+      color: '#92400e'
+    };
+  }
+  return {
+    status: 'HIGH RISK - CONSIDER PIVOTING',
+    bg: '#fee2e2',
+    color: '#991b1b'
+  };
+};
+
 export const createPDFStyles = (): string => `
   * {
     box-sizing: border-box;
