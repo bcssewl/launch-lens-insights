@@ -33,7 +33,7 @@ const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
   { href: "/dashboard/validate", label: "Validate Idea", icon: Lightbulb },
   { href: "/dashboard/ideas", label: "My Business Ideas", icon: FolderOpen },
-  { href: "/dashboard/assistant", label: "AI Assistant", icon: Bot },
+  { href: "/dashboard/assistant", label: "Advisor", icon: Bot },
   { href: "/dashboard/settings", label: "Settings", icon: SettingsIcon },
 ];
 
