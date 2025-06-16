@@ -10,6 +10,7 @@ import { ThemeProvider } from "./components/ThemeProvider";
 import { AuthProvider } from "./contexts/AuthContext";
 import SignUpPage from "./pages/SignUpPage";
 import LoginPage from "./pages/LoginPage";
+import EmailConfirmationPage from "./pages/EmailConfirmationPage";
 import DashboardPage from "./pages/DashboardPage";
 import ValidateIdeaPage from "./pages/ValidateIdeaPage";
 import AnalyzingIdeaPage from "./pages/AnalyzingIdeaPage";
@@ -44,6 +45,7 @@ const App = () => (
               <Route path="/" element={<LandingPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignUpPage />} />
+              <Route path="/auth/confirm" element={<EmailConfirmationPage />} />
               
               {/* Dashboard Routes */}
               <Route path="/dashboard" element={<DashboardPage />} />
