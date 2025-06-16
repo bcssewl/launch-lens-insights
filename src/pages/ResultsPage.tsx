@@ -26,6 +26,7 @@ const ResultsPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const { report, loading, error } = useValidationReport(reportId || '');
   const [showPrintView, setShowPrintView] = useState(false);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
   const handleAIFollowUp = () => {
     navigate('/dashboard/assistant');
@@ -48,6 +49,39 @@ const ResultsPage: React.FC = () => {
 
   const handleClosePrintView = () => {
     setShowPrintView(false);
+  };
+
+  const handleGeneratePDF = async () => {
+    if (!report) return;
+    
+    try {
+      setIsGeneratingPDF(true);
+      
+      // Format data for enhanced PDF generation
+      const pdfData: ReportData = {
+        ideaName: report.idea_name || 'Untitled Idea',
+        score: report.overall_score || 0,
+        recommendation: report.recommendation || 'Analysis in progress',
+        analysisDate: report.completed_at 
+          ? format(new Date(report.completed_at), 'MMM d, yyyy')
+          : format(new Date(report.created_at), 'MMM d, yyyy'),
+        executiveSummary: reportData.executiveSummary || report.one_line_description || 'No summary available',
+        keyMetrics: keyMetrics,
+        marketAnalysis: marketAnalysis,
+        competition: competition,
+        financialAnalysis: financialAnalysis,
+        swot: swot,
+        detailedScores: detailedScores,
+        actionItems: actionItems
+      };
+      
+      await generateReportPDF(pdfData);
+    } catch (error) {
+      console.error('Failed to generate PDF:', error);
+      // You could add a toast notification here
+    } finally {
+      setIsGeneratingPDF(false);
+    }
   };
 
   if (loading) {
@@ -246,6 +280,16 @@ const ResultsPage: React.FC = () => {
 
           <div className="w-full border-t border-border/50 pt-8 mt-8">
             <div className="flex flex-col sm:flex-row gap-3 justify-end">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full sm:w-auto apple-button-outline" 
+                onClick={handleGeneratePDF}
+                disabled={isGeneratingPDF}
+              >
+                <Printer className="mr-2 h-4 w-4" />
+                {isGeneratingPDF ? 'Generating PDF...' : 'Download Professional Report'}
+              </Button>
               <Button variant="outline" size="sm" className="w-full sm:w-auto apple-button-outline" onClick={handleOpenPrintView}>
                 <Printer className="mr-2 h-4 w-4" /> Print / Save as PDF
               </Button>
