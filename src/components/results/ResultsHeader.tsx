@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Share2, TrendingUp, CheckCircle, Settings } from 'lucide-react';
@@ -62,7 +61,7 @@ const ResultsHeader: React.FC<ResultsHeaderProps> = ({
     <div className="w-full p-4 bg-card rounded-lg shadow space-y-4">
       <div className="w-full">
         <h1 className="text-2xl md:text-3xl font-bold text-primary break-words">{ideaName}</h1>
-        <p className="text-sm text-tertiary mt-1">Analysis Date: {analysisDate}</p>
+        <p className="text-sm text-muted-foreground mt-1">Analysis Date: {analysisDate}</p>
       </div>
       
       <div className="flex flex-col gap-4">
@@ -79,7 +78,7 @@ const ResultsHeader: React.FC<ResultsHeaderProps> = ({
               </div>
               
               {/* Main Content */}
-              <p className="text-sm text-secondary leading-relaxed">
+              <p className="text-sm text-foreground leading-relaxed">
                 {recommendation.content}
               </p>
               
@@ -88,7 +87,7 @@ const ResultsHeader: React.FC<ResultsHeaderProps> = ({
                 <span className="text-sm font-medium text-primary">
                   {recommendation.status}
                 </span>
-                <span className="text-sm text-tertiary">
+                <span className="text-sm text-muted-foreground">
                   Score: {score.toFixed(1)}/10
                 </span>
               </div>
