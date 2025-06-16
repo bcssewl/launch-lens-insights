@@ -168,6 +168,35 @@ export const useIdeaValidationForm = () => {
 
       console.log('Validation report created successfully:', report);
       
+      // Trigger the new webhook for validation queue
+      try {
+        console.log('Triggering validation queue webhook...');
+        const webhookResponse = await fetch('https://n8n-launchlens.botica.it.com/webhook/start-validation-queue', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            validation_id: submission.id,
+            report_id: report.id,
+            user_id: user.id,
+            form_data: data,
+            submission_timestamp: new Date().toISOString()
+          }),
+        });
+
+        if (!webhookResponse.ok) {
+          console.error('Webhook failed with status:', webhookResponse.status);
+          const errorText = await webhookResponse.text();
+          console.error('Webhook error response:', errorText);
+        } else {
+          console.log('Validation queue webhook triggered successfully');
+        }
+      } catch (webhookError) {
+        console.error('Error triggering validation queue webhook:', webhookError);
+        // Don't fail the submission if webhook fails, just log the error
+      }
+      
       toast({
         title: duplicateId ? "Duplicated Idea Submitted!" : "Idea Submitted!",
         description: "Your idea is now being analyzed. Please wait...",
