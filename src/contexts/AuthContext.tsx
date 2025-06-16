@@ -8,6 +8,8 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  justSignedIn: boolean;
+  clearJustSignedIn: () => void;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: any; needsVerification?: boolean }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
@@ -27,6 +29,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [justSignedIn, setJustSignedIn] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -38,9 +41,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(session?.user ?? null);
         setLoading(false);
 
-        // Clear welcome animation flag on sign in to show it again
+        // Set justSignedIn flag only for actual sign-in events
         if (event === 'SIGNED_IN' && session?.user) {
-          sessionStorage.removeItem('welcome-shown');
+          setJustSignedIn(true);
+        } else if (event === 'SIGNED_OUT') {
+          setJustSignedIn(false);
+          // Clear all welcome flags when signing out
+          Object.keys(localStorage).forEach(key => {
+            if (key.startsWith('welcome-shown-')) {
+              localStorage.removeItem(key);
+            }
+          });
         }
       }
     );
@@ -50,6 +61,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      // Don't set justSignedIn for existing sessions
     }).catch((error) => {
       console.error('Error getting session:', error);
       setLoading(false);
@@ -57,6 +69,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const clearJustSignedIn = () => {
+    setJustSignedIn(false);
+  };
 
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
@@ -83,10 +99,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signIn = async (email: string, password: string) => {
-    try {
-      // Clear any existing welcome animation flag before signing in
-      sessionStorage.removeItem('welcome-shown');
-      
+    try {      
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -109,9 +122,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Always clear local state regardless of server response
     setSession(null);
     setUser(null);
+    setJustSignedIn(false);
     
-    // Clear welcome animation flag on sign out
-    sessionStorage.removeItem('welcome-shown');
+    // Clear welcome animation flags on sign out
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('welcome-shown-')) {
+        localStorage.removeItem(key);
+      }
+    });
     
     // Redirect to landing page
     navigate('/');
@@ -121,6 +139,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     user,
     session,
     loading,
+    justSignedIn,
+    clearJustSignedIn,
     signUp,
     signIn,
     signOut,
