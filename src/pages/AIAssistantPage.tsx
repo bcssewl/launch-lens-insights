@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import DashboardLayout from '@/layouts/DashboardLayout';
+import { AppSidebar } from '@/components/AppSidebar';
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import DashboardHeader from '@/components/DashboardHeader';
 import MobileDashboardHeader from '@/components/mobile/MobileDashboardHeader';
 import ChatSubheader from '@/components/assistant/ChatSubheader';
@@ -92,34 +93,40 @@ const AIAssistantPage: React.FC = () => {
     );
   }
 
-  // Normal mode with standard dashboard layout
+  // Normal mode with sidebar
   return (
-    <DashboardLayout>
-      {isMobile ? (
-        <MobileDashboardHeader title="AI Assistant" />
-      ) : (
-        <DashboardHeader>AI Assistant</DashboardHeader>
-      )}
-      
-      <div className="flex flex-col flex-1 min-h-0 w-full relative">
-        <ChatSubheader
-          isConfigured={isConfigured}
-          currentSessionId={currentSessionId}
-          isFullscreen={false}
-          onToggleFullscreen={toggleFullscreen}
-          onDownloadChat={handleDownloadChat}
-          onClearConversation={handleClearConversationWithHistory}
-          onSessionSelect={handleSessionSelect}
-        />
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full bg-gradient-to-br from-background via-background to-muted/10">
+        <AppSidebar />
         
-        <ChatArea
-          messages={messages}
-          isTyping={isTyping}
-          viewportRef={viewportRef}
-          onSendMessage={handleSendMessageWithSession}
-        />
+        <SidebarInset className="flex-1 flex flex-col">
+          {isMobile ? (
+            <MobileDashboardHeader title="AI Assistant" />
+          ) : (
+            <DashboardHeader>AI Assistant</DashboardHeader>
+          )}
+          
+          <div className="flex flex-col flex-1 min-h-0 w-full relative">
+            <ChatSubheader
+              isConfigured={isConfigured}
+              currentSessionId={currentSessionId}
+              isFullscreen={false}
+              onToggleFullscreen={toggleFullscreen}
+              onDownloadChat={handleDownloadChat}
+              onClearConversation={handleClearConversationWithHistory}
+              onSessionSelect={handleSessionSelect}
+            />
+            
+            <ChatArea
+              messages={messages}
+              isTyping={isTyping}
+              viewportRef={viewportRef}
+              onSendMessage={handleSendMessageWithSession}
+            />
+          </div>
+        </SidebarInset>
       </div>
-    </DashboardLayout>
+    </SidebarProvider>
   );
 };
 
