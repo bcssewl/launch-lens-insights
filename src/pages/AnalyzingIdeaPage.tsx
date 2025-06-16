@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,54 +7,55 @@ import DashboardHeader from '@/components/DashboardHeader';
 import { useReportStatus } from '@/hooks/useReportStatus';
 import EnhancedAnalysisLoader from '@/components/analysis/EnhancedAnalysisLoader';
 import { toast } from '@/hooks/use-toast';
-
 const AnalyzingIdeaPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { reportId, validationId } = location.state || {};
-
-  const { reportStatus, loading, error } = useReportStatus(reportId);
-
+  const {
+    reportId,
+    validationId
+  } = location.state || {};
+  const {
+    reportStatus,
+    loading,
+    error
+  } = useReportStatus(reportId);
   useEffect(() => {
     if (!reportId || !validationId) {
       toast({
         title: "Invalid Request",
         description: "No report information found. Redirecting to dashboard.",
-        variant: "destructive",
+        variant: "destructive"
       });
       navigate('/dashboard');
       return;
     }
   }, [reportId, validationId, navigate]);
-
   useEffect(() => {
     if (reportStatus?.status === 'completed') {
       toast({
         title: "Analysis Complete!",
-        description: "Your startup idea analysis is ready to view.",
+        description: "Your startup idea analysis is ready to view."
       });
       navigate(`/results/${reportId}`);
     } else if (reportStatus?.status === 'failed') {
       toast({
         title: "Analysis Failed",
         description: "There was an error analyzing your idea. Please try again.",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   }, [reportStatus?.status, navigate, reportId]);
-
   const handleRetry = () => {
     toast({
       title: "Retrying Analysis",
-      description: "Starting a new analysis of your idea...",
+      description: "Starting a new analysis of your idea..."
     });
     navigate('/dashboard/validate');
   };
 
   // Show error state if there's an error
   if (error) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
+    return <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
         <DashboardHeader>Analysis Error</DashboardHeader>
         <div className="container mx-auto p-6">
           <Card className="max-w-2xl mx-auto apple-card">
@@ -79,23 +79,17 @@ const AnalyzingIdeaPage: React.FC = () => {
             </CardContent>
           </Card>
         </div>
-      </div>
-    );
+      </div>;
   }
 
   // Default to 'generating' status if no reportStatus yet
   const currentStatus = reportStatus?.status || 'generating';
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
+  return <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
       <DashboardHeader>Analyzing Your Idea</DashboardHeader>
       <div className="container mx-auto p-6">
         <div className="max-w-4xl mx-auto space-y-6">
           {/* Enhanced Analysis Loader - now shows by default */}
-          <EnhancedAnalysisLoader 
-            status={currentStatus} 
-            useAnimation={true}
-          />
+          <EnhancedAnalysisLoader status={currentStatus} useAnimation={true} />
 
           {/* What's Happening Section */}
           <Card className="apple-card border-0">
@@ -109,29 +103,35 @@ const AnalyzingIdeaPage: React.FC = () => {
                       <span className="text-sm text-muted-foreground">Market research agents gathering industry data</span>
                     </div>
                     <div className="flex items-center space-x-3">
-                      <div className="w-2 h-2 bg-accent rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
+                      <div className="w-2 h-2 bg-accent rounded-full animate-pulse" style={{
+                      animationDelay: '0.2s'
+                    }}></div>
                       <span className="text-sm text-muted-foreground">Competition analysis identifying key players</span>
                     </div>
                     <div className="flex items-center space-x-3">
-                      <div className="w-2 h-2 bg-success rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
+                      <div className="w-2 h-2 bg-success rounded-full animate-pulse" style={{
+                      animationDelay: '0.4s'
+                    }}></div>
                       <span className="text-sm text-muted-foreground">Financial models calculating market opportunity</span>
                     </div>
                   </div>
                   <div className="space-y-3">
                     <div className="flex items-center space-x-3">
-                      <div className="w-2 h-2 bg-warning rounded-full animate-pulse" style={{animationDelay: '0.6s'}}></div>
+                      <div className="w-2 h-2 bg-warning rounded-full animate-pulse" style={{
+                      animationDelay: '0.6s'
+                    }}></div>
                       <span className="text-sm text-muted-foreground">SWOT analysis evaluating strengths and risks</span>
                     </div>
                     <div className="flex items-center space-x-3">
-                      <div className="w-2 h-2 bg-info rounded-full animate-pulse" style={{animationDelay: '0.8s'}}></div>
+                      <div className="w-2 h-2 bg-info rounded-full animate-pulse" style={{
+                      animationDelay: '0.8s'
+                    }}></div>
                       <span className="text-sm text-muted-foreground">Comprehensive scoring across multiple factors</span>
                     </div>
                   </div>
                 </div>
                 <div className="mt-4 pt-4 border-t border-primary/10">
-                  <p className="text-sm text-muted-foreground text-center">
-                    ⏱️ This analysis typically takes 6-7 minutes • Please keep this tab open
-                  </p>
+                  <p className="text-sm text-muted-foreground text-center">⏱️ This analysis typically takes 5-7 minutes • Please keep this tab open</p>
                 </div>
               </div>
             </CardContent>
@@ -143,17 +143,13 @@ const AnalyzingIdeaPage: React.FC = () => {
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Dashboard
             </Button>
-            {reportStatus?.status === 'failed' && (
-              <Button onClick={handleRetry} className="gradient-button">
+            {reportStatus?.status === 'failed' && <Button onClick={handleRetry} className="gradient-button">
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Retry Analysis
-              </Button>
-            )}
+              </Button>}
           </div>
         </div>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default AnalyzingIdeaPage;
