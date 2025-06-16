@@ -6,7 +6,9 @@ import { ArrowLeft, RefreshCw } from 'lucide-react';
 import DashboardHeader from '@/components/DashboardHeader';
 import { useReportStatus } from '@/hooks/useReportStatus';
 import EnhancedAnalysisLoader from '@/components/analysis/EnhancedAnalysisLoader';
+import LoadingMessages from '@/components/analysis/LoadingMessages';
 import { toast } from '@/hooks/use-toast';
+
 const AnalyzingIdeaPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -19,6 +21,7 @@ const AnalyzingIdeaPage: React.FC = () => {
     loading,
     error
   } = useReportStatus(reportId);
+
   useEffect(() => {
     if (!reportId || !validationId) {
       toast({
@@ -30,6 +33,7 @@ const AnalyzingIdeaPage: React.FC = () => {
       return;
     }
   }, [reportId, validationId, navigate]);
+
   useEffect(() => {
     if (reportStatus?.status === 'completed') {
       toast({
@@ -45,6 +49,7 @@ const AnalyzingIdeaPage: React.FC = () => {
       });
     }
   }, [reportStatus?.status, navigate, reportId]);
+
   const handleRetry = () => {
     toast({
       title: "Retrying Analysis",
@@ -90,6 +95,13 @@ const AnalyzingIdeaPage: React.FC = () => {
         <div className="max-w-4xl mx-auto space-y-6">
           {/* Enhanced Analysis Loader - now shows by default */}
           <EnhancedAnalysisLoader status={currentStatus} useAnimation={true} />
+
+          {/* Loading Messages Section */}
+          <Card className="apple-card border-0">
+            <CardContent className="p-8">
+              <LoadingMessages className="mb-6" />
+            </CardContent>
+          </Card>
 
           {/* What's Happening Section */}
           <Card className="apple-card border-0">
@@ -152,4 +164,5 @@ const AnalyzingIdeaPage: React.FC = () => {
       </div>
     </div>;
 };
+
 export default AnalyzingIdeaPage;
