@@ -55,12 +55,12 @@ const AnalyzingIdeaPage: React.FC = () => {
   // Show error state if there's an error
   if (error) {
     return (
-      <div className="min-h-screen apple-dashboard-bg">
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
         <DashboardHeader>Analysis Error</DashboardHeader>
         <div className="container mx-auto p-6">
           <Card className="max-w-2xl mx-auto apple-card">
             <CardHeader>
-              <CardTitle className="text-red-600">Error Loading Analysis</CardTitle>
+              <CardTitle className="text-destructive">Error Loading Analysis</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-muted-foreground">
@@ -87,7 +87,7 @@ const AnalyzingIdeaPage: React.FC = () => {
   const currentStatus = reportStatus?.status || 'generating';
 
   return (
-    <div className="min-h-screen apple-dashboard-bg">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
       <DashboardHeader>Analyzing Your Idea</DashboardHeader>
       <div className="container mx-auto p-6">
         <div className="max-w-4xl mx-auto space-y-6">
@@ -98,33 +98,33 @@ const AnalyzingIdeaPage: React.FC = () => {
           />
 
           {/* What's Happening Section */}
-          <Card className="apple-card bg-white/80 backdrop-blur-xl border-0">
+          <Card className="apple-card border-0">
             <CardContent className="p-6">
-              <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-2xl">
-                <h3 className="font-semibold text-gray-900 mb-4 text-lg">What's happening behind the scenes:</h3>
+              <div className="bg-gradient-to-r from-primary/5 to-accent/5 p-6 rounded-2xl border border-primary/10">
+                <h3 className="font-semibold text-foreground mb-4 text-lg">What's happening behind the scenes:</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-3">
                     <div className="flex items-center space-x-3">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                      <span className="text-sm text-gray-700">Market research agents gathering industry data</span>
+                      <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
+                      <span className="text-sm text-muted-foreground">Market research agents gathering industry data</span>
                     </div>
                     <div className="flex items-center space-x-3">
-                      <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
-                      <span className="text-sm text-gray-700">Competition analysis identifying key players</span>
+                      <div className="w-2 h-2 bg-accent rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
+                      <span className="text-sm text-muted-foreground">Competition analysis identifying key players</span>
                     </div>
                     <div className="flex items-center space-x-3">
-                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
-                      <span className="text-sm text-gray-700">Financial models calculating market opportunity</span>
+                      <div className="w-2 h-2 bg-success rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
+                      <span className="text-sm text-muted-foreground">Financial models calculating market opportunity</span>
                     </div>
                   </div>
                   <div className="space-y-3">
                     <div className="flex items-center space-x-3">
-                      <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" style={{animationDelay: '0.6s'}}></div>
-                      <span className="text-sm text-gray-700">SWOT analysis evaluating strengths and risks</span>
+                      <div className="w-2 h-2 bg-warning rounded-full animate-pulse" style={{animationDelay: '0.6s'}}></div>
+                      <span className="text-sm text-muted-foreground">SWOT analysis evaluating strengths and risks</span>
                     </div>
                     <div className="flex items-center space-x-3">
-                      <div className="w-2 h-2 bg-violet-500 rounded-full animate-pulse" style={{animationDelay: '0.8s'}}></div>
-                      <span className="text-sm text-gray-700">Comprehensive scoring across multiple factors</span>
+                      <div className="w-2 h-2 bg-info rounded-full animate-pulse" style={{animationDelay: '0.8s'}}></div>
+                      <span className="text-sm text-muted-foreground">Comprehensive scoring across multiple factors</span>
                     </div>
                   </div>
                 </div>
