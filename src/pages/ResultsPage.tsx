@@ -17,8 +17,6 @@ import ActionItemsTabContent from '@/components/results/ActionItemsTabContent';
 import FinancialAnalysisTabContent from '@/components/results/FinancialAnalysisTabContent';
 import PrintView from '@/components/results/PrintView';
 import { useValidationReport } from '@/hooks/useValidationReport';
-import { generateReportPDF } from '@/utils/pdfGenerator';
-import { ReportData } from '@/utils/pdf/types';
 import { format } from 'date-fns';
 
 const ResultsPage: React.FC = () => {
@@ -27,7 +25,6 @@ const ResultsPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const { report, loading, error } = useValidationReport(reportId || '');
   const [showPrintView, setShowPrintView] = useState(false);
-  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
   const handleAIFollowUp = () => {
     navigate('/dashboard/assistant');
@@ -50,84 +47,6 @@ const ResultsPage: React.FC = () => {
 
   const handleClosePrintView = () => {
     setShowPrintView(false);
-  };
-
-  const handleGeneratePDF = async () => {
-    if (!report) return;
-    
-    try {
-      setIsGeneratingPDF(true);
-      console.log('Starting PDF generation for report:', report.id);
-      
-      // Get report data or use defaults
-      const reportData = report.report_data || {};
-      
-      // Format data for PDF generation with proper structure
-      const pdfData: ReportData = {
-        ideaName: report.idea_name || 'Untitled Idea',
-        score: report.overall_score || 0,
-        recommendation: report.recommendation || 'Analysis in progress',
-        analysisDate: report.completed_at 
-          ? format(new Date(report.completed_at), 'MMM d, yyyy')
-          : format(new Date(report.created_at), 'MMM d, yyyy'),
-        executiveSummary: reportData.executiveSummary || report.one_line_description || 'This business idea validation report provides a comprehensive analysis of market potential, competitive landscape, and strategic recommendations.',
-        keyMetrics: reportData.keyMetrics || {
-          marketSize: { value: 'Medium' },
-          competitionLevel: { value: 'Moderate' },
-          problemClarity: { value: 'Clear' },
-          revenuePotential: { value: 'Good' }
-        },
-        marketAnalysis: reportData.marketAnalysis || {
-          tamSamSom: [],
-          marketGrowth: [],
-          customerSegments: [],
-          geographicOpportunity: []
-        },
-        competition: reportData.competition || {
-          competitors: [],
-          competitiveAdvantages: [],
-          marketSaturation: 'Unknown'
-        },
-        financialAnalysis: reportData.financialAnalysis || {
-          startupCosts: [],
-          operatingCosts: [],
-          revenueProjections: [],
-          breakEvenAnalysis: [],
-          fundingRequirements: [],
-          keyMetrics: {
-            totalStartupCost: 0,
-            monthlyBurnRate: 0,
-            breakEvenMonth: 0,
-            fundingNeeded: 0
-          }
-        },
-        swot: reportData.swot || {
-          strengths: [],
-          weaknesses: [],
-          opportunities: [],
-          threats: []
-        },
-        detailedScores: reportData.detailedScores || [],
-        actionItems: reportData.actionItems || [],
-        riskAssessment: reportData.riskAssessment || {
-          risks: []
-        },
-        implementation: reportData.implementation || {
-          timeline: []
-        }
-      };
-      
-      console.log('PDF data formatted:', pdfData);
-      await generateReportPDF(pdfData);
-      console.log('PDF generation completed successfully');
-      
-    } catch (error) {
-      console.error('Failed to generate PDF:', error);
-      // You could add a toast notification here
-      alert('Failed to generate PDF. Please try again.');
-    } finally {
-      setIsGeneratingPDF(false);
-    }
   };
 
   if (loading) {
@@ -326,16 +245,6 @@ const ResultsPage: React.FC = () => {
 
           <div className="w-full border-t border-border/50 pt-8 mt-8">
             <div className="flex flex-col sm:flex-row gap-3 justify-end">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="w-full sm:w-auto apple-button-outline" 
-                onClick={handleGeneratePDF}
-                disabled={isGeneratingPDF}
-              >
-                <Printer className="mr-2 h-4 w-4" />
-                {isGeneratingPDF ? 'Generating PDF...' : 'Download Professional Report'}
-              </Button>
               <Button variant="outline" size="sm" className="w-full sm:w-auto apple-button-outline" onClick={handleOpenPrintView}>
                 <Printer className="mr-2 h-4 w-4" /> Print / Save as PDF
               </Button>
