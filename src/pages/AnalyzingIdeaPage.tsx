@@ -128,6 +128,11 @@ const AnalyzingIdeaPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
+                <div className="mt-4 pt-4 border-t border-primary/10">
+                  <p className="text-sm text-muted-foreground text-center">
+                    ⏱️ This analysis typically takes 6-7 minutes • Please keep this tab open
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>

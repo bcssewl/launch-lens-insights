@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { CheckCircle, Brain } from 'lucide-react';
+import AnalysisTimer from './AnalysisTimer';
 
 interface EnhancedAnalysisLoaderProps {
   status: 'generating' | 'completed' | 'failed' | 'archived';
@@ -20,8 +21,8 @@ const EnhancedAnalysisLoader: React.FC<EnhancedAnalysisLoaderProps> = ({
       return;
     }
 
-    // 4 minute animation (240 seconds) from 10% to 95%
-    const totalDuration = 240000; // 4 minutes in milliseconds
+    // 6.5 minute animation (390 seconds) from 10% to 95%
+    const totalDuration = 390000; // 6.5 minutes in milliseconds
     const startProgress = 10;
     const endProgress = 95;
     const progressRange = endProgress - startProgress;
@@ -101,6 +102,11 @@ const EnhancedAnalysisLoader: React.FC<EnhancedAnalysisLoaderProps> = ({
             </div>
           </div>
 
+          {/* Timer Component */}
+          <div className="flex justify-center">
+            <AnalysisTimer className="bg-gradient-to-r from-primary/5 to-accent/5 p-6 rounded-2xl border border-primary/10" />
+          </div>
+
           {/* Overall Progress */}
           <div className="space-y-3">
             <div className="flex justify-between items-center">
@@ -113,13 +119,6 @@ const EnhancedAnalysisLoader: React.FC<EnhancedAnalysisLoaderProps> = ({
               <Progress value={useAnimation ? animatedProgress : 60} className="h-3 bg-muted" />
               <div className="absolute inset-0 bg-gradient-to-r from-primary via-accent to-primary opacity-20 rounded-full animate-pulse h-3"></div>
             </div>
-          </div>
-
-          {/* Time Estimate */}
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground">
-              This usually takes 2-4 minutes • Please keep this tab open
-            </p>
           </div>
         </div>
       </CardContent>
