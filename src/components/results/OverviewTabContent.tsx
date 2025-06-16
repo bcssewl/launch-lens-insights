@@ -21,7 +21,7 @@ const OverviewTabContent: React.FC<OverviewTabContentProps> = ({ summary, metric
           <CardTitle className="text-primary">Executive Summary</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-secondary">{summary}</p>
+          <p className="text-foreground">{summary}</p>
         </CardContent>
       </Card>
       <Card>
