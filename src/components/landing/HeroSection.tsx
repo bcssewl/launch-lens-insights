@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { ArrowRight, CheckCircle, Users, Star, Zap } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
@@ -70,7 +71,7 @@ export const HeroSection = () => {
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-20">
           <Button size="lg" className="apple-button text-lg min-w-[220px]" asChild>
             <Link to="/signup">
-              Validate My Idea
+              Get Started
               <ArrowRight className="ml-2 w-5 h-5" />
             </Link>
           </Button>
