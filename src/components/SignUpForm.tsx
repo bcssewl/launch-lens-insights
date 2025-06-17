@@ -60,7 +60,7 @@ export const SignUpForm: React.FC = () => {
     console.log('Sign Up submitted', values);
     
     try {
-      const { error, needsVerification } = await signUp(values.email, values.password, values.fullName);
+      const { error } = await signUp(values.email, values.password, values.fullName);
       
       if (error) {
         console.error('Sign up error:', error);
@@ -69,12 +69,6 @@ export const SignUpForm: React.FC = () => {
           description: error.message,
           variant: "destructive",
         });
-      } else if (needsVerification) {
-        toast({
-          title: "Check your email!",
-          description: "We've sent you a verification link. Please check your email to activate your account.",
-        });
-        // Don't navigate to dashboard if email verification is required
       } else {
         toast({
           title: "Success!",
