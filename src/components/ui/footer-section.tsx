@@ -51,7 +51,7 @@ const footerLinks: FooterSection[] = [
 			{ title: 'Facebook', href: '#', icon: Facebook },
 			{ title: 'Instagram', href: '#', icon: Instagram },
 			{ title: 'Youtube', href: '#', icon: Youtube },
-			{ title: 'LinkedIn', href: '#', icon: Linkedin },
+			{ title: 'LinkedIn', href: 'https://www.linkedin.com/company/launch-lens', icon: Linkedin },
 		],
 	},
 ];
