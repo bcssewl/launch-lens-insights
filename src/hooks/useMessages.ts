@@ -25,18 +25,37 @@ export const useMessages = (currentSessionId: string | null) => {
   // Load messages from history when session changes
   useEffect(() => {
     if (currentSessionId && history.length > 0) {
-      // Convert history to messages format, parsing out USER: and AI: prefixes
+      // Convert history to messages format - now without prefixes
       const historyMessages: Message[] = history.map((item) => {
-        let text = item.message;
+        // Parse message metadata if it exists
         let sender: 'user' | 'ai' = 'user';
+        let text = item.message;
         
-        // Parse the message to determine sender and clean text
-        if (text.startsWith('USER: ')) {
-          sender = 'user';
-          text = text.substring(6); // Remove "USER: " prefix
-        } else if (text.startsWith('AI: ')) {
-          sender = 'ai';
-          text = text.substring(4); // Remove "AI: " prefix
+        // Check if message has metadata indicating sender
+        if (item.message.startsWith('{"sender":')) {
+          try {
+            const parsed = JSON.parse(item.message);
+            sender = parsed.sender;
+            text = parsed.text;
+          } catch {
+            // Fallback to old prefix parsing
+            if (text.startsWith('USER: ')) {
+              sender = 'user';
+              text = text.substring(6);
+            } else if (text.startsWith('AI: ')) {
+              sender = 'ai';
+              text = text.substring(4);
+            }
+          }
+        } else {
+          // Fallback to old prefix parsing for backward compatibility
+          if (text.startsWith('USER: ')) {
+            sender = 'user';
+            text = text.substring(6);
+          } else if (text.startsWith('AI: ')) {
+            sender = 'ai';
+            text = text.substring(4);
+          }
         }
         
         return {
@@ -66,9 +85,14 @@ export const useMessages = (currentSessionId: string | null) => {
     
     setMessages(prev => [...prev, newUserMessage]);
 
-    // Save user message to history without prefix
+    // Save user message with new format (no prefixes)
     if (currentSessionId) {
-      await addMessage(`USER: ${finalMessageText}`);
+      const messageData = {
+        sender: 'user',
+        text: finalMessageText,
+        timestamp: new Date().toISOString()
+      };
+      await addMessage(JSON.stringify(messageData));
     }
 
     if (!isConfigured) {
@@ -96,9 +120,14 @@ export const useMessages = (currentSessionId: string | null) => {
       
       setMessages(prev => [...prev, aiResponse]);
       
-      // Save AI response to history without showing prefix to user
+      // Save AI response with new format (no prefixes)
       if (currentSessionId) {
-        await addMessage(`AI: ${aiResponseText}`);
+        const messageData = {
+          sender: 'ai',
+          text: aiResponseText,
+          timestamp: new Date().toISOString()
+        };
+        await addMessage(JSON.stringify(messageData));
       }
     } catch (error) {
       const errorResponse: Message = {

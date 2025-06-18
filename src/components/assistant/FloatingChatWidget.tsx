@@ -1,23 +1,19 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, X, Minus, Maximize2, Minimize2 } from 'lucide-react';
+import { MessageSquare, X, Minus, Maximize2 } from 'lucide-react';
 import ChatArea from '@/components/assistant/ChatArea';
 import { Message } from '@/constants/aiAssistant';
+import { useChatSessions } from '@/hooks/useChatSessions';
+import { useChatHistory } from '@/hooks/useChatHistory';
+import { useMessages } from '@/hooks/useMessages';
 
 interface FloatingChatWidgetProps {
-  messages: Message[];
-  isTyping: boolean;
-  viewportRef: React.RefObject<HTMLDivElement>;
-  onSendMessage: (message: string) => void;
   onClose: () => void;
   ideaName: string;
 }
 
 const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
-  messages,
-  isTyping,
-  viewportRef,
-  onSendMessage,
   onClose,
   ideaName
 }) => {
@@ -26,6 +22,18 @@ const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
   const [isMinimized, setIsMinimized] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const widgetRef = useRef<HTMLDivElement>(null);
+
+  // Use the complete chat system hooks
+  const { createSession, currentSessionId, setCurrentSessionId } = useChatSessions();
+  const { clearHistory } = useChatHistory(currentSessionId);
+  const {
+    messages,
+    isTyping,
+    viewportRef,
+    handleSendMessage,
+    handleClearConversation,
+    isConfigured
+  } = useMessages(currentSessionId);
 
   // Load position from localStorage on mount
   useEffect(() => {
@@ -40,6 +48,19 @@ const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
   useEffect(() => {
     localStorage.setItem('chatWidgetPosition', JSON.stringify(position));
   }, [position]);
+
+  // Initialize chat session on mount
+  useEffect(() => {
+    const initializeSession = async () => {
+      if (!currentSessionId) {
+        const session = await createSession(`Report Chat: ${ideaName}`);
+        if (session) {
+          setCurrentSessionId(session.id);
+        }
+      }
+    };
+    initializeSession();
+  }, [ideaName, currentSessionId, createSession, setCurrentSessionId]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (widgetRef.current) {
@@ -57,9 +78,8 @@ const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
       const newX = e.clientX - dragOffset.x;
       const newY = e.clientY - dragOffset.y;
       
-      // Keep widget within viewport bounds
-      const maxX = window.innerWidth - 320; // widget width
-      const maxY = window.innerHeight - (isMinimized ? 60 : 500); // widget height
+      const maxX = window.innerWidth - 320;
+      const maxY = window.innerHeight - (isMinimized ? 60 : 500);
       
       setPosition({
         x: Math.max(0, Math.min(newX, maxX)),
@@ -85,6 +105,16 @@ const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
 
   const toggleMinimize = () => {
     setIsMinimized(!isMinimized);
+  };
+
+  const handleSendMessageWithSession = async (text: string) => {
+    if (!currentSessionId) {
+      const newSession = await createSession(`Report Chat: ${ideaName}`);
+      if (!newSession) return;
+      setCurrentSessionId(newSession.id);
+    }
+    
+    handleSendMessage(text);
   };
 
   return (
@@ -134,7 +164,7 @@ const FloatingChatWidget: React.FC<FloatingChatWidgetProps> = ({
               messages={messages}
               isTyping={isTyping}
               viewportRef={viewportRef}
-              onSendMessage={onSendMessage}
+              onSendMessage={handleSendMessageWithSession}
             />
           </div>
         </div>

@@ -18,9 +18,6 @@ import FinancialAnalysisTabContent from '@/components/results/FinancialAnalysisT
 import PrintView from '@/components/results/PrintView';
 import FloatingChatWidget from '@/components/assistant/FloatingChatWidget';
 import { useValidationReport } from '@/hooks/useValidationReport';
-import { useChatSessions } from '@/hooks/useChatSessions';
-import { useChatHistory } from '@/hooks/useChatHistory';
-import { useMessages } from '@/hooks/useMessages';
 import { format } from 'date-fns';
 
 const ResultsPage: React.FC = () => {
@@ -30,19 +27,6 @@ const ResultsPage: React.FC = () => {
   const { report, loading, error } = useValidationReport(reportId || '');
   const [showPrintView, setShowPrintView] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
-
-  // Chat functionality using existing system
-  const { createSession, currentSessionId, setCurrentSessionId } = useChatSessions();
-  const { clearHistory } = useChatHistory(currentSessionId);
-  const {
-    messages,
-    isTyping,
-    viewportRef,
-    handleSendMessage,
-    handleClearConversation,
-    handleDownloadChat,
-    isConfigured
-  } = useMessages(currentSessionId);
 
   const handleAIFollowUp = () => {
     navigate('/dashboard/assistant');
@@ -67,14 +51,7 @@ const ResultsPage: React.FC = () => {
     setShowPrintView(false);
   };
 
-  const handleOpenChat = async () => {
-    if (!currentSessionId && report) {
-      // Create a new session for this report
-      const session = await createSession(`Report Chat: ${report.idea_name || 'Business Idea'}`);
-      if (session) {
-        setCurrentSessionId(session.id);
-      }
-    }
+  const handleOpenChat = () => {
     setIsChatOpen(true);
   };
 
@@ -82,26 +59,7 @@ const ResultsPage: React.FC = () => {
     setIsChatOpen(false);
   };
 
-  const handleSendMessageWithSession = async (text: string) => {
-    // Create session if none exists
-    if (!currentSessionId) {
-      const newSession = await createSession(`Report Chat: ${report?.idea_name || 'Business Idea'}`);
-      if (!newSession) return;
-      setCurrentSessionId(newSession.id);
-    }
-    
-    handleSendMessage(text);
-  };
-
-  const handleClearConversationWithHistory = async () => {
-    handleClearConversation();
-    if (currentSessionId) {
-      await clearHistory();
-    }
-  };
-
   if (loading) {
-    // ... keep existing code (loading skeleton)
     return (
       <DashboardLayout>
         <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
@@ -119,7 +77,6 @@ const ResultsPage: React.FC = () => {
   };
 
   if (error || !report) {
-    // ... keep existing code (error alert)
     return (
       <DashboardLayout>
         <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
@@ -135,7 +92,6 @@ const ResultsPage: React.FC = () => {
     );
   }
 
-  // ... keep existing code (data extraction and processing)
   const reportData = report.report_data || {};
   
   const ideaName = report.idea_name || 'Untitled Idea';
@@ -255,7 +211,6 @@ const ResultsPage: React.FC = () => {
               </div>
               
               <div className="w-full px-6 pb-6">
-                {/* ... keep existing code (all tab content) */}
                 <TabsContent value="overview" className="mt-4 w-full">
                   <div data-tab-overview>
                     <OverviewTabContent 
@@ -322,10 +277,6 @@ const ResultsPage: React.FC = () => {
         {/* Floating Chat Widget */}
         {isChatOpen && (
           <FloatingChatWidget
-            messages={messages}
-            isTyping={isTyping}
-            viewportRef={viewportRef}
-            onSendMessage={handleSendMessageWithSession}
             onClose={handleCloseChat}
             ideaName={ideaName}
           />
