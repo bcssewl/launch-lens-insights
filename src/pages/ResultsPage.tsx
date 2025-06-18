@@ -101,7 +101,7 @@ const ResultsPage: React.FC = () => {
   };
 
   if (loading) {
-    
+    // ... keep existing code (loading skeleton)
     return (
       <DashboardLayout>
         <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
@@ -119,7 +119,7 @@ const ResultsPage: React.FC = () => {
   };
 
   if (error || !report) {
-    
+    // ... keep existing code (error alert)
     return (
       <DashboardLayout>
         <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
@@ -135,7 +135,7 @@ const ResultsPage: React.FC = () => {
     );
   }
 
-  
+  // ... keep existing code (data extraction and processing)
   const reportData = report.report_data || {};
   
   const ideaName = report.idea_name || 'Untitled Idea';
@@ -255,7 +255,7 @@ const ResultsPage: React.FC = () => {
               </div>
               
               <div className="w-full px-6 pb-6">
-                
+                {/* ... keep existing code (all tab content) */}
                 <TabsContent value="overview" className="mt-4 w-full">
                   <div data-tab-overview>
                     <OverviewTabContent 
