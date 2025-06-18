@@ -3,39 +3,47 @@ import React from 'react';
 
 interface PrintSWOTAnalysisProps {
   data: {
-    strengths: string[];
-    weaknesses: string[];
-    opportunities: string[];
-    threats: string[];
+    strengths?: string[];
+    weaknesses?: string[];
+    opportunities?: string[];
+    threats?: string[];
   };
 }
 
 const PrintSWOTAnalysis: React.FC<PrintSWOTAnalysisProps> = ({ data }) => {
+  // Provide safe fallbacks for all SWOT data
+  const safeData = {
+    strengths: data?.strengths || [],
+    weaknesses: data?.weaknesses || [],
+    opportunities: data?.opportunities || [],
+    threats: data?.threats || []
+  };
+
   const swotSections = [
     {
       title: 'Strengths',
-      items: data.strengths,
+      items: safeData.strengths,
       color: '#059669',
       bgColor: '#dcfce7',
       icon: '💪'
     },
     {
       title: 'Weaknesses', 
-      items: data.weaknesses,
+      items: safeData.weaknesses,
       color: '#dc2626',
       bgColor: '#fee2e2',
       icon: '⚠️'
     },
     {
       title: 'Opportunities',
-      items: data.opportunities,
+      items: safeData.opportunities,
       color: '#2563eb',
       bgColor: '#dbeafe',
       icon: '🚀'
     },
     {
       title: 'Threats',
-      items: data.threats,
+      items: safeData.threats,
       color: '#d97706',
       bgColor: '#fef3c7',
       icon: '⚡'
@@ -66,7 +74,7 @@ const PrintSWOTAnalysis: React.FC<PrintSWOTAnalysisProps> = ({ data }) => {
               </h3>
             </div>
             <ul className="space-y-2">
-              {section.items.length > 0 ? (
+              {section.items && section.items.length > 0 ? (
                 section.items.map((item, itemIndex) => (
                   <li key={itemIndex} className="text-sm flex items-start">
                     <span className="mr-2 mt-1">•</span>
