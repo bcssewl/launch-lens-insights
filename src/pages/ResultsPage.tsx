@@ -16,7 +16,10 @@ import DetailedScoresTabContent from '@/components/results/DetailedScoresTabCont
 import ActionItemsTabContent from '@/components/results/ActionItemsTabContent';
 import FinancialAnalysisTabContent from '@/components/results/FinancialAnalysisTabContent';
 import PrintView from '@/components/results/PrintView';
+import ReportChatPanel from '@/components/results/ReportChatPanel';
 import { useValidationReport } from '@/hooks/useValidationReport';
+import { useReportMessages } from '@/hooks/useReportMessages';
+import { useChatSessions } from '@/hooks/useChatSessions';
 import { format } from 'date-fns';
 
 const ResultsPage: React.FC = () => {
@@ -25,6 +28,10 @@ const ResultsPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const { report, loading, error } = useValidationReport(reportId || '');
   const [showPrintView, setShowPrintView] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+
+  // Chat functionality
+  const { createSession, currentSessionId, setCurrentSessionId } = useChatSessions();
 
   const handleAIFollowUp = () => {
     navigate('/dashboard/assistant');
@@ -49,7 +56,43 @@ const ResultsPage: React.FC = () => {
     setShowPrintView(false);
   };
 
+  const handleOpenChat = async () => {
+    if (!currentSessionId && report) {
+      // Create a new session for this report
+      const session = await createSession(`Report Chat: ${report.idea_name || 'Business Idea'}`);
+      if (session) {
+        setCurrentSessionId(session.id);
+      }
+    }
+    setIsChatOpen(true);
+  };
+
+  const handleCloseChat = () => {
+    setIsChatOpen(false);
+  };
+
+  // Prepare report context for chat
+  const reportContext = report ? {
+    reportId: report.id,
+    ideaName: report.idea_name || 'Untitled Idea',
+    score: report.overall_score || 0,
+    recommendation: report.recommendation || 'Analysis in progress',
+    reportData: report.report_data || {}
+  } : null;
+
+  // Initialize chat messages with report context
+  const {
+    messages,
+    isTyping,
+    viewportRef,
+    handleSendMessage,
+    handleClearConversation,
+    handleDownloadChat,
+    isConfigured
+  } = useReportMessages(reportContext!, currentSessionId);
+
   if (loading) {
+    
     return (
       <DashboardLayout>
         <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
@@ -67,6 +110,7 @@ const ResultsPage: React.FC = () => {
   };
 
   if (error || !report) {
+    
     return (
       <DashboardLayout>
         <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
@@ -82,7 +126,7 @@ const ResultsPage: React.FC = () => {
     );
   }
 
-  // Get report data or use default structure
+  
   const reportData = report.report_data || {};
   
   const ideaName = report.idea_name || 'Untitled Idea';
@@ -163,7 +207,7 @@ const ResultsPage: React.FC = () => {
   return (
     <DashboardLayout>
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
-        <div className="w-full max-w-7xl mx-auto px-6 py-8 space-y-8">
+        <div className={`w-full max-w-7xl mx-auto px-6 py-8 space-y-8 transition-all duration-300 ${isChatOpen ? 'mr-96' : ''}`}>
           {/* Back Button */}
           <div className="flex items-center gap-4">
             <Button 
@@ -183,6 +227,7 @@ const ResultsPage: React.FC = () => {
               recommendationText={recommendation}
               analysisDate={analysisDate}
               reportId={reportId}
+              onChatOpen={handleOpenChat}
             />
           </div>
 
@@ -201,6 +246,7 @@ const ResultsPage: React.FC = () => {
               </div>
               
               <div className="w-full px-6 pb-6">
+                
                 <TabsContent value="overview" className="mt-4 w-full">
                   <div data-tab-overview>
                     <OverviewTabContent 
@@ -248,6 +294,9 @@ const ResultsPage: React.FC = () => {
               <Button variant="outline" size="sm" className="w-full sm:w-auto apple-button-outline" onClick={handleOpenPrintView}>
                 <Printer className="mr-2 h-4 w-4" /> Print / Save as PDF
               </Button>
+              <Button variant="outline" size="sm" className="w-full sm:w-auto apple-button-outline" onClick={handleOpenChat}>
+                <MessageSquare className="mr-2 h-4 w-4" /> Chat with Advisor
+              </Button>
               <Button variant="outline" size="sm" className="w-full sm:w-auto apple-button-outline" onClick={handleAIFollowUp}>
                 <MessageSquare className="mr-2 h-4 w-4" /> Ask AI Follow-up
               </Button>
@@ -260,6 +309,21 @@ const ResultsPage: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Chat Panel */}
+        {reportContext && (
+          <ReportChatPanel
+            isOpen={isChatOpen}
+            onClose={handleCloseChat}
+            messages={messages}
+            isTyping={isTyping}
+            viewportRef={viewportRef}
+            onSendMessage={handleSendMessage}
+            onClearConversation={handleClearConversation}
+            onDownloadChat={handleDownloadChat}
+            reportTitle={ideaName}
+          />
+        )}
       </div>
     </DashboardLayout>
   );

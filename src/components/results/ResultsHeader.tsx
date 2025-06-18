@@ -1,6 +1,7 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Share2, TrendingUp, CheckCircle, Settings } from 'lucide-react';
+import { Share2, TrendingUp, CheckCircle, Settings, MessageSquare } from 'lucide-react';
 import ScoreDisplay from './ScoreDisplay';
 import ShareReportDialog from './ShareReportDialog';
 import ManageSharesDialog from './ManageSharesDialog';
@@ -11,6 +12,7 @@ interface ResultsHeaderProps {
   recommendationText: string;
   analysisDate: string;
   reportId?: string;
+  onChatOpen?: () => void;
 }
 
 const ResultsHeader: React.FC<ResultsHeaderProps> = ({
@@ -19,6 +21,7 @@ const ResultsHeader: React.FC<ResultsHeaderProps> = ({
   recommendationText,
   analysisDate,
   reportId,
+  onChatOpen,
 }) => {
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [manageSharesOpen, setManageSharesOpen] = useState(false);
@@ -96,6 +99,17 @@ const ResultsHeader: React.FC<ResultsHeaderProps> = ({
         </div>
         
         <div className="flex flex-wrap gap-2 print:hidden">
+          {onChatOpen && (
+            <Button 
+              variant="default" 
+              size="sm" 
+              className="w-fit apple-button"
+              onClick={onChatOpen}
+            >
+              <MessageSquare className="mr-2 h-4 w-4" />
+              Chat with Advisor
+            </Button>
+          )}
           <Button 
             variant="outline" 
             size="sm" 
