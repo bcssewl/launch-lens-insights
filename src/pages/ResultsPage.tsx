@@ -3,7 +3,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from '@/components/ui/button';
-import { Printer, MessageSquare, PlusCircle, Save, ArrowLeft, X } from 'lucide-react';
+import { Printer, MessageSquare, PlusCircle, Save, ArrowLeft } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -16,7 +16,6 @@ import DetailedScoresTabContent from '@/components/results/DetailedScoresTabCont
 import ActionItemsTabContent from '@/components/results/ActionItemsTabContent';
 import FinancialAnalysisTabContent from '@/components/results/FinancialAnalysisTabContent';
 import PrintView from '@/components/results/PrintView';
-import FloatingChatWidget from '@/components/assistant/FloatingChatWidget';
 import { useValidationReport } from '@/hooks/useValidationReport';
 import { format } from 'date-fns';
 
@@ -26,7 +25,6 @@ const ResultsPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const { report, loading, error } = useValidationReport(reportId || '');
   const [showPrintView, setShowPrintView] = useState(false);
-  const [isChatOpen, setIsChatOpen] = useState(false);
 
   const handleAIFollowUp = () => {
     navigate('/dashboard/assistant');
@@ -49,14 +47,6 @@ const ResultsPage: React.FC = () => {
 
   const handleClosePrintView = () => {
     setShowPrintView(false);
-  };
-
-  const handleOpenChat = () => {
-    setIsChatOpen(true);
-  };
-
-  const handleCloseChat = () => {
-    setIsChatOpen(false);
   };
 
   if (loading) {
@@ -92,6 +82,7 @@ const ResultsPage: React.FC = () => {
     );
   }
 
+  // Get report data or use default structure
   const reportData = report.report_data || {};
   
   const ideaName = report.idea_name || 'Untitled Idea';
@@ -192,7 +183,6 @@ const ResultsPage: React.FC = () => {
               recommendationText={recommendation}
               analysisDate={analysisDate}
               reportId={reportId}
-              onChatOpen={handleOpenChat}
             />
           </div>
 
@@ -258,9 +248,6 @@ const ResultsPage: React.FC = () => {
               <Button variant="outline" size="sm" className="w-full sm:w-auto apple-button-outline" onClick={handleOpenPrintView}>
                 <Printer className="mr-2 h-4 w-4" /> Print / Save as PDF
               </Button>
-              <Button variant="outline" size="sm" className="w-full sm:w-auto apple-button-outline" onClick={handleOpenChat}>
-                <MessageSquare className="mr-2 h-4 w-4" /> Chat with Advisor
-              </Button>
               <Button variant="outline" size="sm" className="w-full sm:w-auto apple-button-outline" onClick={handleAIFollowUp}>
                 <MessageSquare className="mr-2 h-4 w-4" /> Ask AI Follow-up
               </Button>
@@ -273,14 +260,6 @@ const ResultsPage: React.FC = () => {
             </div>
           </div>
         </div>
-
-        {/* Floating Chat Widget */}
-        {isChatOpen && (
-          <FloatingChatWidget
-            onClose={handleCloseChat}
-            ideaName={ideaName}
-          />
-        )}
       </div>
     </DashboardLayout>
   );
