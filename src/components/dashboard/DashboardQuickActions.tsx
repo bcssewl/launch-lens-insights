@@ -14,7 +14,7 @@ const DashboardQuickActions: React.FC<DashboardQuickActionsProps> = ({ onRefresh
       <Button size="lg" className="w-full sm:w-auto apple-button shadow-lg hover:shadow-xl transition-all duration-300" asChild>
         <Link to="/dashboard/validate">
           <Lightbulb className="mr-2 h-5 w-5" />
-          Validate New Idea
+          Analyze New Idea
         </Link>
       </Button>
       <Button variant="outline" size="lg" className="w-full sm:w-auto apple-button-outline">

@@ -16,7 +16,7 @@ const MobileAddNewSection: React.FC = () => {
           <Link to="/dashboard/validate" className="flex items-center justify-between px-4">
             <div className="flex flex-col items-start">
               <span className="text-white/90 text-sm">Ready to start?</span>
-              <span className="font-semibold text-base">Validate New Idea</span>
+              <span className="font-semibold text-base">Analyze New Idea</span>
             </div>
             <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
               <Plus className="h-4 w-4 text-white" />
