@@ -1,10 +1,10 @@
-
 import { Button } from "@/components/ui/button";
 import { ArrowRight, CheckCircle, Users, Star, Zap } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { FloatingElements } from "./FloatingElements";
 import { DashboardPreview } from "./DashboardPreview";
 import { useAuth } from "@/contexts/AuthContext";
+
 export const HeroSection = () => {
   const {
     user
@@ -37,7 +37,7 @@ export const HeroSection = () => {
         
         {/* Main Headline */}
         <h1 className="apple-heading max-w-4xl mx-auto">
-          Presenting the future of
+          Presenting The Future Of
           <br />
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-accent to-primary">
             business guidance
