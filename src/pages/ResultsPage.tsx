@@ -1,9 +1,10 @@
+
 import React, { useState } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from '@/components/ui/button';
-import { Printer, MessageSquare, PlusCircle, Save, ArrowLeft } from 'lucide-react';
+import { Printer, MessageSquare, PlusCircle, Save, ArrowLeft, X } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -16,10 +17,11 @@ import DetailedScoresTabContent from '@/components/results/DetailedScoresTabCont
 import ActionItemsTabContent from '@/components/results/ActionItemsTabContent';
 import FinancialAnalysisTabContent from '@/components/results/FinancialAnalysisTabContent';
 import PrintView from '@/components/results/PrintView';
-import ReportChatPanel from '@/components/results/ReportChatPanel';
+import ChatArea from '@/components/assistant/ChatArea';
 import { useValidationReport } from '@/hooks/useValidationReport';
-import { useReportMessages } from '@/hooks/useReportMessages';
 import { useChatSessions } from '@/hooks/useChatSessions';
+import { useChatHistory } from '@/hooks/useChatHistory';
+import { useMessages } from '@/hooks/useMessages';
 import { format } from 'date-fns';
 
 const ResultsPage: React.FC = () => {
@@ -30,8 +32,18 @@ const ResultsPage: React.FC = () => {
   const [showPrintView, setShowPrintView] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
 
-  // Chat functionality
+  // Chat functionality using existing system
   const { createSession, currentSessionId, setCurrentSessionId } = useChatSessions();
+  const { clearHistory } = useChatHistory(currentSessionId);
+  const {
+    messages,
+    isTyping,
+    viewportRef,
+    handleSendMessage,
+    handleClearConversation,
+    handleDownloadChat,
+    isConfigured
+  } = useMessages(currentSessionId);
 
   const handleAIFollowUp = () => {
     navigate('/dashboard/assistant');
@@ -71,25 +83,23 @@ const ResultsPage: React.FC = () => {
     setIsChatOpen(false);
   };
 
-  // Prepare report context for chat
-  const reportContext = report ? {
-    reportId: report.id,
-    ideaName: report.idea_name || 'Untitled Idea',
-    score: report.overall_score || 0,
-    recommendation: report.recommendation || 'Analysis in progress',
-    reportData: report.report_data || {}
-  } : null;
+  const handleSendMessageWithSession = async (text: string) => {
+    // Create session if none exists
+    if (!currentSessionId) {
+      const newSession = await createSession(`Report Chat: ${report?.idea_name || 'Business Idea'}`);
+      if (!newSession) return;
+      setCurrentSessionId(newSession.id);
+    }
+    
+    handleSendMessage(text);
+  };
 
-  // Initialize chat messages with report context
-  const {
-    messages,
-    isTyping,
-    viewportRef,
-    handleSendMessage,
-    handleClearConversation,
-    handleDownloadChat,
-    isConfigured
-  } = useReportMessages(reportContext!, currentSessionId);
+  const handleClearConversationWithHistory = async () => {
+    handleClearConversation();
+    if (currentSessionId) {
+      await clearHistory();
+    }
+  };
 
   if (loading) {
     
@@ -207,123 +217,144 @@ const ResultsPage: React.FC = () => {
   return (
     <DashboardLayout>
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
-        <div className={`w-full max-w-7xl mx-auto px-6 py-8 space-y-8 transition-all duration-300 ${isChatOpen ? 'mr-96' : ''}`}>
-          {/* Back Button */}
-          <div className="flex items-center gap-4">
-            <Button 
-              variant="ghost" 
-              onClick={handleGoBack}
-              className="flex items-center gap-2 hover:bg-muted/50"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              {backButtonText}
-            </Button>
-          </div>
-
-          <div data-results-header>
-            <ResultsHeader 
-              ideaName={ideaName}
-              score={score}
-              recommendationText={recommendation}
-              analysisDate={analysisDate}
-              reportId={reportId}
-              onChatOpen={handleOpenChat}
-            />
-          </div>
-
-          <div className="apple-card border-0 shadow-lg">
-            <Tabs defaultValue="overview" className="w-full">
-              <div className="w-full overflow-x-auto mb-6 p-6 pb-0">
-                <TabsList className="flex min-w-fit w-max bg-muted/30 rounded-2xl p-1">
-                  <TabsTrigger value="overview" className="flex-shrink-0 text-xs sm:text-sm px-3 py-2 rounded-xl whitespace-nowrap">Overview</TabsTrigger>
-                  <TabsTrigger value="market" className="flex-shrink-0 text-xs sm:text-sm px-3 py-2 rounded-xl whitespace-nowrap">Market</TabsTrigger>
-                  <TabsTrigger value="competition" className="flex-shrink-0 text-xs sm:text-sm px-3 py-2 rounded-xl whitespace-nowrap">Competition</TabsTrigger>
-                  <TabsTrigger value="financial" className="flex-shrink-0 text-xs sm:text-sm px-3 py-2 rounded-xl whitespace-nowrap">Financial</TabsTrigger>
-                  <TabsTrigger value="swot" className="flex-shrink-0 text-xs sm:text-sm px-3 py-2 rounded-xl whitespace-nowrap">SWOT</TabsTrigger>
-                  <TabsTrigger value="scores" className="flex-shrink-0 text-xs sm:text-sm px-3 py-2 rounded-xl whitespace-nowrap">Scores</TabsTrigger>
-                  <TabsTrigger value="actions" className="flex-shrink-0 text-xs sm:text-sm px-3 py-2 rounded-xl whitespace-nowrap">Actions</TabsTrigger>
-                </TabsList>
+        <div className="flex h-screen">
+          {/* Main Content */}
+          <div className={`flex-1 transition-all duration-300 ${isChatOpen ? 'mr-96' : ''}`}>
+            <div className="w-full max-w-7xl mx-auto px-6 py-8 space-y-8">
+              {/* Back Button */}
+              <div className="flex items-center gap-4">
+                <Button 
+                  variant="ghost" 
+                  onClick={handleGoBack}
+                  className="flex items-center gap-2 hover:bg-muted/50"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  {backButtonText}
+                </Button>
               </div>
-              
-              <div className="w-full px-6 pb-6">
-                
-                <TabsContent value="overview" className="mt-4 w-full">
-                  <div data-tab-overview>
-                    <OverviewTabContent 
-                      summary={executiveSummary}
-                      metrics={keyMetrics}
-                    />
-                  </div>
-                </TabsContent>
-                <TabsContent value="market" className="mt-4 w-full">
-                  <div data-tab-market>
-                    <MarketAnalysisTabContent data={marketAnalysis} />
-                  </div>
-                </TabsContent>
-                <TabsContent value="competition" className="mt-4 w-full">
-                  <div data-tab-competition>
-                    <CompetitionTabContent data={competition} />
-                  </div>
-                </TabsContent>
-                <TabsContent value="financial" className="mt-4 w-full">
-                  <div data-tab-financial>
-                    <FinancialAnalysisTabContent data={financialAnalysis} />
-                  </div>
-                </TabsContent>
-                <TabsContent value="swot" className="mt-4 w-full">
-                  <div data-tab-swot>
-                    <SWOTAnalysisTabContent data={swot} />
-                  </div>
-                </TabsContent>
-                <TabsContent value="scores" className="mt-4 w-full">
-                  <div data-tab-scores>
-                    <DetailedScoresTabContent scores={detailedScores} />
-                  </div>
-                </TabsContent>
-                <TabsContent value="actions" className="mt-4 w-full">
-                  <div data-tab-actions>
-                    <ActionItemsTabContent items={actionItems} />
-                  </div>
-                </TabsContent>
-              </div>
-            </Tabs>
-          </div>
 
-          <div className="w-full border-t border-border/50 pt-8 mt-8">
-            <div className="flex flex-col sm:flex-row gap-3 justify-end">
-              <Button variant="outline" size="sm" className="w-full sm:w-auto apple-button-outline" onClick={handleOpenPrintView}>
-                <Printer className="mr-2 h-4 w-4" /> Print / Save as PDF
-              </Button>
-              <Button variant="outline" size="sm" className="w-full sm:w-auto apple-button-outline" onClick={handleOpenChat}>
-                <MessageSquare className="mr-2 h-4 w-4" /> Chat with Advisor
-              </Button>
-              <Button variant="outline" size="sm" className="w-full sm:w-auto apple-button-outline" onClick={handleAIFollowUp}>
-                <MessageSquare className="mr-2 h-4 w-4" /> Ask AI Follow-up
-              </Button>
-              <Button size="sm" className="w-full sm:w-auto apple-button">
-                <Save className="mr-2 h-4 w-4" /> Save to My Reports
-              </Button>
-              <Button variant="secondary" size="sm" className="w-full sm:w-auto apple-button-outline">
-                <PlusCircle className="mr-2 h-4 w-4" /> Start New Analysis
-              </Button>
+              <div data-results-header>
+                <ResultsHeader 
+                  ideaName={ideaName}
+                  score={score}
+                  recommendationText={recommendation}
+                  analysisDate={analysisDate}
+                  reportId={reportId}
+                  onChatOpen={handleOpenChat}
+                />
+              </div>
+
+              <div className="apple-card border-0 shadow-lg">
+                <Tabs defaultValue="overview" className="w-full">
+                  <div className="w-full overflow-x-auto mb-6 p-6 pb-0">
+                    <TabsList className="flex min-w-fit w-max bg-muted/30 rounded-2xl p-1">
+                      <TabsTrigger value="overview" className="flex-shrink-0 text-xs sm:text-sm px-3 py-2 rounded-xl whitespace-nowrap">Overview</TabsTrigger>
+                      <TabsTrigger value="market" className="flex-shrink-0 text-xs sm:text-sm px-3 py-2 rounded-xl whitespace-nowrap">Market</TabsTrigger>
+                      <TabsTrigger value="competition" className="flex-shrink-0 text-xs sm:text-sm px-3 py-2 rounded-xl whitespace-nowrap">Competition</TabsTrigger>
+                      <TabsTrigger value="financial" className="flex-shrink-0 text-xs sm:text-sm px-3 py-2 rounded-xl whitespace-nowrap">Financial</TabsTrigger>
+                      <TabsTrigger value="swot" className="flex-shrink-0 text-xs sm:text-sm px-3 py-2 rounded-xl whitespace-nowrap">SWOT</TabsTrigger>
+                      <TabsTrigger value="scores" className="flex-shrink-0 text-xs sm:text-sm px-3 py-2 rounded-xl whitespace-nowrap">Scores</TabsTrigger>
+                      <TabsTrigger value="actions" className="flex-shrink-0 text-xs sm:text-sm px-3 py-2 rounded-xl whitespace-nowrap">Actions</TabsTrigger>
+                    </TabsList>
+                  </div>
+                  
+                  <div className="w-full px-6 pb-6">
+                    
+                    <TabsContent value="overview" className="mt-4 w-full">
+                      <div data-tab-overview>
+                        <OverviewTabContent 
+                          summary={executiveSummary}
+                          metrics={keyMetrics}
+                        />
+                      </div>
+                    </TabsContent>
+                    <TabsContent value="market" className="mt-4 w-full">
+                      <div data-tab-market>
+                        <MarketAnalysisTabContent data={marketAnalysis} />
+                      </div>
+                    </TabsContent>
+                    <TabsContent value="competition" className="mt-4 w-full">
+                      <div data-tab-competition>
+                        <CompetitionTabContent data={competition} />
+                      </div>
+                    </TabsContent>
+                    <TabsContent value="financial" className="mt-4 w-full">
+                      <div data-tab-financial>
+                        <FinancialAnalysisTabContent data={financialAnalysis} />
+                      </div>
+                    </TabsContent>
+                    <TabsContent value="swot" className="mt-4 w-full">
+                      <div data-tab-swot>
+                        <SWOTAnalysisTabContent data={swot} />
+                      </div>
+                    </TabsContent>
+                    <TabsContent value="scores" className="mt-4 w-full">
+                      <div data-tab-scores>
+                        <DetailedScoresTabContent scores={detailedScores} />
+                      </div>
+                    </TabsContent>
+                    <TabsContent value="actions" className="mt-4 w-full">
+                      <div data-tab-actions>
+                        <ActionItemsTabContent items={actionItems} />
+                      </div>
+                    </TabsContent>
+                  </div>
+                </Tabs>
+              </div>
+
+              <div className="w-full border-t border-border/50 pt-8 mt-8">
+                <div className="flex flex-col sm:flex-row gap-3 justify-end">
+                  <Button variant="outline" size="sm" className="w-full sm:w-auto apple-button-outline" onClick={handleOpenPrintView}>
+                    <Printer className="mr-2 h-4 w-4" /> Print / Save as PDF
+                  </Button>
+                  <Button variant="outline" size="sm" className="w-full sm:w-auto apple-button-outline" onClick={handleOpenChat}>
+                    <MessageSquare className="mr-2 h-4 w-4" /> Chat with Advisor
+                  </Button>
+                  <Button variant="outline" size="sm" className="w-full sm:w-auto apple-button-outline" onClick={handleAIFollowUp}>
+                    <MessageSquare className="mr-2 h-4 w-4" /> Ask AI Follow-up
+                  </Button>
+                  <Button size="sm" className="w-full sm:w-auto apple-button">
+                    <Save className="mr-2 h-4 w-4" /> Save to My Reports
+                  </Button>
+                  <Button variant="secondary" size="sm" className="w-full sm:w-auto apple-button-outline">
+                    <PlusCircle className="mr-2 h-4 w-4" /> Start New Analysis
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Chat Panel */}
-        {reportContext && (
-          <ReportChatPanel
-            isOpen={isChatOpen}
-            onClose={handleCloseChat}
-            messages={messages}
-            isTyping={isTyping}
-            viewportRef={viewportRef}
-            onSendMessage={handleSendMessage}
-            onClearConversation={handleClearConversation}
-            onDownloadChat={handleDownloadChat}
-            reportTitle={ideaName}
-          />
-        )}
+          {/* Chat Sidebar */}
+          {isChatOpen && (
+            <div className="fixed right-0 top-0 h-full w-96 bg-background border-l border-border shadow-2xl z-50 flex flex-col">
+              {/* Header */}
+              <div className="p-4 border-b border-border bg-muted/30">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="h-5 w-5 text-primary" />
+                    <h2 className="font-semibold text-sm">Report Advisor</h2>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={handleCloseChat}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground truncate">
+                  Discussing: {ideaName}
+                </p>
+              </div>
+
+              {/* Chat Area */}
+              <div className="flex-1 min-h-0">
+                <ChatArea
+                  messages={messages}
+                  isTyping={isTyping}
+                  viewportRef={viewportRef}
+                  onSendMessage={handleSendMessageWithSession}
+                />
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </DashboardLayout>
   );
