@@ -40,7 +40,7 @@ export const HeroSection = () => {
           Presenting The Future Of
           <br />
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-accent to-primary">
-            business guidance
+            Business Guidance
           </span>
         </h1>
         
