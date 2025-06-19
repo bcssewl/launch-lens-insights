@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
 import { CheckCircle, Brain } from 'lucide-react';
 import AnalysisTimer from './AnalysisTimer';
 
@@ -14,37 +13,6 @@ const EnhancedAnalysisLoader: React.FC<EnhancedAnalysisLoaderProps> = ({
   status,
   useAnimation = false
 }) => {
-  const [animatedProgress, setAnimatedProgress] = useState(10);
-
-  useEffect(() => {
-    if (!useAnimation || status !== 'generating') {
-      return;
-    }
-
-    // 6.5 minute animation (390 seconds) from 10% to 95%
-    const totalDuration = 390000; // 6.5 minutes in milliseconds
-    const startProgress = 10;
-    const endProgress = 95;
-    const progressRange = endProgress - startProgress;
-    const startTime = Date.now();
-
-    const animateProgress = () => {
-      const elapsed = Date.now() - startTime;
-      const progressRatio = Math.min(elapsed / totalDuration, 1);
-
-      // Smooth easing function for more realistic progress
-      const easeOutQuart = 1 - Math.pow(1 - progressRatio, 4);
-      const newProgress = startProgress + progressRange * easeOutQuart;
-      setAnimatedProgress(Math.round(newProgress));
-
-      if (progressRatio < 1) {
-        requestAnimationFrame(animateProgress);
-      }
-    };
-
-    animateProgress();
-  }, [status, useAnimation]);
-
   if (status === 'completed') {
     return (
       <Card className="apple-card border-0 shadow-lg">
@@ -105,20 +73,6 @@ const EnhancedAnalysisLoader: React.FC<EnhancedAnalysisLoaderProps> = ({
           {/* Timer Component */}
           <div className="flex justify-center">
             <AnalysisTimer className="bg-gradient-to-r from-primary/5 to-accent/5 p-6 rounded-2xl border border-primary/10" />
-          </div>
-
-          {/* Overall Progress */}
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium text-foreground">Analysis Progress</span>
-              <span className="text-sm font-medium text-foreground">
-                {useAnimation ? animatedProgress : 60}%
-              </span>
-            </div>
-            <div className="relative">
-              <Progress value={useAnimation ? animatedProgress : 60} className="h-3 bg-muted" />
-              <div className="absolute inset-0 bg-gradient-to-r from-primary via-accent to-primary opacity-20 rounded-full animate-pulse h-3"></div>
-            </div>
           </div>
         </div>
       </CardContent>
