@@ -28,9 +28,7 @@ const TutorialVideoDialog: React.FC<TutorialVideoDialogProps> = ({
           <div className="relative" style={{ paddingBottom: '56.25%', height: 0 }}>
             <iframe
               src="https://www.loom.com/embed/c638d83179fc41b5b70ebb08a64142fb?sid=1f4583e2-2bc7-4af8-b1dd-ddfda77716ae"
-              frameBorder="0"
-              webkitAllowFullScreen
-              mozAllowFullScreen
+              frameBorder={0}
               allowFullScreen
               style={{
                 position: 'absolute',
