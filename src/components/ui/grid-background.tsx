@@ -8,17 +8,17 @@ export function GridBackground() {
     <div
       className="fixed inset-0 pointer-events-none"
       style={{
-        background: "radial-gradient(circle at center, #1E40AF, #000000)",
+        background: "radial-gradient(circle at center, #1a1a1a, #000000)",
       }}
     >
       <div
         className="absolute inset-0"
         style={{
           backgroundImage: `
-            linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(255,255,255,0.02) 1px, transparent 1px)
+            linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px)
           `,
-          backgroundSize: "20px 20px",
+          backgroundSize: "24px 24px",
         }}
       />
     </div>
