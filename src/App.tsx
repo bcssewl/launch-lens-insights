@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
+import WaitlistPage from "./pages/WaitlistPage";
 import NotFound from "./pages/NotFound";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -43,6 +44,7 @@ const App = () => (
             <Sonner />
             <Routes>
               <Route path="/" element={<LandingPage />} />
+              <Route path="/waitlist" element={<WaitlistPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignUpPage />} />
               <Route path="/auth/confirm" element={<EmailConfirmationPage />} />
