@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { GridBackground } from '@/components/ui/grid-background';
 import WaitlistSignupForm from '@/components/waitlist/WaitlistSignupForm';
@@ -7,10 +6,8 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Icons } from '@/components/ui/icons';
 import { Logo } from '@/components/icons';
-
 const WaitlistPage = () => {
-  return (
-    <div className="relative min-h-screen">
+  return <div className="relative min-h-screen">
       <GridBackground />
       
       {/* Minimal header with just logo - no navigation */}
@@ -56,22 +53,14 @@ const WaitlistPage = () => {
                   <AvatarFallback className="text-sm font-semibold bg-blue-700 text-white">MK</AvatarFallback>
                 </Avatar>
               </div>
-              <span className="font-bold text-white">2,847+ people on the waitlist</span>
+              <span className="font-bold text-white">200+ people on the waitlist</span>
             </div>
 
             <div className="flex gap-6 justify-center">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-gray-400 hover:text-gray-300"
-              >
+              <Button variant="ghost" size="icon" className="text-gray-400 hover:text-gray-300">
                 <Icons.twitter className="w-5 h-5 fill-current" />
               </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-gray-400 hover:text-gray-300"
-              >
+              <Button variant="ghost" size="icon" className="text-gray-400 hover:text-gray-300">
                 <Icons.gitHub className="w-5 h-5 fill-current" />
               </Button>
             </div>
@@ -118,8 +107,6 @@ const WaitlistPage = () => {
           </div>
         </div>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default WaitlistPage;
