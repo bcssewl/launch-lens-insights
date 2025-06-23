@@ -1,22 +1,27 @@
 
 import React from 'react';
-import { LandingNavbar } from '@/components/LandingNavbar';
-import { Footer } from '@/components/ui/footer-section';
 import { GridBackground } from '@/components/ui/grid-background';
 import WaitlistSignupForm from '@/components/waitlist/WaitlistSignupForm';
 import { CheckCircle, Zap, Users, Star } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Icons } from '@/components/ui/icons';
+import { Logo } from '@/components/icons';
 
 const WaitlistPage = () => {
   return (
     <div className="relative min-h-screen">
       <GridBackground />
-      <LandingNavbar />
+      
+      {/* Minimal header with just logo - no navigation */}
+      <div className="relative z-10 pt-8 px-6 md:px-10">
+        <div className="flex justify-center">
+          <Logo />
+        </div>
+      </div>
       
       <div className="relative z-10 flex items-center justify-center min-h-screen">
-        <div className="w-full max-w-xl mx-auto p-8 space-y-12 pt-32">
+        <div className="w-full max-w-xl mx-auto p-8 space-y-12 pt-16">
           <div className="space-y-6 text-center">
             {/* Badge */}
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 mb-8">
@@ -104,10 +109,15 @@ const WaitlistPage = () => {
               </p>
             </div>
           </div>
+
+          {/* Minimal footer text - no navigation */}
+          <div className="text-center pt-16 pb-8">
+            <p className="text-sm text-gray-500">
+              © {new Date().getFullYear()} Optivise. All rights reserved.
+            </p>
+          </div>
         </div>
       </div>
-      
-      <Footer />
     </div>
   );
 };
