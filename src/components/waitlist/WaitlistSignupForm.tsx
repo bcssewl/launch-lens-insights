@@ -47,7 +47,7 @@ const WaitlistSignupForm = () => {
         ]);
 
       if (error) {
-        if (error.code === '23505') { // Unique constraint violation
+        if (error.code === '23505') {
           toast({
             title: "Already signed up!",
             description: "This email is already on our waitlist. We'll be in touch soon!",
@@ -79,16 +79,16 @@ const WaitlistSignupForm = () => {
   if (isSuccess) {
     return (
       <div className="max-w-md mx-auto text-center">
-        <div className="w-16 h-16 mx-auto mb-6 bg-gradient-to-r from-success to-success/80 rounded-full flex items-center justify-center">
+        <div className="w-16 h-16 mx-auto mb-6 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center">
           <CheckCircle className="h-8 w-8 text-white" />
         </div>
-        <h3 className="text-xl font-semibold text-foreground mb-3">
+        <h3 className="text-xl font-semibold text-white mb-3">
           You're on the list!
         </h3>
-        <p className="text-muted-foreground mb-6">
+        <p className="text-gray-400 mb-6">
           Thanks for joining our waitlist. We'll send you an email as soon as we're ready for you to try Optivise.
         </p>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-gray-500">
           Keep an eye on your inbox — early access is coming soon!
         </p>
       </div>
@@ -98,28 +98,26 @@ const WaitlistSignupForm = () => {
   return (
     <div className="max-w-md mx-auto">
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
+        <div className="flex gap-2">
           <Input
             type="email"
-            placeholder="Enter your email address"
+            placeholder="Enter your email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="h-12 text-lg border-border-subtle focus:border-primary"
+            className="h-12 bg-gray-950/50 border-gray-800 text-white placeholder:text-gray-400"
             disabled={isLoading}
           />
+          <Button
+            type="submit"
+            className="h-12 px-6 bg-black hover:bg-black/90 text-white"
+            variant="ghost"
+            disabled={isLoading}
+          >
+            {isLoading ? 'Joining...' : 'Get Notified'}
+          </Button>
         </div>
-        <Button 
-          type="submit" 
-          size="lg" 
-          className="w-full h-12 text-lg bg-primary hover:bg-primary-hover"
-          disabled={isLoading}
-          loading={isLoading}
-        >
-          {isLoading ? 'Joining...' : 'Join the Waitlist'}
-          {!isLoading && <ArrowRight className="ml-2 h-5 w-5" />}
-        </Button>
       </form>
-      <p className="text-xs text-muted-foreground text-center mt-4">
+      <p className="text-xs text-gray-500 text-center mt-4">
         We respect your privacy. No spam, unsubscribe at any time.
       </p>
     </div>
