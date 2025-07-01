@@ -35,11 +35,26 @@ const AIAssistantPage: React.FC = () => {
     isConfigured
   } = useMessages(currentSessionId);
 
-  // Debug logging
+  // Enhanced debugging with CSS inspection
   useEffect(() => {
-    console.log('AIAssistantPage rendered - checking background styling');
+    console.log('=== AI Assistant Page Debug ===');
     console.log('Current route:', window.location.pathname);
-    console.log('Apple-hero class should be applied to container');
+    console.log('Theme mode:', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+    
+    // Check CSS variables
+    const rootStyles = getComputedStyle(document.documentElement);
+    console.log('CSS Variables:', {
+      background: rootStyles.getPropertyValue('--background'),
+      surface: rootStyles.getPropertyValue('--surface'),
+      primary: rootStyles.getPropertyValue('--primary'),
+      accent: rootStyles.getPropertyValue('--accent')
+    });
+    
+    // Check if apple-hero class exists
+    const appleHeroElements = document.querySelectorAll('.apple-hero');
+    console.log('Apple-hero elements found:', appleHeroElements.length);
+    
+    console.log('=== End Debug ===');
   }, []);
 
   // Handle keyboard shortcuts
@@ -101,15 +116,33 @@ const AIAssistantPage: React.FC = () => {
     );
   }
 
-  // Normal mode with sidebar - enhanced debugging and explicit background
+  // Normal mode with enhanced background
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full apple-hero relative" style={{ 
-        background: 'var(--gradient-bg, linear-gradient(135deg, #667eea 0%, #764ba2 100%))',
-        minHeight: '100vh'
-      }}>
-        {/* Add FloatingElements to match other dashboards */}
-        <FloatingElements />
+      <div 
+        className="min-h-screen flex w-full relative"
+        style={{ 
+          background: `
+            linear-gradient(135deg, 
+              hsl(var(--primary) / 0.1) 0%, 
+              hsl(var(--accent) / 0.1) 25%,
+              hsl(var(--background)) 50%,
+              hsl(var(--accent) / 0.05) 75%,
+              hsl(var(--primary) / 0.05) 100%
+            )
+          `,
+          minHeight: '100vh',
+          position: 'relative'
+        }}
+      >
+        {/* Enhanced floating elements for visual distinction */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-20 left-10 w-8 h-8 bg-primary/10 rounded-full blur-sm animate-pulse" />
+          <div className="absolute top-40 right-20 w-12 h-12 bg-accent/15 rounded-2xl rotate-12 animate-pulse" style={{ animationDelay: '1s' }} />
+          <div className="absolute bottom-40 left-20 w-6 h-6 bg-primary/8 rounded-xl animate-pulse" style={{ animationDelay: '2s' }} />
+          <div className="absolute top-60 right-10 w-16 h-4 bg-gradient-to-r from-primary/10 to-accent/10 rounded-full animate-pulse" style={{ animationDelay: '0.5s' }} />
+          <div className="absolute bottom-60 right-1/4 w-10 h-10 bg-accent/12 rounded-full animate-pulse" style={{ animationDelay: '1.5s' }} />
+        </div>
         
         <AppSidebar />
         
