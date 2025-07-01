@@ -111,37 +111,6 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({ onSendMessa
           </div>
         </div>
       </div>
-
-      {/* Features Highlight */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl w-full">
-        <div className="text-center">
-          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
-            <Search className="w-5 h-5 text-primary" />
-          </div>
-          <h3 className="font-medium text-foreground mb-2">Market Analysis</h3>
-          <p className="text-sm text-muted-foreground">
-            Get comprehensive market insights and validation reports
-          </p>
-        </div>
-        <div className="text-center">
-          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
-            <Plus className="w-5 h-5 text-primary" />
-          </div>
-          <h3 className="font-medium text-foreground mb-2">Strategic Advice</h3>
-          <p className="text-sm text-muted-foreground">
-            AI-powered business strategies and growth recommendations
-          </p>
-        </div>
-        <div className="text-center">
-          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
-            <Mic className="w-5 h-5 text-primary" />
-          </div>
-          <h3 className="font-medium text-foreground mb-2">Voice Input</h3>
-          <p className="text-sm text-muted-foreground">
-            Speak your ideas and get instant feedback and analysis
-          </p>
-        </div>
-      </div>
     </div>
   );
 };
