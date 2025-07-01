@@ -5,7 +5,6 @@ import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { FloatingElements } from '@/components/landing/FloatingElements';
 import DashboardHeader from '@/components/DashboardHeader';
 import MobileDashboardHeader from '@/components/mobile/MobileDashboardHeader';
-import ChatSubheader from '@/components/assistant/ChatSubheader';
 import ChatArea from '@/components/assistant/ChatArea';
 import FullscreenChatLayout from '@/components/assistant/FullscreenChatLayout';
 import { useChatSessions } from '@/hooks/useChatSessions';
@@ -94,31 +93,29 @@ const AIAssistantPage: React.FC = () => {
     );
   }
 
-  // Normal mode with sidebar
+  // Normal mode with sidebar - clean Perplexity-inspired interface
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-gradient-to-br from-background via-background to-muted/10 apple-hero relative">
-        <FloatingElements />
+      <div className="min-h-screen flex w-full bg-background relative">
+        {/* Subtle background only */}
+        <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-muted/5 pointer-events-none" />
+        
         <AppSidebar />
         
         <SidebarInset className="flex-1 flex flex-col relative z-10">
+          {/* Minimal header */}
           {isMobile ? (
             <MobileDashboardHeader title="AI Assistant" />
           ) : (
-            <DashboardHeader>AI Assistant</DashboardHeader>
+            <div className="border-b bg-background/80 backdrop-blur-sm">
+              <div className="px-6 py-4">
+                <h1 className="text-lg font-semibold text-foreground">AI Assistant</h1>
+              </div>
+            </div>
           )}
           
+          {/* Main chat area */}
           <div className="flex flex-col flex-1 min-h-0 w-full relative">
-            <ChatSubheader
-              isConfigured={isConfigured}
-              currentSessionId={currentSessionId}
-              isFullscreen={false}
-              onToggleFullscreen={toggleFullscreen}
-              onDownloadChat={handleDownloadChat}
-              onClearConversation={handleClearConversationWithHistory}
-              onSessionSelect={handleSessionSelect}
-            />
-            
             <ChatArea
               messages={messages}
               isTyping={isTyping}

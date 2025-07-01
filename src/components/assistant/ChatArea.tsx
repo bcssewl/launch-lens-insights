@@ -3,8 +3,8 @@ import React from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import ChatMessage from '@/components/assistant/ChatMessage';
 import TypingIndicator from '@/components/assistant/TypingIndicator';
-import ChatEmptyState from '@/components/assistant/ChatEmptyState';
-import ChatInput from '@/components/assistant/ChatInput';
+import PerplexityEmptyState from '@/components/assistant/PerplexityEmptyState';
+import EnhancedChatInput from '@/components/assistant/EnhancedChatInput';
 import { Message } from '@/constants/aiAssistant';
 
 interface ChatAreaProps {
@@ -20,31 +20,42 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   viewportRef,
   onSendMessage
 }) => {
+  const hasConversation = messages.length > 1 || isTyping;
+
+  if (!hasConversation) {
+    // Show Perplexity-inspired empty state
+    return (
+      <div className="flex flex-col flex-1 min-h-0 w-full relative">
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <PerplexityEmptyState onSendMessage={onSendMessage} />
+        </div>
+      </div>
+    );
+  }
+
+  // Show conversation with compact input
   return (
     <div className="flex flex-col flex-1 min-h-0 w-full relative">
       {/* Chat Messages Area */}
-      <div className="flex-1 min-h-0 overflow-hidden mx-4 bg-background/30 backdrop-blur-xl border border-border/50 border-t-0 rounded-b-3xl relative">
+      <div className="flex-1 min-h-0 overflow-hidden">
         <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
-          <div className="p-6 space-y-6 flex flex-col items-stretch min-h-full transition-all duration-150">
-            {messages.length <= 1 && !isTyping ? (
-              <ChatEmptyState />
-            ) : (
-              <>
-                {messages.map((msg) => (
-                  <ChatMessage key={msg.id} message={{ ...msg, timestamp: formatTimestamp(msg.timestamp) }} />
-                ))}
-                {isTyping && <TypingIndicator />}
-              </>
-            )}
+          <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
+            {messages.map((msg) => (
+              <ChatMessage key={msg.id} message={{ ...msg, timestamp: formatTimestamp(msg.timestamp) }} />
+            ))}
+            {isTyping && <TypingIndicator />}
           </div>
-          <div className="absolute left-0 top-0 w-full h-6 pointer-events-none z-10 bg-gradient-to-b from-background/90 via-background/80 to-transparent" />
-          <div className="absolute left-0 bottom-0 w-full h-10 pointer-events-none z-10 bg-gradient-to-t from-background/95 via-background/60 to-transparent" />
+          <div className="h-24" /> {/* Spacer for input */}
         </ScrollArea>
       </div>
 
-      {/* Input Area */}
-      <div className="p-4">
-        <ChatInput onSendMessage={onSendMessage} isTyping={isTyping} />
+      {/* Fixed Input Area */}
+      <div className="fixed bottom-0 left-0 right-0 z-10">
+        <EnhancedChatInput 
+          onSendMessage={onSendMessage} 
+          isTyping={isTyping}
+          isCompact={true}
+        />
       </div>
     </div>
   );
