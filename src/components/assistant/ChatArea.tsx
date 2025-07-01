@@ -23,9 +23,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   const hasConversation = messages.length > 1 || isTyping;
 
   if (!hasConversation) {
-    // Show Perplexity-inspired empty state
+    // Show Perplexity-inspired empty state with transparent background
     return (
-      <div className="flex flex-col flex-1 min-h-0 w-full relative">
+      <div className="flex flex-col flex-1 min-h-0 w-full relative bg-transparent">
         <div className="flex-1 min-h-0 overflow-hidden">
           <PerplexityEmptyState onSendMessage={onSendMessage} />
         </div>
@@ -33,9 +33,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     );
   }
 
-  // Show conversation with compact input
+  // Show conversation with compact input and transparent background
   return (
-    <div className="flex flex-col flex-1 min-h-0 w-full relative">
+    <div className="flex flex-col flex-1 min-h-0 w-full relative bg-transparent">
       {/* Chat Messages Area */}
       <div className="flex-1 min-h-0 overflow-hidden">
         <ScrollArea className="h-full w-full" viewportRef={viewportRef}>

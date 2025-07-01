@@ -14,7 +14,7 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({ onSendMessa
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[70vh] px-6 py-12 text-center max-w-4xl mx-auto">
+    <div className="flex flex-col items-center justify-center min-h-[70vh] px-6 py-12 text-center max-w-4xl mx-auto bg-transparent">
       {/* Logo/Branding Section */}
       <div className="mb-12">
         <div className="flex items-center justify-center mb-6">
