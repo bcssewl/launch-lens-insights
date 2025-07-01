@@ -1,9 +1,12 @@
+
 import React from 'react';
 import { cn } from '@/lib/utils';
 import AIAvatar from './AIAvatar';
 import UserAvatar from './UserAvatar';
 import CopyButton from './CopyButton';
 import MarkdownRenderer from './MarkdownRenderer';
+import CanvasButton from './CanvasButton';
+import { isReportMessage, getReportPreview } from '@/utils/reportDetection';
 
 export interface ChatMessageData {
   id: string;
@@ -14,10 +17,18 @@ export interface ChatMessageData {
 
 interface ChatMessageProps {
   message: ChatMessageData;
+  onOpenCanvas?: (messageId: string, content: string) => void;
 }
 
-const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
+const ChatMessage: React.FC<ChatMessageProps> = ({ message, onOpenCanvas }) => {
   const isAi = message.sender === 'ai';
+  const isReport = isAi && isReportMessage(message.text);
+
+  const handleCanvasOpen = () => {
+    if (onOpenCanvas) {
+      onOpenCanvas(message.id, message.text);
+    }
+  };
 
   return (
     <div
@@ -26,7 +37,6 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
         isAi ? "justify-start" : "justify-end"
       )}
       style={{
-        // Keep chat on a max-width for better readability
         width: '100%',
       }}
     >
@@ -53,7 +63,21 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
 
           <div className={cn("text-sm leading-relaxed", isAi && "pr-8")}>
             {isAi ? (
-              <MarkdownRenderer content={message.text} />
+              <>
+                {isReport ? (
+                  <div className="space-y-3">
+                    <div className="text-sm text-muted-foreground font-medium">
+                      📊 Comprehensive Report Generated
+                    </div>
+                    <p className="text-sm opacity-80">
+                      {getReportPreview(message.text)}
+                    </p>
+                    <CanvasButton onClick={handleCanvasOpen} />
+                  </div>
+                ) : (
+                  <MarkdownRenderer content={message.text} />
+                )}
+              </>
             ) : (
               <p className="whitespace-pre-wrap">{message.text}</p>
             )}

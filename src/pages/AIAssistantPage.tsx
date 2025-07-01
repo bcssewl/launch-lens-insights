@@ -35,7 +35,12 @@ const AIAssistantPage: React.FC = () => {
     handleSendMessage,
     handleClearConversation,
     handleDownloadChat,
-    isConfigured
+    isConfigured,
+    canvasState,
+    handleOpenCanvas,
+    handleCloseCanvas,
+    handleCanvasDownload,
+    handleCanvasPrint
   } = useMessages(currentSessionId);
 
   // Enhanced debugging with CSS inspection
@@ -195,6 +200,11 @@ const AIAssistantPage: React.FC = () => {
               isTyping={isTyping}
               viewportRef={viewportRef}
               onSendMessage={handleSendMessageWithSession}
+              canvasState={canvasState}
+              onOpenCanvas={handleOpenCanvas}
+              onCloseCanvas={handleCloseCanvas}
+              onCanvasDownload={handleCanvasDownload}
+              onCanvasPrint={handleCanvasPrint}
             />
           </div>
         </SidebarInset>

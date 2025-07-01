@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Message, initialMessages, formatTimestamp } from '@/constants/aiAssistant';
@@ -9,6 +8,15 @@ export const useMessages = (currentSessionId: string | null) => {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [isTyping, setIsTyping] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [canvasState, setCanvasState] = useState<{
+    isOpen: boolean;
+    messageId: string | null;
+    content: string;
+  }>({
+    isOpen: false,
+    messageId: null,
+    content: ''
+  });
   const viewportRef = useRef<HTMLDivElement>(null);
   const { sendMessageToN8n, isConfigured } = useN8nWebhook();
   const { history, addMessage } = useChatHistory(currentSessionId);
@@ -148,6 +156,40 @@ export const useMessages = (currentSessionId: string | null) => {
     URL.revokeObjectURL(url);
   };
 
+  const handleOpenCanvas = (messageId: string, content: string) => {
+    setCanvasState({
+      isOpen: true,
+      messageId,
+      content
+    });
+  };
+
+  const handleCloseCanvas = () => {
+    setCanvasState({
+      isOpen: false,
+      messageId: null,
+      content: ''
+    });
+  };
+
+  const handleCanvasDownload = () => {
+    if (!canvasState.content) return;
+    
+    const blob = new Blob([canvasState.content], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ai-report-${new Date().toISOString().split('T')[0]}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleCanvasPrint = () => {
+    window.print();
+  };
+
   return {
     messages,
     isTyping,
@@ -156,6 +198,11 @@ export const useMessages = (currentSessionId: string | null) => {
     handleSendMessage,
     handleClearConversation,
     handleDownloadChat,
-    isConfigured
+    isConfigured,
+    canvasState,
+    handleOpenCanvas,
+    handleCloseCanvas,
+    handleCanvasDownload,
+    handleCanvasPrint
   };
 };
