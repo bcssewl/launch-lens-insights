@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Logo } from '@/components/icons';
 import { Search, Mic, Plus, Target, Lightbulb, Globe, Paperclip } from 'lucide-react';
@@ -127,17 +128,24 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({ onSendMessa
                 </TooltipContent>
               </Tooltip>
               {/* Pro-style Audio Button */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-10 w-10 rounded-full bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20"
-              >
-                <div className="flex items-center space-x-0.5">
-                  <div className="w-0.5 h-2 bg-current rounded-full animate-pulse" />
-                  <div className="w-0.5 h-3 bg-current rounded-full animate-pulse" style={{ animationDelay: '0.1s' }} />
-                  <div className="w-0.5 h-2 bg-current rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
-                </div>
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-10 w-10 rounded-full bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20"
+                  >
+                    <div className="flex items-center space-x-0.5">
+                      <div className="w-0.5 h-2 bg-current rounded-full animate-pulse" />
+                      <div className="w-0.5 h-3 bg-current rounded-full animate-pulse" style={{ animationDelay: '0.1s' }} />
+                      <div className="w-0.5 h-2 bg-current rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
+                    </div>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Voice mode</p>
+                </TooltipContent>
+              </Tooltip>
             </div>
           </div>
 
