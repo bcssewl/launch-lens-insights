@@ -14,13 +14,11 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({ onSendMessa
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[70vh] px-6 py-12 text-center max-w-4xl mx-auto">
-      {/* Enhanced glass logo section */}
+    <div className="flex flex-col items-center justify-center min-h-[70vh] px-6 py-12 text-center max-w-4xl mx-auto bg-transparent">
+      {/* Logo/Branding Section */}
       <div className="mb-12">
         <div className="flex items-center justify-center mb-6">
-          <div className="p-4 bg-background/40 backdrop-blur-md rounded-2xl border border-white/20 shadow-xl">
-            <Logo className="w-12 h-12" />
-          </div>
+          <Logo className="w-12 h-12" />
         </div>
         <h1 className="text-4xl font-semibold text-foreground mb-4 tracking-tight">
           AI Business Assistant
@@ -31,15 +29,14 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({ onSendMessa
         </p>
       </div>
 
-      {/* Enhanced glass input area */}
+      {/* Perplexity Pro-Style Input Area */}
       <div className="w-full max-w-4xl mb-12">
-        {/* Glass input container */}
-        <div className="relative bg-background/50 backdrop-blur-xl border border-white/20 rounded-2xl px-6 py-4 shadow-2xl hover:shadow-3xl transition-all duration-300 mb-3">
-          <div className="absolute inset-0 bg-gradient-to-r from-white/5 to-transparent rounded-2xl pointer-events-none" />
+        {/* Input Field Container */}
+        <div className="relative bg-background border border-border rounded-xl px-6 py-4 shadow-sm hover:shadow-md transition-all duration-200 mb-3">
           <input
             type="text"
             placeholder="Ask anything or @ mention a Space"
-            className="w-full h-12 text-base bg-transparent border-none outline-none focus:outline-none placeholder:text-muted-foreground relative z-10"
+            className="w-full h-12 text-base bg-transparent border-none outline-none focus:outline-none placeholder:text-muted-foreground"
             onKeyDown={(e) => {
               if (e.key === 'Enter' && e.currentTarget.value.trim()) {
                 handlePromptClick(e.currentTarget.value);
@@ -49,61 +46,61 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({ onSendMessa
           />
         </div>
 
-        {/* Enhanced glass icon buttons */}
+        {/* Icon Buttons Row - Positioned Below Input */}
         <div className="flex items-center justify-between px-2">
-          {/* Left side glass button group */}
+          {/* Left Side Button Group */}
           <div className="flex items-center space-x-2">
             <Button
               variant="ghost"
               size="icon"
-              className="h-10 w-10 rounded-full bg-background/30 backdrop-blur-sm border border-white/10 hover:bg-background/50 hover:border-white/20 text-muted-foreground hover:text-foreground transition-all duration-200 shadow-lg"
+              className="h-10 w-10 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground"
             >
               <Search className="h-5 w-5" />
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className="h-10 w-10 rounded-full bg-background/30 backdrop-blur-sm border border-white/10 hover:bg-background/50 hover:border-white/20 text-muted-foreground hover:text-foreground transition-all duration-200 shadow-lg"
+              className="h-10 w-10 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground"
             >
               <Target className="h-5 w-5" />
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className="h-10 w-10 rounded-full bg-background/30 backdrop-blur-sm border border-white/10 hover:bg-background/50 hover:border-white/20 text-muted-foreground hover:text-foreground transition-all duration-200 shadow-lg"
+              className="h-10 w-10 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground"
             >
               <Lightbulb className="h-5 w-5" />
             </Button>
           </div>
 
-          {/* Right side glass button group */}
+          {/* Right Side Button Group */}
           <div className="flex items-center space-x-2">
             <Button
               variant="ghost"
               size="icon"
-              className="h-10 w-10 rounded-full bg-background/30 backdrop-blur-sm border border-white/10 hover:bg-background/50 hover:border-white/20 text-muted-foreground hover:text-foreground transition-all duration-200 shadow-lg"
+              className="h-10 w-10 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground"
             >
               <Globe className="h-5 w-5" />
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className="h-10 w-10 rounded-full bg-background/30 backdrop-blur-sm border border-white/10 hover:bg-background/50 hover:border-white/20 text-muted-foreground hover:text-foreground transition-all duration-200 shadow-lg"
+              className="h-10 w-10 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground"
             >
               <Paperclip className="h-5 w-5" />
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className="h-10 w-10 rounded-full bg-background/30 backdrop-blur-sm border border-white/10 hover:bg-background/50 hover:border-white/20 text-muted-foreground hover:text-foreground transition-all duration-200 shadow-lg"
+              className="h-10 w-10 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground"
             >
               <Mic className="h-5 w-5" />
             </Button>
-            {/* Enhanced glass audio button */}
+            {/* Pro-style Audio Button */}
             <Button
               variant="ghost"
               size="icon"
-              className="h-10 w-10 rounded-full bg-primary/20 backdrop-blur-md hover:bg-primary/30 text-primary border border-primary/30 hover:border-primary/50 shadow-xl shadow-primary/20 transition-all duration-200"
+              className="h-10 w-10 rounded-full bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20"
             >
               <div className="flex items-center space-x-0.5">
                 <div className="w-0.5 h-2 bg-current rounded-full animate-pulse" />

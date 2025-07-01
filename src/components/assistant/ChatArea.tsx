@@ -23,45 +23,39 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   const hasConversation = messages.length > 1 || isTyping;
 
   if (!hasConversation) {
-    // Enhanced glass empty state
+    // Show Perplexity-inspired empty state with transparent background
     return (
-      <div className="flex flex-col flex-1 min-h-0 w-full relative">
+      <div className="flex flex-col flex-1 min-h-0 w-full relative bg-transparent">
         <div className="flex-1 min-h-0 overflow-hidden">
-          <div className="h-full bg-background/10 backdrop-blur-sm rounded-xl border border-white/5">
-            <PerplexityEmptyState onSendMessage={onSendMessage} />
-          </div>
+          <PerplexityEmptyState onSendMessage={onSendMessage} />
         </div>
       </div>
     );
   }
 
-  // Enhanced glass conversation layout
+  // Show conversation with compact input and transparent background
   return (
-    <div className="flex flex-col flex-1 min-h-0 w-full relative">
-      {/* Glass chat messages container */}
+    <div className="flex flex-col flex-1 min-h-0 w-full relative bg-transparent">
+      {/* Chat Messages Area */}
       <div className="flex-1 min-h-0 overflow-hidden">
-        <div className="h-full bg-background/5 backdrop-blur-sm rounded-xl border border-white/5 overflow-hidden">
-          <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
-            <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
-              {messages.map((msg) => (
-                <ChatMessage key={msg.id} message={{ ...msg, timestamp: formatTimestamp(msg.timestamp) }} />
-              ))}
-              {isTyping && <TypingIndicator />}
-            </div>
-            <div className="h-24" /> {/* Spacer for input */}
-          </ScrollArea>
-        </div>
+        <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
+          <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
+            {messages.map((msg) => (
+              <ChatMessage key={msg.id} message={{ ...msg, timestamp: formatTimestamp(msg.timestamp) }} />
+            ))}
+            {isTyping && <TypingIndicator />}
+          </div>
+          <div className="h-24" /> {/* Spacer for input */}
+        </ScrollArea>
       </div>
 
-      {/* Enhanced glass input area */}
-      <div className="fixed bottom-0 left-0 right-0 z-20">
-        <div className="bg-background/80 backdrop-blur-xl border-t border-white/10 shadow-2xl">
-          <EnhancedChatInput 
-            onSendMessage={onSendMessage} 
-            isTyping={isTyping}
-            isCompact={true}
-          />
-        </div>
+      {/* Fixed Input Area */}
+      <div className="fixed bottom-0 left-0 right-0 z-10">
+        <EnhancedChatInput 
+          onSendMessage={onSendMessage} 
+          isTyping={isTyping}
+          isCompact={true}
+        />
       </div>
     </div>
   );
