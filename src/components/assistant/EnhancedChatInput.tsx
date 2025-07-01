@@ -128,21 +128,14 @@ const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
                 onDatabaseSelect={handleDatabaseSelect}
                 onLocalFileSelect={handleLocalFileSelect}
               >
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-10 w-10 rounded-full hover:bg-muted transition-all duration-200"
-                      disabled={isTyping || isRecording}
-                    >
-                      <Paperclip className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Attach files</p>
-                  </TooltipContent>
-                </Tooltip>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10 rounded-full hover:bg-muted transition-all duration-200"
+                  disabled={isTyping || isRecording}
+                >
+                  <Paperclip className="h-4 w-4" />
+                </Button>
               </AttachmentOptionsDropdown>
               
               <Tooltip>
@@ -246,21 +239,14 @@ const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
                 onDatabaseSelect={handleDatabaseSelect}
                 onLocalFileSelect={handleLocalFileSelect}
               >
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 rounded-full hover:bg-muted transition-all duration-200"
-                      disabled={isTyping || isRecording}
-                    >
-                      <Paperclip className="h-3 w-3" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Attach files</p>
-                  </TooltipContent>
-                </Tooltip>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-full hover:bg-muted transition-all duration-200"
+                  disabled={isTyping || isRecording}
+                >
+                  <Paperclip className="h-3 w-3" />
+                </Button>
               </AttachmentOptionsDropdown>
               
               <Tooltip>
