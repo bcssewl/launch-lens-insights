@@ -93,11 +93,11 @@ const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
     );
   }
 
-  // Compact state - used in conversation
+  // Compact state - ChatGPT-style centered input without full-width footer
   return (
-    <div className="border-t bg-background/80 backdrop-blur-sm p-4">
-      <div className="flex items-end space-x-3 max-w-4xl mx-auto">
-        <div className="flex-1 relative">
+    <div className="py-4 px-6">
+      <div className="flex items-end justify-center">
+        <div className="w-full max-w-3xl relative">
           <input
             ref={inputRef}
             type="text"
@@ -105,7 +105,7 @@ const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Ask a follow-up question..."
-            className="w-full h-12 px-4 pr-12 rounded-full border border-border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200 placeholder:text-muted-foreground"
+            className="w-full h-12 px-4 pr-12 rounded-full border border-border bg-background/80 backdrop-blur-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200 placeholder:text-muted-foreground"
             disabled={isTyping}
           />
           <div className="absolute inset-y-0 right-1 flex items-center">
