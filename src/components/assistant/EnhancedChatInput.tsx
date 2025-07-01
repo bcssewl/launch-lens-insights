@@ -1,6 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import { ArrowRight, Search, Mic, Plus, Send } from 'lucide-react';
 
 interface EnhancedChatInputProps {
@@ -15,9 +16,9 @@ const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
   isCompact = false 
 }) => {
   const [inputValue, setInputValue] = useState('');
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
@@ -28,6 +29,10 @@ const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
     if (inputValue.trim() === '') return;
     onSendMessage(inputValue);
     setInputValue('');
+    // Reset textarea height after sending
+    if (inputRef.current) {
+      inputRef.current.style.height = 'auto';
+    }
   };
 
   const adjustInputFocus = () => {
@@ -47,20 +52,21 @@ const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
     return (
       <div className="w-full max-w-3xl">
         <div className="relative">
-          <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-            <Search className="h-5 w-5 text-muted-foreground" />
+          <div className="absolute top-4 left-4 flex items-start pointer-events-none z-10">
+            <Search className="h-5 w-5 text-muted-foreground mt-0.5" />
           </div>
-          <input
+          <Textarea
             ref={inputRef}
-            type="text"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Ask me anything about your startup ideas..."
-            className="w-full h-14 pl-12 pr-20 text-lg rounded-full border border-border bg-background/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200 placeholder:text-muted-foreground"
+            autoExpand={true}
+            className="w-full min-h-[56px] max-h-[216px] pl-12 pr-20 text-lg rounded-2xl border border-border bg-background/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200 placeholder:text-muted-foreground resize-none overflow-y-auto py-4"
+            style={{ lineHeight: '1.5rem' }}
             disabled={isTyping}
           />
-          <div className="absolute inset-y-0 right-2 flex items-center space-x-1">
+          <div className="absolute top-2 right-2 flex items-start space-x-1">
             <Button
               variant="ghost"
               size="icon"
@@ -98,22 +104,23 @@ const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
     <div className="py-4 px-6">
       <div className="flex items-end justify-center">
         <div className="w-full max-w-3xl relative">
-          <input
+          <Textarea
             ref={inputRef}
-            type="text"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Ask a follow-up question..."
-            className="w-full h-12 px-4 pr-12 rounded-full border border-border bg-background/80 backdrop-blur-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200 placeholder:text-muted-foreground"
+            autoExpand={true}
+            className="w-full min-h-[48px] max-h-[216px] px-4 pr-12 rounded-2xl border border-border bg-background/80 backdrop-blur-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200 placeholder:text-muted-foreground resize-none overflow-y-auto py-3"
+            style={{ lineHeight: '1.5rem' }}
             disabled={isTyping}
           />
-          <div className="absolute inset-y-0 right-1 flex items-center">
+          <div className="absolute bottom-2 right-2 flex items-end">
             <Button
               onClick={handleSendMessage}
               size="icon"
               disabled={isTyping || inputValue.trim() === ''}
-              className="h-10 w-10 rounded-full bg-primary hover:bg-primary/90 disabled:opacity-50"
+              className="h-8 w-8 rounded-full bg-primary hover:bg-primary/90 disabled:opacity-50"
             >
               {isTyping ? (
                 <div className="flex space-x-1">
