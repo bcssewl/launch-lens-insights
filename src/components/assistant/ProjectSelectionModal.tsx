@@ -35,8 +35,13 @@ const ProjectSelectionModal: React.FC<ProjectSelectionModalProps> = ({
     });
   };
 
-  const handleFileTypeSelect = (projectId: string, projectName: string, fileType: string) => {
-    onAttach(`${projectId}-${fileType}`, `${projectName} - ${fileType}`);
+  const handleFileTypeSelect = (projectId: string) => {
+    // Select the project when a file type is chosen
+    setSelectedProjects(prev => {
+      const newSet = new Set(prev);
+      newSet.add(projectId);
+      return newSet;
+    });
   };
 
   const handleAttachSelected = () => {
@@ -100,11 +105,7 @@ const ProjectSelectionModal: React.FC<ProjectSelectionModalProps> = ({
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-48">
                         <DropdownMenuItem 
-                          onClick={() => handleFileTypeSelect(
-                            report.validation_id, 
-                            report.idea_name || 'Untitled Project',
-                            'Research Report'
-                          )}
+                          onClick={() => handleFileTypeSelect(report.validation_id)}
                           className="cursor-pointer"
                         >
                           <FileText className="mr-2 h-4 w-4" />
