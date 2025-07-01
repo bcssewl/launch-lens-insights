@@ -3,14 +3,26 @@ import React from 'react';
 import { Logo } from '@/components/icons';
 import { Search, Mic, Plus, Target, Lightbulb, Globe, Paperclip } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useVoiceRecording } from '@/hooks/useVoiceRecording';
+import SoundWaveVisualization from './SoundWaveVisualization';
 
 interface PerplexityEmptyStateProps {
   onSendMessage: (message: string) => void;
 }
 
 const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({ onSendMessage }) => {
+  const { isRecording, isProcessing, audioLevel, error, startRecording, stopRecording, clearError } = useVoiceRecording();
+
   const handlePromptClick = (prompt: string) => {
     onSendMessage(prompt);
+  };
+
+  const handleVoiceRecording = () => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      startRecording();
+    }
   };
 
   return (
@@ -33,10 +45,16 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({ onSendMessa
       <div className="w-full max-w-4xl mb-12">
         {/* Input Field Container */}
         <div className="relative bg-background border border-border rounded-xl px-6 py-4 shadow-sm hover:shadow-md transition-all duration-200 mb-3">
+          {/* Sound wave visualization overlay */}
+          <SoundWaveVisualization audioLevel={audioLevel} isRecording={isRecording} />
+          
           <input
             type="text"
-            placeholder="Ask anything or @ mention a Space"
-            className="w-full h-12 text-base bg-transparent border-none outline-none focus:outline-none placeholder:text-muted-foreground"
+            placeholder={isRecording ? "Listening..." : "Ask anything or @ mention a Space"}
+            className={`w-full h-12 text-base bg-transparent border-none outline-none focus:outline-none placeholder:text-muted-foreground ${
+              isRecording ? 'pl-12' : ''
+            }`}
+            disabled={isRecording}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && e.currentTarget.value.trim()) {
                 handlePromptClick(e.currentTarget.value);
@@ -92,9 +110,13 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({ onSendMessa
             <Button
               variant="ghost"
               size="icon"
-              className="h-10 w-10 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+              className={`h-10 w-10 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground ${
+                isRecording ? 'bg-red-100 hover:bg-red-200 text-red-600' : ''
+              } ${isProcessing ? 'opacity-50' : ''}`}
+              onClick={handleVoiceRecording}
+              disabled={isProcessing}
             >
-              <Mic className="h-5 w-5" />
+              <Mic className={`h-5 w-5 ${isRecording ? 'animate-pulse' : ''}`} />
             </Button>
             {/* Pro-style Audio Button */}
             <Button
@@ -110,6 +132,18 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({ onSendMessa
             </Button>
           </div>
         </div>
+
+        {/* Error and Processing Messages */}
+        {error && (
+          <div className="mt-4 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg max-w-3xl mx-auto">
+            {error}
+          </div>
+        )}
+        {isProcessing && (
+          <div className="mt-4 text-sm text-blue-600 bg-blue-50 px-3 py-2 rounded-lg max-w-3xl mx-auto">
+            Processing your voice recording...
+          </div>
+        )}
       </div>
     </div>
   );
