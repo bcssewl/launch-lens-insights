@@ -94,12 +94,12 @@ const AIAssistantPage: React.FC = () => {
     );
   }
 
-  // Normal mode with sidebar - clean Perplexity-inspired interface
+  // Normal mode with sidebar - matching other dashboard background styles
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background relative">
-        {/* Subtle background only */}
-        <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-muted/5 pointer-events-none" />
+      <div className="min-h-screen flex w-full apple-hero relative">
+        {/* Add FloatingElements to match other dashboards */}
+        <FloatingElements />
         
         <AppSidebar />
         
