@@ -3,9 +3,9 @@ import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Badge } from '@/components/ui/badge';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useValidationReports } from '@/hooks/useValidationReports';
-import { Loader2, FileText } from 'lucide-react';
+import { Loader2, FileText, ChevronDown } from 'lucide-react';
 
 interface ProjectSelectionModalProps {
   open: boolean;
@@ -35,6 +35,10 @@ const ProjectSelectionModal: React.FC<ProjectSelectionModalProps> = ({
     });
   };
 
+  const handleFileTypeSelect = (projectId: string, projectName: string, fileType: string) => {
+    onAttach(`${projectId}-${fileType}`, `${projectName} - ${fileType}`);
+  };
+
   const handleAttachSelected = () => {
     selectedProjects.forEach(projectId => {
       const report = completedReports.find(r => r.validation_id === projectId);
@@ -53,7 +57,7 @@ const ProjectSelectionModal: React.FC<ProjectSelectionModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Select Projects from Database</DialogTitle>
         </DialogHeader>
@@ -76,26 +80,38 @@ const ProjectSelectionModal: React.FC<ProjectSelectionModalProps> = ({
                 {completedReports.map(report => (
                   <div
                     key={report.validation_id}
-                    className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-muted/50 cursor-pointer"
-                    onClick={() => handleProjectToggle(report.validation_id)}
+                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50"
                   >
-                    <Checkbox
-                      checked={selectedProjects.has(report.validation_id)}
-                      onChange={() => handleProjectToggle(report.validation_id)}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center space-x-2">
-                        <h4 className="font-medium text-sm truncate">
-                          {report.idea_name || 'Untitled Project'}
-                        </h4>
-                        <Badge variant="secondary" className="text-xs">
-                          {report.overall_score || 0}/10
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {report.one_line_description || 'No description'}
-                      </p>
+                    <div className="flex items-center space-x-3 flex-1 min-w-0">
+                      <Checkbox
+                        checked={selectedProjects.has(report.validation_id)}
+                        onChange={() => handleProjectToggle(report.validation_id)}
+                      />
+                      <h4 className="font-medium text-sm truncate">
+                        {report.idea_name || 'Untitled Project'}
+                      </h4>
                     </div>
+                    
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuItem 
+                          onClick={() => handleFileTypeSelect(
+                            report.validation_id, 
+                            report.idea_name || 'Untitled Project',
+                            'Research Report'
+                          )}
+                          className="cursor-pointer"
+                        >
+                          <FileText className="mr-2 h-4 w-4" />
+                          Research Report
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 ))}
               </div>
