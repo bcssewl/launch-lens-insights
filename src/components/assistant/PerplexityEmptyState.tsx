@@ -9,13 +9,6 @@ interface PerplexityEmptyStateProps {
 }
 
 const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({ onSendMessage }) => {
-  const suggestedPrompts = [
-    "What is a good market for an AI fitness app?",
-    "How do I validate my startup idea?",
-    "What are the key metrics for a SaaS business?",
-    "How to conduct market research for a new product?"
-  ];
-
   const handlePromptClick = (prompt: string) => {
     onSendMessage(prompt);
   };
@@ -37,7 +30,7 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({ onSendMessa
       </div>
 
       {/* Main Search Input Area */}
-      <div className="w-full max-w-3xl mb-8">
+      <div className="w-full max-w-3xl mb-12">
         <div className="relative">
           <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
             <Search className="h-5 w-5 text-muted-foreground" />
@@ -72,23 +65,8 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({ onSendMessa
         </div>
       </div>
 
-      {/* Suggested Prompts */}
-      <div className="w-full max-w-3xl">
-        <div className="flex flex-wrap gap-3 justify-center">
-          {suggestedPrompts.map((prompt, index) => (
-            <button
-              key={index}
-              onClick={() => handlePromptClick(prompt)}
-              className="px-4 py-2 text-sm rounded-full border border-border bg-background/50 backdrop-blur-sm hover:bg-muted/50 transition-all duration-200 text-foreground hover:border-primary/50"
-            >
-              {prompt}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Subtle Features Highlight */}
-      <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl w-full">
+      {/* Features Highlight */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl w-full">
         <div className="text-center">
           <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
             <Search className="w-5 h-5 text-primary" />
