@@ -1,22 +1,19 @@
 
-import React, { useState, useRef } from 'react';
-import { Button } from '@/components/ui/button';
+import React, { useState, useRef, useEffect } from 'react';
 import { Textarea } from '@/components/ui/textarea';
-import { Send } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ArrowRight } from 'lucide-react';
+import SuggestedPrompts from '@/components/assistant/SuggestedPrompts';
+import { suggestedPromptsData } from '@/constants/aiAssistant';
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
   isTyping: boolean;
-  placeholder?: string;
 }
 
-const ChatInput: React.FC<ChatInputProps> = ({ 
-  onSendMessage, 
-  isTyping, 
-  placeholder = "Type your message..." 
-}) => {
+const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isTyping }) => {
   const [inputValue, setInputValue] = useState('');
-  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -29,45 +26,59 @@ const ChatInput: React.FC<ChatInputProps> = ({
     if (inputValue.trim() === '') return;
     onSendMessage(inputValue);
     setInputValue('');
-    // Reset textarea height after sending
-    if (inputRef.current) {
-      inputRef.current.style.height = 'auto';
+  };
+
+  const handlePromptClick = (prompt: string) => {
+    onSendMessage(prompt);
+  };
+
+  const adjustTextareaHeight = () => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      const scrollHeight = textareaRef.current.scrollHeight;
+      const maxHeight = 120; // Maximum height before scrolling
+      textareaRef.current.style.height = `${Math.min(scrollHeight, maxHeight)}px`;
     }
   };
 
+  useEffect(() => {
+    adjustTextareaHeight();
+  }, [inputValue]);
+
+  const suggestedPromptsStrings = suggestedPromptsData.map(p => p.text);
+
   return (
-    <div className="flex items-end space-x-2 p-4 border-t bg-background/80 backdrop-blur-sm">
-      <div className="flex-1 relative">
+    <div className="border-t bg-background p-4 flex-shrink-0 mt-auto">
+      <SuggestedPrompts prompts={suggestedPromptsStrings} onPromptClick={handlePromptClick} />
+      <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }} className="flex items-end space-x-2 mt-2">
         <Textarea
-          ref={inputRef}
+          ref={textareaRef}
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={placeholder}
-          autoExpand={true}
-          className="w-full min-h-[48px] max-h-[216px] px-4 pr-12 rounded-2xl border border-border bg-background/80 backdrop-blur-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200 placeholder:text-muted-foreground resize-none overflow-y-auto py-3"
-          style={{ lineHeight: '1.5rem' }}
+          placeholder="Ask me anything about your startup ideas... (Press Shift+Enter for new line)"
+          className="flex-1 min-h-[40px] max-h-[120px] resize-none border-muted"
           disabled={isTyping}
+          rows={1}
         />
-        <div className="absolute bottom-2 right-2 flex items-end">
-          <Button
-            onClick={handleSendMessage}
-            size="icon"
-            disabled={isTyping || inputValue.trim() === ''}
-            className="h-8 w-8 rounded-full bg-primary hover:bg-primary/90 disabled:opacity-50"
-          >
-            {isTyping ? (
-              <div className="flex space-x-1">
-                <div className="w-1 h-1 bg-white rounded-full animate-bounce" />
-                <div className="w-1 h-1 bg-white rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
-                <div className="w-1 h-1 bg-white rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
-              </div>
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
-          </Button>
-        </div>
-      </div>
+        <Button
+          type="submit"
+          size="icon"
+          disabled={isTyping || inputValue.trim() === ''}
+          className={`gradient-button flex-shrink-0 transition-all duration-200 ${isTyping ? 'opacity-60 cursor-not-allowed' : ''}`}
+          aria-label="Send message"
+        >
+          {isTyping ? (
+            <span className="inline-block w-5 h-5">
+              <span className="block w-1 h-1 rounded-full bg-muted-foreground animate-bounce" style={{animationDelay: '0s'}}></span>
+              <span className="block w-1 h-1 rounded-full bg-muted-foreground animate-bounce ml-1" style={{animationDelay: '0.15s'}}></span>
+              <span className="block w-1 h-1 rounded-full bg-muted-foreground animate-bounce ml-1" style={{animationDelay: '0.3s'}}></span>
+            </span>
+          ) : (
+            <ArrowRight className="h-5 w-5" />
+          )}
+        </Button>
+      </form>
     </div>
   );
 };
