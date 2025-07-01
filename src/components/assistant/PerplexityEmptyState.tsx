@@ -31,9 +31,25 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({ onSendMessa
 
       {/* Perplexity Pro-Style Input Area */}
       <div className="w-full max-w-4xl mb-12">
-        <div className="relative flex items-center bg-background border border-border rounded-xl px-3 py-4 shadow-sm hover:shadow-md transition-all duration-200">
+        {/* Input Field Container */}
+        <div className="relative bg-background border border-border rounded-xl px-6 py-4 shadow-sm hover:shadow-md transition-all duration-200 mb-3">
+          <input
+            type="text"
+            placeholder="Ask anything or @ mention a Space"
+            className="w-full h-12 text-base bg-transparent border-none outline-none focus:outline-none placeholder:text-muted-foreground"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                handlePromptClick(e.currentTarget.value);
+                e.currentTarget.value = '';
+              }
+            }}
+          />
+        </div>
+
+        {/* Icon Buttons Row - Positioned Below Input */}
+        <div className="flex items-center justify-between px-2">
           {/* Left Side Button Group */}
-          <div className="flex items-center space-x-2 pl-2">
+          <div className="flex items-center space-x-2">
             <Button
               variant="ghost"
               size="icon"
@@ -57,21 +73,8 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({ onSendMessa
             </Button>
           </div>
 
-          {/* Main Input Field */}
-          <input
-            type="text"
-            placeholder="Ask anything or @ mention a Space"
-            className="flex-1 h-14 px-6 text-base bg-transparent border-none outline-none focus:outline-none placeholder:text-muted-foreground"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                handlePromptClick(e.currentTarget.value);
-                e.currentTarget.value = '';
-              }
-            }}
-          />
-
           {/* Right Side Button Group */}
-          <div className="flex items-center space-x-2 pr-2">
+          <div className="flex items-center space-x-2">
             <Button
               variant="ghost"
               size="icon"
