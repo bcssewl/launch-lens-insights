@@ -35,6 +35,13 @@ const AIAssistantPage: React.FC = () => {
     isConfigured
   } = useMessages(currentSessionId);
 
+  // Debug logging
+  useEffect(() => {
+    console.log('AIAssistantPage rendered - checking background styling');
+    console.log('Current route:', window.location.pathname);
+    console.log('Apple-hero class should be applied to container');
+  }, []);
+
   // Handle keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -94,10 +101,13 @@ const AIAssistantPage: React.FC = () => {
     );
   }
 
-  // Normal mode with sidebar - matching other dashboard background styles
+  // Normal mode with sidebar - enhanced debugging and explicit background
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full apple-hero relative">
+      <div className="min-h-screen flex w-full apple-hero relative" style={{ 
+        background: 'var(--gradient-bg, linear-gradient(135deg, #667eea 0%, #764ba2 100%))',
+        minHeight: '100vh'
+      }}>
         {/* Add FloatingElements to match other dashboards */}
         <FloatingElements />
         
@@ -126,8 +136,8 @@ const AIAssistantPage: React.FC = () => {
             </div>
           )}
           
-          {/* Main chat area */}
-          <div className="flex flex-col flex-1 min-h-0 w-full relative">
+          {/* Main chat area - explicitly transparent */}
+          <div className="flex flex-col flex-1 min-h-0 w-full relative bg-transparent">
             <ChatArea
               messages={messages}
               isTyping={isTyping}
