@@ -2,6 +2,7 @@
 import React from 'react';
 import ChatSubheader from '@/components/assistant/ChatSubheader';
 import ChatArea from '@/components/assistant/ChatArea';
+import { FloatingElements } from '@/components/landing/FloatingElements';
 import { Message } from '@/constants/aiAssistant';
 
 interface FullscreenChatLayoutProps {
@@ -30,8 +31,11 @@ const FullscreenChatLayout: React.FC<FullscreenChatLayoutProps> = ({
   onToggleFullscreen
 }) => {
   return (
-    <div className="bg-gradient-to-br from-background via-background to-muted/10 min-h-screen">
-      <div className="flex flex-col h-screen min-h-0 w-full relative bg-gradient-to-br from-background via-background to-muted/10 transition-all">
+    <div className="min-h-screen flex w-full apple-hero relative">
+      {/* Floating Elements at the root level */}
+      <FloatingElements />
+      
+      <div className="flex flex-col h-screen min-h-0 w-full relative bg-transparent transition-all">
         <ChatSubheader
           isConfigured={isConfigured}
           currentSessionId={currentSessionId}
