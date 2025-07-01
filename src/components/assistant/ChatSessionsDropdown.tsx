@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
@@ -30,46 +31,45 @@ const ChatSessionsDropdown: React.FC<ChatSessionsDropdownProps> = ({
   onSessionSelect
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
-  const { sessions, createSession, updateSessionTitle, deleteSession } = useChatSessions();
+  const { sessions, creating, createSession, updateSessionTitle, deleteSession } = useChatSessions();
   const [editingSession, setEditingSession] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const { toast } = useToast();
 
   const handleCreateSession = async () => {
-    console.log('Creating new chat session...');
-    setIsCreating(true);
+    console.log('ChatSessionsDropdown: Creating new chat session...');
     
     try {
       const newSession = await createSession('New Chat');
-      console.log('New session created:', newSession);
+      console.log('ChatSessionsDropdown: New session created:', newSession);
       
       if (newSession) {
-        toast({
-          title: "Success",
-          description: "New chat session created successfully",
-        });
+        console.log('ChatSessionsDropdown: Switching to new session:', newSession.id);
         
+        // Immediately switch to the new session
         if (onSessionSelect) {
           onSessionSelect(newSession.id);
         }
         
-        // Keep the dropdown open briefly to show the new session
+        toast({
+          title: "Success",
+          description: "New chat session created",
+        });
+        
+        // Close the dropdown after a brief delay to show the new session was created
         setTimeout(() => {
           setIsOpen(false);
-        }, 1000);
+        }, 500);
       } else {
-        throw new Error('Failed to create session');
+        throw new Error('Failed to create session - no session returned');
       }
     } catch (error) {
-      console.error('Error creating session:', error);
+      console.error('ChatSessionsDropdown: Error creating session:', error);
       toast({
         title: "Error",
         description: "Failed to create new chat session",
         variant: "destructive",
       });
-    } finally {
-      setIsCreating(false);
     }
   };
 
@@ -93,13 +93,16 @@ const ChatSessionsDropdown: React.FC<ChatSessionsDropdownProps> = ({
   const handleDeleteSession = async (sessionId: string) => {
     await deleteSession(sessionId);
     if (currentSessionId === sessionId && onSessionSelect) {
+      console.log('ChatSessionsDropdown: Deleted current session, clearing selection');
       onSessionSelect('');
     }
   };
 
   const handleSessionSelect = (sessionId: string) => {
-    console.log('Selecting session:', sessionId);
-    onSessionSelect?.(sessionId);
+    console.log('ChatSessionsDropdown: Selecting session:', sessionId);
+    if (onSessionSelect) {
+      onSessionSelect(sessionId);
+    }
     setIsOpen(false);
   };
 
@@ -131,10 +134,10 @@ const ChatSessionsDropdown: React.FC<ChatSessionsDropdownProps> = ({
               size="sm" 
               variant="ghost" 
               onClick={handleCreateSession}
-              disabled={isCreating}
+              disabled={creating}
               className="h-8 px-3"
             >
-              {isCreating ? (
+              {creating ? (
                 <>
                   <Loader2 className="h-3 w-3 mr-1 animate-spin" />
                   Creating...

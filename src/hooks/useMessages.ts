@@ -8,6 +8,7 @@ import { useChatHistory } from '@/hooks/useChatHistory';
 export const useMessages = (currentSessionId: string | null) => {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [isTyping, setIsTyping] = useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const viewportRef = useRef<HTMLDivElement>(null);
   const { sendMessageToN8n, isConfigured } = useN8nWebhook();
   const { history, addMessage } = useChatHistory(currentSessionId);
@@ -24,7 +25,13 @@ export const useMessages = (currentSessionId: string | null) => {
 
   // Load messages from history when session changes
   useEffect(() => {
+    console.log('useMessages: Session changed to:', currentSessionId);
+    console.log('useMessages: History length:', history.length);
+    
+    setIsLoadingHistory(true);
+    
     if (currentSessionId && history.length > 0) {
+      console.log('useMessages: Loading history for session:', currentSessionId);
       // Convert history to messages format, parsing out USER: and AI: prefixes
       const historyMessages: Message[] = history.map((item) => {
         let text = item.message;
@@ -47,15 +54,22 @@ export const useMessages = (currentSessionId: string | null) => {
         };
       });
       
+      console.log('useMessages: Setting messages with history:', historyMessages.length, 'messages');
       setMessages([...initialMessages, ...historyMessages]);
-    } else if (!currentSessionId) {
-      setMessages(initialMessages);
+    } else {
+      console.log('useMessages: No session or empty history, showing initial messages only');
+      // Reset to initial messages for new sessions or when no session is selected
+      setMessages([...initialMessages]);
     }
+    
+    setIsLoadingHistory(false);
   }, [currentSessionId, history]);
 
   const handleSendMessage = async (text?: string, messageText?: string) => {
     const finalMessageText = text || messageText;
     if (!finalMessageText || finalMessageText.trim() === '') return;
+
+    console.log('useMessages: Sending message in session:', currentSessionId);
 
     const newUserMessage: Message = {
       id: uuidv4(),
@@ -114,6 +128,7 @@ export const useMessages = (currentSessionId: string | null) => {
   };
 
   const handleClearConversation = () => {
+    console.log('useMessages: Clearing conversation');
     setMessages([initialMessages[0]]);
   };
 
@@ -136,6 +151,7 @@ export const useMessages = (currentSessionId: string | null) => {
   return {
     messages,
     isTyping,
+    isLoadingHistory,
     viewportRef,
     handleSendMessage,
     handleClearConversation,

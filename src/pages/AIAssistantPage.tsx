@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { AppSidebar } from '@/components/AppSidebar';
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
@@ -13,6 +12,7 @@ import { useChatHistory } from '@/hooks/useChatHistory';
 import { useMessages } from '@/hooks/useMessages';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTheme } from 'next-themes';
+import { Loader2 } from 'lucide-react';
 
 const AIAssistantPage: React.FC = () => {
   const isMobile = useIsMobile();
@@ -30,6 +30,7 @@ const AIAssistantPage: React.FC = () => {
   const {
     messages,
     isTyping,
+    isLoadingHistory,
     viewportRef,
     handleSendMessage,
     handleClearConversation,
@@ -41,6 +42,7 @@ const AIAssistantPage: React.FC = () => {
   useEffect(() => {
     console.log('=== AI Assistant Page Debug ===');
     console.log('Current route:', window.location.pathname);
+    console.log('Current session ID:', currentSessionId);
     console.log('Theme mode:', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
     console.log('Theme from hook:', theme);
     
@@ -54,7 +56,7 @@ const AIAssistantPage: React.FC = () => {
     });
     
     console.log('=== End Debug ===');
-  }, [theme]);
+  }, [theme, currentSessionId]);
 
   // Handle keyboard shortcuts
   useEffect(() => {
@@ -72,17 +74,30 @@ const AIAssistantPage: React.FC = () => {
   }, [isFullscreen]);
 
   const handleSendMessageWithSession = async (text: string) => {
+    console.log('AIAssistantPage: Sending message with session:', currentSessionId);
+    
     // Create session if none exists
     if (!currentSessionId) {
+      console.log('AIAssistantPage: No current session, creating new one...');
       const newSession = await createSession();
-      if (!newSession) return;
+      if (!newSession) {
+        console.error('AIAssistantPage: Failed to create new session');
+        return;
+      }
+      console.log('AIAssistantPage: Created new session:', newSession.id);
       setCurrentSessionId(newSession.id);
+      
+      // Wait a bit for the session to be set before sending the message
+      setTimeout(() => {
+        handleSendMessage(text);
+      }, 100);
+    } else {
+      handleSendMessage(text);
     }
-    
-    handleSendMessage(text);
   };
 
   const handleClearConversationWithHistory = async () => {
+    console.log('AIAssistantPage: Clearing conversation and history for session:', currentSessionId);
     handleClearConversation();
     if (currentSessionId) {
       await clearHistory();
@@ -90,12 +105,38 @@ const AIAssistantPage: React.FC = () => {
   };
 
   const handleSessionSelect = (sessionId: string) => {
-    setCurrentSessionId(sessionId);
+    console.log('AIAssistantPage: Session selected:', sessionId);
+    if (sessionId === '') {
+      // Empty string means clear current session
+      setCurrentSessionId(null);
+    } else {
+      setCurrentSessionId(sessionId);
+    }
   };
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
   };
+
+  // Show loading state while history is being loaded
+  if (isLoadingHistory) {
+    return (
+      <div className="min-h-screen flex w-full apple-hero relative">
+        <FloatingElements />
+        <SidebarProvider>
+          <AppSidebar />
+          <SidebarInset className="flex-1 flex flex-col bg-transparent">
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+                <p className="text-muted-foreground">Loading chat session...</p>
+              </div>
+            </div>
+          </SidebarInset>
+        </SidebarProvider>
+      </div>
+    );
+  }
 
   // Fullscreen mode
   if (isFullscreen) {
