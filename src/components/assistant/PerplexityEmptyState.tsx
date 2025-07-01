@@ -31,29 +31,29 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({ onSendMessa
 
       {/* Perplexity Pro-Style Input Area */}
       <div className="w-full max-w-4xl mb-12">
-        <div className="relative flex items-center bg-background border border-border rounded-xl px-2 py-2 shadow-sm hover:shadow-md transition-all duration-200">
+        <div className="relative flex items-center bg-background border border-border rounded-xl px-3 py-4 shadow-sm hover:shadow-md transition-all duration-200">
           {/* Left Side Button Group */}
-          <div className="flex items-center space-x-1 pl-2">
+          <div className="flex items-center space-x-2 pl-2">
             <Button
               variant="ghost"
               size="icon"
-              className="h-9 w-9 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+              className="h-10 w-10 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground"
             >
-              <Search className="h-4 w-4" />
+              <Search className="h-5 w-5" />
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className="h-9 w-9 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+              className="h-10 w-10 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground"
             >
-              <Target className="h-4 w-4" />
+              <Target className="h-5 w-5" />
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className="h-9 w-9 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+              className="h-10 w-10 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground"
             >
-              <Lightbulb className="h-4 w-4" />
+              <Lightbulb className="h-5 w-5" />
             </Button>
           </div>
 
@@ -61,7 +61,7 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({ onSendMessa
           <input
             type="text"
             placeholder="Ask anything or @ mention a Space"
-            className="flex-1 h-12 px-4 text-base bg-transparent border-none outline-none focus:outline-none placeholder:text-muted-foreground"
+            className="flex-1 h-14 px-6 text-base bg-transparent border-none outline-none focus:outline-none placeholder:text-muted-foreground"
             onKeyDown={(e) => {
               if (e.key === 'Enter' && e.currentTarget.value.trim()) {
                 handlePromptClick(e.currentTarget.value);
@@ -71,33 +71,33 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({ onSendMessa
           />
 
           {/* Right Side Button Group */}
-          <div className="flex items-center space-x-1 pr-2">
+          <div className="flex items-center space-x-2 pr-2">
             <Button
               variant="ghost"
               size="icon"
-              className="h-9 w-9 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+              className="h-10 w-10 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground"
             >
-              <Globe className="h-4 w-4" />
+              <Globe className="h-5 w-5" />
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className="h-9 w-9 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+              className="h-10 w-10 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground"
             >
-              <Paperclip className="h-4 w-4" />
+              <Paperclip className="h-5 w-5" />
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className="h-9 w-9 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+              className="h-10 w-10 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground"
             >
-              <Mic className="h-4 w-4" />
+              <Mic className="h-5 w-5" />
             </Button>
             {/* Pro-style Audio Button */}
             <Button
               variant="ghost"
               size="icon"
-              className="h-9 w-9 rounded-full bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20"
+              className="h-10 w-10 rounded-full bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20"
             >
               <div className="flex items-center space-x-0.5">
                 <div className="w-0.5 h-2 bg-current rounded-full animate-pulse" />
