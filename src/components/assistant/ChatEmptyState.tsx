@@ -1,16 +1,53 @@
-import React from 'react';
 
-const ChatEmptyState: React.FC = () => (
-  <div className="flex flex-col items-center justify-center h-72 text-center text-muted-foreground animate-fade-in">
-    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary/10 to-muted flex items-center justify-center mb-4">
-      <span className="text-3xl">💡</span>
+import React from 'react';
+import EnhancedChatInput from './EnhancedChatInput';
+
+interface ChatEmptyStateProps {
+  onSendMessage: (message: string) => void;
+  isTyping: boolean;
+}
+
+const ChatEmptyState: React.FC<ChatEmptyStateProps> = ({ onSendMessage, isTyping }) => {
+  const suggestedPrompts = [
+    "Help me validate my business idea",
+    "What are the latest trends in my industry?",
+    "How can I improve my product-market fit?",
+    "What should I focus on for customer acquisition?"
+  ];
+
+  return (
+    <div className="flex flex-col items-center justify-center h-full max-w-4xl mx-auto px-6 py-12">
+      <div className="text-center mb-12">
+        <h1 className="text-4xl font-bold text-foreground mb-4">
+          AI Business Assistant
+        </h1>
+        <p className="text-xl text-muted-foreground mb-8">
+          Get expert insights and guidance for your startup journey
+        </p>
+      </div>
+
+      <div className="w-full mb-8">
+        <EnhancedChatInput 
+          onSendMessage={onSendMessage} 
+          isTyping={isTyping}
+          isCompact={false}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-2xl">
+        {suggestedPrompts.map((prompt, index) => (
+          <button
+            key={index}
+            onClick={() => onSendMessage(prompt)}
+            disabled={isTyping}
+            className="p-4 text-left rounded-lg border border-border bg-card hover:bg-accent transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <p className="text-sm text-muted-foreground">{prompt}</p>
+          </button>
+        ))}
+      </div>
     </div>
-    <h3 className="text-lg font-semibold mb-2">Start chatting with your advisor</h3>
-    <p className="text-sm mb-2 max-w-xs">
-      Ask any question about your startup idea, get instant feedback, or try one of the suggested prompts below.
-    </p>
-    <div className="mt-1 text-xs opacity-80">Try: "What is a good market for an AI fitness app?"</div>
-  </div>
-);
+  );
+};
 
 export default ChatEmptyState;
