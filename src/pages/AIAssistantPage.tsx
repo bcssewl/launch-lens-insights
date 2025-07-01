@@ -12,10 +12,12 @@ import { useChatSessions } from '@/hooks/useChatSessions';
 import { useChatHistory } from '@/hooks/useChatHistory';
 import { useMessages } from '@/hooks/useMessages';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useTheme } from 'next-themes';
 
 const AIAssistantPage: React.FC = () => {
   const isMobile = useIsMobile();
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const { theme } = useTheme();
   
   const { 
     currentSessionId, 
@@ -40,6 +42,7 @@ const AIAssistantPage: React.FC = () => {
     console.log('=== AI Assistant Page Debug ===');
     console.log('Current route:', window.location.pathname);
     console.log('Theme mode:', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+    console.log('Theme from hook:', theme);
     
     // Check CSS variables
     const rootStyles = getComputedStyle(document.documentElement);
@@ -50,12 +53,8 @@ const AIAssistantPage: React.FC = () => {
       accent: rootStyles.getPropertyValue('--accent')
     });
     
-    // Check if apple-hero class exists
-    const appleHeroElements = document.querySelectorAll('.apple-hero');
-    console.log('Apple-hero elements found:', appleHeroElements.length);
-    
     console.log('=== End Debug ===');
-  }, []);
+  }, [theme]);
 
   // Handle keyboard shortcuts
   useEffect(() => {
@@ -98,6 +97,45 @@ const AIAssistantPage: React.FC = () => {
     setIsFullscreen(!isFullscreen);
   };
 
+  // Determine if we're in dark mode
+  const isDark = theme === 'dark' || document.documentElement.classList.contains('dark');
+
+  // Create theme-aware background styles
+  const getBackgroundStyle = () => {
+    if (isDark) {
+      // Dark mode: More vibrant gradient with higher opacity
+      return {
+        background: `
+          linear-gradient(135deg, 
+            hsl(var(--primary) / 0.25) 0%, 
+            hsl(var(--accent) / 0.2) 20%,
+            hsl(0 0% 12%) 40%,
+            hsl(var(--primary) / 0.15) 60%,
+            hsl(var(--accent) / 0.25) 80%,
+            hsl(0 0% 8%) 100%
+          )
+        `,
+        minHeight: '100vh',
+        position: 'relative' as const
+      };
+    } else {
+      // Light mode: Subtle gradient
+      return {
+        background: `
+          linear-gradient(135deg, 
+            hsl(var(--primary) / 0.08) 0%, 
+            hsl(var(--accent) / 0.06) 25%,
+            hsl(var(--background)) 50%,
+            hsl(var(--accent) / 0.04) 75%,
+            hsl(var(--primary) / 0.06) 100%
+          )
+        `,
+        minHeight: '100vh',
+        position: 'relative' as const
+      };
+    }
+  };
+
   // Fullscreen mode
   if (isFullscreen) {
     return (
@@ -116,32 +154,37 @@ const AIAssistantPage: React.FC = () => {
     );
   }
 
-  // Normal mode with enhanced background
+  // Normal mode with enhanced theme-specific background
   return (
     <SidebarProvider>
       <div 
         className="min-h-screen flex w-full relative"
-        style={{ 
-          background: `
-            linear-gradient(135deg, 
-              hsl(var(--primary) / 0.1) 0%, 
-              hsl(var(--accent) / 0.1) 25%,
-              hsl(var(--background)) 50%,
-              hsl(var(--accent) / 0.05) 75%,
-              hsl(var(--primary) / 0.05) 100%
-            )
-          `,
-          minHeight: '100vh',
-          position: 'relative'
-        }}
+        style={getBackgroundStyle()}
       >
-        {/* Enhanced floating elements for visual distinction */}
+        {/* Enhanced floating elements with theme-aware visibility */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-20 left-10 w-8 h-8 bg-primary/10 rounded-full blur-sm animate-pulse" />
-          <div className="absolute top-40 right-20 w-12 h-12 bg-accent/15 rounded-2xl rotate-12 animate-pulse" style={{ animationDelay: '1s' }} />
-          <div className="absolute bottom-40 left-20 w-6 h-6 bg-primary/8 rounded-xl animate-pulse" style={{ animationDelay: '2s' }} />
-          <div className="absolute top-60 right-10 w-16 h-4 bg-gradient-to-r from-primary/10 to-accent/10 rounded-full animate-pulse" style={{ animationDelay: '0.5s' }} />
-          <div className="absolute bottom-60 right-1/4 w-10 h-10 bg-accent/12 rounded-full animate-pulse" style={{ animationDelay: '1.5s' }} />
+          {isDark ? (
+            // Dark mode: More visible floating elements with glow
+            <>
+              <div className="absolute top-20 left-10 w-10 h-10 bg-primary/30 rounded-full blur-sm animate-pulse shadow-lg shadow-primary/20" />
+              <div className="absolute top-40 right-20 w-14 h-14 bg-accent/25 rounded-2xl rotate-12 animate-pulse shadow-lg shadow-accent/15" style={{ animationDelay: '1s' }} />
+              <div className="absolute bottom-40 left-20 w-8 h-8 bg-primary/20 rounded-xl animate-pulse shadow-md shadow-primary/10" style={{ animationDelay: '2s' }} />
+              <div className="absolute top-60 right-10 w-20 h-6 bg-gradient-to-r from-primary/25 to-accent/20 rounded-full animate-pulse shadow-md" style={{ animationDelay: '0.5s' }} />
+              <div className="absolute bottom-60 right-1/4 w-12 h-12 bg-accent/20 rounded-full animate-pulse shadow-lg shadow-accent/10" style={{ animationDelay: '1.5s' }} />
+              {/* Additional glowing orbs for dark mode */}
+              <div className="absolute top-1/3 left-1/4 w-4 h-4 bg-primary/40 rounded-full blur-[1px] animate-pulse" style={{ animationDelay: '0.8s' }} />
+              <div className="absolute bottom-1/3 right-1/3 w-6 h-6 bg-accent/30 rounded-full blur-[1px] animate-pulse" style={{ animationDelay: '2.5s' }} />
+            </>
+          ) : (
+            // Light mode: Subtle floating elements
+            <>
+              <div className="absolute top-20 left-10 w-8 h-8 bg-primary/15 rounded-full blur-sm animate-pulse" />
+              <div className="absolute top-40 right-20 w-12 h-12 bg-accent/12 rounded-2xl rotate-12 animate-pulse" style={{ animationDelay: '1s' }} />
+              <div className="absolute bottom-40 left-20 w-6 h-6 bg-primary/10 rounded-xl animate-pulse" style={{ animationDelay: '2s' }} />
+              <div className="absolute top-60 right-10 w-16 h-4 bg-gradient-to-r from-primary/12 to-accent/10 rounded-full animate-pulse" style={{ animationDelay: '0.5s' }} />
+              <div className="absolute bottom-60 right-1/4 w-10 h-10 bg-accent/8 rounded-full animate-pulse" style={{ animationDelay: '1.5s' }} />
+            </>
+          )}
         </div>
         
         <AppSidebar />
