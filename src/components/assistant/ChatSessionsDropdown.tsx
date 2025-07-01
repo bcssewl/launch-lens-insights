@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
@@ -14,9 +13,11 @@ import {
   Edit2, 
   Trash2, 
   Check, 
-  X 
+  X,
+  Loader2
 } from 'lucide-react';
 import { useChatSessions, ChatSession } from '@/hooks/useChatSessions';
+import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
 interface ChatSessionsDropdownProps {
@@ -29,16 +30,47 @@ const ChatSessionsDropdown: React.FC<ChatSessionsDropdownProps> = ({
   onSessionSelect
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
   const { sessions, createSession, updateSessionTitle, deleteSession } = useChatSessions();
   const [editingSession, setEditingSession] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
+  const { toast } = useToast();
 
   const handleCreateSession = async () => {
-    const newSession = await createSession();
-    if (newSession && onSessionSelect) {
-      onSessionSelect(newSession.id);
+    console.log('Creating new chat session...');
+    setIsCreating(true);
+    
+    try {
+      const newSession = await createSession('New Chat');
+      console.log('New session created:', newSession);
+      
+      if (newSession) {
+        toast({
+          title: "Success",
+          description: "New chat session created successfully",
+        });
+        
+        if (onSessionSelect) {
+          onSessionSelect(newSession.id);
+        }
+        
+        // Keep the dropdown open briefly to show the new session
+        setTimeout(() => {
+          setIsOpen(false);
+        }, 1000);
+      } else {
+        throw new Error('Failed to create session');
+      }
+    } catch (error) {
+      console.error('Error creating session:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create new chat session",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreating(false);
     }
-    setIsOpen(false);
   };
 
   const handleEditStart = (session: ChatSession) => {
@@ -66,6 +98,7 @@ const ChatSessionsDropdown: React.FC<ChatSessionsDropdownProps> = ({
   };
 
   const handleSessionSelect = (sessionId: string) => {
+    console.log('Selecting session:', sessionId);
     onSessionSelect?.(sessionId);
     setIsOpen(false);
   };
@@ -86,17 +119,32 @@ const ChatSessionsDropdown: React.FC<ChatSessionsDropdownProps> = ({
         </Button>
       </PopoverTrigger>
       <PopoverContent 
-        className="w-80 p-0" 
+        className="w-80 p-0 bg-background border shadow-lg" 
         align="end"
         side="bottom"
         sideOffset={8}
       >
-        <div className="p-3 border-b border-border">
+        <div className="p-3 border-b border-border bg-background">
           <div className="flex items-center justify-between mb-2">
             <h3 className="font-medium text-sm">Chat Sessions</h3>
-            <Button size="sm" variant="ghost" onClick={handleCreateSession}>
-              <Plus className="h-3 w-3 mr-1" />
-              New
+            <Button 
+              size="sm" 
+              variant="ghost" 
+              onClick={handleCreateSession}
+              disabled={isCreating}
+              className="h-8 px-3"
+            >
+              {isCreating ? (
+                <>
+                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                <>
+                  <Plus className="h-3 w-3 mr-1" />
+                  New
+                </>
+              )}
             </Button>
           </div>
         </div>

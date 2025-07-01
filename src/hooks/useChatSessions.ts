@@ -16,6 +16,7 @@ export const useChatSessions = () => {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -26,6 +27,7 @@ export const useChatSessions = () => {
   }, [user]);
 
   const fetchSessions = async () => {
+    console.log('Fetching chat sessions...');
     try {
       const { data, error } = await supabase
         .from('chat_sessions')
@@ -33,6 +35,8 @@ export const useChatSessions = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+      
+      console.log('Fetched sessions:', data);
       setSessions(data || []);
     } catch (error) {
       console.error('Error fetching chat sessions:', error);
@@ -47,7 +51,13 @@ export const useChatSessions = () => {
   };
 
   const createSession = async (title: string = 'New Chat') => {
-    if (!user) return null;
+    if (!user) {
+      console.error('No user found when creating session');
+      return null;
+    }
+
+    console.log('Creating session with title:', title);
+    setCreating(true);
 
     try {
       const { data, error } = await supabase
@@ -61,10 +71,17 @@ export const useChatSessions = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error creating session:', error);
+        throw error;
+      }
 
+      console.log('Session created successfully:', data);
+      
+      // Update sessions list immediately
       setSessions(prev => [data, ...prev]);
       setCurrentSessionId(data.id);
+      
       return data;
     } catch (error) {
       console.error('Error creating chat session:', error);
@@ -74,10 +91,13 @@ export const useChatSessions = () => {
         variant: "destructive",
       });
       return null;
+    } finally {
+      setCreating(false);
     }
   };
 
   const updateSessionTitle = async (sessionId: string, title: string) => {
+    console.log('Updating session title:', sessionId, title);
     try {
       const { error } = await supabase
         .from('chat_sessions')
@@ -91,6 +111,8 @@ export const useChatSessions = () => {
           session.id === sessionId ? { ...session, title } : session
         )
       );
+      
+      console.log('Session title updated successfully');
     } catch (error) {
       console.error('Error updating session title:', error);
       toast({
@@ -102,6 +124,7 @@ export const useChatSessions = () => {
   };
 
   const deleteSession = async (sessionId: string) => {
+    console.log('Deleting session:', sessionId);
     try {
       const { error } = await supabase
         .from('chat_sessions')
@@ -115,6 +138,8 @@ export const useChatSessions = () => {
       if (currentSessionId === sessionId) {
         setCurrentSessionId(null);
       }
+      
+      console.log('Session deleted successfully');
     } catch (error) {
       console.error('Error deleting session:', error);
       toast({
@@ -130,6 +155,7 @@ export const useChatSessions = () => {
     currentSessionId,
     setCurrentSessionId,
     loading,
+    creating,
     createSession,
     updateSessionTitle,
     deleteSession,
