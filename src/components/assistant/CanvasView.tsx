@@ -46,6 +46,11 @@ const CanvasView: React.FC<CanvasViewProps> = ({
 
   if (!isOpen) return null;
 
+  const canvasStyles = {
+    fontSize: '16px',
+    lineHeight: '1.7',
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm animate-fade-in">
       <div className="h-full flex flex-col animate-scale-in">
@@ -92,7 +97,10 @@ const CanvasView: React.FC<CanvasViewProps> = ({
         {/* Content */}
         <div className="flex-1 overflow-auto bg-background/95 backdrop-blur-sm">
           <div className="max-w-4xl mx-auto p-8">
-            <div className="prose prose-gray dark:prose-invert max-w-none canvas-prose">
+            <div 
+              className="prose prose-gray dark:prose-invert max-w-none"
+              style={canvasStyles}
+            >
               <MarkdownRenderer 
                 content={content} 
                 className="canvas-content"
@@ -101,39 +109,6 @@ const CanvasView: React.FC<CanvasViewProps> = ({
           </div>
         </div>
       </div>
-
-      {/* Custom styles for canvas */}
-      <style jsx>{`
-        .canvas-prose {
-          font-size: 16px;
-          line-height: 1.7;
-        }
-        .canvas-prose h1 {
-          font-size: 2rem;
-          margin-bottom: 1.5rem;
-          margin-top: 2rem;
-        }
-        .canvas-prose h2 {
-          font-size: 1.5rem;
-          margin-bottom: 1rem;
-          margin-top: 1.5rem;
-        }
-        .canvas-prose h3 {
-          font-size: 1.25rem;
-          margin-bottom: 0.75rem;
-          margin-top: 1.25rem;
-        }
-        .canvas-prose p {
-          margin-bottom: 1rem;
-        }
-        .canvas-prose ul, .canvas-prose ol {
-          margin-bottom: 1rem;
-          padding-left: 1.5rem;
-        }
-        .canvas-prose table {
-          margin-bottom: 1.5rem;
-        }
-      `}</style>
     </div>
   );
 };
