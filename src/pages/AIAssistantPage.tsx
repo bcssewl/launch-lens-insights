@@ -7,6 +7,7 @@ import DashboardHeader from '@/components/DashboardHeader';
 import MobileDashboardHeader from '@/components/mobile/MobileDashboardHeader';
 import ChatArea from '@/components/assistant/ChatArea';
 import FullscreenChatLayout from '@/components/assistant/FullscreenChatLayout';
+import ChatSubheader from '@/components/assistant/ChatSubheader';
 import { useChatSessions } from '@/hooks/useChatSessions';
 import { useChatHistory } from '@/hooks/useChatHistory';
 import { useMessages } from '@/hooks/useMessages';
@@ -103,13 +104,24 @@ const AIAssistantPage: React.FC = () => {
         <AppSidebar />
         
         <SidebarInset className="flex-1 flex flex-col relative z-10">
-          {/* Minimal header */}
+          {/* Header with integrated ChatSubheader functionality */}
           {isMobile ? (
             <MobileDashboardHeader title="AI Assistant" />
           ) : (
             <div className="border-b bg-background/80 backdrop-blur-sm">
-              <div className="px-6 py-4">
+              <div className="px-6 py-4 flex items-center justify-between">
                 <h1 className="text-lg font-semibold text-foreground">AI Assistant</h1>
+                <div className="flex items-center">
+                  <ChatSubheader
+                    isConfigured={isConfigured}
+                    currentSessionId={currentSessionId}
+                    isFullscreen={isFullscreen}
+                    onToggleFullscreen={toggleFullscreen}
+                    onDownloadChat={handleDownloadChat}
+                    onClearConversation={handleClearConversationWithHistory}
+                    onSessionSelect={handleSessionSelect}
+                  />
+                </div>
               </div>
             </div>
           )}
