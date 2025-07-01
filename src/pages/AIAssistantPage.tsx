@@ -97,45 +97,6 @@ const AIAssistantPage: React.FC = () => {
     setIsFullscreen(!isFullscreen);
   };
 
-  // Determine if we're in dark mode
-  const isDark = theme === 'dark' || document.documentElement.classList.contains('dark');
-
-  // Create theme-aware background styles
-  const getBackgroundStyle = () => {
-    if (isDark) {
-      // Dark mode: More vibrant gradient with higher opacity
-      return {
-        background: `
-          linear-gradient(135deg, 
-            hsl(var(--primary) / 0.25) 0%, 
-            hsl(var(--accent) / 0.2) 20%,
-            hsl(0 0% 12%) 40%,
-            hsl(var(--primary) / 0.15) 60%,
-            hsl(var(--accent) / 0.25) 80%,
-            hsl(0 0% 8%) 100%
-          )
-        `,
-        minHeight: '100vh',
-        position: 'relative' as const
-      };
-    } else {
-      // Light mode: Subtle gradient
-      return {
-        background: `
-          linear-gradient(135deg, 
-            hsl(var(--primary) / 0.08) 0%, 
-            hsl(var(--accent) / 0.06) 25%,
-            hsl(var(--background)) 50%,
-            hsl(var(--accent) / 0.04) 75%,
-            hsl(var(--primary) / 0.06) 100%
-          )
-        `,
-        minHeight: '100vh',
-        position: 'relative' as const
-      };
-    }
-  };
-
   // Fullscreen mode
   if (isFullscreen) {
     return (
@@ -154,42 +115,14 @@ const AIAssistantPage: React.FC = () => {
     );
   }
 
-  // Normal mode with enhanced theme-specific background
+  // Normal mode with dashboard-style background
   return (
     <SidebarProvider>
-      <div 
-        className="min-h-screen flex w-full relative"
-        style={getBackgroundStyle()}
-      >
-        {/* Enhanced floating elements with theme-aware visibility */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          {isDark ? (
-            // Dark mode: More visible floating elements with glow
-            <>
-              <div className="absolute top-20 left-10 w-10 h-10 bg-primary/30 rounded-full blur-sm animate-pulse shadow-lg shadow-primary/20" />
-              <div className="absolute top-40 right-20 w-14 h-14 bg-accent/25 rounded-2xl rotate-12 animate-pulse shadow-lg shadow-accent/15" style={{ animationDelay: '1s' }} />
-              <div className="absolute bottom-40 left-20 w-8 h-8 bg-primary/20 rounded-xl animate-pulse shadow-md shadow-primary/10" style={{ animationDelay: '2s' }} />
-              <div className="absolute top-60 right-10 w-20 h-6 bg-gradient-to-r from-primary/25 to-accent/20 rounded-full animate-pulse shadow-md" style={{ animationDelay: '0.5s' }} />
-              <div className="absolute bottom-60 right-1/4 w-12 h-12 bg-accent/20 rounded-full animate-pulse shadow-lg shadow-accent/10" style={{ animationDelay: '1.5s' }} />
-              {/* Additional glowing orbs for dark mode */}
-              <div className="absolute top-1/3 left-1/4 w-4 h-4 bg-primary/40 rounded-full blur-[1px] animate-pulse" style={{ animationDelay: '0.8s' }} />
-              <div className="absolute bottom-1/3 right-1/3 w-6 h-6 bg-accent/30 rounded-full blur-[1px] animate-pulse" style={{ animationDelay: '2.5s' }} />
-            </>
-          ) : (
-            // Light mode: Subtle floating elements
-            <>
-              <div className="absolute top-20 left-10 w-8 h-8 bg-primary/15 rounded-full blur-sm animate-pulse" />
-              <div className="absolute top-40 right-20 w-12 h-12 bg-accent/12 rounded-2xl rotate-12 animate-pulse" style={{ animationDelay: '1s' }} />
-              <div className="absolute bottom-40 left-20 w-6 h-6 bg-primary/10 rounded-xl animate-pulse" style={{ animationDelay: '2s' }} />
-              <div className="absolute top-60 right-10 w-16 h-4 bg-gradient-to-r from-primary/12 to-accent/10 rounded-full animate-pulse" style={{ animationDelay: '0.5s' }} />
-              <div className="absolute bottom-60 right-1/4 w-10 h-10 bg-accent/8 rounded-full animate-pulse" style={{ animationDelay: '1.5s' }} />
-            </>
-          )}
-        </div>
-        
+      <div className="min-h-screen flex w-full apple-hero">
+        <FloatingElements />
         <AppSidebar />
         
-        <SidebarInset className="flex-1 flex flex-col relative z-10">
+        <SidebarInset className="flex-1 flex flex-col">
           {/* Header with integrated ChatSubheader functionality */}
           {isMobile ? (
             <MobileDashboardHeader title="AI Assistant" />
@@ -212,8 +145,8 @@ const AIAssistantPage: React.FC = () => {
             </div>
           )}
           
-          {/* Main chat area - explicitly transparent */}
-          <div className="flex flex-col flex-1 min-h-0 w-full relative bg-transparent">
+          {/* Main chat area */}
+          <div className="flex flex-col flex-1 min-h-0 w-full relative">
             <ChatArea
               messages={messages}
               isTyping={isTyping}
