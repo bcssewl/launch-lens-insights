@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Logo } from '@/components/icons';
-import { Search, Mic, Plus } from 'lucide-react';
+import { Search, Mic, Plus, Target, Lightbulb, Globe, Paperclip } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface PerplexityEmptyStateProps {
@@ -29,16 +29,39 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({ onSendMessa
         </p>
       </div>
 
-      {/* Main Search Input Area */}
-      <div className="w-full max-w-3xl mb-12">
-        <div className="relative">
-          <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-            <Search className="h-5 w-5 text-muted-foreground" />
+      {/* Perplexity Pro-Style Input Area */}
+      <div className="w-full max-w-4xl mb-12">
+        <div className="relative flex items-center bg-background border border-border rounded-full px-2 py-2 shadow-sm hover:shadow-md transition-all duration-200">
+          {/* Left Side Button Group */}
+          <div className="flex items-center space-x-1 pl-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+            >
+              <Search className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+            >
+              <Target className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+            >
+              <Lightbulb className="h-4 w-4" />
+            </Button>
           </div>
+
+          {/* Main Input Field */}
           <input
             type="text"
-            placeholder="Ask me anything about your startup ideas..."
-            className="w-full h-14 pl-12 pr-20 text-lg rounded-full border border-border bg-background/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all duration-200 placeholder:text-muted-foreground"
+            placeholder="Ask anything or @ mention a Space"
+            className="flex-1 h-12 px-4 text-base bg-transparent border-none outline-none focus:outline-none placeholder:text-muted-foreground"
             onKeyDown={(e) => {
               if (e.key === 'Enter' && e.currentTarget.value.trim()) {
                 handlePromptClick(e.currentTarget.value);
@@ -46,20 +69,41 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({ onSendMessa
               }
             }}
           />
-          <div className="absolute inset-y-0 right-2 flex items-center space-x-1">
+
+          {/* Right Side Button Group */}
+          <div className="flex items-center space-x-1 pr-2">
             <Button
               variant="ghost"
               size="icon"
-              className="h-10 w-10 rounded-full hover:bg-muted"
+              className="h-9 w-9 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground"
             >
-              <Mic className="h-4 w-4" />
+              <Globe className="h-4 w-4" />
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className="h-10 w-10 rounded-full hover:bg-muted"
+              className="h-9 w-9 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground"
             >
-              <Plus className="h-4 w-4" />
+              <Paperclip className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+            >
+              <Mic className="h-4 w-4" />
+            </Button>
+            {/* Pro-style Audio Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-full bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20"
+            >
+              <div className="flex items-center space-x-0.5">
+                <div className="w-0.5 h-2 bg-current rounded-full animate-pulse" />
+                <div className="w-0.5 h-3 bg-current rounded-full animate-pulse" style={{ animationDelay: '0.1s' }} />
+                <div className="w-0.5 h-2 bg-current rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
+              </div>
             </Button>
           </div>
         </div>
