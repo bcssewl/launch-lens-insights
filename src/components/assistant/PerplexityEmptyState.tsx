@@ -1,21 +1,30 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Logo } from '@/components/icons';
 import { Search, Mic, Plus, Target, Lightbulb, Globe, Paperclip } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useVoiceRecording } from '@/hooks/useVoiceRecording';
+import { useFileAttachments } from '@/hooks/useFileAttachments';
 import SoundWaveVisualization from './SoundWaveVisualization';
+import AttachmentOptionsDropdown from './AttachmentOptionsDropdown';
+import ProjectSelectionModal from './ProjectSelectionModal';
+import LocalFileUploader from './LocalFileUploader';
+import AttachmentsList from './AttachmentsList';
 
 interface PerplexityEmptyStateProps {
-  onSendMessage: (message: string) => void;
+  onSendMessage: (message: string, attachments?: any[]) => void;
 }
 
 const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({ onSendMessage }) => {
   const { isRecording, isProcessing, audioLevel, error, startRecording, stopRecording, clearError } = useVoiceRecording();
+  const { attachedFiles, addDatabaseFile, addLocalFile, removeFile, clearFiles } = useFileAttachments();
+  
+  const [showProjectModal, setShowProjectModal] = useState(false);
+  const [showLocalUploader, setShowLocalUploader] = useState(false);
 
   const handlePromptClick = (prompt: string) => {
-    onSendMessage(prompt);
+    onSendMessage(prompt, attachedFiles);
   };
 
   const handleVoiceRecording = () => {
@@ -23,6 +32,13 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({ onSendMessa
       stopRecording();
     } else {
       startRecording();
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+      handlePromptClick(e.currentTarget.value);
+      e.currentTarget.value = '';
     }
   };
 
@@ -57,14 +73,15 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({ onSendMessa
                 isRecording ? 'pl-12' : ''
               }`}
               disabled={isRecording}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                  handlePromptClick(e.currentTarget.value);
-                  e.currentTarget.value = '';
-                }
-              }}
+              onKeyDown={handleKeyDown}
             />
           </div>
+
+          {/* Attachments List */}
+          <AttachmentsList
+            attachedFiles={attachedFiles}
+            onRemoveFile={removeFile}
+          />
 
           {/* Icon Buttons Row - Positioned Below Input */}
           <div className="flex items-center justify-between px-2">
@@ -102,13 +119,25 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({ onSendMessa
               >
                 <Globe className="h-5 w-5" />
               </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-10 w-10 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground"
-              >
-                <Paperclip className="h-5 w-5" />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <AttachmentOptionsDropdown
+                    onDatabaseSelect={() => setShowProjectModal(true)}
+                    onLocalFileSelect={() => setShowLocalUploader(true)}
+                  >
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-10 w-10 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+                    >
+                      <Paperclip className="h-5 w-5" />
+                    </Button>
+                  </AttachmentOptionsDropdown>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Add reports, presentations, etc.</p>
+                </TooltipContent>
+              </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -162,6 +191,19 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({ onSendMessa
           )}
         </div>
       </div>
+
+      {/* Modals */}
+      <ProjectSelectionModal
+        open={showProjectModal}
+        onClose={() => setShowProjectModal(false)}
+        onAttach={addDatabaseFile}
+      />
+      
+      <LocalFileUploader
+        open={showLocalUploader}
+        onClose={() => setShowLocalUploader(false)}
+        onFileSelect={addLocalFile}
+      />
     </TooltipProvider>
   );
 };
