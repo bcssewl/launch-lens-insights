@@ -31,7 +31,7 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({ onSendMessa
 
       {/* Perplexity Pro-Style Input Area */}
       <div className="w-full max-w-4xl mb-12">
-        <div className="relative flex items-center bg-background border border-border rounded-full px-2 py-2 shadow-sm hover:shadow-md transition-all duration-200">
+        <div className="relative flex items-center bg-background border border-border rounded-xl px-2 py-2 shadow-sm hover:shadow-md transition-all duration-200">
           {/* Left Side Button Group */}
           <div className="flex items-center space-x-1 pl-2">
             <Button
