@@ -3,9 +3,12 @@ import React, { useEffect, useCallback, useMemo } from 'react';
 import { X, Download, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import MarkdownRenderer from './MarkdownRenderer';
-import ChatArea from './ChatArea';
+import ChatMessage from './ChatMessage';
+import TypingIndicator from './TypingIndicator';
+import EnhancedChatInput from './EnhancedChatInput';
 import { Message } from '@/constants/aiAssistant';
 
 interface CanvasViewProps {
@@ -114,6 +117,11 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
     };
   }, [isOpen, handleKeyDown]);
 
+  // Format timestamp helper
+  const formatTimestamp = useCallback((timestamp: Date): string => {
+    return timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }, []);
+
   // Early return if not open
   if (!isOpen) {
     console.log('CanvasView: Not open, returning null');
@@ -178,17 +186,34 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
             {onSendMessage && (
               <>
                 <ResizablePanel defaultSize={40} minSize={30} maxSize={60}>
-                  <div className="h-full border-r border-border/50 overflow-hidden">
-                    <ChatArea
-                      messages={messages}
-                      isTyping={isTyping}
-                      viewportRef={viewportRef}
-                      onSendMessage={onSendMessage}
-                      onOpenCanvas={onOpenCanvas}
-                      onCloseCanvas={onCloseCanvas}
-                      onCanvasDownload={onCanvasDownload}
-                      onCanvasPrint={onCanvasPrint}
-                    />
+                  <div className="h-full border-r border-border/50 flex flex-col relative">
+                    {/* Chat Messages Area with proper scrolling */}
+                    <div className="flex-1 overflow-hidden">
+                      <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
+                        <div className="px-4 py-6 space-y-6">
+                          {messages.map((msg) => (
+                            <ChatMessage 
+                              key={msg.id} 
+                              message={{ ...msg, timestamp: formatTimestamp(msg.timestamp) }}
+                              onOpenCanvas={onOpenCanvas}
+                              onCanvasDownload={onCanvasDownload}
+                              onCanvasPrint={onCanvasPrint}
+                            />
+                          ))}
+                          {isTyping && <TypingIndicator />}
+                        </div>
+                        <div className="h-20" /> {/* Spacer for input */}
+                      </ScrollArea>
+                    </div>
+
+                    {/* Fixed Input Area at bottom of chat panel */}
+                    <div className="absolute bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border/50 p-3">
+                      <EnhancedChatInput 
+                        onSendMessage={onSendMessage} 
+                        isTyping={isTyping}
+                        isCompact={true}
+                      />
+                    </div>
                   </div>
                 </ResizablePanel>
                 
