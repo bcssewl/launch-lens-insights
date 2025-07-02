@@ -44,16 +44,16 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({ onSendMessa
 
   return (
     <TooltipProvider>
-      <div className="flex flex-col items-center justify-center min-h-[70vh] px-6 py-12 text-center max-w-4xl mx-auto bg-transparent">
+      <div className="flex flex-col items-center justify-center min-h-[70vh] px-6 py-12 text-center max-w-4xl mx-auto bg-white dark:bg-gray-900">
         {/* Logo/Branding Section */}
         <div className="mb-12">
           <div className="flex items-center justify-center mb-6">
             <Logo className="w-12 h-12" />
           </div>
-          <h1 className="text-4xl font-semibold text-foreground mb-4 tracking-tight">
+          <h1 className="text-4xl font-semibold text-gray-900 dark:text-white mb-4 tracking-tight">
             AI Business Assistant
           </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed">
+          <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl leading-relaxed">
             Get instant insights, market analysis, and strategic advice for your startup ideas. 
             Ask anything about business validation, market research, or growth strategies.
           </p>
@@ -62,14 +62,14 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({ onSendMessa
         {/* Perplexity Pro-Style Input Area */}
         <div className="w-full max-w-4xl mb-12">
           {/* Input Field Container */}
-          <div className="relative bg-background border border-border rounded-xl px-6 py-4 shadow-sm hover:shadow-md transition-all duration-200 mb-3">
+          <div className="relative bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl px-6 py-4 shadow-sm hover:shadow-md transition-all duration-200 mb-3">
             {/* Sound wave visualization overlay */}
             <SoundWaveVisualization audioLevel={audioLevel} isRecording={isRecording} />
             
             <input
               type="text"
               placeholder={isRecording ? "Listening..." : "Ask anything or @ mention a Space"}
-              className={`w-full h-12 text-base bg-transparent border-none outline-none focus:outline-none placeholder:text-muted-foreground ${
+              className={`w-full h-12 text-base bg-transparent border-none outline-none focus:outline-none placeholder:text-gray-500 dark:placeholder:text-gray-400 text-gray-900 dark:text-white ${
                 isRecording ? 'pl-12' : ''
               }`}
               disabled={isRecording}
@@ -90,21 +90,21 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({ onSendMessa
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-10 w-10 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+                className="h-10 w-10 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
               >
                 <Search className="h-5 w-5" />
               </Button>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-10 w-10 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+                className="h-10 w-10 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
               >
                 <Target className="h-5 w-5" />
               </Button>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-10 w-10 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+                className="h-10 w-10 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
               >
                 <Lightbulb className="h-5 w-5" />
               </Button>
@@ -115,7 +115,7 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({ onSendMessa
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-10 w-10 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+                className="h-10 w-10 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
               >
                 <Globe className="h-5 w-5" />
               </Button>
@@ -128,7 +128,7 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({ onSendMessa
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-10 w-10 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+                      className="h-10 w-10 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                     >
                       <Paperclip className="h-5 w-5" />
                     </Button>
@@ -143,7 +143,7 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({ onSendMessa
                   <Button
                     variant="ghost"
                     size="icon"
-                    className={`h-10 w-10 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground ${
+                    className={`h-10 w-10 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white ${
                       isRecording ? 'bg-red-100 hover:bg-red-200 text-red-600' : ''
                     } ${isProcessing ? 'opacity-50' : ''}`}
                     onClick={handleVoiceRecording}
@@ -162,7 +162,7 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({ onSendMessa
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-10 w-10 rounded-full bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20"
+                    className="h-10 w-10 rounded-full bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-700"
                   >
                     <div className="flex items-center space-x-0.5">
                       <div className="w-0.5 h-2 bg-current rounded-full animate-pulse" />
@@ -180,12 +180,12 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({ onSendMessa
 
           {/* Error and Processing Messages */}
           {error && (
-            <div className="mt-4 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg max-w-3xl mx-auto">
+            <div className="mt-4 text-sm text-red-600 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-lg max-w-3xl mx-auto">
               {error}
             </div>
           )}
           {isProcessing && (
-            <div className="mt-4 text-sm text-blue-600 bg-blue-50 px-3 py-2 rounded-lg max-w-3xl mx-auto">
+            <div className="mt-4 text-sm text-blue-600 bg-blue-50 dark:bg-blue-900/20 px-3 py-2 rounded-lg max-w-3xl mx-auto">
               Processing your voice recording...
             </div>
           )}
