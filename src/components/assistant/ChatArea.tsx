@@ -52,9 +52,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     );
   }
 
-  // Show conversation with fixed input at bottom - similar to Lovable's chat
+  // Show conversation with dashboard background styling
   return (
-    <div className="flex flex-col flex-1 min-h-0 w-full relative bg-background">
+    <div className="flex flex-col flex-1 min-h-0 w-full relative bg-background/10 backdrop-blur-sm">
       {/* Chat Messages Area - full height with padding for fixed input */}
       <div className="flex-1 min-h-0 overflow-hidden">
         <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
