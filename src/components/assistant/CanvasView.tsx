@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { X, Download, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
@@ -47,27 +47,34 @@ const CanvasView: React.FC<CanvasViewProps> = ({
   onCanvasDownload,
   onCanvasPrint
 }) => {
+  // Memoize handlers to prevent unnecessary re-renders
+  const handleKeyDown = useCallback((event: KeyboardEvent) => {
+    if (event.key === 'Escape') {
+      onClose();
+    } else if (event.ctrlKey && event.key === 'p') {
+      event.preventDefault();
+      onPrint?.();
+    }
+  }, [onClose, onPrint]);
+
+  const handleBackdropClick = useCallback((event: React.MouseEvent) => {
+    if (event.target === event.currentTarget) {
+      onClose();
+    }
+  }, [onClose]);
+
   // Handle keyboard shortcuts
   useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose();
-      } else if (event.ctrlKey && event.key === 'p') {
-        event.preventDefault();
-        onPrint?.();
-      }
-    };
+    if (!isOpen) return;
 
-    if (isOpen) {
-      document.addEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = 'hidden';
-    }
+    document.addEventListener('keydown', handleKeyDown);
+    document.body.style.overflow = 'hidden';
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = 'unset';
     };
-  }, [isOpen, onClose, onPrint]);
+  }, [isOpen, handleKeyDown]);
 
   if (!isOpen) return null;
 
@@ -77,8 +84,11 @@ const CanvasView: React.FC<CanvasViewProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm animate-fade-in">
-      <div className="h-full flex flex-col animate-scale-in">
+    <div 
+      className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm animate-fade-in"
+      onClick={handleBackdropClick}
+    >
+      <div className="h-full flex flex-col animate-scale-in" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between p-4 bg-background/95 backdrop-blur-sm border-b border-border/50">
           <h2 className="text-lg font-semibold text-foreground truncate max-w-md">
@@ -120,13 +130,13 @@ const CanvasView: React.FC<CanvasViewProps> = ({
         </div>
 
         {/* Resizable Content Area */}
-        <div className="flex-1 bg-background/95 backdrop-blur-sm">
+        <div className="flex-1 bg-background/95 backdrop-blur-sm overflow-hidden">
           <ResizablePanelGroup direction="horizontal" className="h-full">
             {/* Chat Panel */}
             {onSendMessage && (
               <>
                 <ResizablePanel defaultSize={40} minSize={30} maxSize={60}>
-                  <div className="h-full border-r border-border/50">
+                  <div className="h-full border-r border-border/50 overflow-hidden">
                     <ChatArea
                       messages={messages}
                       isTyping={isTyping}

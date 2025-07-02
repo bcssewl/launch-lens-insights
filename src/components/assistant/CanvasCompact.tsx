@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Maximize2, Download, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -20,10 +20,31 @@ const CanvasCompact: React.FC<CanvasCompactProps> = ({
   onPrint,
   className
 }) => {
+  // Memoize handlers to prevent unnecessary re-renders
+  const handleExpand = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('CanvasCompact: Expanding canvas');
+    onExpand();
+  }, [onExpand]);
+
+  const handleDownload = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onDownload?.();
+  }, [onDownload]);
+
+  const handlePrint = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onPrint?.();
+  }, [onPrint]);
+
   return (
     <div className={cn(
       "mt-3 border rounded-lg bg-background/95 backdrop-blur-sm shadow-md",
       "w-full max-w-[600px] h-[280px] overflow-hidden flex flex-col",
+      "border-border bg-surface-2 shadow-sm",
       className
     )}>
       {/* Header */}
@@ -37,8 +58,8 @@ const CanvasCompact: React.FC<CanvasCompactProps> = ({
             <Button
               variant="ghost"
               size="sm"
-              onClick={onDownload}
-              className="h-7 w-7 p-0"
+              onClick={handleDownload}
+              className="h-7 w-7 p-0 hover:bg-muted"
             >
               <Download className="h-3 w-3" />
             </Button>
@@ -47,8 +68,8 @@ const CanvasCompact: React.FC<CanvasCompactProps> = ({
             <Button
               variant="ghost"
               size="sm"
-              onClick={onPrint}
-              className="h-7 w-7 p-0"
+              onClick={handlePrint}
+              className="h-7 w-7 p-0 hover:bg-muted"
             >
               <Printer className="h-3 w-3" />
             </Button>
@@ -56,8 +77,8 @@ const CanvasCompact: React.FC<CanvasCompactProps> = ({
           <Button
             variant="ghost"
             size="sm"
-            onClick={onExpand}
-            className="h-7 w-7 p-0"
+            onClick={handleExpand}
+            className="h-7 w-7 p-0 hover:bg-muted"
           >
             <Maximize2 className="h-3 w-3" />
           </Button>
@@ -76,8 +97,8 @@ const CanvasCompact: React.FC<CanvasCompactProps> = ({
         <Button
           variant="outline"
           size="sm"
-          onClick={onExpand}
-          className="text-xs"
+          onClick={handleExpand}
+          className="text-xs hover:bg-muted"
         >
           View Full Report
         </Button>
