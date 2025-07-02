@@ -163,7 +163,7 @@ const AIAssistantPage: React.FC = () => {
         <SidebarInset className="flex-1 flex flex-col bg-transparent">
           {/* Header with transparent background */}
           {isMobile ? <MobileDashboardHeader title="AI Assistant" /> : <div className="border-b bg-background/10 backdrop-blur-sm">
-              <div className="px-6 flex items-center justify-between py-[8px]">
+              <div className="px-6 flex items-center justify-between py-[10px]">
                 <h1 className="text-lg font-semibold text-foreground">AI Assistant</h1>
                 <div className="flex items-center">
                   <ChatSubheader isConfigured={isConfigured} currentSessionId={currentSessionId} isFullscreen={isFullscreen} onToggleFullscreen={toggleFullscreen} onDownloadChat={handleDownloadChat} onClearConversation={handleClearConversationWithHistory} onSessionSelect={handleSessionSelect} />
