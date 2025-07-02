@@ -1,9 +1,9 @@
+
 import { useState, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Message, initialMessages, formatTimestamp } from '@/constants/aiAssistant';
-import { useN8nWebhook } from '@/hooks/useN8nWebhook';
+import { useN8nWebhook, DualResponse } from '@/hooks/useN8nWebhook';
 import { useChatHistory } from '@/hooks/useChatHistory';
-import { isReportMessage } from '@/utils/reportDetection';
 
 export const useMessages = (currentSessionId: string | null) => {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
@@ -13,6 +13,7 @@ export const useMessages = (currentSessionId: string | null) => {
     mode: 'closed' | 'compact' | 'expanded';
     messageId: string | null;
     content: string;
+    reportType?: 'business_analysis' | 'market_research' | 'financial_analysis' | 'general_report';
   }>({
     mode: 'closed',
     messageId: null,
@@ -32,21 +33,6 @@ export const useMessages = (currentSessionId: string | null) => {
     scrollToBottom();
   }, [messages, isTyping]);
 
-  // Auto-detect reports and open compact canvas
-  useEffect(() => {
-    const lastMessage = messages[messages.length - 1];
-    if (lastMessage && lastMessage.sender === 'ai' && isReportMessage(lastMessage.text)) {
-      // Only auto-open if canvas is currently closed
-      if (canvasState.mode === 'closed') {
-        setCanvasState({
-          mode: 'compact',
-          messageId: lastMessage.id,
-          content: lastMessage.text
-        });
-      }
-    }
-  }, [messages, canvasState.mode]);
-
   // Load messages from history when session changes
   useEffect(() => {
     console.log('useMessages: Session changed to:', currentSessionId);
@@ -56,18 +42,16 @@ export const useMessages = (currentSessionId: string | null) => {
     
     if (currentSessionId && history.length > 0) {
       console.log('useMessages: Loading history for session:', currentSessionId);
-      // Convert history to messages format, parsing out USER: and AI: prefixes
       const historyMessages: Message[] = history.map((item) => {
         let text = item.message;
         let sender: 'user' | 'ai' = 'user';
         
-        // Parse the message to determine sender and clean text
         if (text.startsWith('USER: ')) {
           sender = 'user';
-          text = text.substring(6); // Remove "USER: " prefix
+          text = text.substring(6);
         } else if (text.startsWith('AI: ')) {
           sender = 'ai';
-          text = text.substring(4); // Remove "AI: " prefix
+          text = text.substring(4);
         }
         
         return {
@@ -82,7 +66,6 @@ export const useMessages = (currentSessionId: string | null) => {
       setMessages([...initialMessages, ...historyMessages]);
     } else {
       console.log('useMessages: No session or empty history, showing initial messages only');
-      // Reset to initial messages for new sessions or when no session is selected
       setMessages([...initialMessages]);
     }
     
@@ -104,7 +87,7 @@ export const useMessages = (currentSessionId: string | null) => {
     
     setMessages(prev => [...prev, newUserMessage]);
 
-    // Save user message to history without prefix
+    // Save user message to history
     if (currentSessionId) {
       await addMessage(`USER: ${finalMessageText}`);
     }
@@ -123,20 +106,32 @@ export const useMessages = (currentSessionId: string | null) => {
     setIsTyping(true);
     
     try {
-      const aiResponseText = await sendMessageToN8n(finalMessageText, currentSessionId);
+      const dualResponse: DualResponse = await sendMessageToN8n(finalMessageText, currentSessionId);
       
       const aiResponse: Message = {
         id: uuidv4(),
-        text: aiResponseText,
+        text: dualResponse.response,
         sender: 'ai',
         timestamp: new Date(),
       };
       
       setMessages(prev => [...prev, aiResponse]);
       
-      // Save AI response to history without showing prefix to user
+      // Save AI response to history
       if (currentSessionId) {
-        await addMessage(`AI: ${aiResponseText}`);
+        await addMessage(`AI: ${dualResponse.response}`);
+      }
+
+      // If there's a report, auto-open it in compact canvas
+      if (dualResponse.report) {
+        console.log('Auto-opening report in compact canvas:', dualResponse.reportType);
+        
+        setCanvasState({
+          mode: 'compact',
+          messageId: aiResponse.id,
+          content: dualResponse.report,
+          reportType: dualResponse.reportType
+        });
       }
     } catch (error) {
       const errorResponse: Message = {
@@ -199,11 +194,12 @@ export const useMessages = (currentSessionId: string | null) => {
   const handleCanvasDownload = () => {
     if (!canvasState.content) return;
     
+    const reportType = canvasState.reportType || 'report';
     const blob = new Blob([canvasState.content], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `ai-report-${new Date().toISOString().split('T')[0]}.md`;
+    a.download = `ai-${reportType}-${new Date().toISOString().split('T')[0]}.md`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

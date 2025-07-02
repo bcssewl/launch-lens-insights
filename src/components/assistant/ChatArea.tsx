@@ -59,6 +59,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
               onExpand={onExpandCanvas || (() => {})}
               content={canvasState.content}
               title="AI Report"
+              reportType={canvasState.reportType}
             />
             <CanvasView
               isOpen={canvasState.mode === 'expanded'}
@@ -114,6 +115,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             onExpand={onExpandCanvas || (() => {})}
             content={canvasState.content}
             title="AI Report"
+            reportType={canvasState.reportType}
           />
           <CanvasView
             isOpen={canvasState.mode === 'expanded'}

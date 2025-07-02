@@ -5,7 +5,6 @@ import AIAvatar from './AIAvatar';
 import UserAvatar from './UserAvatar';
 import CopyButton from './CopyButton';
 import MarkdownRenderer from './MarkdownRenderer';
-import { isReportMessage, getReportPreview } from '@/utils/reportDetection';
 
 export interface ChatMessageData {
   id: string;
@@ -21,7 +20,6 @@ interface ChatMessageProps {
 
 const ChatMessage: React.FC<ChatMessageProps> = ({ message, onOpenCanvas }) => {
   const isAi = message.sender === 'ai';
-  const isReport = isAi && isReportMessage(message.text);
 
   return (
     <div
@@ -56,23 +54,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onOpenCanvas }) => {
 
           <div className={cn("text-sm leading-relaxed", isAi && "pr-8")}>
             {isAi ? (
-              <>
-                {isReport ? (
-                  <div className="space-y-3">
-                    <div className="text-sm text-muted-foreground font-medium">
-                      📊 Comprehensive Report Generated
-                    </div>
-                    <p className="text-sm opacity-80">
-                      {getReportPreview(message.text)}
-                    </p>
-                    <p className="text-xs text-muted-foreground italic">
-                      Report opened in preview window →
-                    </p>
-                  </div>
-                ) : (
-                  <MarkdownRenderer content={message.text} />
-                )}
-              </>
+              <MarkdownRenderer content={message.text} />
             ) : (
               <p className="whitespace-pre-wrap">{message.text}</p>
             )}
