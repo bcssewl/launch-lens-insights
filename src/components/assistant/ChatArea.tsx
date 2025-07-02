@@ -38,8 +38,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
   // Calculate proper positioning based on sidebar state
   const inputPositionClass = state === 'expanded' 
-    ? 'fixed bottom-0 left-[var(--sidebar-width)] right-0 z-10'
-    : 'fixed bottom-0 left-[var(--sidebar-width-icon)] right-0 z-10';
+    ? 'absolute bottom-0 left-0 right-0 px-4 py-3'
+    : 'absolute bottom-0 left-0 right-0 px-4 py-3';
 
   if (!hasConversation) {
     // Show Perplexity-inspired empty state - NO CANVAS HERE
@@ -52,11 +52,11 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     );
   }
 
-  // Show conversation with compact input - NO CANVAS HERE
+  // Show conversation with floating input - similar to canvas view
   return (
     <div className="flex flex-col flex-1 min-h-0 w-full relative bg-background">
-      {/* Chat Messages Area */}
-      <div className="flex-1 min-h-0 overflow-hidden">
+      {/* Chat Messages Area with floating input overlay */}
+      <div className="flex-1 min-h-0 overflow-hidden relative">
         <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
           <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
             {messages.map((msg) => (
@@ -70,17 +70,17 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             ))}
             {isTyping && <TypingIndicator />}
           </div>
-          <div className="h-24" /> {/* Spacer for input */}
+          <div className="h-20" /> {/* Spacer for floating input */}
         </ScrollArea>
-      </div>
 
-      {/* Fixed Input Area with Sidebar-aware positioning */}
-      <div className={inputPositionClass}>
-        <EnhancedChatInput 
-          onSendMessage={onSendMessage} 
-          isTyping={isTyping}
-          isCompact={true}
-        />
+        {/* Floating Input Area - seamless like canvas view */}
+        <div className={inputPositionClass}>
+          <EnhancedChatInput 
+            onSendMessage={onSendMessage} 
+            isTyping={isTyping}
+            isCompact={true}
+          />
+        </div>
       </div>
     </div>
   );

@@ -73,7 +73,7 @@ const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
   }, [error, clearError]);
 
   const containerClassName = isCompact 
-    ? "py-4 px-6 bg-background/95 backdrop-blur-sm border-t border-border/50" 
+    ? "w-full max-w-3xl mx-auto" 
     : "w-full max-w-3xl";
 
   const innerClassName = isCompact 
@@ -81,7 +81,7 @@ const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
     : "";
 
   const inputContainerClassName = isCompact 
-    ? "w-full max-w-3xl relative" 
+    ? "w-full relative" 
     : "relative";
 
   return (
