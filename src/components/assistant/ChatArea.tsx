@@ -5,6 +5,7 @@ import ChatMessage from '@/components/assistant/ChatMessage';
 import TypingIndicator from '@/components/assistant/TypingIndicator';
 import PerplexityEmptyState from '@/components/assistant/PerplexityEmptyState';
 import EnhancedChatInput from '@/components/assistant/EnhancedChatInput';
+import { useSidebar } from '@/components/ui/sidebar';
 import { Message } from '@/constants/aiAssistant';
 
 interface ChatAreaProps {
@@ -33,6 +34,12 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   onCanvasPrint
 }) => {
   const hasConversation = messages.length > 1 || isTyping;
+  const { state } = useSidebar();
+
+  // Calculate proper positioning based on sidebar state
+  const inputPositionClass = state === 'expanded' 
+    ? 'fixed bottom-0 left-[var(--sidebar-width)] right-0 z-10'
+    : 'fixed bottom-0 left-[var(--sidebar-width-icon)] right-0 z-10';
 
   if (!hasConversation) {
     // Show Perplexity-inspired empty state - NO CANVAS HERE
@@ -67,8 +74,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         </ScrollArea>
       </div>
 
-      {/* Fixed Input Area */}
-      <div className="fixed bottom-0 left-0 right-0 z-10">
+      {/* Fixed Input Area with Sidebar-aware positioning */}
+      <div className={inputPositionClass}>
         <EnhancedChatInput 
           onSendMessage={onSendMessage} 
           isTyping={isTyping}
