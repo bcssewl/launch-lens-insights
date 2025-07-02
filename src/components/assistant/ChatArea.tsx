@@ -20,6 +20,7 @@ interface ChatAreaProps {
   };
   onOpenCanvas?: (messageId: string, content: string) => void;
   onCloseCanvas?: () => void;
+  onCloseInlineCanvas?: (messageId: string) => void;
   onCanvasDownload?: () => void;
   onCanvasPrint?: () => void;
 }
@@ -32,6 +33,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   canvasState,
   onOpenCanvas,
   onCloseCanvas,
+  onCloseInlineCanvas,
   onCanvasDownload,
   onCanvasPrint
 }) => {
@@ -75,6 +77,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                   key={msg.id} 
                   message={{ ...msg, timestamp: formatTimestamp(msg.timestamp) }}
                   onOpenCanvas={onOpenCanvas}
+                  onCloseCanvas={onCloseInlineCanvas}
                 />
               ))}
               {isTyping && <TypingIndicator />}

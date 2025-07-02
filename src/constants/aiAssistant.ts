@@ -6,6 +6,9 @@ export interface Message {
   text: string;
   sender: 'ai' | 'user';
   timestamp: Date;
+  isCanvasMessage?: boolean;
+  canvasContent?: string;
+  acknowledgment?: string;
 }
 
 export const formatTimestamp = (date: Date): string => {
