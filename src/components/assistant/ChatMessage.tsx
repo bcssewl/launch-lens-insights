@@ -5,42 +5,28 @@ import AIAvatar from './AIAvatar';
 import UserAvatar from './UserAvatar';
 import CopyButton from './CopyButton';
 import MarkdownRenderer from './MarkdownRenderer';
-import CanvasCompact from './CanvasCompact';
-import { isReportMessage, getReportPreview, generateCanvasAcknowledgment } from '@/utils/reportDetection';
+import CanvasButton from './CanvasButton';
+import { isReportMessage, getReportPreview } from '@/utils/reportDetection';
 
 export interface ChatMessageData {
   id: string;
   text: string;
   sender: 'ai' | 'user';
   timestamp: string;
-  isCanvasMessage?: boolean;
-  canvasContent?: string;
-  acknowledgment?: string;
 }
 
 interface ChatMessageProps {
   message: ChatMessageData;
   onOpenCanvas?: (messageId: string, content: string) => void;
-  onCloseCanvas?: (messageId: string) => void;
 }
 
-const ChatMessage: React.FC<ChatMessageProps> = ({ 
-  message, 
-  onOpenCanvas,
-  onCloseCanvas 
-}) => {
+const ChatMessage: React.FC<ChatMessageProps> = ({ message, onOpenCanvas }) => {
   const isAi = message.sender === 'ai';
-  const hasInlineCanvas = isAi && message.isCanvasMessage && message.canvasContent;
+  const isReport = isAi && isReportMessage(message.text);
 
-  const handleCanvasExpand = () => {
-    if (onOpenCanvas && message.canvasContent) {
-      onOpenCanvas(message.id, message.canvasContent);
-    }
-  };
-
-  const handleCanvasClose = () => {
-    if (onCloseCanvas) {
-      onCloseCanvas(message.id);
+  const handleCanvasOpen = () => {
+    if (onOpenCanvas) {
+      onOpenCanvas(message.id, message.text);
     }
   };
 
@@ -71,20 +57,24 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
         >
           {isAi && (
             <div className="absolute top-2 right-2">
-              <CopyButton content={hasInlineCanvas ? message.canvasContent || '' : message.text} />
+              <CopyButton content={message.text} />
             </div>
           )}
 
           <div className={cn("text-sm leading-relaxed", isAi && "pr-8")}>
             {isAi ? (
               <>
-                {hasInlineCanvas ? (
-                  // Show acknowledgment for canvas messages
-                  <p className="text-sm">
-                    {message.acknowledgment || generateCanvasAcknowledgment(message.canvasContent || '')}
-                  </p>
+                {isReport ? (
+                  <div className="space-y-3">
+                    <div className="text-sm text-muted-foreground font-medium">
+                      📊 Comprehensive Report Generated
+                    </div>
+                    <p className="text-sm opacity-80">
+                      {getReportPreview(message.text)}
+                    </p>
+                    <CanvasButton onClick={handleCanvasOpen} />
+                  </div>
                 ) : (
-                  // Regular AI message
                   <MarkdownRenderer content={message.text} />
                 )}
               </>
@@ -93,19 +83,6 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
             )}
           </div>
         </div>
-
-        {/* Inline Canvas - rendered below the message bubble */}
-        {hasInlineCanvas && (
-          <div className="mt-3 w-full max-w-[600px]">
-            <CanvasCompact
-              content={message.canvasContent || ''}
-              title="AI Report"
-              onExpand={handleCanvasExpand}
-              onClose={handleCanvasClose}
-            />
-          </div>
-        )}
-
         <p className={cn(
           "text-xs mt-1 opacity-70 px-1",
           isAi ? "text-muted-foreground" : "text-muted-foreground"
@@ -113,7 +90,6 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
           {message.timestamp}
         </p>
       </div>
-
       {!isAi && (
         <UserAvatar className="h-8 w-8 flex-shrink-0 mt-1" />
       )}

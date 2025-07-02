@@ -1,10 +1,8 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Message, initialMessages, formatTimestamp } from '@/constants/aiAssistant';
 import { useN8nWebhook } from '@/hooks/useN8nWebhook';
 import { useChatHistory } from '@/hooks/useChatHistory';
-import { isReportMessage, generateCanvasAcknowledgment } from '@/utils/reportDetection';
 
 export const useMessages = (currentSessionId: string | null) => {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
@@ -55,18 +53,12 @@ export const useMessages = (currentSessionId: string | null) => {
           sender = 'ai';
           text = text.substring(4); // Remove "AI: " prefix
         }
-
-        // Check if this should be a canvas message
-        const shouldBeCanvas = sender === 'ai' && isReportMessage(text);
         
         return {
           id: item.id,
-          text: shouldBeCanvas ? '' : text, // Empty text for canvas messages
+          text: text,
           sender: sender,
           timestamp: new Date(item.created_at),
-          isCanvasMessage: shouldBeCanvas,
-          canvasContent: shouldBeCanvas ? text : undefined,
-          acknowledgment: shouldBeCanvas ? generateCanvasAcknowledgment(text) : undefined,
         };
       });
       
@@ -117,17 +109,11 @@ export const useMessages = (currentSessionId: string | null) => {
     try {
       const aiResponseText = await sendMessageToN8n(finalMessageText, currentSessionId);
       
-      // Determine if this should be a canvas message
-      const shouldBeCanvas = isReportMessage(aiResponseText);
-      
       const aiResponse: Message = {
         id: uuidv4(),
-        text: shouldBeCanvas ? '' : aiResponseText, // Empty text for canvas messages
+        text: aiResponseText,
         sender: 'ai',
         timestamp: new Date(),
-        isCanvasMessage: shouldBeCanvas,
-        canvasContent: shouldBeCanvas ? aiResponseText : undefined,
-        acknowledgment: shouldBeCanvas ? generateCanvasAcknowledgment(aiResponseText) : undefined,
       };
       
       setMessages(prev => [...prev, aiResponse]);
@@ -155,10 +141,9 @@ export const useMessages = (currentSessionId: string | null) => {
   };
 
   const handleDownloadChat = () => {
-    const chatContent = messages.map(msg => {
-      const content = msg.isCanvasMessage ? msg.canvasContent || '' : msg.text;
-      return `[${formatTimestamp(msg.timestamp)}] ${msg.sender.toUpperCase()}: ${content}`;
-    }).join('\n\n');
+    const chatContent = messages.map(msg => 
+      `[${formatTimestamp(msg.timestamp)}] ${msg.sender.toUpperCase()}: ${msg.text}`
+    ).join('\n\n');
     
     const blob = new Blob([chatContent], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
@@ -185,22 +170,6 @@ export const useMessages = (currentSessionId: string | null) => {
       messageId: null,
       content: ''
     });
-  };
-
-  const handleCloseInlineCanvas = (messageId: string) => {
-    // Remove the canvas from the specific message
-    setMessages(prev => prev.map(msg => {
-      if (msg.id === messageId && msg.isCanvasMessage) {
-        return {
-          ...msg,
-          isCanvasMessage: false,
-          text: msg.canvasContent || '',
-          canvasContent: undefined,
-          acknowledgment: undefined
-        };
-      }
-      return msg;
-    }));
   };
 
   const handleCanvasDownload = () => {
@@ -233,7 +202,6 @@ export const useMessages = (currentSessionId: string | null) => {
     canvasState,
     handleOpenCanvas,
     handleCloseCanvas,
-    handleCloseInlineCanvas,
     handleCanvasDownload,
     handleCanvasPrint
   };

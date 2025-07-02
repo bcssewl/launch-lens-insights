@@ -20,7 +20,6 @@ interface ChatAreaProps {
   };
   onOpenCanvas?: (messageId: string, content: string) => void;
   onCloseCanvas?: () => void;
-  onCloseInlineCanvas?: (messageId: string) => void;
   onCanvasDownload?: () => void;
   onCanvasPrint?: () => void;
 }
@@ -33,17 +32,16 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   canvasState,
   onOpenCanvas,
   onCloseCanvas,
-  onCloseInlineCanvas,
   onCanvasDownload,
   onCanvasPrint
 }) => {
   const hasConversation = messages.length > 1 || isTyping;
 
   if (!hasConversation) {
-    // Show Perplexity-inspired empty state with proper background
+    // Show Perplexity-inspired empty state with transparent background
     return (
       <>
-        <div className="flex flex-col flex-1 min-h-0 w-full relative bg-background">
+        <div className="flex flex-col flex-1 min-h-0 w-full relative bg-transparent">
           <div className="flex-1 min-h-0 overflow-hidden">
             <PerplexityEmptyState onSendMessage={onSendMessage} />
           </div>
@@ -64,10 +62,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     );
   }
 
-  // Show conversation with compact input and proper background
+  // Show conversation with compact input and transparent background
   return (
     <>
-      <div className="flex flex-col flex-1 min-h-0 w-full relative bg-background">
+      <div className="flex flex-col flex-1 min-h-0 w-full relative bg-transparent">
         {/* Chat Messages Area */}
         <div className="flex-1 min-h-0 overflow-hidden">
           <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
@@ -77,7 +75,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                   key={msg.id} 
                   message={{ ...msg, timestamp: formatTimestamp(msg.timestamp) }}
                   onOpenCanvas={onOpenCanvas}
-                  onCloseCanvas={onCloseInlineCanvas}
                 />
               ))}
               {isTyping && <TypingIndicator />}
@@ -87,7 +84,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         </div>
 
         {/* Fixed Input Area */}
-        <div className="fixed bottom-0 left-0 right-0 z-10 bg-transparent">
+        <div className="fixed bottom-0 left-0 right-0 z-10">
           <EnhancedChatInput 
             onSendMessage={onSendMessage} 
             isTyping={isTyping}

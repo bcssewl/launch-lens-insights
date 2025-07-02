@@ -29,7 +29,7 @@ const CanvasView: React.FC<CanvasViewProps> = ({
         onClose();
       } else if (event.ctrlKey && event.key === 'p') {
         event.preventDefault();
-        handlePrint();
+        onPrint?.();
       }
     };
 
@@ -42,33 +42,7 @@ const CanvasView: React.FC<CanvasViewProps> = ({
       document.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = 'unset';
     };
-  }, [isOpen, onClose]);
-
-  const handlePrint = () => {
-    if (onPrint) {
-      onPrint();
-    } else {
-      // Default print behavior - open print dialog
-      window.print();
-    }
-  };
-
-  const handleDownload = () => {
-    if (onDownload) {
-      onDownload();
-    } else {
-      // Default download behavior
-      const blob = new Blob([content], { type: 'text/markdown' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${title.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.md`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }
-  };
+  }, [isOpen, onClose, onPrint]);
 
   if (!isOpen) return null;
 
@@ -86,24 +60,28 @@ const CanvasView: React.FC<CanvasViewProps> = ({
             {title}
           </h2>
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleDownload}
-              className="flex items-center gap-2"
-            >
-              <Download className="h-4 w-4" />
-              Download
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handlePrint}
-              className="flex items-center gap-2"
-            >
-              <Printer className="h-4 w-4" />
-              Print
-            </Button>
+            {onDownload && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onDownload}
+                className="flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Download
+              </Button>
+            )}
+            {onPrint && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onPrint}
+                className="flex items-center gap-2"
+              >
+                <Printer className="h-4 w-4" />
+                Print
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"
