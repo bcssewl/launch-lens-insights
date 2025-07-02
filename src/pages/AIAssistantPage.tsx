@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { AppSidebar } from '@/components/AppSidebar';
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
@@ -43,6 +44,13 @@ const AIAssistantPage: React.FC = () => {
     handleCanvasDownload,
     handleCanvasPrint
   } = useMessages(currentSessionId);
+
+  const [editedCanvasContent, setEditedCanvasContent] = useState(canvasState.content);
+
+  // Update edited content when canvas state changes
+  useEffect(() => {
+    setEditedCanvasContent(canvasState.content);
+  }, [canvasState.content]);
 
   // Enhanced debugging with CSS inspection
   useEffect(() => {
@@ -122,6 +130,12 @@ const AIAssistantPage: React.FC = () => {
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
+  };
+
+  const handleCanvasContentUpdate = (newContent: string) => {
+    console.log('AIAssistantPage: Canvas content updated');
+    setEditedCanvasContent(newContent);
+    // TODO: You might want to save this to the backend or update the original message
   };
 
   // Show loading state while history is being loaded
@@ -219,7 +233,7 @@ const AIAssistantPage: React.FC = () => {
       <CanvasView
         isOpen={canvasState.isOpen}
         onClose={handleCloseCanvas}
-        content={canvasState.content}
+        content={editedCanvasContent}
         title="AI Report"
         onDownload={handleCanvasDownload}
         onPrint={handleCanvasPrint}
@@ -232,6 +246,7 @@ const AIAssistantPage: React.FC = () => {
         onCloseCanvas={handleCloseCanvas}
         onCanvasDownload={handleCanvasDownload}
         onCanvasPrint={handleCanvasPrint}
+        onContentUpdate={handleCanvasContentUpdate}
       />
     </div>
   );

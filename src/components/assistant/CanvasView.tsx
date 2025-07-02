@@ -1,6 +1,6 @@
 
-import React, { useEffect, useCallback, useMemo } from 'react';
-import { X, Download, Printer } from 'lucide-react';
+import React, { useEffect, useCallback, useMemo, useState } from 'react';
+import { X, Download, Printer, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -9,6 +9,7 @@ import MarkdownRenderer from './MarkdownRenderer';
 import ChatMessage from './ChatMessage';
 import TypingIndicator from './TypingIndicator';
 import EnhancedChatInput from './EnhancedChatInput';
+import CanvasEditor from './CanvasEditor';
 import { Message } from '@/constants/aiAssistant';
 
 interface CanvasViewProps {
@@ -31,6 +32,7 @@ interface CanvasViewProps {
   onCloseCanvas?: () => void;
   onCanvasDownload?: () => void;
   onCanvasPrint?: () => void;
+  onContentUpdate?: (newContent: string) => void;
 }
 
 const CanvasView: React.FC<CanvasViewProps> = React.memo(({
@@ -48,20 +50,36 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
   onOpenCanvas,
   onCloseCanvas,
   onCanvasDownload,
-  onCanvasPrint
+  onCanvasPrint,
+  onContentUpdate
 }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [currentContent, setCurrentContent] = useState(content);
+
   console.log('CanvasView: Rendering with isOpen:', isOpen);
+
+  // Update content when prop changes
+  useEffect(() => {
+    setCurrentContent(content);
+  }, [content]);
 
   // Memoize handlers to prevent unnecessary re-renders
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
     if (event.key === 'Escape') {
-      console.log('CanvasView: Escape key pressed, closing canvas');
-      onClose();
+      if (isEditing) {
+        setIsEditing(false);
+      } else {
+        console.log('CanvasView: Escape key pressed, closing canvas');
+        onClose();
+      }
     } else if (event.ctrlKey && event.key === 'p') {
       event.preventDefault();
       onPrint?.();
+    } else if (event.ctrlKey && event.key === 'e') {
+      event.preventDefault();
+      setIsEditing(!isEditing);
     }
-  }, [onClose, onPrint]);
+  }, [onClose, onPrint, isEditing]);
 
   const handleBackdropClick = useCallback((event: React.MouseEvent) => {
     if (event.target === event.currentTarget) {
@@ -87,6 +105,22 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
     console.log('CanvasView: Close button clicked');
     onClose();
   }, [onClose]);
+
+  const handleEditClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsEditing(true);
+  }, []);
+
+  const handleSaveEdit = useCallback((newContent: string) => {
+    setCurrentContent(newContent);
+    setIsEditing(false);
+    onContentUpdate?.(newContent);
+    console.log('CanvasView: Content updated');
+  }, [onContentUpdate]);
+
+  const handleCancelEdit = useCallback(() => {
+    setIsEditing(false);
+  }, []);
 
   // Memoize canvas styles to prevent recalculation
   const canvasStyles = useMemo(() => ({
@@ -160,9 +194,19 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
         {/* Header */}
         <div className="flex items-center justify-between p-4 bg-background/95 backdrop-blur-sm border-b border-border/50">
           <h2 id="canvas-title" className="text-lg font-semibold text-foreground truncate max-w-md">
-            {title}
+            {title} {isEditing && <span className="text-sm text-orange-500">(Editing)</span>}
           </h2>
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleEditClick}
+              disabled={isEditing}
+              className="flex items-center gap-2"
+            >
+              <Edit className="h-4 w-4" />
+              Edit
+            </Button>
             {onDownload && (
               <Button
                 variant="outline"
@@ -241,19 +285,28 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
 
             {/* Report Panel */}
             <ResizablePanel defaultSize={onSendMessage ? 60 : 100}>
-              <div className="h-full overflow-auto">
-                <div className="max-w-4xl mx-auto p-8">
-                  <div 
-                    className="prose prose-gray dark:prose-invert max-w-none"
-                    style={canvasStyles}
-                  >
-                    <MarkdownRenderer 
-                      content={content} 
-                      className="canvas-content"
-                    />
+              {isEditing ? (
+                <CanvasEditor
+                  content={currentContent}
+                  onSave={handleSaveEdit}
+                  onCancel={handleCancelEdit}
+                  className="h-full"
+                />
+              ) : (
+                <div className="h-full overflow-auto">
+                  <div className="max-w-4xl mx-auto p-8">
+                    <div 
+                      className="prose prose-gray dark:prose-invert max-w-none"
+                      style={canvasStyles}
+                    >
+                      <MarkdownRenderer 
+                        content={currentContent} 
+                        className="canvas-content"
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </ResizablePanel>
           </ResizablePanelGroup>
         </div>
