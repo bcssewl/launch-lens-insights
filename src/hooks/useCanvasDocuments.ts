@@ -62,7 +62,7 @@ export const useCanvasDocuments = () => {
 
       if (error) throw error;
 
-      // Create initial version (trigger will handle version numbering)
+      // Create initial version (trigger will handle version numbering, we provide 0 as placeholder)
       await supabase
         .from('canvas_versions')
         .insert([
@@ -71,6 +71,7 @@ export const useCanvasDocuments = () => {
             title,
             content,
             created_by_user: false,
+            version_number: 0, // Placeholder - will be overridden by trigger
           }
         ]);
 
@@ -121,7 +122,7 @@ export const useCanvasDocuments = () => {
 
       if (error) throw error;
 
-      // Create version entry (trigger will handle version numbering)
+      // Create version entry (trigger will handle version numbering, we provide 0 as placeholder)
       await supabase
         .from('canvas_versions')
         .insert([
@@ -130,6 +131,7 @@ export const useCanvasDocuments = () => {
             title,
             content,
             created_by_user: createdByUser,
+            version_number: 0, // Placeholder - will be overridden by trigger
           }
         ]);
 
