@@ -5,8 +5,8 @@ import AIAvatar from './AIAvatar';
 import UserAvatar from './UserAvatar';
 import CopyButton from './CopyButton';
 import MarkdownRenderer from './MarkdownRenderer';
-import CanvasButton from './CanvasButton';
-import { isReportMessage, getReportPreview } from '@/utils/reportDetection';
+import CanvasCompact from './CanvasCompact';
+import { isReportMessage } from '@/utils/reportDetection';
 
 export interface ChatMessageData {
   id: string;
@@ -18,13 +18,20 @@ export interface ChatMessageData {
 interface ChatMessageProps {
   message: ChatMessageData;
   onOpenCanvas?: (messageId: string, content: string) => void;
+  onCanvasDownload?: () => void;
+  onCanvasPrint?: () => void;
 }
 
-const ChatMessage: React.FC<ChatMessageProps> = ({ message, onOpenCanvas }) => {
+const ChatMessage: React.FC<ChatMessageProps> = ({ 
+  message, 
+  onOpenCanvas,
+  onCanvasDownload,
+  onCanvasPrint
+}) => {
   const isAi = message.sender === 'ai';
   const isReport = isAi && isReportMessage(message.text);
 
-  const handleCanvasOpen = () => {
+  const handleCanvasExpand = () => {
     if (onOpenCanvas) {
       onOpenCanvas(message.id, message.text);
     }
@@ -65,14 +72,14 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onOpenCanvas }) => {
             {isAi ? (
               <>
                 {isReport ? (
-                  <div className="space-y-3">
-                    <div className="text-sm text-muted-foreground font-medium">
-                      📊 Comprehensive Report Generated
-                    </div>
-                    <p className="text-sm opacity-80">
-                      {getReportPreview(message.text)}
-                    </p>
-                    <CanvasButton onClick={handleCanvasOpen} />
+                  <div>
+                    <MarkdownRenderer content={message.text} />
+                    <CanvasCompact
+                      content={message.text}
+                      onExpand={handleCanvasExpand}
+                      onDownload={onCanvasDownload}
+                      onPrint={onCanvasPrint}
+                    />
                   </div>
                 ) : (
                   <MarkdownRenderer content={message.text} />
