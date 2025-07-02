@@ -28,7 +28,7 @@ const AdvancedCanvasView: React.FC<AdvancedCanvasViewProps> = ({
   onDownload,
   onPrint
 }) => {
-  const [document, setDocument] = useState<CanvasDocument | null>(null);
+  const [canvasDocument, setCanvasDocument] = useState<CanvasDocument | null>(null);
   const [versions, setVersions] = useState<CanvasVersion[]>([]);
   const [currentVersionIndex, setCurrentVersionIndex] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
@@ -49,7 +49,7 @@ const AdvancedCanvasView: React.FC<AdvancedCanvasViewProps> = ({
   const loadDocument = async () => {
     const doc = await getDocument(documentId);
     if (doc) {
-      setDocument(doc);
+      setCanvasDocument(doc);
       setEditTitle(doc.title);
       setEditContent(doc.content);
     }
@@ -62,7 +62,7 @@ const AdvancedCanvasView: React.FC<AdvancedCanvasViewProps> = ({
   };
 
   const handleSave = async () => {
-    if (!document) return;
+    if (!canvasDocument) return;
 
     const success = await updateDocument(documentId, editTitle, editContent, true);
     if (success) {
@@ -82,22 +82,22 @@ const AdvancedCanvasView: React.FC<AdvancedCanvasViewProps> = ({
   };
 
   const handleDownload = useCallback(async () => {
-    if (!document) return;
+    if (!canvasDocument) return;
 
     const element = document.createElement('a');
-    const file = new Blob([document.content], { type: 'text/markdown' });
+    const file = new Blob([canvasDocument.content], { type: 'text/markdown' });
     element.href = URL.createObjectURL(file);
-    element.download = `${document.title}.md`;
+    element.download = `${canvasDocument.title}.md`;
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
-  }, [document]);
+  }, [canvasDocument]);
 
-  if (!isOpen || !document) return null;
+  if (!isOpen || !canvasDocument) return null;
 
   const currentVersion = versions[currentVersionIndex];
-  const displayContent = isEditing ? editContent : (currentVersion?.content || document.content);
-  const displayTitle = isEditing ? editTitle : (currentVersion?.title || document.title);
+  const displayContent = isEditing ? editContent : (currentVersion?.content || canvasDocument.content);
+  const displayTitle = isEditing ? editTitle : (currentVersion?.title || canvasDocument.title);
 
   const getDocumentTypeIcon = (type: string) => {
     switch (type) {
@@ -117,7 +117,7 @@ const AdvancedCanvasView: React.FC<AdvancedCanvasViewProps> = ({
       {/* Header */}
       <div className="flex items-center justify-between p-3 border-b border-border bg-background/95 rounded-t-lg">
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          <span className="text-lg">{getDocumentTypeIcon(document.document_type)}</span>
+          <span className="text-lg">{getDocumentTypeIcon(canvasDocument.document_type)}</span>
           {isEditing ? (
             <Input
               value={editTitle}
@@ -166,8 +166,8 @@ const AdvancedCanvasView: React.FC<AdvancedCanvasViewProps> = ({
                 size="sm"
                 onClick={() => {
                   setIsEditing(false);
-                  setEditTitle(document.title);
-                  setEditContent(document.content);
+                  setEditTitle(canvasDocument.title);
+                  setEditContent(canvasDocument.content);
                 }}
                 className="h-7 w-7 p-0 hover:bg-muted"
                 title="Cancel editing"
@@ -268,10 +268,10 @@ const AdvancedCanvasView: React.FC<AdvancedCanvasViewProps> = ({
       {mode === 'expanded' && (
         <div className="flex items-center justify-between p-2 border-t border-border bg-muted/30 text-xs text-muted-foreground">
           <span>
-            Created: {new Date(document.created_at).toLocaleDateString()}
+            Created: {new Date(canvasDocument.created_at).toLocaleDateString()}
           </span>
           <span>
-            Modified: {new Date(document.updated_at).toLocaleDateString()}
+            Modified: {new Date(canvasDocument.updated_at).toLocaleDateString()}
           </span>
         </div>
       )}

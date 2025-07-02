@@ -214,7 +214,11 @@ const AIAssistantPage: React.FC = () => {
               onToggleCanvasMode={handleToggleCanvasMode}
               onCloseAdvancedCanvas={handleCloseAdvancedCanvas}
               // Legacy canvas props for backward compatibility
-              canvasState={canvasState}
+              canvasState={{
+                mode: 'closed' as const,
+                messageId: null,
+                content: '',
+              }}
               onOpenCanvas={handleOpenCanvas}
               onExpandCanvas={handleExpandCanvas}
               onCloseCanvas={handleCloseCanvas}

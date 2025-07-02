@@ -62,7 +62,7 @@ export const useCanvasDocuments = () => {
 
       if (error) throw error;
 
-      // Create initial version
+      // Create initial version (trigger will handle version numbering)
       await supabase
         .from('canvas_versions')
         .insert([
