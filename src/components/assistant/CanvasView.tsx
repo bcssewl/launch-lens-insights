@@ -4,6 +4,7 @@ import { X, Download, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useSidebar } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
 import MarkdownRenderer from './MarkdownRenderer';
 import ChatMessage from './ChatMessage';
@@ -51,6 +52,17 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
   onCanvasPrint
 }) => {
   console.log('CanvasView: Rendering with isOpen:', isOpen);
+  
+  const { state: sidebarState } = useSidebar();
+
+  // Calculate the left offset based on sidebar state
+  const sidebarOffset = useMemo(() => {
+    if (sidebarState === 'expanded') {
+      return 'var(--sidebar-width)'; // 16rem by default
+    } else {
+      return 'var(--sidebar-width-icon)'; // 3rem by default
+    }
+  }, [sidebarState]);
 
   // Memoize handlers to prevent unnecessary re-renders
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
@@ -137,6 +149,9 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
       role="dialog"
       aria-modal="true"
       aria-labelledby="canvas-title"
+      style={{
+        left: sidebarOffset,
+      }}
     >
       <div className="h-full flex flex-col animate-scale-in" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
