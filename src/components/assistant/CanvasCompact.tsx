@@ -4,6 +4,7 @@ import { Maximize2, Download, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import MarkdownRenderer from './MarkdownRenderer';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface CanvasCompactProps {
   content: string;
@@ -67,25 +68,28 @@ const CanvasCompact: React.FC<CanvasCompactProps> = ({
         </div>
       </div>
 
-      {/* Content Preview */}
-      <div className="p-3 text-sm">
-        <div className="prose prose-sm max-w-none text-muted-foreground">
-          <MarkdownRenderer content={previewContent} />
-        </div>
-        
-        {content.length > 300 && (
-          <div className="mt-2 flex justify-center">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onExpand}
-              className="text-xs"
-            >
-              View Full Report
-            </Button>
+      {/* Scrollable Content Preview */}
+      <ScrollArea className="h-32">
+        <div className="p-3 text-sm">
+          <div className="prose prose-sm max-w-none text-muted-foreground">
+            <MarkdownRenderer content={previewContent} />
           </div>
-        )}
-      </div>
+        </div>
+      </ScrollArea>
+      
+      {/* Footer with expand button */}
+      {content.length > 300 && (
+        <div className="p-2 border-t bg-muted/10 flex justify-center">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onExpand}
+            className="text-xs"
+          >
+            View Full Report
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
