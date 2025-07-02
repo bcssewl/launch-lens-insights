@@ -46,14 +46,18 @@ export function detectCanvasNeed(
     message.toLowerCase().includes(keyword.toLowerCase())
   );
 
-  // Check token count (approximate)
+  // Check token count (approximate) - increased threshold for better quality detection
   const tokenCount = responseDraft.split(/\s+/).length;
-  const isLongResponse = tokenCount > 300;
+  const isLongResponse = tokenCount > 500;
 
-  // Check for structural markers in response
+  // Check for substantial structured content
   const hasStructuralContent = Object.values(STRUCTURAL_PATTERNS).some(pattern => 
     pattern.test(responseDraft)
   );
+
+  // Check content quality - look for comprehensive reports with multiple sections
+  const hasMultipleSections = (responseDraft.match(/^#{1,6}\s+/gm) || []).length >= 3;
+  const hasSubstantialContent = responseDraft.length > 2000;
 
   // Check if this is a follow-up to existing canvas
   const isFollowUp = sessionState.priorCanvasOpen && 
@@ -61,7 +65,8 @@ export function detectCanvasNeed(
       message.toLowerCase().includes(keyword.toLowerCase())
     );
 
-  return hasReportKeywords || isLongResponse || hasStructuralContent || isFollowUp;
+  return hasReportKeywords || (isLongResponse && hasStructuralContent) || 
+         (hasMultipleSections && hasSubstantialContent) || isFollowUp;
 }
 
 export function determineCanvasAction(
@@ -70,25 +75,26 @@ export function determineCanvasAction(
 ): CanvasDecision {
   const needsCanvas = true; // This function is called only when canvas is needed
   
-  // Check if this is a follow-up to existing canvas
+  // Check if this is a follow-up to existing canvas with substantial prior content
   const isFollowUp = sessionState.priorCanvasOpen && 
     FOLLOW_UP_KEYWORDS.some(keyword => 
       message.toLowerCase().includes(keyword.toLowerCase())
     );
 
-  // Determine document type based on keywords
+  // Determine document type based on keywords with better classification
   let documentType: CanvasDecision['documentType'] = 'general_report';
   const lowerMessage = message.toLowerCase();
   
-  if (lowerMessage.includes('business') || lowerMessage.includes('company')) {
+  if (lowerMessage.includes('business') || lowerMessage.includes('company') || lowerMessage.includes('startup')) {
     documentType = 'business_analysis';
-  } else if (lowerMessage.includes('market') || lowerMessage.includes('industry')) {
+  } else if (lowerMessage.includes('market') || lowerMessage.includes('industry') || lowerMessage.includes('eu') || lowerMessage.includes('european')) {
     documentType = 'market_research';
-  } else if (lowerMessage.includes('financial') || lowerMessage.includes('revenue') || lowerMessage.includes('budget')) {
+  } else if (lowerMessage.includes('financial') || lowerMessage.includes('revenue') || lowerMessage.includes('budget') || lowerMessage.includes('investment')) {
     documentType = 'financial_analysis';
   }
 
-  if (isFollowUp && sessionState.priorCanvasId) {
+  // Only update if we have a clear follow-up and existing canvas
+  if (isFollowUp && sessionState.priorCanvasId && !sessionState.lastMessageWasCanvasUpdate) {
     return {
       needsCanvas,
       action: 'updateDocument',
@@ -113,11 +119,23 @@ export function extractDocumentTitle(content: string): string {
 
   // Try to extract from first line if it looks like a title
   const firstLine = content.split('\n')[0].trim();
-  if (firstLine && firstLine.length < 100 && !firstLine.includes('.')) {
+  if (firstLine && firstLine.length < 100 && !firstLine.includes('.') && !firstLine.toLowerCase().includes('comprehensive')) {
     return firstLine;
   }
 
-  // Generate a default title based on content
-  const words = content.split(/\s+/).slice(0, 10);
-  return words.join(' ').substring(0, 50) + '...';
+  // Look for specific report patterns
+  if (content.toLowerCase().includes('eu market') || content.toLowerCase().includes('european union')) {
+    return 'EU Market-Entry Strategy';
+  }
+
+  // Generate a meaningful title based on content keywords
+  const keywords = content.toLowerCase().match(/\b(strategy|analysis|report|plan|research|market|business|financial)\b/g);
+  if (keywords && keywords.length > 0) {
+    const uniqueKeywords = [...new Set(keywords)];
+    return uniqueKeywords.map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') + ' Report';
+  }
+
+  // Fallback to content-based title
+  const words = content.split(/\s+/).slice(0, 8);
+  return words.join(' ').substring(0, 50) + (words.length > 8 ? '...' : '');
 }

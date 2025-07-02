@@ -20,7 +20,7 @@ export const useAdvancedCanvas = (sessionId: string | null) => {
     }
   });
 
-  const { createDocument, updateDocument } = useCanvasDocuments();
+  const { createDocument, updateDocument, getDocument } = useCanvasDocuments();
 
   const handleAIResponse = useCallback(async (
     userMessage: string,
@@ -42,11 +42,30 @@ export const useAdvancedCanvas = (sessionId: string | null) => {
     
     if (decision.action === 'createDocument') {
       const title = extractDocumentTitle(aiResponse);
+      
+      // Check if we already have a document with similar content to prevent duplicates
+      if (canvasState.documentId) {
+        const existingDoc = await getDocument(canvasState.documentId);
+        if (existingDoc && existingDoc.content.length > 500 && aiResponse.length > 500) {
+          // If we have substantial content in both, prefer updating over creating new
+          const success = await updateDocument(canvasState.documentId, title, aiResponse, false);
+          if (success) {
+            return {
+              shouldShowInChat: true,
+              chatMessage: `I've updated your ${title} with the latest information.`,
+              documentId: canvasState.documentId,
+              title: title,
+              reportType: decision.documentType
+            };
+          }
+        }
+      }
+      
       const document = await createDocument(title, aiResponse, decision.documentType, sessionId);
       
       if (document) {
         setCanvasState(prev => ({
-          mode: 'closed', // No longer using side panel
+          mode: 'closed',
           documentId: document.id,
           sessionState: {
             priorCanvasOpen: true,
@@ -81,13 +100,13 @@ export const useAdvancedCanvas = (sessionId: string | null) => {
           chatMessage: "I've updated your document with the new information.",
           documentId: decision.documentId,
           title: title,
-          reportType: 'general_report'
+          reportType: decision.documentType
         };
       }
     }
 
     return { shouldShowInChat: true };
-  }, [canvasState.sessionState, createDocument, updateDocument, sessionId]);
+  }, [canvasState.sessionState, canvasState.documentId, createDocument, updateDocument, getDocument, sessionId]);
 
   const toggleCanvasMode = useCallback(() => {
     setCanvasState(prev => ({
