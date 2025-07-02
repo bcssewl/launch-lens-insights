@@ -38,8 +38,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
   // Calculate proper positioning based on sidebar state for fixed input
   const inputPositionClass = state === 'expanded' 
-    ? 'fixed bottom-0 left-[var(--sidebar-width)] right-0 z-50 bg-background/95 backdrop-blur-sm border-t border-border/50'
-    : 'fixed bottom-0 left-[var(--sidebar-width-icon)] right-0 z-50 bg-background/95 backdrop-blur-sm border-t border-border/50';
+    ? 'fixed bottom-0 left-[var(--sidebar-width)] right-0 z-50'
+    : 'fixed bottom-0 left-[var(--sidebar-width-icon)] right-0 z-50';
 
   if (!hasConversation) {
     // Show Perplexity-inspired empty state - NO CANVAS HERE
@@ -74,7 +74,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         </ScrollArea>
       </div>
 
-      {/* Fixed Input Area - always visible at bottom like Lovable */}
+      {/* Fixed Input Area - floating appearance like Lovable */}
       <div className={inputPositionClass}>
         <div className="px-6 py-4">
           <EnhancedChatInput 
