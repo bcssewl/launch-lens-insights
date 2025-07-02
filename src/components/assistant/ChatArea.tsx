@@ -42,9 +42,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     : 'fixed bottom-0 left-[var(--sidebar-width-icon)] right-0 z-50';
 
   if (!hasConversation) {
-    // Show Perplexity-inspired empty state - NO CANVAS HERE
+    // Show Perplexity-inspired empty state with transparent background
     return (
-      <div className="flex flex-col flex-1 min-h-0 w-full relative bg-background">
+      <div className="flex flex-col flex-1 min-h-0 w-full relative bg-transparent">
         <div className="flex-1 min-h-0 overflow-hidden">
           <PerplexityEmptyState onSendMessage={onSendMessage} />
         </div>
