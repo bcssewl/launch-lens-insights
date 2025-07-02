@@ -54,12 +54,12 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
       <div className={cn("flex flex-col", isAi ? "items-start" : "items-end")}>
         <div
           className={cn(
-            "group relative shadow-md transition-all duration-200",
+            "group relative transition-all duration-200",
             'max-w-[90vw] sm:max-w-[80vw] md:max-w-xl lg:max-w-2xl xl:max-w-3xl',
             "p-3 rounded-2xl",
             isAi 
-              ? "bg-muted text-foreground rounded-tl-sm border border-border shadow-lg"
-              : "bg-primary text-primary-foreground rounded-tr-sm border border-primary/30"
+              ? "bg-white/10 backdrop-blur-md border border-white/20 text-foreground rounded-tl-sm shadow-glass hover:bg-white/15 hover:border-white/30"
+              : "bg-primary/90 backdrop-blur-md border border-primary/30 text-primary-foreground rounded-tr-sm shadow-glass hover:bg-primary/95"
           )}
         >
           {isAi && (
