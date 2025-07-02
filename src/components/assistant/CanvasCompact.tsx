@@ -1,29 +1,51 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { X, Maximize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import MarkdownRenderer from './MarkdownRenderer';
+import { useCanvasDocuments, CanvasDocument } from '@/hooks/useCanvasDocuments';
 
 interface CanvasCompactProps {
   isOpen: boolean;
   onClose: () => void;
   onExpand: () => void;
-  content: string;
+  documentId?: string;
+  content?: string;
   title?: string;
   reportType?: 'business_analysis' | 'market_research' | 'financial_analysis' | 'general_report';
+  isInline?: boolean;
 }
 
 const CanvasCompact: React.FC<CanvasCompactProps> = ({
   isOpen,
   onClose,
   onExpand,
-  content,
+  documentId,
+  content: providedContent,
   title = "Report",
-  reportType
+  reportType,
+  isInline = false
 }) => {
-  // Handle keyboard shortcuts
+  const [document, setDocument] = useState<CanvasDocument | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const { getDocument } = useCanvasDocuments();
+
+  // Load document if documentId is provided
   useEffect(() => {
+    if (documentId) {
+      setIsLoading(true);
+      getDocument(documentId).then((doc) => {
+        setDocument(doc);
+        setIsLoading(false);
+      });
+    }
+  }, [documentId, getDocument]);
+
+  // Handle keyboard shortcuts only for non-inline mode
+  useEffect(() => {
+    if (isInline) return;
+    
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         onClose();
@@ -37,7 +59,7 @@ const CanvasCompact: React.FC<CanvasCompactProps> = ({
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, isInline]);
 
   if (!isOpen) return null;
 
@@ -59,6 +81,52 @@ const CanvasCompact: React.FC<CanvasCompactProps> = ({
     }
   };
 
+  const displayContent = document?.content || providedContent || '';
+  const displayTitle = document?.title || title;
+
+  // Inline styling for canvas within chat message
+  if (isInline) {
+    return (
+      <div className="w-full border border-border rounded-lg overflow-hidden bg-background">
+        {/* Header */}
+        <div className="flex items-center justify-between p-3 border-b border-border bg-muted/30">
+          <h3 className="text-sm font-medium text-foreground truncate flex-1 mr-2 flex items-center gap-2">
+            <span>{getReportTypeIcon(reportType)}</span>
+            {displayTitle}
+          </h3>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onExpand}
+              className="h-7 w-7 p-0 hover:bg-muted"
+              title="Expand to full screen"
+            >
+              <Maximize2 className="h-3 w-3" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="h-64 overflow-auto p-4 bg-background">
+          {isLoading ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-sm text-muted-foreground">Loading document...</div>
+            </div>
+          ) : (
+            <div className="prose prose-sm prose-gray dark:prose-invert max-w-none">
+              <MarkdownRenderer 
+                content={displayContent} 
+                className="inline-canvas-content"
+              />
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Original floating canvas for backward compatibility
   return (
     <div className="fixed bottom-4 right-4 z-40 animate-scale-in">
       <div className="w-96 h-80 bg-background border border-border rounded-lg shadow-2xl flex flex-col">
@@ -91,12 +159,18 @@ const CanvasCompact: React.FC<CanvasCompactProps> = ({
 
         {/* Content */}
         <div className="flex-1 overflow-auto p-4 bg-background">
-          <div className="prose prose-sm prose-gray dark:prose-invert max-w-none">
-            <MarkdownRenderer 
-              content={content} 
-              className="compact-canvas-content"
-            />
-          </div>
+          {isLoading ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-sm text-muted-foreground">Loading document...</div>
+            </div>
+          ) : (
+            <div className="prose prose-sm prose-gray dark:prose-invert max-w-none">
+              <MarkdownRenderer 
+                content={displayContent} 
+                className="compact-canvas-content"
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>

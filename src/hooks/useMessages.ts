@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Message, initialMessages, formatTimestamp } from '@/constants/aiAssistant';
@@ -102,27 +103,40 @@ export const useMessages = (currentSessionId: string | null) => {
       // Use advanced canvas system to handle the response
       const canvasResult = await handleAIResponse(finalMessageText, dualResponse.response);
       
-      const displayText = canvasResult.chatMessage || dualResponse.response;
+      let aiResponse: Message;
       
-      const aiResponse: Message = {
-        id: uuidv4(),
-        text: displayText,
-        sender: 'ai',
-        timestamp: new Date(),
-      };
+      if (canvasResult.chatMessage && canvasResult.documentId) {
+        // Create a canvas message with inline canvas component
+        aiResponse = {
+          id: uuidv4(),
+          text: canvasResult.chatMessage,
+          sender: 'ai',
+          timestamp: new Date(),
+          isCanvasMessage: true,
+          canvasData: {
+            documentId: canvasResult.documentId,
+            title: canvasResult.title || 'Document',
+            reportType: canvasResult.reportType || 'general_report'
+          }
+        };
+      } else {
+        // Regular text message
+        const displayText = canvasResult.chatMessage || dualResponse.response;
+        aiResponse = {
+          id: uuidv4(),
+          text: displayText,
+          sender: 'ai',
+          timestamp: new Date(),
+        };
+      }
       
       setMessages(prev => [...prev, aiResponse]);
       
       // Save AI response to history
       if (currentSessionId) {
-        await addMessage(`AI: ${displayText}`);
+        await addMessage(`AI: ${aiResponse.text}`);
       }
 
-      // Handle legacy report opening if no canvas was created
-      if (dualResponse.report && !canvasResult.chatMessage) {
-        console.log('Legacy report detected, using old canvas system');
-        // This maintains backward compatibility
-      }
     } catch (error) {
       const errorResponse: Message = {
         id: uuidv4(),
@@ -225,12 +239,18 @@ This comprehensive strategy outlines the key steps, considerations, and recommen
       euMarketContent
     );
 
-    if (canvasResult.shouldShowInChat) {
+    if (canvasResult.documentId) {
       const aiResponse: Message = {
         id: uuidv4(),
-        text: canvasResult.chatMessage || "I've created your comprehensive EU market strategy document - check the canvas panel for the full content with editing capabilities.",
+        text: "I've created your comprehensive EU Market-Entry Strategy. You can view, edit, and export it using the canvas below.",
         sender: 'ai',
         timestamp: new Date(),
+        isCanvasMessage: true,
+        canvasData: {
+          documentId: canvasResult.documentId,
+          title: 'Comprehensive EU Market-Entry Strategy',
+          reportType: 'market_research'
+        }
       };
       
       setMessages(prev => [...prev, aiResponse]);

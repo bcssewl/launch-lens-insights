@@ -1,4 +1,3 @@
-
 import { v4 as uuidv4 } from 'uuid';
 
 export interface Message {
@@ -6,6 +5,12 @@ export interface Message {
   text: string;
   sender: 'ai' | 'user';
   timestamp: Date;
+  isCanvasMessage?: boolean;
+  canvasData?: {
+    documentId: string;
+    title: string;
+    reportType: string;
+  };
 }
 
 export const formatTimestamp = (date: Date): string => {

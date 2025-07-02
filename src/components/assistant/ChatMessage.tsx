@@ -5,12 +5,19 @@ import AIAvatar from './AIAvatar';
 import UserAvatar from './UserAvatar';
 import CopyButton from './CopyButton';
 import MarkdownRenderer from './MarkdownRenderer';
+import CanvasCompact from './CanvasCompact';
 
 export interface ChatMessageData {
   id: string;
   text: string;
   sender: 'ai' | 'user';
   timestamp: string;
+  isCanvasMessage?: boolean;
+  canvasData?: {
+    documentId: string;
+    title: string;
+    reportType: string;
+  };
 }
 
 interface ChatMessageProps {
@@ -59,6 +66,21 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onOpenCanvas }) => {
               <p className="whitespace-pre-wrap">{message.text}</p>
             )}
           </div>
+
+          {/* Inline Canvas Component */}
+          {message.isCanvasMessage && message.canvasData && (
+            <div className="mt-4 border-t border-border/30 pt-4">
+              <CanvasCompact
+                isOpen={true}
+                onClose={() => {}} // Handle inline canvas close
+                onExpand={() => {}} // Handle expand to full screen
+                documentId={message.canvasData.documentId}
+                title={message.canvasData.title}
+                reportType={message.canvasData.reportType as any}
+                isInline={true}
+              />
+            </div>
+          )}
         </div>
         <p className={cn(
           "text-xs mt-1 opacity-70 px-1",

@@ -25,7 +25,13 @@ export const useAdvancedCanvas = (sessionId: string | null) => {
   const handleAIResponse = useCallback(async (
     userMessage: string,
     aiResponse: string
-  ): Promise<{ shouldShowInChat: boolean; chatMessage?: string }> => {
+  ): Promise<{ 
+    shouldShowInChat: boolean; 
+    chatMessage?: string; 
+    documentId?: string;
+    title?: string;
+    reportType?: string;
+  }> => {
     const needsCanvas = detectCanvasNeed(userMessage, aiResponse, canvasState.sessionState);
     
     if (!needsCanvas) {
@@ -40,7 +46,7 @@ export const useAdvancedCanvas = (sessionId: string | null) => {
       
       if (document) {
         setCanvasState(prev => ({
-          mode: 'compact',
+          mode: 'closed', // No longer using side panel
           documentId: document.id,
           sessionState: {
             priorCanvasOpen: true,
@@ -51,7 +57,10 @@ export const useAdvancedCanvas = (sessionId: string | null) => {
 
         return {
           shouldShowInChat: true,
-          chatMessage: `I've created a document: "${title}" - check the side panel for the full content. You can edit it live or download it.`
+          chatMessage: `I've created your ${title}. You can view, edit, and export it using the canvas below.`,
+          documentId: document.id,
+          title: title,
+          reportType: decision.documentType
         };
       }
     } else if (decision.action === 'updateDocument' && decision.documentId) {
@@ -69,7 +78,10 @@ export const useAdvancedCanvas = (sessionId: string | null) => {
 
         return {
           shouldShowInChat: true,
-          chatMessage: "Document updated - see the changes in the side panel."
+          chatMessage: "I've updated your document with the new information.",
+          documentId: decision.documentId,
+          title: title,
+          reportType: 'general_report'
         };
       }
     }
