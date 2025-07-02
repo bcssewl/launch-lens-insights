@@ -27,7 +27,7 @@ const CanvasCompact: React.FC<CanvasCompactProps> = ({
   reportType,
   isInline = false
 }) => {
-  const [document, setDocument] = useState<CanvasDocument | null>(null);
+  const [canvasDoc, setCanvasDoc] = useState<CanvasDocument | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { getDocument } = useCanvasDocuments();
 
@@ -36,7 +36,7 @@ const CanvasCompact: React.FC<CanvasCompactProps> = ({
     if (documentId) {
       setIsLoading(true);
       getDocument(documentId).then((doc) => {
-        setDocument(doc);
+        setCanvasDoc(doc);
         setIsLoading(false);
       });
     }
@@ -81,8 +81,8 @@ const CanvasCompact: React.FC<CanvasCompactProps> = ({
     }
   };
 
-  const displayContent = document?.content || providedContent || '';
-  const displayTitle = document?.title || title;
+  const displayContent = canvasDoc?.content || providedContent || '';
+  const displayTitle = canvasDoc?.title || title;
 
   // Inline styling for canvas within chat message
   if (isInline) {
