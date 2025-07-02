@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useSidebar } from '@/components/ui/sidebar';
 import ChatMessage from '@/components/assistant/ChatMessage';
 import TypingIndicator from '@/components/assistant/TypingIndicator';
 import PerplexityEmptyState from '@/components/assistant/PerplexityEmptyState';
@@ -33,6 +34,16 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   onCanvasPrint
 }) => {
   const hasConversation = messages.length > 1 || isTyping;
+  const { state: sidebarState } = useSidebar();
+
+  // Calculate the left offset based on sidebar state
+  const sidebarOffset = React.useMemo(() => {
+    if (sidebarState === 'expanded') {
+      return 'var(--sidebar-width)'; // 16rem by default
+    } else {
+      return 'var(--sidebar-width-icon)'; // 3rem by default
+    }
+  }, [sidebarState]);
 
   if (!hasConversation) {
     // Show Perplexity-inspired empty state - NO CANVAS HERE
@@ -67,8 +78,13 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         </ScrollArea>
       </div>
 
-      {/* Fixed Input Area */}
-      <div className="fixed bottom-0 left-0 right-0 z-10">
+      {/* Fixed Input Area - now responsive to sidebar */}
+      <div 
+        className="fixed bottom-0 right-0 z-10"
+        style={{
+          left: sidebarOffset,
+        }}
+      >
         <EnhancedChatInput 
           onSendMessage={onSendMessage} 
           isTyping={isTyping}
