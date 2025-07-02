@@ -16,6 +16,15 @@ interface FullscreenChatLayoutProps {
   onClearConversation: () => void;
   onSessionSelect: (sessionId: string) => void;
   onToggleFullscreen: () => void;
+  canvasState?: {
+    isOpen: boolean;
+    messageId: string | null;
+    content: string;
+  };
+  onOpenCanvas?: (messageId: string, content: string) => void;
+  onCloseCanvas?: () => void;
+  onCanvasDownload?: () => void;
+  onCanvasPrint?: () => void;
 }
 
 const FullscreenChatLayout: React.FC<FullscreenChatLayoutProps> = ({
@@ -28,7 +37,12 @@ const FullscreenChatLayout: React.FC<FullscreenChatLayoutProps> = ({
   onDownloadChat,
   onClearConversation,
   onSessionSelect,
-  onToggleFullscreen
+  onToggleFullscreen,
+  canvasState,
+  onOpenCanvas,
+  onCloseCanvas,
+  onCanvasDownload,
+  onCanvasPrint
 }) => {
   return (
     <div className="min-h-screen flex w-full apple-hero relative">
@@ -51,6 +65,11 @@ const FullscreenChatLayout: React.FC<FullscreenChatLayoutProps> = ({
           isTyping={isTyping}
           viewportRef={viewportRef}
           onSendMessage={onSendMessage}
+          canvasState={canvasState}
+          onOpenCanvas={onOpenCanvas}
+          onCloseCanvas={onCloseCanvas}
+          onCanvasDownload={onCanvasDownload}
+          onCanvasPrint={onCanvasPrint}
         />
       </div>
     </div>

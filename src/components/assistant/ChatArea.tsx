@@ -56,6 +56,15 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             title="AI Report"
             onDownload={onCanvasDownload}
             onPrint={onCanvasPrint}
+            messages={messages}
+            isTyping={isTyping}
+            viewportRef={viewportRef}
+            onSendMessage={onSendMessage}
+            canvasState={canvasState}
+            onOpenCanvas={onOpenCanvas}
+            onCloseCanvas={onCloseCanvas}
+            onCanvasDownload={onCanvasDownload}
+            onCanvasPrint={onCanvasPrint}
           />
         )}
       </>
@@ -104,6 +113,15 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           title="AI Report"
           onDownload={onCanvasDownload}
           onPrint={onCanvasPrint}
+          messages={messages}
+          isTyping={isTyping}
+          viewportRef={viewportRef}
+          onSendMessage={onSendMessage}
+          canvasState={canvasState}
+          onOpenCanvas={onOpenCanvas}
+          onCloseCanvas={onCloseCanvas}
+          onCanvasDownload={onCanvasDownload}
+          onCanvasPrint={onCanvasPrint}
         />
       )}
     </>

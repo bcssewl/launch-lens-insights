@@ -2,8 +2,11 @@
 import React, { useEffect } from 'react';
 import { X, Download, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { cn } from '@/lib/utils';
 import MarkdownRenderer from './MarkdownRenderer';
+import ChatArea from './ChatArea';
+import { Message } from '@/constants/aiAssistant';
 
 interface CanvasViewProps {
   isOpen: boolean;
@@ -12,6 +15,19 @@ interface CanvasViewProps {
   title?: string;
   onDownload?: () => void;
   onPrint?: () => void;
+  messages?: Message[];
+  isTyping?: boolean;
+  viewportRef?: React.RefObject<HTMLDivElement>;
+  onSendMessage?: (message: string) => void;
+  canvasState?: {
+    isOpen: boolean;
+    messageId: string | null;
+    content: string;
+  };
+  onOpenCanvas?: (messageId: string, content: string) => void;
+  onCloseCanvas?: () => void;
+  onCanvasDownload?: () => void;
+  onCanvasPrint?: () => void;
 }
 
 const CanvasView: React.FC<CanvasViewProps> = ({
@@ -20,7 +36,16 @@ const CanvasView: React.FC<CanvasViewProps> = ({
   content,
   title = "Report",
   onDownload,
-  onPrint
+  onPrint,
+  messages = [],
+  isTyping = false,
+  viewportRef,
+  onSendMessage,
+  canvasState,
+  onOpenCanvas,
+  onCloseCanvas,
+  onCanvasDownload,
+  onCanvasPrint
 }) => {
   // Handle keyboard shortcuts
   useEffect(() => {
@@ -94,19 +119,49 @@ const CanvasView: React.FC<CanvasViewProps> = ({
           </div>
         </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-auto bg-background/95 backdrop-blur-sm">
-          <div className="max-w-4xl mx-auto p-8">
-            <div 
-              className="prose prose-gray dark:prose-invert max-w-none"
-              style={canvasStyles}
-            >
-              <MarkdownRenderer 
-                content={content} 
-                className="canvas-content"
-              />
-            </div>
-          </div>
+        {/* Resizable Content Area */}
+        <div className="flex-1 bg-background/95 backdrop-blur-sm">
+          <ResizablePanelGroup direction="horizontal" className="h-full">
+            {/* Chat Panel */}
+            {onSendMessage && (
+              <>
+                <ResizablePanel defaultSize={40} minSize={30} maxSize={60}>
+                  <div className="h-full border-r border-border/50">
+                    <ChatArea
+                      messages={messages}
+                      isTyping={isTyping}
+                      viewportRef={viewportRef}
+                      onSendMessage={onSendMessage}
+                      canvasState={canvasState}
+                      onOpenCanvas={onOpenCanvas}
+                      onCloseCanvas={onCloseCanvas}
+                      onCanvasDownload={onCanvasDownload}
+                      onCanvasPrint={onCanvasPrint}
+                    />
+                  </div>
+                </ResizablePanel>
+                
+                <ResizableHandle withHandle />
+              </>
+            )}
+
+            {/* Report Panel */}
+            <ResizablePanel defaultSize={onSendMessage ? 60 : 100}>
+              <div className="h-full overflow-auto">
+                <div className="max-w-4xl mx-auto p-8">
+                  <div 
+                    className="prose prose-gray dark:prose-invert max-w-none"
+                    style={canvasStyles}
+                  >
+                    <MarkdownRenderer 
+                      content={content} 
+                      className="canvas-content"
+                    />
+                  </div>
+                </div>
+              </div>
+            </ResizablePanel>
+          </ResizablePanelGroup>
         </div>
       </div>
     </div>

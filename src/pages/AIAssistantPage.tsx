@@ -157,6 +157,11 @@ const AIAssistantPage: React.FC = () => {
         onClearConversation={handleClearConversationWithHistory}
         onSessionSelect={handleSessionSelect}
         onToggleFullscreen={toggleFullscreen}
+        canvasState={canvasState}
+        onOpenCanvas={handleOpenCanvas}
+        onCloseCanvas={handleCloseCanvas}
+        onCanvasDownload={handleCanvasDownload}
+        onCanvasPrint={handleCanvasPrint}
       />
     );
   }
