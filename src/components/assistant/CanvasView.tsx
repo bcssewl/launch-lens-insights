@@ -206,8 +206,8 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
                       </ScrollArea>
                     </div>
 
-                    {/* Fixed Input Area at bottom of chat panel */}
-                    <div className="absolute bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border/50 p-3">
+                    {/* Seamless Input Area at bottom of chat panel */}
+                    <div className="absolute bottom-0 left-0 right-0 px-4 py-3">
                       <EnhancedChatInput 
                         onSendMessage={onSendMessage} 
                         isTyping={isTyping}
