@@ -37,6 +37,12 @@ const AIAssistantPage: React.FC = () => {
     handleClearConversation,
     handleDownloadChat,
     isConfigured,
+    // Advanced canvas handlers
+    advancedCanvasState,
+    handleToggleCanvasMode,
+    handleCloseAdvancedCanvas,
+    handleOpenAdvancedCanvas,
+    // Legacy canvas handlers for backward compatibility
     canvasState,
     handleOpenCanvas,
     handleExpandCanvas,
@@ -50,6 +56,7 @@ const AIAssistantPage: React.FC = () => {
     console.log('=== AI Assistant Page Debug ===');
     console.log('Current route:', window.location.pathname);
     console.log('Current session ID:', currentSessionId);
+    console.log('Advanced Canvas State:', advancedCanvasState);
     console.log('Theme mode:', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
     console.log('Theme from hook:', theme);
     
@@ -63,7 +70,7 @@ const AIAssistantPage: React.FC = () => {
     });
     
     console.log('=== End Debug ===');
-  }, [theme, currentSessionId]);
+  }, [theme, currentSessionId, advancedCanvasState]);
 
   // Handle keyboard shortcuts
   useEffect(() => {
@@ -202,6 +209,11 @@ const AIAssistantPage: React.FC = () => {
               isTyping={isTyping}
               viewportRef={viewportRef}
               onSendMessage={handleSendMessageWithSession}
+              // Advanced canvas props
+              advancedCanvasState={advancedCanvasState}
+              onToggleCanvasMode={handleToggleCanvasMode}
+              onCloseAdvancedCanvas={handleCloseAdvancedCanvas}
+              // Legacy canvas props for backward compatibility
               canvasState={canvasState}
               onOpenCanvas={handleOpenCanvas}
               onExpandCanvas={handleExpandCanvas}

@@ -7,13 +7,16 @@ import PerplexityEmptyState from '@/components/assistant/PerplexityEmptyState';
 import EnhancedChatInput from '@/components/assistant/EnhancedChatInput';
 import CanvasView from '@/components/assistant/CanvasView';
 import CanvasCompact from '@/components/assistant/CanvasCompact';
+import AdvancedCanvasView from '@/components/assistant/AdvancedCanvasView';
 import { Message } from '@/constants/aiAssistant';
+import { AdvancedCanvasState } from '@/hooks/useAdvancedCanvas';
 
 interface ChatAreaProps {
   messages: Message[];
   isTyping: boolean;
   viewportRef: React.RefObject<HTMLDivElement>;
   onSendMessage: (message: string) => void;
+  // Legacy canvas props for backward compatibility
   canvasState?: {
     mode: 'closed' | 'compact' | 'expanded';
     messageId: string | null;
@@ -25,6 +28,10 @@ interface ChatAreaProps {
   onCloseCanvas?: () => void;
   onCanvasDownload?: () => void;
   onCanvasPrint?: () => void;
+  // Advanced canvas props
+  advancedCanvasState?: AdvancedCanvasState;
+  onToggleCanvasMode?: () => void;
+  onCloseAdvancedCanvas?: () => void;
 }
 
 const ChatArea: React.FC<ChatAreaProps> = ({
@@ -37,7 +44,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   onExpandCanvas,
   onCloseCanvas,
   onCanvasDownload,
-  onCanvasPrint
+  onCanvasPrint,
+  advancedCanvasState,
+  onToggleCanvasMode,
+  onCloseAdvancedCanvas
 }) => {
   const hasConversation = messages.length > 1 || isTyping;
 
@@ -51,7 +61,18 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           </div>
         </div>
         
-        {/* Canvas Views */}
+        {/* Advanced Canvas View */}
+        {advancedCanvasState && advancedCanvasState.mode !== 'closed' && advancedCanvasState.documentId && (
+          <AdvancedCanvasView
+            isOpen={true}
+            mode={advancedCanvasState.mode}
+            documentId={advancedCanvasState.documentId}
+            onClose={onCloseAdvancedCanvas || (() => {})}
+            onToggleMode={onToggleCanvasMode || (() => {})}
+          />
+        )}
+        
+        {/* Legacy Canvas Views for backward compatibility */}
         {canvasState && (
           <>
             <CanvasCompact
@@ -107,7 +128,18 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         </div>
       </div>
 
-      {/* Canvas Views */}
+      {/* Advanced Canvas View */}
+      {advancedCanvasState && advancedCanvasState.mode !== 'closed' && advancedCanvasState.documentId && (
+        <AdvancedCanvasView
+          isOpen={true}
+          mode={advancedCanvasState.mode}
+          documentId={advancedCanvasState.documentId}
+          onClose={onCloseAdvancedCanvas || (() => {})}
+          onToggleMode={onToggleCanvasMode || (() => {})}
+        />
+      )}
+
+      {/* Legacy Canvas Views for backward compatibility */}
       {canvasState && (
         <>
           <CanvasCompact
