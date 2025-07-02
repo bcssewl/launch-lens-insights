@@ -21,9 +21,6 @@ const CanvasCompact: React.FC<CanvasCompactProps> = ({
   onPrint,
   className
 }) => {
-  // Get preview content (first 300 characters)
-  const previewContent = content.length > 300 ? content.substring(0, 300) + '...' : content;
-
   return (
     <div className={cn(
       "mt-3 border rounded-lg bg-background/50 backdrop-blur-sm",
@@ -68,28 +65,26 @@ const CanvasCompact: React.FC<CanvasCompactProps> = ({
         </div>
       </div>
 
-      {/* Scrollable Content Preview */}
+      {/* Scrollable Content Preview - Full Report */}
       <ScrollArea className="h-32">
         <div className="p-3 text-sm">
           <div className="prose prose-sm max-w-none text-muted-foreground">
-            <MarkdownRenderer content={previewContent} />
+            <MarkdownRenderer content={content} />
           </div>
         </div>
       </ScrollArea>
       
       {/* Footer with expand button */}
-      {content.length > 300 && (
-        <div className="p-2 border-t bg-muted/10 flex justify-center">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onExpand}
-            className="text-xs"
-          >
-            View Full Report
-          </Button>
-        </div>
-      )}
+      <div className="p-2 border-t bg-muted/10 flex justify-center">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onExpand}
+          className="text-xs"
+        >
+          View Full Report
+        </Button>
+      </div>
     </div>
   );
 };
