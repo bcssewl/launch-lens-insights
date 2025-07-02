@@ -72,15 +72,12 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
             {isAi ? (
               <>
                 {isReport ? (
-                  <div>
-                    <MarkdownRenderer content={message.text} />
-                    <CanvasCompact
-                      content={message.text}
-                      onExpand={handleCanvasExpand}
-                      onDownload={onCanvasDownload}
-                      onPrint={onCanvasPrint}
-                    />
-                  </div>
+                  <CanvasCompact
+                    content={message.text}
+                    onExpand={handleCanvasExpand}
+                    onDownload={onCanvasDownload}
+                    onPrint={onCanvasPrint}
+                  />
                 ) : (
                   <MarkdownRenderer content={message.text} />
                 )}

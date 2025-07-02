@@ -1,37 +1,8 @@
 
 export const isReportMessage = (content: string): boolean => {
-  // Check for minimum length
-  if (content.length < 1500) return false;
-  
-  // Count markdown headers
-  const headerCount = (content.match(/^#{1,3}\s/gm) || []).length;
-  
-  // Look for common report sections
-  const reportSections = [
-    'executive summary',
-    'market analysis',
-    'financial analysis',
-    'recommendations',
-    'conclusion',
-    'swot analysis',
-    'competitive analysis',
-    'strategy',
-    'implementation'
-  ];
-  
-  const contentLower = content.toLowerCase();
-  const sectionMatches = reportSections.filter(section => 
-    contentLower.includes(section)
-  ).length;
-  
-  // Check for structured content indicators
-  const hasStructure = content.includes('|') || // Tables
-                      content.includes('- ') || // Lists
-                      content.includes('1. ') || // Numbered lists
-                      headerCount >= 3; // Multiple sections
-  
-  // Consider it a report if it has multiple sections and structure
-  return sectionMatches >= 2 && hasStructure;
+  // Check for minimum word count (approximately 300 words)
+  const wordCount = content.trim().split(/\s+/).length;
+  return wordCount >= 300;
 };
 
 export const getReportPreview = (content: string, maxLength: number = 200): string => {
