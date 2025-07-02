@@ -46,9 +46,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   }, [sidebarState]);
 
   if (!hasConversation) {
-    // Show Perplexity-inspired empty state - NO CANVAS HERE
+    // Show Perplexity-inspired empty state
     return (
-      <div className="flex flex-col flex-1 min-h-0 w-full relative bg-background">
+      <div className="flex flex-col flex-1 min-h-0 w-full relative">
         <div className="flex-1 min-h-0 overflow-hidden">
           <PerplexityEmptyState onSendMessage={onSendMessage} />
         </div>
@@ -56,9 +56,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     );
   }
 
-  // Show conversation with compact input - NO CANVAS HERE
+  // Show conversation with compact input
   return (
-    <div className="flex flex-col flex-1 min-h-0 w-full relative bg-background">
+    <div className="flex flex-col flex-1 min-h-0 w-full relative">
       {/* Chat Messages Area */}
       <div className="flex-1 min-h-0 overflow-hidden">
         <ScrollArea className="h-full w-full" viewportRef={viewportRef}>

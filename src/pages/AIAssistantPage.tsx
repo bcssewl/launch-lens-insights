@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { AppSidebar } from '@/components/AppSidebar';
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
@@ -127,11 +128,13 @@ const AIAssistantPage: React.FC = () => {
   // Show loading state while history is being loaded
   if (isLoadingHistory) {
     return (
-      <div className="min-h-screen flex w-full apple-hero relative">
-        <FloatingElements />
+      <div className="min-h-screen flex w-full bg-background">
+        <div className="absolute inset-0">
+          <FloatingElements />
+        </div>
         <SidebarProvider>
           <AppSidebar />
-          <SidebarInset className="flex-1 flex flex-col bg-transparent">
+          <SidebarInset className="flex-1 flex flex-col relative z-10">
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center">
                 <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
@@ -167,21 +170,23 @@ const AIAssistantPage: React.FC = () => {
     );
   }
 
-  // Normal mode with proper dashboard background structure
+  // Normal mode with proper background structure
   return (
-    <div className="min-h-screen flex w-full apple-hero relative">
-      {/* Floating Elements at the root level */}
-      <FloatingElements />
+    <div className="min-h-screen flex w-full bg-background">
+      {/* Floating Elements positioned absolutely */}
+      <div className="absolute inset-0 pointer-events-none">
+        <FloatingElements />
+      </div>
       
       <SidebarProvider>
         <AppSidebar />
         
-        <SidebarInset className="flex-1 flex flex-col bg-transparent">
-          {/* Header with transparent background */}
+        <SidebarInset className="flex-1 flex flex-col relative z-10">
+          {/* Header with semi-transparent background */}
           {isMobile ? (
             <MobileDashboardHeader title="AI Assistant" />
           ) : (
-            <div className="border-b bg-background/10 backdrop-blur-sm">
+            <div className="border-b bg-background/80 backdrop-blur-sm">
               <div className="px-6 py-4 flex items-center justify-between">
                 <h1 className="text-lg font-semibold text-foreground">AI Assistant</h1>
                 <div className="flex items-center">
@@ -199,8 +204,8 @@ const AIAssistantPage: React.FC = () => {
             </div>
           )}
           
-          {/* Main chat area with transparent background */}
-          <div className="flex flex-col flex-1 min-h-0 w-full bg-transparent">
+          {/* Main chat area with proper background */}
+          <div className="flex flex-col flex-1 min-h-0 w-full">
             <ChatArea
               messages={messages}
               isTyping={isTyping}
