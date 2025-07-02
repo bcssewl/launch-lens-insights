@@ -21,14 +21,18 @@ const CanvasCompact: React.FC<CanvasCompactProps> = ({
   className
 }) => {
   return (
-    <div className={cn("canvas-compact mt-3", className)}>
+    <div className={cn(
+      "mt-3 border rounded-lg bg-background/95 backdrop-blur-sm shadow-md",
+      "w-full max-w-[600px] h-[280px] overflow-hidden flex flex-col",
+      className
+    )}>
       {/* Header */}
-      <div className="canvas-header">
+      <div className="flex items-center justify-between px-2 py-1 bg-muted/50 border-b border-border text-sm font-semibold">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
           <span>Report Preview</span>
         </div>
-        <div className="flex items-center gap-1 ml-auto">
+        <div className="flex items-center gap-1">
           {onDownload && (
             <Button
               variant="ghost"
@@ -61,7 +65,7 @@ const CanvasCompact: React.FC<CanvasCompactProps> = ({
       </div>
 
       {/* Scrollable Content */}
-      <div className="canvas-body">
+      <div className="flex-1 overflow-y-auto px-3 py-2">
         <div className="prose prose-sm max-w-none text-muted-foreground">
           <MarkdownRenderer content={content} />
         </div>
@@ -78,39 +82,6 @@ const CanvasCompact: React.FC<CanvasCompactProps> = ({
           View Full Report
         </Button>
       </div>
-      
-      <style jsx>{`
-        .canvas-compact {
-          border: 1px solid var(--border);
-          border-radius: 8px;
-          background: var(--surface-2);
-          box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-          padding: 0;
-          width: 100%;
-          max-width: 600px;
-          height: 280px;
-          overflow: hidden;
-          display: flex;
-          flex-direction: column;
-        }
-
-        .canvas-header {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          padding: 4px 8px;
-          background: var(--surface-3);
-          border-bottom: 1px solid var(--border);
-          font-weight: 600;
-          font-size: 0.9rem;
-        }
-
-        .canvas-body {
-          flex-grow: 1;
-          overflow-y: auto;
-          padding: 8px 12px;
-        }
-      `}</style>
     </div>
   );
 };
