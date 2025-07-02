@@ -34,12 +34,24 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   onCanvasPrint
 }) => {
   const hasConversation = messages.length > 1 || isTyping;
-  const { state } = useSidebar();
+  
+  // Safely get sidebar state - only if we're in a SidebarProvider context
+  let sidebarState = 'expanded';
+  try {
+    const { state } = useSidebar();
+    sidebarState = state;
+  } catch (error) {
+    // We're not in a SidebarProvider context (e.g., fullscreen mode)
+    // Use default positioning
+  }
 
   // Calculate proper positioning based on sidebar state for fixed input
-  const inputPositionClass = state === 'expanded' 
+  const inputPositionClass = sidebarState === 'expanded' 
     ? 'fixed bottom-0 left-[var(--sidebar-width)] right-0 z-50'
     : 'fixed bottom-0 left-[var(--sidebar-width-icon)] right-0 z-50';
+
+  // In contexts without sidebar (like fullscreen), use simple fixed positioning
+  const finalInputPositionClass = sidebarState ? inputPositionClass : 'fixed bottom-0 left-0 right-0 z-50';
 
   if (!hasConversation) {
     // Show Perplexity-inspired empty state with transparent background
@@ -75,7 +87,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       </div>
 
       {/* Fixed Input Area - floating appearance like Lovable */}
-      <div className={inputPositionClass}>
+      <div className={finalInputPositionClass}>
         <div className="px-6 py-4">
           <EnhancedChatInput 
             onSendMessage={onSendMessage} 
