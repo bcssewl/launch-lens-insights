@@ -122,6 +122,24 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
     return timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }, []);
 
+  // Filter messages to exclude canvas previews in full view
+  const filteredMessages = useMemo(() => {
+    return messages.map(msg => {
+      // If this is an AI message that contains a report, show only the title
+      if (msg.sender === 'ai' && msg.text.includes('# ')) {
+        const titleMatch = msg.text.match(/^# (.+)$/m);
+        if (titleMatch) {
+          return {
+            ...msg,
+            text: `# ${titleMatch[1]}`,
+            isCanvasTitle: true
+          };
+        }
+      }
+      return msg;
+    });
+  }, [messages]);
+
   // Early return if not open
   if (!isOpen) {
     console.log('CanvasView: Not open, returning null');
@@ -191,11 +209,11 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
                     <div className="flex-1 overflow-hidden">
                       <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
                         <div className="px-4 py-6 space-y-6">
-                          {messages.map((msg) => (
+                          {filteredMessages.map((msg) => (
                             <ChatMessage 
                               key={msg.id} 
                               message={{ ...msg, timestamp: formatTimestamp(msg.timestamp) }}
-                              onOpenCanvas={onOpenCanvas}
+                              onOpenCanvas={undefined} // Disable canvas opening in full view
                               onCanvasDownload={onCanvasDownload}
                               onCanvasPrint={onCanvasPrint}
                             />
