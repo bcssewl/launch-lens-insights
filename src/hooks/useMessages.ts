@@ -3,17 +3,18 @@ import { v4 as uuidv4 } from 'uuid';
 import { Message, initialMessages, formatTimestamp } from '@/constants/aiAssistant';
 import { useN8nWebhook } from '@/hooks/useN8nWebhook';
 import { useChatHistory } from '@/hooks/useChatHistory';
+import { isReportMessage } from '@/utils/reportDetection';
 
 export const useMessages = (currentSessionId: string | null) => {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [isTyping, setIsTyping] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [canvasState, setCanvasState] = useState<{
-    isOpen: boolean;
+    mode: 'closed' | 'compact' | 'expanded';
     messageId: string | null;
     content: string;
   }>({
-    isOpen: false,
+    mode: 'closed',
     messageId: null,
     content: ''
   });
@@ -30,6 +31,21 @@ export const useMessages = (currentSessionId: string | null) => {
   useEffect(() => {
     scrollToBottom();
   }, [messages, isTyping]);
+
+  // Auto-detect reports and open compact canvas
+  useEffect(() => {
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage && lastMessage.sender === 'ai' && isReportMessage(lastMessage.text)) {
+      // Only auto-open if canvas is currently closed
+      if (canvasState.mode === 'closed') {
+        setCanvasState({
+          mode: 'compact',
+          messageId: lastMessage.id,
+          content: lastMessage.text
+        });
+      }
+    }
+  }, [messages, canvasState.mode]);
 
   // Load messages from history when session changes
   useEffect(() => {
@@ -138,6 +154,7 @@ export const useMessages = (currentSessionId: string | null) => {
   const handleClearConversation = () => {
     console.log('useMessages: Clearing conversation');
     setMessages([initialMessages[0]]);
+    setCanvasState({ mode: 'closed', messageId: null, content: '' });
   };
 
   const handleDownloadChat = () => {
@@ -158,15 +175,22 @@ export const useMessages = (currentSessionId: string | null) => {
 
   const handleOpenCanvas = (messageId: string, content: string) => {
     setCanvasState({
-      isOpen: true,
+      mode: 'compact',
       messageId,
       content
     });
   };
 
+  const handleExpandCanvas = () => {
+    setCanvasState(prev => ({
+      ...prev,
+      mode: 'expanded'
+    }));
+  };
+
   const handleCloseCanvas = () => {
     setCanvasState({
-      isOpen: false,
+      mode: 'closed',
       messageId: null,
       content: ''
     });
@@ -201,6 +225,7 @@ export const useMessages = (currentSessionId: string | null) => {
     isConfigured,
     canvasState,
     handleOpenCanvas,
+    handleExpandCanvas,
     handleCloseCanvas,
     handleCanvasDownload,
     handleCanvasPrint

@@ -6,6 +6,7 @@ import TypingIndicator from '@/components/assistant/TypingIndicator';
 import PerplexityEmptyState from '@/components/assistant/PerplexityEmptyState';
 import EnhancedChatInput from '@/components/assistant/EnhancedChatInput';
 import CanvasView from '@/components/assistant/CanvasView';
+import CanvasCompact from '@/components/assistant/CanvasCompact';
 import { Message } from '@/constants/aiAssistant';
 
 interface ChatAreaProps {
@@ -14,11 +15,12 @@ interface ChatAreaProps {
   viewportRef: React.RefObject<HTMLDivElement>;
   onSendMessage: (message: string) => void;
   canvasState?: {
-    isOpen: boolean;
+    mode: 'closed' | 'compact' | 'expanded';
     messageId: string | null;
     content: string;
   };
   onOpenCanvas?: (messageId: string, content: string) => void;
+  onExpandCanvas?: () => void;
   onCloseCanvas?: () => void;
   onCanvasDownload?: () => void;
   onCanvasPrint?: () => void;
@@ -31,6 +33,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   onSendMessage,
   canvasState,
   onOpenCanvas,
+  onExpandCanvas,
   onCloseCanvas,
   onCanvasDownload,
   onCanvasPrint
@@ -47,16 +50,25 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           </div>
         </div>
         
-        {/* Canvas View */}
+        {/* Canvas Views */}
         {canvasState && (
-          <CanvasView
-            isOpen={canvasState.isOpen}
-            onClose={onCloseCanvas || (() => {})}
-            content={canvasState.content}
-            title="AI Report"
-            onDownload={onCanvasDownload}
-            onPrint={onCanvasPrint}
-          />
+          <>
+            <CanvasCompact
+              isOpen={canvasState.mode === 'compact'}
+              onClose={onCloseCanvas || (() => {})}
+              onExpand={onExpandCanvas || (() => {})}
+              content={canvasState.content}
+              title="AI Report"
+            />
+            <CanvasView
+              isOpen={canvasState.mode === 'expanded'}
+              onClose={onCloseCanvas || (() => {})}
+              content={canvasState.content}
+              title="AI Report"
+              onDownload={onCanvasDownload}
+              onPrint={onCanvasPrint}
+            />
+          </>
         )}
       </>
     );
@@ -93,16 +105,25 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         </div>
       </div>
 
-      {/* Canvas View */}
+      {/* Canvas Views */}
       {canvasState && (
-        <CanvasView
-          isOpen={canvasState.isOpen}
-          onClose={onCloseCanvas || (() => {})}
-          content={canvasState.content}
-          title="AI Report"
-          onDownload={onCanvasDownload}
-          onPrint={onCanvasPrint}
-        />
+        <>
+          <CanvasCompact
+            isOpen={canvasState.mode === 'compact'}
+            onClose={onCloseCanvas || (() => {})}
+            onExpand={onExpandCanvas || (() => {})}
+            content={canvasState.content}
+            title="AI Report"
+          />
+          <CanvasView
+            isOpen={canvasState.mode === 'expanded'}
+            onClose={onCloseCanvas || (() => {})}
+            content={canvasState.content}
+            title="AI Report"
+            onDownload={onCanvasDownload}
+            onPrint={onCanvasPrint}
+          />
+        </>
       )}
     </>
   );

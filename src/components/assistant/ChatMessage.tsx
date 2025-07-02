@@ -5,7 +5,6 @@ import AIAvatar from './AIAvatar';
 import UserAvatar from './UserAvatar';
 import CopyButton from './CopyButton';
 import MarkdownRenderer from './MarkdownRenderer';
-import CanvasButton from './CanvasButton';
 import { isReportMessage, getReportPreview } from '@/utils/reportDetection';
 
 export interface ChatMessageData {
@@ -23,12 +22,6 @@ interface ChatMessageProps {
 const ChatMessage: React.FC<ChatMessageProps> = ({ message, onOpenCanvas }) => {
   const isAi = message.sender === 'ai';
   const isReport = isAi && isReportMessage(message.text);
-
-  const handleCanvasOpen = () => {
-    if (onOpenCanvas) {
-      onOpenCanvas(message.id, message.text);
-    }
-  };
 
   return (
     <div
@@ -72,7 +65,9 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onOpenCanvas }) => {
                     <p className="text-sm opacity-80">
                       {getReportPreview(message.text)}
                     </p>
-                    <CanvasButton onClick={handleCanvasOpen} />
+                    <p className="text-xs text-muted-foreground italic">
+                      Report opened in preview window →
+                    </p>
                   </div>
                 ) : (
                   <MarkdownRenderer content={message.text} />

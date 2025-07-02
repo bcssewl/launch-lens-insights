@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { AppSidebar } from '@/components/AppSidebar';
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
@@ -38,6 +39,7 @@ const AIAssistantPage: React.FC = () => {
     isConfigured,
     canvasState,
     handleOpenCanvas,
+    handleExpandCanvas,
     handleCloseCanvas,
     handleCanvasDownload,
     handleCanvasPrint
@@ -202,6 +204,7 @@ const AIAssistantPage: React.FC = () => {
               onSendMessage={handleSendMessageWithSession}
               canvasState={canvasState}
               onOpenCanvas={handleOpenCanvas}
+              onExpandCanvas={handleExpandCanvas}
               onCloseCanvas={handleCloseCanvas}
               onCanvasDownload={handleCanvasDownload}
               onCanvasPrint={handleCanvasPrint}
