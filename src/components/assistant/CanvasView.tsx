@@ -1,5 +1,5 @@
 
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useMemo } from 'react';
 import { X, Download, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
@@ -30,7 +30,7 @@ interface CanvasViewProps {
   onCanvasPrint?: () => void;
 }
 
-const CanvasView: React.FC<CanvasViewProps> = ({
+const CanvasView: React.FC<CanvasViewProps> = React.memo(({
   isOpen,
   onClose,
   content,
@@ -47,9 +47,12 @@ const CanvasView: React.FC<CanvasViewProps> = ({
   onCanvasDownload,
   onCanvasPrint
 }) => {
+  console.log('CanvasView: Rendering with isOpen:', isOpen);
+
   // Memoize handlers to prevent unnecessary re-renders
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
     if (event.key === 'Escape') {
+      console.log('CanvasView: Escape key pressed, closing canvas');
       onClose();
     } else if (event.ctrlKey && event.key === 'p') {
       event.preventDefault();
@@ -59,39 +62,78 @@ const CanvasView: React.FC<CanvasViewProps> = ({
 
   const handleBackdropClick = useCallback((event: React.MouseEvent) => {
     if (event.target === event.currentTarget) {
+      console.log('CanvasView: Backdrop clicked, closing canvas');
       onClose();
     }
   }, [onClose]);
 
-  // Handle keyboard shortcuts
-  useEffect(() => {
-    if (!isOpen) return;
+  const handleDownloadClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    console.log('CanvasView: Download clicked');
+    onDownload?.();
+  }, [onDownload]);
 
-    document.addEventListener('keydown', handleKeyDown);
+  const handlePrintClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    console.log('CanvasView: Print clicked');
+    onPrint?.();
+  }, [onPrint]);
+
+  const handleCloseClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    console.log('CanvasView: Close button clicked');
+    onClose();
+  }, [onClose]);
+
+  // Memoize canvas styles to prevent recalculation
+  const canvasStyles = useMemo(() => ({
+    fontSize: '16px',
+    lineHeight: '1.7',
+  }), []);
+
+  // Handle keyboard shortcuts and body overflow
+  useEffect(() => {
+    if (!isOpen) {
+      console.log('CanvasView: Not open, skipping effect');
+      return;
+    }
+
+    console.log('CanvasView: Setting up keyboard listeners and body overflow');
+    
+    const handleKeyDownWrapper = (event: KeyboardEvent) => {
+      handleKeyDown(event);
+    };
+
+    document.addEventListener('keydown', handleKeyDownWrapper);
     document.body.style.overflow = 'hidden';
 
     return () => {
-      document.removeEventListener('keydown', handleKeyDown);
+      console.log('CanvasView: Cleaning up keyboard listeners and body overflow');
+      document.removeEventListener('keydown', handleKeyDownWrapper);
       document.body.style.overflow = 'unset';
     };
   }, [isOpen, handleKeyDown]);
 
-  if (!isOpen) return null;
+  // Early return if not open
+  if (!isOpen) {
+    console.log('CanvasView: Not open, returning null');
+    return null;
+  }
 
-  const canvasStyles = {
-    fontSize: '16px',
-    lineHeight: '1.7',
-  };
+  console.log('CanvasView: Rendering full canvas view');
 
   return (
     <div 
       className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm animate-fade-in"
       onClick={handleBackdropClick}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="canvas-title"
     >
       <div className="h-full flex flex-col animate-scale-in" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between p-4 bg-background/95 backdrop-blur-sm border-b border-border/50">
-          <h2 className="text-lg font-semibold text-foreground truncate max-w-md">
+          <h2 id="canvas-title" className="text-lg font-semibold text-foreground truncate max-w-md">
             {title}
           </h2>
           <div className="flex items-center gap-2">
@@ -99,7 +141,7 @@ const CanvasView: React.FC<CanvasViewProps> = ({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={onDownload}
+                onClick={handleDownloadClick}
                 className="flex items-center gap-2"
               >
                 <Download className="h-4 w-4" />
@@ -110,7 +152,7 @@ const CanvasView: React.FC<CanvasViewProps> = ({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={onPrint}
+                onClick={handlePrintClick}
                 className="flex items-center gap-2"
               >
                 <Printer className="h-4 w-4" />
@@ -120,7 +162,7 @@ const CanvasView: React.FC<CanvasViewProps> = ({
             <Button
               variant="outline"
               size="sm"
-              onClick={onClose}
+              onClick={handleCloseClick}
               className="flex items-center gap-2"
             >
               <X className="h-4 w-4" />
@@ -142,7 +184,6 @@ const CanvasView: React.FC<CanvasViewProps> = ({
                       isTyping={isTyping}
                       viewportRef={viewportRef}
                       onSendMessage={onSendMessage}
-                      canvasState={canvasState}
                       onOpenCanvas={onOpenCanvas}
                       onCloseCanvas={onCloseCanvas}
                       onCanvasDownload={onCanvasDownload}
@@ -176,6 +217,8 @@ const CanvasView: React.FC<CanvasViewProps> = ({
       </div>
     </div>
   );
-};
+});
+
+CanvasView.displayName = 'CanvasView';
 
 export default CanvasView;

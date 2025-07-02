@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
+
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Message, initialMessages, formatTimestamp } from '@/constants/aiAssistant';
 import { useN8nWebhook } from '@/hooks/useN8nWebhook';
@@ -21,15 +22,15 @@ export const useMessages = (currentSessionId: string | null) => {
   const { sendMessageToN8n, isConfigured } = useN8nWebhook();
   const { history, addMessage } = useChatHistory(currentSessionId);
 
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     if (viewportRef.current) {
       viewportRef.current.scrollTo({ top: viewportRef.current.scrollHeight, behavior: 'smooth' });
     }
-  };
+  }, []);
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isTyping]);
+  }, [messages, isTyping, scrollToBottom]);
 
   // Load messages from history when session changes
   useEffect(() => {
@@ -73,7 +74,7 @@ export const useMessages = (currentSessionId: string | null) => {
     setIsLoadingHistory(false);
   }, [currentSessionId, history]);
 
-  const handleSendMessage = async (text?: string, messageText?: string) => {
+  const handleSendMessage = useCallback(async (text?: string, messageText?: string) => {
     const finalMessageText = text || messageText;
     if (!finalMessageText || finalMessageText.trim() === '') return;
 
@@ -123,6 +124,7 @@ export const useMessages = (currentSessionId: string | null) => {
         await addMessage(`AI: ${aiResponseText}`);
       }
     } catch (error) {
+      console.error('useMessages: Error sending message:', error);
       const errorResponse: Message = {
         id: uuidv4(),
         text: "I'm experiencing some technical difficulties right now. Please try sending your message again in a few moments.",
@@ -133,14 +135,14 @@ export const useMessages = (currentSessionId: string | null) => {
     } finally {
       setIsTyping(false);
     }
-  };
+  }, [currentSessionId, addMessage, isConfigured, sendMessageToN8n]);
 
-  const handleClearConversation = () => {
+  const handleClearConversation = useCallback(() => {
     console.log('useMessages: Clearing conversation');
     setMessages([initialMessages[0]]);
-  };
+  }, []);
 
-  const handleDownloadChat = () => {
+  const handleDownloadChat = useCallback(() => {
     const chatContent = messages.map(msg => 
       `[${formatTimestamp(msg.timestamp)}] ${msg.sender.toUpperCase()}: ${msg.text}`
     ).join('\n\n');
@@ -154,27 +156,30 @@ export const useMessages = (currentSessionId: string | null) => {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  };
+  }, [messages]);
 
-  const handleOpenCanvas = (messageId: string, content: string) => {
+  const handleOpenCanvas = useCallback((messageId: string, content: string) => {
+    console.log('useMessages: Opening canvas for message:', messageId);
     setCanvasState({
       isOpen: true,
       messageId,
       content
     });
-  };
+  }, []);
 
-  const handleCloseCanvas = () => {
+  const handleCloseCanvas = useCallback(() => {
+    console.log('useMessages: Closing canvas');
     setCanvasState({
       isOpen: false,
       messageId: null,
       content: ''
     });
-  };
+  }, []);
 
-  const handleCanvasDownload = () => {
+  const handleCanvasDownload = useCallback(() => {
     if (!canvasState.content) return;
     
+    console.log('useMessages: Downloading canvas content');
     const blob = new Blob([canvasState.content], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -184,11 +189,12 @@ export const useMessages = (currentSessionId: string | null) => {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  };
+  }, [canvasState.content]);
 
-  const handleCanvasPrint = () => {
+  const handleCanvasPrint = useCallback(() => {
+    console.log('useMessages: Printing canvas');
     window.print();
-  };
+  }, []);
 
   return {
     messages,

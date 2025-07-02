@@ -5,6 +5,7 @@ import { FloatingElements } from '@/components/landing/FloatingElements';
 import DashboardHeader from '@/components/DashboardHeader';
 import MobileDashboardHeader from '@/components/mobile/MobileDashboardHeader';
 import ChatArea from '@/components/assistant/ChatArea';
+import CanvasView from '@/components/assistant/CanvasView';
 import FullscreenChatLayout from '@/components/assistant/FullscreenChatLayout';
 import ChatSubheader from '@/components/assistant/ChatSubheader';
 import { useChatSessions } from '@/hooks/useChatSessions';
@@ -205,7 +206,6 @@ const AIAssistantPage: React.FC = () => {
               isTyping={isTyping}
               viewportRef={viewportRef}
               onSendMessage={handleSendMessageWithSession}
-              canvasState={canvasState}
               onOpenCanvas={handleOpenCanvas}
               onCloseCanvas={handleCloseCanvas}
               onCanvasDownload={handleCanvasDownload}
@@ -214,6 +214,25 @@ const AIAssistantPage: React.FC = () => {
           </div>
         </SidebarInset>
       </SidebarProvider>
+
+      {/* SINGLE Canvas View - Only rendered here */}
+      <CanvasView
+        isOpen={canvasState.isOpen}
+        onClose={handleCloseCanvas}
+        content={canvasState.content}
+        title="AI Report"
+        onDownload={handleCanvasDownload}
+        onPrint={handleCanvasPrint}
+        messages={messages}
+        isTyping={isTyping}
+        viewportRef={viewportRef}
+        onSendMessage={handleSendMessageWithSession}
+        canvasState={canvasState}
+        onOpenCanvas={handleOpenCanvas}
+        onCloseCanvas={handleCloseCanvas}
+        onCanvasDownload={handleCanvasDownload}
+        onCanvasPrint={handleCanvasPrint}
+      />
     </div>
   );
 };

@@ -13,30 +13,38 @@ interface CanvasCompactProps {
   className?: string;
 }
 
-const CanvasCompact: React.FC<CanvasCompactProps> = ({
+const CanvasCompact: React.FC<CanvasCompactProps> = React.memo(({
   content,
   onExpand,
   onDownload,
   onPrint,
   className
 }) => {
+  console.log('CanvasCompact: Rendering compact canvas');
+
   // Memoize handlers to prevent unnecessary re-renders
   const handleExpand = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     console.log('CanvasCompact: Expanding canvas');
-    onExpand();
+    
+    // Add a small delay to prevent immediate re-renders
+    requestAnimationFrame(() => {
+      onExpand();
+    });
   }, [onExpand]);
 
   const handleDownload = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    console.log('CanvasCompact: Download clicked');
     onDownload?.();
   }, [onDownload]);
 
   const handlePrint = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    console.log('CanvasCompact: Print clicked');
     onPrint?.();
   }, [onPrint]);
 
@@ -60,6 +68,7 @@ const CanvasCompact: React.FC<CanvasCompactProps> = ({
               size="sm"
               onClick={handleDownload}
               className="h-7 w-7 p-0 hover:bg-muted"
+              aria-label="Download report"
             >
               <Download className="h-3 w-3" />
             </Button>
@@ -70,6 +79,7 @@ const CanvasCompact: React.FC<CanvasCompactProps> = ({
               size="sm"
               onClick={handlePrint}
               className="h-7 w-7 p-0 hover:bg-muted"
+              aria-label="Print report"
             >
               <Printer className="h-3 w-3" />
             </Button>
@@ -79,6 +89,7 @@ const CanvasCompact: React.FC<CanvasCompactProps> = ({
             size="sm"
             onClick={handleExpand}
             className="h-7 w-7 p-0 hover:bg-muted"
+            aria-label="Expand report"
           >
             <Maximize2 className="h-3 w-3" />
           </Button>
@@ -105,6 +116,8 @@ const CanvasCompact: React.FC<CanvasCompactProps> = ({
       </div>
     </div>
   );
-};
+});
+
+CanvasCompact.displayName = 'CanvasCompact';
 
 export default CanvasCompact;

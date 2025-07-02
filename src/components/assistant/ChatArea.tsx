@@ -5,7 +5,6 @@ import ChatMessage from '@/components/assistant/ChatMessage';
 import TypingIndicator from '@/components/assistant/TypingIndicator';
 import PerplexityEmptyState from '@/components/assistant/PerplexityEmptyState';
 import EnhancedChatInput from '@/components/assistant/EnhancedChatInput';
-import CanvasView from '@/components/assistant/CanvasView';
 import { Message } from '@/constants/aiAssistant';
 
 interface ChatAreaProps {
@@ -29,102 +28,54 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   isTyping,
   viewportRef,
   onSendMessage,
-  canvasState,
   onOpenCanvas,
-  onCloseCanvas,
   onCanvasDownload,
   onCanvasPrint
 }) => {
   const hasConversation = messages.length > 1 || isTyping;
 
   if (!hasConversation) {
-    // Show Perplexity-inspired empty state
+    // Show Perplexity-inspired empty state - NO CANVAS HERE
     return (
-      <>
-        <div className="flex flex-col flex-1 min-h-0 w-full relative bg-background">
-          <div className="flex-1 min-h-0 overflow-hidden">
-            <PerplexityEmptyState onSendMessage={onSendMessage} />
-          </div>
+      <div className="flex flex-col flex-1 min-h-0 w-full relative bg-background">
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <PerplexityEmptyState onSendMessage={onSendMessage} />
         </div>
-        
-        {/* Canvas View */}
-        {canvasState && (
-          <CanvasView
-            isOpen={canvasState.isOpen}
-            onClose={onCloseCanvas || (() => {})}
-            content={canvasState.content}
-            title="AI Report"
-            onDownload={onCanvasDownload}
-            onPrint={onCanvasPrint}
-            messages={messages}
-            isTyping={isTyping}
-            viewportRef={viewportRef}
-            onSendMessage={onSendMessage}
-            canvasState={canvasState}
-            onOpenCanvas={onOpenCanvas}
-            onCloseCanvas={onCloseCanvas}
-            onCanvasDownload={onCanvasDownload}
-            onCanvasPrint={onCanvasPrint}
-          />
-        )}
-      </>
+      </div>
     );
   }
 
-  // Show conversation with compact input
+  // Show conversation with compact input - NO CANVAS HERE
   return (
-    <>
-      <div className="flex flex-col flex-1 min-h-0 w-full relative bg-background">
-        {/* Chat Messages Area */}
-        <div className="flex-1 min-h-0 overflow-hidden">
-          <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
-            <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
-              {messages.map((msg) => (
-                <ChatMessage 
-                  key={msg.id} 
-                  message={{ ...msg, timestamp: formatTimestamp(msg.timestamp) }}
-                  onOpenCanvas={onOpenCanvas}
-                  onCanvasDownload={onCanvasDownload}
-                  onCanvasPrint={onCanvasPrint}
-                />
-              ))}
-              {isTyping && <TypingIndicator />}
-            </div>
-            <div className="h-24" /> {/* Spacer for input */}
-          </ScrollArea>
-        </div>
-
-        {/* Fixed Input Area */}
-        <div className="fixed bottom-0 left-0 right-0 z-10">
-          <EnhancedChatInput 
-            onSendMessage={onSendMessage} 
-            isTyping={isTyping}
-            isCompact={true}
-          />
-        </div>
+    <div className="flex flex-col flex-1 min-h-0 w-full relative bg-background">
+      {/* Chat Messages Area */}
+      <div className="flex-1 min-h-0 overflow-hidden">
+        <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
+          <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
+            {messages.map((msg) => (
+              <ChatMessage 
+                key={msg.id} 
+                message={{ ...msg, timestamp: formatTimestamp(msg.timestamp) }}
+                onOpenCanvas={onOpenCanvas}
+                onCanvasDownload={onCanvasDownload}
+                onCanvasPrint={onCanvasPrint}
+              />
+            ))}
+            {isTyping && <TypingIndicator />}
+          </div>
+          <div className="h-24" /> {/* Spacer for input */}
+        </ScrollArea>
       </div>
 
-      {/* Canvas View */}
-      {canvasState && (
-        <CanvasView
-          isOpen={canvasState.isOpen}
-          onClose={onCloseCanvas || (() => {})}
-          content={canvasState.content}
-          title="AI Report"
-          onDownload={onCanvasDownload}
-          onPrint={onCanvasPrint}
-          messages={messages}
+      {/* Fixed Input Area */}
+      <div className="fixed bottom-0 left-0 right-0 z-10">
+        <EnhancedChatInput 
+          onSendMessage={onSendMessage} 
           isTyping={isTyping}
-          viewportRef={viewportRef}
-          onSendMessage={onSendMessage}
-          canvasState={canvasState}
-          onOpenCanvas={onOpenCanvas}
-          onCloseCanvas={onCloseCanvas}
-          onCanvasDownload={onCanvasDownload}
-          onCanvasPrint={onCanvasPrint}
+          isCompact={true}
         />
-      )}
-    </>
+      </div>
+    </div>
   );
 };
 
