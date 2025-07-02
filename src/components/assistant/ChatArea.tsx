@@ -18,6 +18,7 @@ interface ChatAreaProps {
     mode: 'closed' | 'compact' | 'expanded';
     messageId: string | null;
     content: string;
+    reportType?: 'business_analysis' | 'market_research' | 'financial_analysis' | 'general_report';
   };
   onOpenCanvas?: (messageId: string, content: string) => void;
   onExpandCanvas?: () => void;
