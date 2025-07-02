@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useSidebar } from '@/components/ui/sidebar';
 import ChatMessage from '@/components/assistant/ChatMessage';
 import TypingIndicator from '@/components/assistant/TypingIndicator';
 import PerplexityEmptyState from '@/components/assistant/PerplexityEmptyState';
@@ -34,21 +33,11 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   onCanvasPrint
 }) => {
   const hasConversation = messages.length > 1 || isTyping;
-  const { state: sidebarState } = useSidebar();
-
-  // Calculate the left offset based on sidebar state
-  const sidebarOffset = React.useMemo(() => {
-    if (sidebarState === 'expanded') {
-      return 'var(--sidebar-width)'; // 16rem by default
-    } else {
-      return 'var(--sidebar-width-icon)'; // 3rem by default
-    }
-  }, [sidebarState]);
 
   if (!hasConversation) {
-    // Show Perplexity-inspired empty state
+    // Show Perplexity-inspired empty state - NO CANVAS HERE
     return (
-      <div className="flex flex-col flex-1 min-h-0 w-full relative bg-white dark:bg-gray-900">
+      <div className="flex flex-col flex-1 min-h-0 w-full relative bg-background">
         <div className="flex-1 min-h-0 overflow-hidden">
           <PerplexityEmptyState onSendMessage={onSendMessage} />
         </div>
@@ -56,9 +45,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     );
   }
 
-  // Show conversation with compact input
+  // Show conversation with compact input - NO CANVAS HERE
   return (
-    <div className="flex flex-col flex-1 min-h-0 w-full relative bg-white dark:bg-gray-900">
+    <div className="flex flex-col flex-1 min-h-0 w-full relative bg-background">
       {/* Chat Messages Area */}
       <div className="flex-1 min-h-0 overflow-hidden">
         <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
@@ -78,13 +67,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         </ScrollArea>
       </div>
 
-      {/* Fixed Input Area - now responsive to sidebar */}
-      <div 
-        className="fixed bottom-0 right-0 z-10"
-        style={{
-          left: sidebarOffset,
-        }}
-      >
+      {/* Fixed Input Area */}
+      <div className="fixed bottom-0 left-0 right-0 z-10">
         <EnhancedChatInput 
           onSendMessage={onSendMessage} 
           isTyping={isTyping}

@@ -1,7 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { AppSidebar } from '@/components/AppSidebar';
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import { FloatingElements } from '@/components/landing/FloatingElements';
 import DashboardHeader from '@/components/DashboardHeader';
 import MobileDashboardHeader from '@/components/mobile/MobileDashboardHeader';
 import ChatArea from '@/components/assistant/ChatArea';
@@ -127,14 +127,15 @@ const AIAssistantPage: React.FC = () => {
   // Show loading state while history is being loaded
   if (isLoadingHistory) {
     return (
-      <div className="min-h-screen flex w-full bg-white dark:bg-gray-900">
+      <div className="min-h-screen flex w-full apple-hero relative">
+        <FloatingElements />
         <SidebarProvider>
           <AppSidebar />
-          <SidebarInset className="flex-1 flex flex-col">
+          <SidebarInset className="flex-1 flex flex-col bg-transparent">
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center">
-                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-gray-600 dark:text-gray-300" />
-                <p className="text-gray-600 dark:text-gray-300">Loading chat session...</p>
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+                <p className="text-muted-foreground">Loading chat session...</p>
               </div>
             </div>
           </SidebarInset>
@@ -166,20 +167,23 @@ const AIAssistantPage: React.FC = () => {
     );
   }
 
-  // Normal mode with explicit background colors as fallback
+  // Normal mode with proper dashboard background structure
   return (
-    <div className="min-h-screen flex w-full bg-white dark:bg-gray-900">
+    <div className="min-h-screen flex w-full apple-hero relative">
+      {/* Floating Elements at the root level */}
+      <FloatingElements />
+      
       <SidebarProvider>
         <AppSidebar />
         
-        <SidebarInset className="flex-1 flex flex-col">
-          {/* Header */}
+        <SidebarInset className="flex-1 flex flex-col bg-transparent">
+          {/* Header with transparent background */}
           {isMobile ? (
             <MobileDashboardHeader title="AI Assistant" />
           ) : (
-            <div className="border-b border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
+            <div className="border-b bg-background/10 backdrop-blur-sm">
               <div className="px-6 py-4 flex items-center justify-between">
-                <h1 className="text-lg font-semibold text-gray-900 dark:text-white">AI Assistant</h1>
+                <h1 className="text-lg font-semibold text-foreground">AI Assistant</h1>
                 <div className="flex items-center">
                   <ChatSubheader
                     isConfigured={isConfigured}
@@ -195,8 +199,8 @@ const AIAssistantPage: React.FC = () => {
             </div>
           )}
           
-          {/* Main chat area */}
-          <div className="flex flex-col flex-1 min-h-0 w-full bg-white dark:bg-gray-900">
+          {/* Main chat area with transparent background */}
+          <div className="flex flex-col flex-1 min-h-0 w-full bg-transparent">
             <ChatArea
               messages={messages}
               isTyping={isTyping}
@@ -211,7 +215,7 @@ const AIAssistantPage: React.FC = () => {
         </SidebarInset>
       </SidebarProvider>
 
-      {/* Canvas View */}
+      {/* SINGLE Canvas View - Only rendered here */}
       <CanvasView
         isOpen={canvasState.isOpen}
         onClose={handleCloseCanvas}
