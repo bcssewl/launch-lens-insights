@@ -11,12 +11,6 @@ export interface ChatMessage {
   timestamp: Date;
 }
 
-export interface DualResponse {
-  response: string;
-  report?: string;
-  reportType?: 'business_analysis' | 'market_research' | 'financial_analysis' | 'general_report';
-}
-
 export const useN8nWebhook = () => {
   const { toast } = useToast();
   const { user, session } = useAuth();
@@ -25,6 +19,7 @@ export const useN8nWebhook = () => {
     try {
       console.log('Checking session validity...');
       
+      // Check if we have a session and if it's expired
       if (!session) {
         console.log('No session found');
         return null;
@@ -33,6 +28,7 @@ export const useN8nWebhook = () => {
       const now = Math.round(Date.now() / 1000);
       const expiresAt = session.expires_at;
       
+      // Check if token expires within the next 5 minutes (300 seconds)
       if (expiresAt && (expiresAt - now) < 300) {
         console.log('Session is expired or expiring soon, refreshing...');
         
@@ -57,14 +53,15 @@ export const useN8nWebhook = () => {
     }
   }, [session]);
 
-  const sendMessageToN8n = useCallback(async (message: string, sessionId?: string | null): Promise<DualResponse> => {
+  const sendMessageToN8n = useCallback(async (message: string, sessionId?: string | null): Promise<string> => {
     let retryCount = 0;
     const maxRetries = 2;
 
-    const attemptSend = async (): Promise<DualResponse> => {
+    const attemptSend = async (): Promise<string> => {
       try {
         console.log('Sending message to AI service via Supabase Edge Function');
         
+        // Ensure we have a valid session before making the request
         const validSession = await ensureValidSession();
         
         if (!validSession) {
@@ -90,6 +87,7 @@ export const useN8nWebhook = () => {
           } : null
         };
 
+        // Add session_id if provided
         if (sessionId) {
           requestBody.session_id = sessionId;
         }
@@ -99,6 +97,7 @@ export const useN8nWebhook = () => {
         });
 
         if (error) {
+          // Check if it's an authentication error
           if (error.message?.includes('JWT') || error.message?.includes('expired') || error.message?.includes('401')) {
             console.log('Authentication error detected:', error.message);
             throw new Error('AUTH_ERROR');
@@ -110,26 +109,20 @@ export const useN8nWebhook = () => {
           throw new Error('Invalid response from AI service');
         }
 
-        console.log('Received dual response from AI service:', {
-          hasResponse: !!data.response,
-          hasReport: !!data.report,
-          reportType: data.reportType
-        });
-
-        return {
-          response: data.response,
-          report: data.report,
-          reportType: data.reportType
-        };
+        console.log('Received response from AI service:', data);
+        return data.response;
       } catch (error: any) {
         console.error(`Attempt ${retryCount + 1} failed:`, error);
         
+        // If it's an auth error and we haven't exceeded retries, try again
         if (error.message === 'AUTH_ERROR' && retryCount < maxRetries) {
           retryCount++;
           console.log(`Retrying request (attempt ${retryCount + 1}/${maxRetries + 1})...`);
           
+          // Force session refresh before retry
           try {
             await supabase.auth.refreshSession();
+            // Wait a moment before retrying
             await new Promise(resolve => setTimeout(resolve, 1000));
             return attemptSend();
           } catch (refreshError) {
@@ -164,12 +157,13 @@ export const useN8nWebhook = () => {
         variant: "destructive",
       });
       
+      // Fallback response when AI service is unavailable
       throw error;
     }
   }, [toast, user, ensureValidSession]);
 
   return {
     sendMessageToN8n,
-    isConfigured: true,
+    isConfigured: true, // Always true since we're using Supabase secrets
   };
 };

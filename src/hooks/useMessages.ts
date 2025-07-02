@@ -1,19 +1,25 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Message, initialMessages, formatTimestamp } from '@/constants/aiAssistant';
-import { useN8nWebhook, DualResponse } from '@/hooks/useN8nWebhook';
+import { useN8nWebhook } from '@/hooks/useN8nWebhook';
 import { useChatHistory } from '@/hooks/useChatHistory';
-import { useAdvancedCanvas } from '@/hooks/useAdvancedCanvas';
 
 export const useMessages = (currentSessionId: string | null) => {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [isTyping, setIsTyping] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [canvasState, setCanvasState] = useState<{
+    isOpen: boolean;
+    messageId: string | null;
+    content: string;
+  }>({
+    isOpen: false,
+    messageId: null,
+    content: ''
+  });
   const viewportRef = useRef<HTMLDivElement>(null);
   const { sendMessageToN8n, isConfigured } = useN8nWebhook();
   const { history, addMessage } = useChatHistory(currentSessionId);
-  const { canvasState, handleAIResponse, toggleCanvasMode, closeCanvas, openCanvas } = useAdvancedCanvas(currentSessionId);
 
   const scrollToBottom = () => {
     if (viewportRef.current) {
@@ -34,16 +40,18 @@ export const useMessages = (currentSessionId: string | null) => {
     
     if (currentSessionId && history.length > 0) {
       console.log('useMessages: Loading history for session:', currentSessionId);
+      // Convert history to messages format, parsing out USER: and AI: prefixes
       const historyMessages: Message[] = history.map((item) => {
         let text = item.message;
         let sender: 'user' | 'ai' = 'user';
         
+        // Parse the message to determine sender and clean text
         if (text.startsWith('USER: ')) {
           sender = 'user';
-          text = text.substring(6);
+          text = text.substring(6); // Remove "USER: " prefix
         } else if (text.startsWith('AI: ')) {
           sender = 'ai';
-          text = text.substring(4);
+          text = text.substring(4); // Remove "AI: " prefix
         }
         
         return {
@@ -58,6 +66,7 @@ export const useMessages = (currentSessionId: string | null) => {
       setMessages([...initialMessages, ...historyMessages]);
     } else {
       console.log('useMessages: No session or empty history, showing initial messages only');
+      // Reset to initial messages for new sessions or when no session is selected
       setMessages([...initialMessages]);
     }
     
@@ -79,7 +88,7 @@ export const useMessages = (currentSessionId: string | null) => {
     
     setMessages(prev => [...prev, newUserMessage]);
 
-    // Save user message to history
+    // Save user message to history without prefix
     if (currentSessionId) {
       await addMessage(`USER: ${finalMessageText}`);
     }
@@ -98,45 +107,21 @@ export const useMessages = (currentSessionId: string | null) => {
     setIsTyping(true);
     
     try {
-      const dualResponse: DualResponse = await sendMessageToN8n(finalMessageText, currentSessionId);
+      const aiResponseText = await sendMessageToN8n(finalMessageText, currentSessionId);
       
-      // Use advanced canvas system to handle the response
-      const canvasResult = await handleAIResponse(finalMessageText, dualResponse.response);
-      
-      let aiResponse: Message;
-      
-      if (canvasResult.chatMessage && canvasResult.documentId) {
-        // Create a canvas message with inline canvas component
-        aiResponse = {
-          id: uuidv4(),
-          text: canvasResult.chatMessage,
-          sender: 'ai',
-          timestamp: new Date(),
-          isCanvasMessage: true,
-          canvasData: {
-            documentId: canvasResult.documentId,
-            title: canvasResult.title || 'Document',
-            reportType: canvasResult.reportType || 'general_report'
-          }
-        };
-      } else {
-        // Regular text message
-        const displayText = canvasResult.chatMessage || dualResponse.response;
-        aiResponse = {
-          id: uuidv4(),
-          text: displayText,
-          sender: 'ai',
-          timestamp: new Date(),
-        };
-      }
+      const aiResponse: Message = {
+        id: uuidv4(),
+        text: aiResponseText,
+        sender: 'ai',
+        timestamp: new Date(),
+      };
       
       setMessages(prev => [...prev, aiResponse]);
       
-      // Save AI response to history
+      // Save AI response to history without showing prefix to user
       if (currentSessionId) {
-        await addMessage(`AI: ${aiResponse.text}`);
+        await addMessage(`AI: ${aiResponseText}`);
       }
-
     } catch (error) {
       const errorResponse: Message = {
         id: uuidv4(),
@@ -153,7 +138,6 @@ export const useMessages = (currentSessionId: string | null) => {
   const handleClearConversation = () => {
     console.log('useMessages: Clearing conversation');
     setMessages([initialMessages[0]]);
-    closeCanvas();
   };
 
   const handleDownloadChat = () => {
@@ -172,21 +156,34 @@ export const useMessages = (currentSessionId: string | null) => {
     URL.revokeObjectURL(url);
   };
 
-  // Legacy canvas handlers for backward compatibility
   const handleOpenCanvas = (messageId: string, content: string) => {
-    console.log('Legacy canvas open called, consider upgrading to advanced canvas');
-  };
-
-  const handleExpandCanvas = () => {
-    toggleCanvasMode();
+    setCanvasState({
+      isOpen: true,
+      messageId,
+      content
+    });
   };
 
   const handleCloseCanvas = () => {
-    closeCanvas();
+    setCanvasState({
+      isOpen: false,
+      messageId: null,
+      content: ''
+    });
   };
 
   const handleCanvasDownload = () => {
-    // This will be handled by the AdvancedCanvasView component
+    if (!canvasState.content) return;
+    
+    const blob = new Blob([canvasState.content], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ai-report-${new Date().toISOString().split('T')[0]}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   const handleCanvasPrint = () => {
@@ -202,19 +199,8 @@ export const useMessages = (currentSessionId: string | null) => {
     handleClearConversation,
     handleDownloadChat,
     isConfigured,
-    // Advanced canvas state
-    advancedCanvasState: canvasState,
-    handleToggleCanvasMode: toggleCanvasMode,
-    handleCloseAdvancedCanvas: closeCanvas,
-    handleOpenAdvancedCanvas: openCanvas,
-    // Legacy canvas handlers for backward compatibility
-    canvasState: {
-      mode: 'closed',
-      messageId: null,
-      content: '',
-    },
+    canvasState,
     handleOpenCanvas,
-    handleExpandCanvas,
     handleCloseCanvas,
     handleCanvasDownload,
     handleCanvasPrint

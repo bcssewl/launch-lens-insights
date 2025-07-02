@@ -6,32 +6,22 @@ import TypingIndicator from '@/components/assistant/TypingIndicator';
 import PerplexityEmptyState from '@/components/assistant/PerplexityEmptyState';
 import EnhancedChatInput from '@/components/assistant/EnhancedChatInput';
 import CanvasView from '@/components/assistant/CanvasView';
-import CanvasCompact from '@/components/assistant/CanvasCompact';
-import AdvancedCanvasView from '@/components/assistant/AdvancedCanvasView';
 import { Message } from '@/constants/aiAssistant';
-import { AdvancedCanvasState } from '@/hooks/useAdvancedCanvas';
 
 interface ChatAreaProps {
   messages: Message[];
   isTyping: boolean;
   viewportRef: React.RefObject<HTMLDivElement>;
   onSendMessage: (message: string) => void;
-  // Legacy canvas props for backward compatibility
   canvasState?: {
-    mode: 'closed' | 'compact' | 'expanded';
+    isOpen: boolean;
     messageId: string | null;
     content: string;
-    reportType?: 'business_analysis' | 'market_research' | 'financial_analysis' | 'general_report';
   };
   onOpenCanvas?: (messageId: string, content: string) => void;
-  onExpandCanvas?: () => void;
   onCloseCanvas?: () => void;
   onCanvasDownload?: () => void;
   onCanvasPrint?: () => void;
-  // Advanced canvas props
-  advancedCanvasState?: AdvancedCanvasState;
-  onToggleCanvasMode?: () => void;
-  onCloseAdvancedCanvas?: () => void;
 }
 
 const ChatArea: React.FC<ChatAreaProps> = ({
@@ -41,13 +31,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   onSendMessage,
   canvasState,
   onOpenCanvas,
-  onExpandCanvas,
   onCloseCanvas,
   onCanvasDownload,
-  onCanvasPrint,
-  advancedCanvasState,
-  onToggleCanvasMode,
-  onCloseAdvancedCanvas
+  onCanvasPrint
 }) => {
   const hasConversation = messages.length > 1 || isTyping;
 
@@ -61,37 +47,16 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           </div>
         </div>
         
-        {/* Advanced Canvas View */}
-        {advancedCanvasState && advancedCanvasState.mode !== 'closed' && advancedCanvasState.documentId && (
-          <AdvancedCanvasView
-            isOpen={true}
-            mode={advancedCanvasState.mode}
-            documentId={advancedCanvasState.documentId}
-            onClose={onCloseAdvancedCanvas || (() => {})}
-            onToggleMode={onToggleCanvasMode || (() => {})}
-          />
-        )}
-        
-        {/* Legacy Canvas Views for backward compatibility */}
+        {/* Canvas View */}
         {canvasState && (
-          <>
-            <CanvasCompact
-              isOpen={canvasState.mode === 'compact'}
-              onClose={onCloseCanvas || (() => {})}
-              onExpand={onExpandCanvas || (() => {})}
-              content={canvasState.content}
-              title="AI Report"
-              reportType={canvasState.reportType}
-            />
-            <CanvasView
-              isOpen={canvasState.mode === 'expanded'}
-              onClose={onCloseCanvas || (() => {})}
-              content={canvasState.content}
-              title="AI Report"
-              onDownload={onCanvasDownload}
-              onPrint={onCanvasPrint}
-            />
-          </>
+          <CanvasView
+            isOpen={canvasState.isOpen}
+            onClose={onCloseCanvas || (() => {})}
+            content={canvasState.content}
+            title="AI Report"
+            onDownload={onCanvasDownload}
+            onPrint={onCanvasPrint}
+          />
         )}
       </>
     );
@@ -128,37 +93,16 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         </div>
       </div>
 
-      {/* Advanced Canvas View */}
-      {advancedCanvasState && advancedCanvasState.mode !== 'closed' && advancedCanvasState.documentId && (
-        <AdvancedCanvasView
-          isOpen={true}
-          mode={advancedCanvasState.mode}
-          documentId={advancedCanvasState.documentId}
-          onClose={onCloseAdvancedCanvas || (() => {})}
-          onToggleMode={onToggleCanvasMode || (() => {})}
-        />
-      )}
-
-      {/* Legacy Canvas Views for backward compatibility */}
+      {/* Canvas View */}
       {canvasState && (
-        <>
-          <CanvasCompact
-            isOpen={canvasState.mode === 'compact'}
-            onClose={onCloseCanvas || (() => {})}
-            onExpand={onExpandCanvas || (() => {})}
-            content={canvasState.content}
-            title="AI Report"
-            reportType={canvasState.reportType}
-          />
-          <CanvasView
-            isOpen={canvasState.mode === 'expanded'}
-            onClose={onCloseCanvas || (() => {})}
-            content={canvasState.content}
-            title="AI Report"
-            onDownload={onCanvasDownload}
-            onPrint={onCanvasPrint}
-          />
-        </>
+        <CanvasView
+          isOpen={canvasState.isOpen}
+          onClose={onCloseCanvas || (() => {})}
+          content={canvasState.content}
+          title="AI Report"
+          onDownload={onCanvasDownload}
+          onPrint={onCanvasPrint}
+        />
       )}
     </>
   );
