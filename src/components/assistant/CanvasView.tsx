@@ -5,6 +5,7 @@ import CanvasHeader from './CanvasHeader';
 import CanvasChatPanel from './CanvasChatPanel';
 import CanvasReportPanel from './CanvasReportPanel';
 import { useCanvasKeyboardShortcuts } from './useCanvasKeyboardShortcuts';
+import { FloatingElements } from '@/components/landing/FloatingElements';
 import { Message } from '@/constants/aiAssistant';
 
 interface CanvasViewProps {
@@ -127,7 +128,10 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
       aria-modal="true"
       aria-labelledby="canvas-title"
     >
-      <div className="h-full flex flex-col animate-scale-in" onClick={(e) => e.stopPropagation()}>
+      <div className="h-full flex flex-col animate-scale-in apple-hero" onClick={(e) => e.stopPropagation()}>
+        {/* Floating Elements for consistent background */}
+        <FloatingElements />
+        
         {/* Header */}
         <CanvasHeader
           title={title}
@@ -139,7 +143,7 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
         />
 
         {/* Resizable Content Area */}
-        <div className="flex-1 bg-background/95 backdrop-blur-sm overflow-hidden">
+        <div className="flex-1 bg-background/10 backdrop-blur-sm overflow-hidden">
           <ResizablePanelGroup direction="horizontal" className="h-full">
             {/* Chat Panel */}
             {hasChat && (
