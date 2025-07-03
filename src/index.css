@@ -123,6 +123,43 @@
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
+/* Screen-only styles - Preserve normal Tailwind colors and layout */
+@media screen {
+  /* Ensure canvas report maintains normal styling on screen */
+  #canvas-report {
+    position: static !important;
+    background: transparent !important;
+    color: inherit !important;
+    font-family: inherit !important;
+    font-size: inherit !important;
+    line-height: inherit !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: auto !important;
+    height: auto !important;
+    visibility: visible !important;
+  }
+  
+  /* Preserve all child elements' normal styling */
+  #canvas-report * {
+    visibility: visible !important;
+    background: inherit !important;
+    color: inherit !important;
+    font-family: inherit !important;
+    font-size: inherit !important;
+    line-height: inherit !important;
+    border: inherit !important;
+    box-shadow: inherit !important;
+    text-shadow: inherit !important;
+  }
+  
+  /* Ensure body and all elements remain visible on screen */
+  body,
+  body * {
+    visibility: visible !important;
+  }
+}
+
 /* Print styles for Canvas PDF download - ONLY apply when printing */
 @media print {
   /* Hide everything by default */
@@ -299,11 +336,3 @@
     font-style: italic !important;
   }
 }
-
-/* Screen-only styles (not for print) */
-@media screen {
-  #canvas-report {
-    /* Normal screen styles - no special positioning */
-  }
-}
-
