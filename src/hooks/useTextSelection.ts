@@ -32,6 +32,24 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
       const range = selection.getRangeAt(0).cloneRange();
       range.collapse(false); // collapse to the end caret
       const rects = range.getClientRects();
+      
+      if (rects.length === 0) {
+        // Fallback to original range if no caret rects
+        const originalRange = selection.getRangeAt(0);
+        const fallbackRects = originalRange.getBoundingClientRect();
+        return {
+          top: fallbackRects.bottom,
+          left: fallbackRects.left,
+          width: 0,
+          height: 0,
+          right: fallbackRects.left,
+          bottom: fallbackRects.bottom,
+          x: fallbackRects.left,
+          y: fallbackRects.bottom,
+          toJSON: () => ({})
+        } as DOMRect;
+      }
+      
       const caretRect = rects[0]; // tiny box at the end of the selection
       
       if (caretRect && caretRect.width >= 0 && caretRect.height >= 0) {
@@ -40,8 +58,8 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
           top: caretRect.top,
           left: caretRect.left,
           width: 0,
-          height: 0,
-          right: caretRect.right,
+          height: caretRect.height,
+          right: caretRect.left,
           bottom: caretRect.bottom,
           x: caretRect.left,
           y: caretRect.top,
@@ -62,15 +80,6 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
   const isInsideTooltip = useCallback((el: Node | null) => {
     return tooltipRef.current?.contains(el as Node) || false;
   }, []);
-
-  // Debounced clear logic to avoid flicker
-  const scheduleClear = useCallback(() => {
-    requestAnimationFrame(() => {
-      if (!isInsideTooltip(document.activeElement)) {
-        clearSelection();
-      }
-    });
-  }, [isInsideTooltip, clearSelection]);
 
   // Use pointerup instead of mouseup for better performance
   useEffect(() => {
@@ -180,7 +189,7 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
       document.removeEventListener('mousedown', handleMouseDown);
       document.removeEventListener('selectionchange', handleSelectionChange);
     };
-  }, [containerRef, isVisible, clearSelection, getSelectionRect, isInsideTooltip, scheduleClear]);
+  }, [containerRef, isVisible, clearSelection, getSelectionRect, isInsideTooltip]);
 
   // Debounce scroll and resize listeners with requestAnimationFrame
   useEffect(() => {
