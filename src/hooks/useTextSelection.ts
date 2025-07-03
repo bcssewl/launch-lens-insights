@@ -19,7 +19,10 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
     setSelectedText('');
     setSelectionRect(null);
     setIsVisible(false);
-    window.getSelection()?.removeAllRanges();
+    const selection = window.getSelection();
+    if (selection) {
+      selection.removeAllRanges();
+    }
   }, []);
 
   useEffect(() => {
@@ -40,8 +43,10 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
         console.log('useTextSelection: Current selection:', selection);
         
         if (!selection || selection.rangeCount === 0) {
-          console.log('useTextSelection: No selection found');
-          clearSelection();
+          console.log('useTextSelection: No selection found, clearing');
+          setSelectedText('');
+          setSelectionRect(null);
+          setIsVisible(false);
           return;
         }
 
@@ -52,7 +57,9 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
         
         if (!text || text.length < 2) {
           console.log('useTextSelection: Text too short, clearing');
-          clearSelection();
+          setSelectedText('');
+          setSelectionRect(null);
+          setIsVisible(false);
           return;
         }
 
@@ -76,7 +83,9 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
           
           if (!isInContainer) {
             console.log('useTextSelection: Selection not in container, clearing');
-            clearSelection();
+            setSelectedText('');
+            setSelectionRect(null);
+            setIsVisible(false);
             return;
           }
         }
@@ -93,12 +102,14 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
           setIsVisible(true);
         } else {
           console.log('useTextSelection: Invalid rect dimensions, clearing');
-          clearSelection();
+          setSelectedText('');
+          setSelectionRect(null);
+          setIsVisible(false);
         }
-      }, 100); // 100ms debounce
+      }, 150); // Increased debounce slightly for better stability
     };
 
-    // Only listen to selectionchange - remove mousedown listener that was interfering
+    // Listen to selectionchange events
     document.addEventListener('selectionchange', handleSelectionChange);
     
     return () => {
@@ -108,7 +119,7 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
         clearTimeout(debounceTimeoutRef.current);
       }
     };
-  }, [containerRef, clearSelection]);
+  }, [containerRef]);
 
   return {
     selectedText,
