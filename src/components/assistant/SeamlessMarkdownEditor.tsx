@@ -30,7 +30,7 @@ const SeamlessMarkdownEditor: React.FC<SeamlessMarkdownEditorProps> = ({
   const isInitializedRef = useRef(false);
   const saveTimeoutRef = useRef<NodeJS.Timeout>();
   
-  const { selectedText, selectionRect, isVisible, clearSelection } = useTextSelection(containerRef);
+  const { selectedText, selectionRect, isVisible, clearSelection, tooltipRef } = useTextSelection(containerRef);
 
   // Configure marked for consistent HTML output
   const configureMarked = useCallback(() => {
@@ -260,7 +260,7 @@ const SeamlessMarkdownEditor: React.FC<SeamlessMarkdownEditorProps> = ({
           rect={selectionRect}
           onFollowUp={handleFollowUp}
           onClose={handleClose}
-          containerRef={containerRef}
+          tooltipRef={tooltipRef}
         />
       )}
     </div>

@@ -27,7 +27,7 @@ const InlineMarkdownEditor: React.FC<InlineMarkdownEditorProps> = ({
   className
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const { selectedText, selectionRect, isVisible, clearSelection } = useTextSelection(containerRef);
+  const { selectedText, selectionRect, isVisible, clearSelection, tooltipRef } = useTextSelection(containerRef);
   const [showFollowUpDialog, setShowFollowUpDialog] = useState(false);
   const [preservedText, setPreservedText] = useState('');
 
@@ -209,7 +209,7 @@ const InlineMarkdownEditor: React.FC<InlineMarkdownEditorProps> = ({
           rect={selectionRect}
           onFollowUp={handleFollowUpSubmit}
           onClose={handleTooltipClose}
-          containerRef={containerRef}
+          tooltipRef={tooltipRef}
         />
       )}
 
