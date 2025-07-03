@@ -38,8 +38,7 @@ const SeamlessMarkdownEditor: React.FC<SeamlessMarkdownEditorProps> = ({
   const configureMarked = useCallback(() => {
     marked.setOptions({
       breaks: true,
-      gfm: true,
-      smartypants: false
+      gfm: true
     });
   }, []);
 
