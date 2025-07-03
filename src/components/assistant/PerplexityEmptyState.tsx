@@ -44,12 +44,12 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({ onSendMessa
   };
 
   const handleImageError = () => {
-    console.error('Failed to load image: /lovable-uploads/a8ac55c8-457a-45f3-91df-18138d557b7f.png');
+    console.error('Failed to load image: https://jtnedstugykvfthttsumh.supabase.co/storage/v1/object/public/lovable-uploads/a8ac55c8-457a-45f3-91df-18138d557b7f.png');
     setImageError(true);
   };
 
   const handleImageLoad = () => {
-    console.log('Image loaded successfully: /lovable-uploads/a8ac55c8-457a-45f3-91df-18138d557b7f.png');
+    console.log('Image loaded successfully: https://jtnedstugykvfthttsumh.supabase.co/storage/v1/object/public/lovable-uploads/a8ac55c8-457a-45f3-91df-18138d557b7f.png');
     setImageError(false);
   };
 
@@ -61,7 +61,7 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({ onSendMessa
           <div className="flex items-center justify-center mb-6">
             {!imageError ? (
               <img 
-                src="/lovable-uploads/a8ac55c8-457a-45f3-91df-18138d557b7f.png" 
+                src="https://jtnedstugykvfthttsumh.supabase.co/storage/v1/object/public/lovable-uploads/a8ac55c8-457a-45f3-91df-18138d557b7f.png" 
                 alt="Optivise NEXUS"
                 className="h-16 w-auto"
                 onError={handleImageError}
