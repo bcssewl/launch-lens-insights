@@ -13,12 +13,15 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
   const [selectionRect, setSelectionRect] = useState<DOMRect | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const stabilityTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastValidSelectionRef = useRef<{ text: string; rect: DOMRect } | null>(null);
 
   const clearSelection = useCallback(() => {
     console.log('useTextSelection: Clearing selection');
     setSelectedText('');
     setSelectionRect(null);
     setIsVisible(false);
+    lastValidSelectionRef.current = null;
     const selection = window.getSelection();
     if (selection) {
       selection.removeAllRanges();
@@ -138,9 +141,12 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
     const handleSelectionChange = () => {
       console.log('useTextSelection: Selection change event fired');
       
-      // Clear existing timeout
+      // Clear existing timeouts
       if (debounceTimeoutRef.current) {
         clearTimeout(debounceTimeoutRef.current);
+      }
+      if (stabilityTimeoutRef.current) {
+        clearTimeout(stabilityTimeoutRef.current);
       }
 
       // Debounce the selection handling
@@ -149,10 +155,20 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
         console.log('useTextSelection: Current selection:', selection);
         
         if (!selection || selection.rangeCount === 0) {
-          console.log('useTextSelection: No selection found, clearing');
-          setSelectedText('');
-          setSelectionRect(null);
-          setIsVisible(false);
+          console.log('useTextSelection: No selection found');
+          // Don't clear immediately, wait a bit to see if it's just a temporary state
+          stabilityTimeoutRef.current = setTimeout(() => {
+            if (lastValidSelectionRef.current) {
+              console.log('useTextSelection: Restoring last valid selection');
+              setSelectedText(lastValidSelectionRef.current.text);
+              setSelectionRect(lastValidSelectionRef.current.rect);
+              setIsVisible(true);
+            } else {
+              setSelectedText('');
+              setSelectionRect(null);
+              setIsVisible(false);
+            }
+          }, 100);
           return;
         }
 
@@ -167,10 +183,20 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
 
         // Skip if range is collapsed (no actual selection)
         if (range.collapsed) {
-          console.log('useTextSelection: Range is collapsed, clearing');
-          setSelectedText('');
-          setSelectionRect(null);
-          setIsVisible(false);
+          console.log('useTextSelection: Range is collapsed');
+          // Use stability timeout here too
+          stabilityTimeoutRef.current = setTimeout(() => {
+            if (lastValidSelectionRef.current) {
+              console.log('useTextSelection: Keeping last valid selection after collapse');
+              setSelectedText(lastValidSelectionRef.current.text);
+              setSelectionRect(lastValidSelectionRef.current.rect);
+              setIsVisible(true);
+            } else {
+              setSelectedText('');
+              setSelectionRect(null);
+              setIsVisible(false);
+            }
+          }, 100);
           return;
         }
 
@@ -200,6 +226,7 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
             setSelectedText('');
             setSelectionRect(null);
             setIsVisible(false);
+            lastValidSelectionRef.current = null;
             return;
           }
 
@@ -209,6 +236,7 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
             setSelectedText('');
             setSelectionRect(null);
             setIsVisible(false);
+            lastValidSelectionRef.current = null;
             return;
           }
         }
@@ -220,6 +248,7 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
           setSelectedText('');
           setSelectionRect(null);
           setIsVisible(false);
+          lastValidSelectionRef.current = null;
           return;
         }
 
@@ -233,6 +262,7 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
           setSelectedText('');
           setSelectionRect(null);
           setIsVisible(false);
+          lastValidSelectionRef.current = null;
           return;
         }
 
@@ -243,6 +273,10 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
         // Only show tooltip if rect has valid dimensions
         if (rect.width > 0 && rect.height > 0) {
           console.log('useTextSelection: Setting visible selection');
+          
+          // Store as last valid selection
+          lastValidSelectionRef.current = { text, rect };
+          
           setSelectedText(text);
           setSelectionRect(rect);
           setIsVisible(true);
@@ -251,18 +285,37 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
           setSelectedText('');
           setSelectionRect(null);
           setIsVisible(false);
+          lastValidSelectionRef.current = null;
         }
-      }, 200); // Slightly longer debounce for stability
+      }, 150); // Slightly shorter debounce for better responsiveness
+    };
+
+    // Prevent tooltip from disappearing when clicking on it
+    const handleMouseDown = (e: MouseEvent) => {
+      const target = e.target as Element;
+      if (target && (
+        target.closest('[data-selection-tooltip]') || 
+        target.closest('[data-tooltip-trigger]')
+      )) {
+        console.log('useTextSelection: Click on tooltip detected, preventing selection clear');
+        e.preventDefault();
+        return;
+      }
     };
 
     // Listen to selectionchange events
     document.addEventListener('selectionchange', handleSelectionChange);
+    document.addEventListener('mousedown', handleMouseDown, true);
     
     return () => {
       console.log('useTextSelection: Cleaning up event listeners');
       document.removeEventListener('selectionchange', handleSelectionChange);
+      document.removeEventListener('mousedown', handleMouseDown, true);
       if (debounceTimeoutRef.current) {
         clearTimeout(debounceTimeoutRef.current);
+      }
+      if (stabilityTimeoutRef.current) {
+        clearTimeout(stabilityTimeoutRef.current);
       }
     };
   }, [containerRef, extractTextFromRange, validateSelectionBounds, normalizeSelection]);
