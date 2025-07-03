@@ -43,9 +43,7 @@ const CanvasReportPanel: React.FC<CanvasReportPanelProps> = ({
     <ResizablePanel defaultSize={hasChat ? 60 : 100}>
       <div className="h-full overflow-auto">
         <div className="max-w-4xl mx-auto p-8">
-          {/* Wrap content in canvas-report container for PDF printing */}
           <div 
-            id="canvas-report"
             style={{ 
               ...canvasStyles,
               userSelect: 'text',

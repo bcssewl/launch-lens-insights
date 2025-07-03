@@ -15,7 +15,6 @@ interface CanvasViewProps {
   title?: string;
   onDownload?: () => void;
   onPrint?: () => void;
-  onPdfDownload?: () => void;
   messages?: Message[];
   isTyping?: boolean;
   viewportRef?: React.RefObject<HTMLDivElement>;
@@ -39,7 +38,6 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
   title = "Report",
   onDownload,
   onPrint,
-  onPdfDownload,
   messages = [],
   isTyping = false,
   viewportRef,
@@ -58,22 +56,12 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
     setCurrentContent(content);
   }, [content]);
 
-  // PDF download handler
-  const handlePdfDownload = useCallback(() => {
-    console.log('CanvasView: Initiating PDF download');
-    
-    // Brief delay to ensure DOM is ready
-    setTimeout(() => {
-      window.print();
-    }, 100);
-  }, []);
-
-  // Use keyboard shortcuts hook with PDF download
+  // Use keyboard shortcuts hook
   useCanvasKeyboardShortcuts({
     isOpen,
     isEditing: false, // Always false since we have seamless editing
     onClose,
-    onPrint: handlePdfDownload, // Use PDF download for Ctrl+P
+    onPrint,
     onToggleEdit: () => {} // No-op since we don't have edit mode
   });
 
@@ -141,7 +129,6 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
           isEditing={false} // Always false since we have seamless editing
           onDownload={onDownload}
           onPrint={onPrint}
-          onPdfDownload={onPdfDownload || handlePdfDownload}
           onEdit={() => {}} // No-op since we don't need edit mode
           onClose={onClose}
         />

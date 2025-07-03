@@ -201,13 +201,6 @@ export const useMessages = (currentSessionId: string | null) => {
     window.print();
   }, []);
 
-  // New PDF download handler
-  const handleCanvasPdfDownload = useCallback(() => {
-    console.log('useMessages: Downloading canvas as PDF');
-    // Use the browser's print dialog which allows saving as PDF
-    window.print();
-  }, []);
-
   return {
     messages,
     isTyping,
@@ -221,7 +214,6 @@ export const useMessages = (currentSessionId: string | null) => {
     handleOpenCanvas,
     handleCloseCanvas,
     handleCanvasDownload,
-    handleCanvasPrint,
-    handleCanvasPdfDownload
+    handleCanvasPrint
   };
 };
