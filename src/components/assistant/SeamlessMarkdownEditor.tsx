@@ -1,3 +1,4 @@
+
 import React, { useRef, useEffect, useCallback, useState } from 'react';
 import { cn } from '@/lib/utils';
 import TextSelectionTooltip from './TextSelectionTooltip';
@@ -29,6 +30,7 @@ const SeamlessMarkdownEditor: React.FC<SeamlessMarkdownEditorProps> = ({
   const [isAutoSaving, setIsAutoSaving] = useState(false);
   const [lastSavedContent, setLastSavedContent] = useState(content);
   const isInitializedRef = useRef(false);
+  const saveTimeoutRef = useRef<NodeJS.Timeout>();
   
   const { selectedText, selectionRect, isVisible, clearSelection } = useTextSelection(containerRef);
   const [showFollowUpDialog, setShowFollowUpDialog] = useState(false);
@@ -54,13 +56,11 @@ const SeamlessMarkdownEditor: React.FC<SeamlessMarkdownEditorProps> = ({
       linkReferenceStyle: 'full'
     });
     
-    // Add custom rules for better conversion
     service.addRule('lineBreak', {
       filter: 'br',
       replacement: () => '\n'
     });
 
-    // Handle paragraphs properly
     service.addRule('paragraph', {
       filter: 'p',
       replacement: (content) => {
@@ -71,7 +71,7 @@ const SeamlessMarkdownEditor: React.FC<SeamlessMarkdownEditorProps> = ({
     return service;
   }, []);
 
-  // Convert markdown to HTML for display - only called once on load
+  // Convert markdown to HTML for display
   const markdownToHtml = useCallback(async (markdown: string): Promise<string> => {
     if (!markdown.trim()) return '<p></p>';
     
@@ -82,12 +82,11 @@ const SeamlessMarkdownEditor: React.FC<SeamlessMarkdownEditorProps> = ({
       return html;
     } catch (error) {
       console.error('Error converting markdown to HTML:', error);
-      // Fallback: wrap in paragraph
       return `<p>${markdown}</p>`;
     }
   }, [configureMarked]);
 
-  // Convert HTML back to markdown for storage - only called on save
+  // Convert HTML back to markdown for storage
   const htmlToMarkdown = useCallback((html: string): string => {
     if (!html.trim()) return '';
     
@@ -98,7 +97,6 @@ const SeamlessMarkdownEditor: React.FC<SeamlessMarkdownEditorProps> = ({
       return markdown.trim();
     } catch (error) {
       console.error('Error converting HTML to markdown:', error);
-      // Fallback: extract text content
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = html;
       return tempDiv.textContent || tempDiv.innerText || '';
@@ -107,15 +105,26 @@ const SeamlessMarkdownEditor: React.FC<SeamlessMarkdownEditorProps> = ({
 
   // Auto-save functionality with proper error handling
   const saveToServer = useCallback(async (markdownContent: string) => {
-    if (!documentId || markdownContent === lastSavedContent) {
-      console.log('Skipping save - no changes or no document ID');
+    if (!documentId) {
+      console.log('No document ID available for saving');
+      return;
+    }
+
+    if (markdownContent === lastSavedContent) {
+      console.log('No changes detected, skipping save');
       return;
     }
     
-    console.log('Auto-saving content to server');
+    console.log('Auto-saving content to server, document ID:', documentId);
     setIsAutoSaving(true);
     
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.error('User not authenticated for saving');
+        return;
+      }
+
       const { error } = await supabase
         .from('canvas_documents')
         .update({ 
@@ -123,7 +132,8 @@ const SeamlessMarkdownEditor: React.FC<SeamlessMarkdownEditorProps> = ({
           title: title,
           updated_at: new Date().toISOString()
         })
-        .eq('id', documentId);
+        .eq('id', documentId)
+        .eq('created_by', user.id); // Ensure user owns the document
 
       if (error) {
         console.error('Auto-save failed:', error);
@@ -131,10 +141,9 @@ const SeamlessMarkdownEditor: React.FC<SeamlessMarkdownEditorProps> = ({
       }
       
       setLastSavedContent(markdownContent);
-      console.log('Auto-save successful');
+      console.log('Auto-save successful for document:', documentId);
     } catch (error) {
       console.error('Auto-save error:', error);
-      // Don't throw - just log the error to avoid breaking the UI
     } finally {
       setIsAutoSaving(false);
     }
@@ -153,7 +162,6 @@ const SeamlessMarkdownEditor: React.FC<SeamlessMarkdownEditorProps> = ({
           console.log('Editor initialized successfully');
         } catch (error) {
           console.error('Failed to initialize editor:', error);
-          // Fallback: set as plain text
           if (editorRef.current) {
             editorRef.current.textContent = content;
             isInitializedRef.current = true;
@@ -170,24 +178,28 @@ const SeamlessMarkdownEditor: React.FC<SeamlessMarkdownEditorProps> = ({
     const editorElement = editorRef.current;
     if (!editorElement) return;
 
-    let saveTimeout: NodeJS.Timeout;
-
     const handleInput = () => {
       try {
         const htmlContent = editorElement.innerHTML;
-        console.log('Content changed, processing...');
+        console.log('Content changed in editor');
         
         // Convert to markdown for storage and parent update
         const markdownContent = htmlToMarkdown(htmlContent);
+        console.log('Converted to markdown, length:', markdownContent.length);
         
-        // Immediately update parent component for AI interactions
+        // Immediately update parent component
         onContentChange(markdownContent);
         
-        // Debounced auto-save to server
-        if (saveTimeout) clearTimeout(saveTimeout);
-        saveTimeout = setTimeout(() => {
+        // Clear existing timeout
+        if (saveTimeoutRef.current) {
+          clearTimeout(saveTimeoutRef.current);
+        }
+        
+        // Set new debounced save
+        saveTimeoutRef.current = setTimeout(() => {
+          console.log('Triggering auto-save after debounce');
           saveToServer(markdownContent);
-        }, 2000); // 2 second delay for better UX
+        }, 1000); // Reduced to 1 second for better UX
       } catch (error) {
         console.error('Error handling input change:', error);
       }
@@ -197,7 +209,9 @@ const SeamlessMarkdownEditor: React.FC<SeamlessMarkdownEditorProps> = ({
     
     return () => {
       editorElement.removeEventListener('input', handleInput);
-      if (saveTimeout) clearTimeout(saveTimeout);
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
     };
   }, [htmlToMarkdown, onContentChange, saveToServer]);
 
