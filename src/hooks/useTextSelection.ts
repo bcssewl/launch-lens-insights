@@ -72,13 +72,15 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
         return;
       }
       
-      // Clear tooltip when clicking elsewhere
+      // Only clear tooltip when starting a new interaction outside the tooltip
       if (isVisible) {
         clearSelection();
       }
     };
 
+    // Only listen for mouseup to detect new selections
     document.addEventListener('mouseup', handleMouseUp);
+    // Only listen for mousedown to clear when starting new interactions
     document.addEventListener('mousedown', handleMouseDown);
     
     return () => {
