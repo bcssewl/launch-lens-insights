@@ -169,6 +169,7 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
               onSave={handleSaveEdit}
               onCancel={handleCancelEdit}
               hasChat={hasChat}
+              onSendMessage={onSendMessage}
             />
           </ResizablePanelGroup>
         </div>

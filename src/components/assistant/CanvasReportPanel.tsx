@@ -1,7 +1,7 @@
 
 import React, { useMemo } from 'react';
 import { ResizablePanel } from '@/components/ui/resizable';
-import MarkdownRenderer from './MarkdownRenderer';
+import SelectableMarkdownRenderer from './SelectableMarkdownRenderer';
 import CanvasEditor from './CanvasEditor';
 
 interface CanvasReportPanelProps {
@@ -10,6 +10,7 @@ interface CanvasReportPanelProps {
   onSave: (newContent: string) => void;
   onCancel: () => void;
   hasChat: boolean;
+  onSendMessage?: (message: string) => void;
 }
 
 const CanvasReportPanel: React.FC<CanvasReportPanelProps> = ({
@@ -17,7 +18,8 @@ const CanvasReportPanel: React.FC<CanvasReportPanelProps> = ({
   content,
   onSave,
   onCancel,
-  hasChat
+  hasChat,
+  onSendMessage
 }) => {
   // Memoize canvas styles to prevent recalculation
   const canvasStyles = useMemo(() => ({
@@ -41,9 +43,10 @@ const CanvasReportPanel: React.FC<CanvasReportPanelProps> = ({
               className="prose prose-gray dark:prose-invert max-w-none"
               style={canvasStyles}
             >
-              <MarkdownRenderer 
+              <SelectableMarkdownRenderer 
                 content={content} 
                 className="canvas-content"
+                onSendMessage={onSendMessage}
               />
             </div>
           </div>
