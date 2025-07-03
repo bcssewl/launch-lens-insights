@@ -5,6 +5,8 @@ import TextSelectionTooltip from './TextSelectionTooltip';
 import FollowUpDialog from './FollowUpDialog';
 import { useTextSelection } from '@/hooks/useTextSelection';
 import { supabase } from '@/integrations/supabase/client';
+import { marked } from 'marked';
+import TurndownService from 'turndown';
 
 interface SeamlessMarkdownEditorProps {
   content: string;
@@ -34,41 +36,61 @@ const SeamlessMarkdownEditor: React.FC<SeamlessMarkdownEditorProps> = ({
   const [showFollowUpDialog, setShowFollowUpDialog] = useState(false);
   const [preservedText, setPreservedText] = useState('');
 
+  // Initialize conversion libraries
+  const turndownService = useCallback(() => {
+    const service = new TurndownService({
+      headingStyle: 'atx',
+      codeBlockStyle: 'fenced'
+    });
+    
+    // Configure turndown to handle common elements properly
+    service.addRule('lineBreak', {
+      filter: 'br',
+      replacement: () => '\n'
+    });
+    
+    return service;
+  }, []);
+
   // Convert markdown to HTML for display
-  const markdownToHtml = useCallback((markdown: string) => {
-    return markdown
-      .replace(/^# (.+)$/gm, '<h1>$1</h1>')
-      .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-      .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-      .replace(/^\- (.+)$/gm, '<ul><li>$1</li></ul>')
-      .replace(/^\* (.+)$/gm, '<ul><li>$1</li></ul>')
-      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.+?)\*/g, '<em>$1</em>')
-      .replace(/`(.+?)`/g, '<code>$1</code>')
-      .replace(/\n\n/g, '</p><p>')
-      .replace(/\n/g, '<br>')
-      .replace(/^(.+)$/gm, '<p>$1</p>')
-      .replace(/<\/ul>\s*<ul>/g, '') // Merge consecutive lists
-      .replace(/<p><h([1-6])>/g, '<h$1>') // Fix headers wrapped in p tags
-      .replace(/<\/h([1-6])><\/p>/g, '</h$1>');
+  const markdownToHtml = useCallback(async (markdown: string): Promise<string> => {
+    try {
+      console.log('Converting markdown to HTML:', markdown.substring(0, 100) + '...');
+      
+      // Configure marked for better HTML output
+      marked.setOptions({
+        breaks: true,
+        gfm: true
+      });
+      
+      const html = await marked(markdown);
+      console.log('Converted HTML:', html.substring(0, 100) + '...');
+      return html;
+    } catch (error) {
+      console.error('Error converting markdown to HTML:', error);
+      // Fallback: return the original markdown wrapped in a paragraph
+      return `<p>${markdown}</p>`;
+    }
   }, []);
 
   // Convert HTML back to markdown
-  const htmlToMarkdown = useCallback((html: string) => {
-    return html
-      .replace(/<h1[^>]*>(.+?)<\/h1>/gi, '# $1\n\n')
-      .replace(/<h2[^>]*>(.+?)<\/h2>/gi, '## $1\n\n')
-      .replace(/<h3[^>]*>(.+?)<\/h3>/gi, '### $1\n\n')
-      .replace(/<strong[^>]*>(.+?)<\/strong>/gi, '**$1**')
-      .replace(/<em[^>]*>(.+?)<\/em>/gi, '*$1*')
-      .replace(/<code[^>]*>(.+?)<\/code>/gi, '`$1`')
-      .replace(/<li[^>]*>(.+?)<\/li>/gi, '- $1\n')
-      .replace(/<ul[^>]*>|<\/ul>/gi, '')
-      .replace(/<p[^>]*>(.+?)<\/p>/gi, '$1\n\n')
-      .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/\n{3,}/g, '\n\n') // Remove excessive newlines
-      .trim();
-  }, []);
+  const htmlToMarkdown = useCallback((html: string): string => {
+    try {
+      console.log('Converting HTML to markdown:', html.substring(0, 100) + '...');
+      
+      const service = turndownService();
+      const markdown = service.turndown(html);
+      
+      console.log('Converted markdown:', markdown.substring(0, 100) + '...');
+      return markdown.trim();
+    } catch (error) {
+      console.error('Error converting HTML to markdown:', error);
+      // Fallback: try to extract text content
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = html;
+      return tempDiv.textContent || tempDiv.innerText || html;
+    }
+  }, [turndownService]);
 
   // Auto-save functionality
   const saveToServer = useCallback(async (contentToSave: string) => {
@@ -89,12 +111,14 @@ const SeamlessMarkdownEditor: React.FC<SeamlessMarkdownEditorProps> = ({
 
       if (error) {
         console.error('SeamlessMarkdownEditor: Auto-save failed:', error);
+        throw error;
       } else {
         setLastSavedContent(contentToSave);
         console.log('SeamlessMarkdownEditor: Auto-save successful');
       }
     } catch (error) {
       console.error('SeamlessMarkdownEditor: Auto-save error:', error);
+      throw error;
     } finally {
       setIsAutoSaving(false);
     }
@@ -102,11 +126,26 @@ const SeamlessMarkdownEditor: React.FC<SeamlessMarkdownEditorProps> = ({
 
   // Initialize editor content only once
   useEffect(() => {
-    if (editorRef.current && content && !isInitializedRef.current) {
-      editorRef.current.innerHTML = markdownToHtml(content);
-      setLastSavedContent(content);
-      isInitializedRef.current = true;
-    }
+    const initializeEditor = async () => {
+      if (editorRef.current && content && !isInitializedRef.current) {
+        try {
+          const html = await markdownToHtml(content);
+          editorRef.current.innerHTML = html;
+          setLastSavedContent(content);
+          isInitializedRef.current = true;
+          console.log('SeamlessMarkdownEditor: Editor initialized with HTML');
+        } catch (error) {
+          console.error('SeamlessMarkdownEditor: Failed to initialize editor:', error);
+          // Fallback: set content as plain text
+          if (editorRef.current) {
+            editorRef.current.textContent = content;
+            isInitializedRef.current = true;
+          }
+        }
+      }
+    };
+
+    initializeEditor();
   }, [content, markdownToHtml]);
 
   // Set up input event listener for uncontrolled editing
@@ -117,17 +156,27 @@ const SeamlessMarkdownEditor: React.FC<SeamlessMarkdownEditorProps> = ({
     let saveTimeout: NodeJS.Timeout;
 
     const handleInput = () => {
-      const htmlContent = editorElement.innerHTML;
-      const markdownContent = htmlToMarkdown(htmlContent);
-      
-      // Update parent component immediately for AI interactions
-      onContentChange(markdownContent);
-      
-      // Debounced auto-save
-      if (saveTimeout) clearTimeout(saveTimeout);
-      saveTimeout = setTimeout(() => {
-        saveToServer(markdownContent);
-      }, 1000);
+      try {
+        const htmlContent = editorElement.innerHTML;
+        console.log('SeamlessMarkdownEditor: Content changed, converting to markdown');
+        
+        const markdownContent = htmlToMarkdown(htmlContent);
+        
+        // Update parent component immediately for AI interactions
+        onContentChange(markdownContent);
+        
+        // Debounced auto-save
+        if (saveTimeout) clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(async () => {
+          try {
+            await saveToServer(markdownContent);
+          } catch (error) {
+            console.error('SeamlessMarkdownEditor: Save failed:', error);
+          }
+        }, 1000);
+      } catch (error) {
+        console.error('SeamlessMarkdownEditor: Error handling input:', error);
+      }
     };
 
     editorElement.addEventListener('input', handleInput);
