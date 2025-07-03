@@ -8,33 +8,44 @@ interface TextSelectionTooltipProps {
   rect: DOMRect;
   onFollowUp: (question: string) => void;
   onClose: () => void;
-  containerRef?: React.RefObject<HTMLElement>;
+  tooltipRef: React.RefObject<HTMLDivElement>;
 }
 
 const TextSelectionTooltip: React.FC<TextSelectionTooltipProps> = ({ 
   rect, 
   onFollowUp, 
-  onClose 
+  onClose,
+  tooltipRef
 }) => {
   const [showInput, setShowInput] = useState(false);
   const [question, setQuestion] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
-  const tooltipRef = useRef<HTMLDivElement>(null);
 
-  // Calculate tooltip position using caret position (ChatGPT-like)
+  // Calculate tooltip position
   const calculateTooltipPosition = () => {
     const tooltipHeight = showInput ? 48 : 40;
     const tooltipWidth = showInput ? 350 : 120;
     
-    // Position tooltip below the caret, using the actual caret position
-    let left = rect.left;
-    let top = rect.top + rect.height + 8; // 8px below the caret
+    console.log('TextSelectionTooltip: Calculating position with rect:', {
+      top: rect.top,
+      left: rect.left,
+      bottom: rect.bottom,
+      right: rect.right,
+      width: rect.width,
+      height: rect.height
+    });
     
-    // Boundary checks to ensure tooltip stays in viewport
+    // Position tooltip below the selection end
+    let left = rect.left;
+    let top = rect.bottom + 8; // 8px below the selection
+    
+    console.log('TextSelectionTooltip: Initial position:', { top, left });
+    
+    // Boundary checks
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
     
-    // Horizontal boundary check - adjust if tooltip would be clipped
+    // Horizontal boundary check
     if (left + tooltipWidth > viewportWidth - 10) {
       left = viewportWidth - tooltipWidth - 10;
     }
@@ -42,21 +53,20 @@ const TextSelectionTooltip: React.FC<TextSelectionTooltipProps> = ({
       left = 10;
     }
     
-    // Vertical boundary check - if tooltip would be clipped at bottom, show above
+    // Vertical boundary check
     if (top + tooltipHeight > viewportHeight - 10) {
-      top = rect.top - tooltipHeight - 8; // Show above caret
-      // If still clipped, clamp to viewport
+      top = rect.top - tooltipHeight - 8; // Show above
       if (top < 10) {
         top = 10;
       }
     }
     
+    console.log('TextSelectionTooltip: Final position:', { top, left });
     return { top, left };
   };
 
   const { top, left } = calculateTooltipPosition();
 
-  // Use position: fixed to stay outside scroll containers (like ChatGPT)
   const tooltipStyle: React.CSSProperties = {
     position: 'fixed',
     left: left,
@@ -76,11 +86,11 @@ const TextSelectionTooltip: React.FC<TextSelectionTooltipProps> = ({
     setShowInput(true);
   };
 
-  // Single mousedown handler for the entire tooltip container
-  // Prevents selection collapse when clicking anywhere inside the tooltip
+  // Prevent selection clearing when interacting with tooltip
   const handleMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault(); // stops the browser from clearing the selection
+    e.preventDefault();
     e.stopPropagation();
+    console.log('TextSelectionTooltip: Mouse down on tooltip');
   };
 
   const handleSubmit = (e?: React.FormEvent) => {
@@ -105,12 +115,22 @@ const TextSelectionTooltip: React.FC<TextSelectionTooltipProps> = ({
   const handleClose = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    console.log('TextSelectionTooltip: Close button clicked');
     onClose();
+  };
+
+  const handleInputCancel = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('TextSelectionTooltip: Input cancelled');
+    setShowInput(false);
+    setQuestion('');
   };
 
   // Focus input when it appears
   useEffect(() => {
     if (showInput && inputRef.current) {
+      console.log('TextSelectionTooltip: Focusing input');
       inputRef.current.focus();
     }
   }, [showInput]);
@@ -176,7 +196,7 @@ const TextSelectionTooltip: React.FC<TextSelectionTooltipProps> = ({
             <Button
               type="button"
               variant="ghost"
-              onClick={() => {setShowInput(false); setQuestion('');}}
+              onClick={handleInputCancel}
               className="h-6 w-6 p-0 bg-white/20 hover:bg-white/30 border-none rounded-full"
             >
               <X className="w-3 h-3 text-white" />

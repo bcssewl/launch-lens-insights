@@ -17,14 +17,20 @@ const SelectableMarkdownRenderer: React.FC<SelectableMarkdownRendererProps> = ({
   onSendMessage
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const { selectedText, selectionRect, isVisible, clearSelection } = useTextSelection(containerRef);
+  const { selectedText, selectionRect, isVisible, clearSelection, tooltipRef } = useTextSelection(containerRef);
 
   useEffect(() => {
     console.log('SelectableMarkdownRenderer: Container mounted:', containerRef.current);
     console.log('SelectableMarkdownRenderer: Selection state:', { 
       selectedText: `"${selectedText}"`, 
       isVisible,
-      hasRect: !!selectionRect
+      hasRect: !!selectionRect,
+      rectDetails: selectionRect ? {
+        top: selectionRect.top,
+        left: selectionRect.left,
+        bottom: selectionRect.bottom,
+        right: selectionRect.right
+      } : null
     });
   }, [selectedText, isVisible, selectionRect]);
 
@@ -33,8 +39,8 @@ const SelectableMarkdownRenderer: React.FC<SelectableMarkdownRendererProps> = ({
       const formattedMessage = `Regarding: "${selectedText}"\n\n${question}`;
       console.log('SelectableMarkdownRenderer: Sending message:', formattedMessage);
       onSendMessage(formattedMessage);
+      clearSelection();
     }
-    // Remove clearSelection() call - let TextSelectionTooltip handle it after submission
   };
 
   const handleClose = () => {
@@ -68,7 +74,7 @@ const SelectableMarkdownRenderer: React.FC<SelectableMarkdownRendererProps> = ({
           rect={selectionRect}
           onFollowUp={handleFollowUp}
           onClose={handleClose}
-          containerRef={containerRef}
+          tooltipRef={tooltipRef}
         />
       )}
     </div>

@@ -6,13 +6,14 @@ interface UseTextSelectionReturn {
   selectionRect: DOMRect | null;
   isVisible: boolean;
   clearSelection: () => void;
+  tooltipRef: React.RefObject<HTMLDivElement>;
 }
 
 export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): UseTextSelectionReturn => {
   const [selectedText, setSelectedText] = useState('');
   const [selectionRect, setSelectionRect] = useState<DOMRect | null>(null);
   const [isVisible, setIsVisible] = useState(false);
-  const tooltipRef = useRef<HTMLElement | null>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
 
   const clearSelection = useCallback(() => {
     console.log('useTextSelection: Clearing tooltip');
@@ -29,68 +30,87 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
     }
 
     try {
-      const range = selection.getRangeAt(0).cloneRange();
-      range.collapse(false); // collapse to the end caret
-      const rects = range.getClientRects();
+      const range = selection.getRangeAt(0);
+      const rangeBounds = range.getBoundingClientRect();
       
-      if (rects.length === 0) {
-        // Fallback to original range if no caret rects
-        const originalRange = selection.getRangeAt(0);
-        const fallbackRects = originalRange.getBoundingClientRect();
+      console.log('useTextSelection: Original range bounds:', {
+        top: rangeBounds.top,
+        left: rangeBounds.left,
+        right: rangeBounds.right,
+        bottom: rangeBounds.bottom,
+        width: rangeBounds.width,
+        height: rangeBounds.height
+      });
+
+      // Create a collapsed range at the end of the selection
+      const collapsedRange = range.cloneRange();
+      collapsedRange.collapse(false); // collapse to end
+      
+      // Try to get caret position
+      const caretRects = collapsedRange.getClientRects();
+      
+      if (caretRects.length > 0) {
+        const caretRect = caretRects[0];
+        console.log('useTextSelection: Caret rect found:', {
+          top: caretRect.top,
+          left: caretRect.left,
+          right: caretRect.right,
+          bottom: caretRect.bottom,
+          width: caretRect.width,
+          height: caretRect.height
+        });
+        
+        // Return a DOMRect positioned at the caret
         return {
-          top: fallbackRects.bottom,
-          left: fallbackRects.left,
-          width: 0,
-          height: 0,
-          right: fallbackRects.left,
-          bottom: fallbackRects.bottom,
-          x: fallbackRects.left,
-          y: fallbackRects.bottom,
-          toJSON: () => ({})
-        } as DOMRect;
-      }
-      
-      const caretRect = rects[0]; // tiny box at the end of the selection
-      
-      if (caretRect && caretRect.width >= 0 && caretRect.height >= 0) {
-        // Create a DOMRect-like object positioned at the caret
-        const rect = {
           top: caretRect.top,
           left: caretRect.left,
           width: 0,
-          height: caretRect.height,
+          height: caretRect.height || 16, // fallback height
           right: caretRect.left,
           bottom: caretRect.bottom,
           x: caretRect.left,
           y: caretRect.top,
           toJSON: () => ({})
         } as DOMRect;
-        
-        return rect;
+      } else {
+        // Fallback to end of selection
+        console.log('useTextSelection: No caret rect, using selection end');
+        return {
+          top: rangeBounds.bottom,
+          left: rangeBounds.right,
+          width: 0,
+          height: 16,
+          right: rangeBounds.right,
+          bottom: rangeBounds.bottom + 16,
+          x: rangeBounds.right,
+          y: rangeBounds.bottom,
+          toJSON: () => ({})
+        } as DOMRect;
       }
-      
-      return null;
     } catch (error) {
       console.error('Error getting selection rect:', error);
       return null;
     }
   }, []);
 
-  // Simplified focus check using direct ref
+  // Check if element is inside tooltip
   const isInsideTooltip = useCallback((el: Node | null) => {
-    return tooltipRef.current?.contains(el as Node) || false;
+    if (!el || !tooltipRef.current) return false;
+    return tooltipRef.current.contains(el as Node) || 
+           (el as Element)?.closest('[data-selection-tooltip]') !== null;
   }, []);
 
-  // Use pointerup instead of mouseup for better performance
+  // Handle selection changes
   useEffect(() => {
     const handlePointerUp = () => {
-      // Run in next micro-task; no timeout needed
-      Promise.resolve().then(() => {
+      // Small delay to ensure selection is stable
+      setTimeout(() => {
         const selection = window.getSelection();
         
         if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
-          // Don't clear if tooltip has focus (user is typing in input)
+          // Don't clear if tooltip has focus
           if (isInsideTooltip(document.activeElement)) {
+            console.log('useTextSelection: Not clearing - tooltip has focus');
             return;
           }
           clearSelection();
@@ -103,6 +123,7 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
         if (text.length < 2) {
           // Don't clear if tooltip has focus
           if (isInsideTooltip(document.activeElement)) {
+            console.log('useTextSelection: Not clearing - tooltip has focus');
             return;
           }
           clearSelection();
@@ -121,12 +142,12 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
           }
         }
 
-        // Get the selection position for the tooltip using caret position
+        // Get the selection position for the tooltip
         const rect = getSelectionRect();
         
         if (rect) {
           console.log('useTextSelection: Text selected:', text);
-          console.log('useTextSelection: Caret rect:', { 
+          console.log('useTextSelection: Final tooltip rect:', { 
             top: rect.top, 
             left: rect.left, 
             bottom: rect.bottom, 
@@ -142,7 +163,7 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
           console.log('useTextSelection: No valid selection rect found');
           clearSelection();
         }
-      });
+      }, 10);
     };
 
     const handleMouseDown = (e: MouseEvent) => {
@@ -150,48 +171,47 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
       
       // Don't clear if clicking inside tooltip
       if (target && isInsideTooltip(target)) {
+        console.log('useTextSelection: Click inside tooltip - ignoring');
         return;
       }
       
       // Only clear our tooltip state when clicking outside
       if (isVisible) {
+        console.log('useTextSelection: Click outside - clearing selection');
         clearSelection();
       }
     };
 
-    // Debounced selectionchange handler
-    let hideFrame: number;
+    // Handle selection changes with debouncing
+    let selectionChangeTimeout: NodeJS.Timeout;
     const handleSelectionChange = () => {
-      cancelAnimationFrame(hideFrame);
-      hideFrame = requestAnimationFrame(() => {
+      clearTimeout(selectionChangeTimeout);
+      selectionChangeTimeout = setTimeout(() => {
         const selection = window.getSelection();
         if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
           // Check if we're interacting with the tooltip
           if (isInsideTooltip(document.activeElement)) {
+            console.log('useTextSelection: Selection cleared but tooltip has focus');
             return;
           }
-          
           clearSelection();
         }
-      });
+      }, 50);
     };
 
-    // Listen for pointerup to detect selections
     document.addEventListener('pointerup', handlePointerUp);
-    // Listen for mousedown to clear tooltip when clicking elsewhere
     document.addEventListener('mousedown', handleMouseDown);
-    // Listen for selection changes with debouncing
     document.addEventListener('selectionchange', handleSelectionChange);
     
     return () => {
-      cancelAnimationFrame(hideFrame);
+      clearTimeout(selectionChangeTimeout);
       document.removeEventListener('pointerup', handlePointerUp);
       document.removeEventListener('mousedown', handleMouseDown);
       document.removeEventListener('selectionchange', handleSelectionChange);
     };
   }, [containerRef, isVisible, clearSelection, getSelectionRect, isInsideTooltip]);
 
-  // Debounce scroll and resize listeners with requestAnimationFrame
+  // Handle scroll and resize with debouncing
   useEffect(() => {
     if (!isVisible) return;
 
@@ -200,11 +220,15 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
         const rect = getSelectionRect();
-        rect ? setSelectionRect(rect) : clearSelection();
+        if (rect) {
+          console.log('useTextSelection: Updated rect after scroll/resize:', rect);
+          setSelectionRect(rect);
+        } else {
+          clearSelection();
+        }
       });
     };
 
-    // Use capture phase to catch scroll events from all ancestors
     window.addEventListener('scroll', sync, true);
     window.addEventListener('resize', sync);
     
@@ -219,6 +243,7 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
     selectedText,
     selectionRect,
     isVisible,
-    clearSelection
+    clearSelection,
+    tooltipRef
   };
 };
