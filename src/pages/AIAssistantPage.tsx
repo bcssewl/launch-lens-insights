@@ -41,7 +41,8 @@ const AIAssistantPage: React.FC = () => {
     handleOpenCanvas,
     handleCloseCanvas,
     handleCanvasDownload,
-    handleCanvasPrint
+    handleCanvasPrint,
+    handleCanvasPdfDownload
   } = useMessages(currentSessionId);
   const [editedCanvasContent, setEditedCanvasContent] = useState(canvasState.content);
 
@@ -179,7 +180,25 @@ const AIAssistantPage: React.FC = () => {
       </SidebarProvider>
 
       {/* SINGLE Canvas View - Only rendered here */}
-      <CanvasView isOpen={canvasState.isOpen} onClose={handleCloseCanvas} content={editedCanvasContent} title="AI Report" onDownload={handleCanvasDownload} onPrint={handleCanvasPrint} messages={messages} isTyping={isTyping} viewportRef={viewportRef} onSendMessage={handleSendMessageWithSession} canvasState={canvasState} onOpenCanvas={handleOpenCanvas} onCloseCanvas={handleCloseCanvas} onCanvasDownload={handleCanvasDownload} onCanvasPrint={handleCanvasPrint} onContentUpdate={handleCanvasContentUpdate} />
+      <CanvasView 
+        isOpen={canvasState.isOpen} 
+        onClose={handleCloseCanvas} 
+        content={editedCanvasContent} 
+        title="AI Report" 
+        onDownload={handleCanvasDownload} 
+        onPrint={handleCanvasPrint}
+        onPdfDownload={handleCanvasPdfDownload}
+        messages={messages} 
+        isTyping={isTyping} 
+        viewportRef={viewportRef} 
+        onSendMessage={handleSendMessageWithSession} 
+        canvasState={canvasState} 
+        onOpenCanvas={handleOpenCanvas} 
+        onCloseCanvas={handleCloseCanvas} 
+        onCanvasDownload={handleCanvasDownload} 
+        onCanvasPrint={handleCanvasPrint} 
+        onContentUpdate={handleCanvasContentUpdate} 
+      />
     </div>;
 };
 export default AIAssistantPage;
