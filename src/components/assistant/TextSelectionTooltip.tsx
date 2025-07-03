@@ -22,12 +22,12 @@ const TextSelectionTooltip: React.FC<TextSelectionTooltipProps> = ({
 
   // Calculate tooltip position above the caret
   const calculateTooltipPosition = () => {
-    const tooltipHeight = showInput ? 48 : 40; // Consistent height for cylindrical input
-    const tooltipWidth = showInput ? 350 : 120; // Wider for cylindrical input
+    const tooltipHeight = showInput ? 48 : 40;
+    const tooltipWidth = showInput ? 350 : 120;
     
     // Position tooltip above the caret, centered horizontally on the caret
     let left = rect.left + rect.width / 2;
-    let top = rect.top - tooltipHeight - 12; // Slightly more gap for the cylindrical design
+    let top = rect.top - tooltipHeight - 12;
     
     // Boundary checks to ensure tooltip stays in viewport
     const viewportWidth = window.innerWidth;
