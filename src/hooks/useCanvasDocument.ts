@@ -146,6 +146,7 @@ export const useCanvasDocument = (messageId?: string, initialContent?: string) =
     console.log('useCanvasDocument: Creating manual version for document:', documentId);
     
     try {
+      // Use type assertion to handle the version_number field that's set by database trigger
       const { data, error } = await supabase
         .from('canvas_versions')
         .insert({
@@ -153,8 +154,7 @@ export const useCanvasDocument = (messageId?: string, initialContent?: string) =
           title,
           content,
           created_by_user: true
-          // version_number is handled by database trigger
-        })
+        } as any) // Type assertion to bypass TypeScript checking for version_number
         .select()
         .single();
 
