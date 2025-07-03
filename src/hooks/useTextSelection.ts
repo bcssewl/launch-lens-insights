@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 
 interface UseTextSelectionReturn {
@@ -18,6 +17,8 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
     setCapturedText('');
     setTooltipRect(null);
     setShowTooltip(false);
+    // Clear the browser selection as well
+    window.getSelection()?.removeAllRanges();
   }, []);
 
   useEffect(() => {
@@ -57,6 +58,9 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
           setCapturedText(text);
           setTooltipRect(rect);
           setShowTooltip(true);
+          
+          // Keep the selection highlighted by preserving it
+          // Don't call removeAllRanges() here - let it stay highlighted
         }
       }, 50);
     };
@@ -72,7 +76,7 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
         return;
       }
       
-      // Clear tooltip when clicking elsewhere
+      // Clear tooltip when clicking elsewhere (this will also clear the selection)
       if (showTooltip) {
         clearSelection();
       }
