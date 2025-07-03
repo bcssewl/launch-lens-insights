@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useRef, useEffect, useCallback, useState } from 'react';
 import { cn } from '@/lib/utils';
 import TextSelectionTooltip from './TextSelectionTooltip';
 import FollowUpDialog from './FollowUpDialog';
@@ -25,10 +25,10 @@ const SeamlessMarkdownEditor: React.FC<SeamlessMarkdownEditorProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<HTMLDivElement>(null);
-  const [draftContent, setDraftContent] = useState(content);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
   const [lastSavedContent, setLastSavedContent] = useState(content);
   const saveTimeoutRef = useRef<NodeJS.Timeout>();
+  const isInitializedRef = useRef(false);
   
   const { selectedText, selectionRect, isVisible, clearSelection } = useTextSelection(containerRef);
   const [showFollowUpDialog, setShowFollowUpDialog] = useState(false);
@@ -100,45 +100,43 @@ const SeamlessMarkdownEditor: React.FC<SeamlessMarkdownEditorProps> = ({
     }
   }, [documentId, lastSavedContent, title]);
 
-  // Debounced auto-save
+  // Initialize editor content only once
   useEffect(() => {
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-
-    if (draftContent !== lastSavedContent) {
-      saveTimeoutRef.current = setTimeout(() => {
-        saveToServer(draftContent);
-      }, 1000); // 1 second debounce
-    }
-
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-    };
-  }, [draftContent, saveToServer, lastSavedContent]);
-
-  // Update content when prop changes
-  useEffect(() => {
-    if (content !== draftContent && content !== lastSavedContent) {
-      setDraftContent(content);
+    if (editorRef.current && content && !isInitializedRef.current) {
+      editorRef.current.innerHTML = markdownToHtml(content);
       setLastSavedContent(content);
-      if (editorRef.current) {
-        editorRef.current.innerHTML = markdownToHtml(content);
-      }
+      isInitializedRef.current = true;
     }
-  }, [content, draftContent, lastSavedContent, markdownToHtml]);
+  }, [content, markdownToHtml]);
 
-  // Handle input changes
-  const handleInput = useCallback(() => {
-    if (editorRef.current) {
-      const htmlContent = editorRef.current.innerHTML;
+  // Set up input event listener for uncontrolled editing
+  useEffect(() => {
+    const editorElement = editorRef.current;
+    if (!editorElement) return;
+
+    let saveTimeout: NodeJS.Timeout;
+
+    const handleInput = () => {
+      const htmlContent = editorElement.innerHTML;
       const markdownContent = htmlToMarkdown(htmlContent);
-      setDraftContent(markdownContent);
+      
+      // Update parent component immediately for AI interactions
       onContentChange(markdownContent);
-    }
-  }, [htmlToMarkdown, onContentChange]);
+      
+      // Debounced auto-save
+      if (saveTimeout) clearTimeout(saveTimeout);
+      saveTimeout = setTimeout(() => {
+        saveToServer(markdownContent);
+      }, 1000);
+    };
+
+    editorElement.addEventListener('input', handleInput);
+    
+    return () => {
+      editorElement.removeEventListener('input', handleInput);
+      if (saveTimeout) clearTimeout(saveTimeout);
+    };
+  }, [htmlToMarkdown, onContentChange, saveToServer]);
 
   // Handle follow-up dialog
   const handleFollowUp = () => {
@@ -160,13 +158,6 @@ const SeamlessMarkdownEditor: React.FC<SeamlessMarkdownEditorProps> = ({
     clearSelection();
   };
 
-  // Initialize editor content
-  useEffect(() => {
-    if (editorRef.current && content) {
-      editorRef.current.innerHTML = markdownToHtml(content);
-    }
-  }, [content, markdownToHtml]);
-
   return (
     <div 
       ref={containerRef}
@@ -185,13 +176,12 @@ const SeamlessMarkdownEditor: React.FC<SeamlessMarkdownEditorProps> = ({
         </div>
       )}
 
-      {/* Main editable content */}
+      {/* Main editable content - now uncontrolled */}
       <div
         ref={editorRef}
         contentEditable
         suppressContentEditableWarning
         className="min-h-96 focus:outline-none prose prose-gray dark:prose-invert max-w-none"
-        onInput={handleInput}
         style={{
           fontSize: '16px',
           lineHeight: '1.7',

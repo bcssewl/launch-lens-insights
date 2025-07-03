@@ -141,7 +141,7 @@ export const useCanvasDocument = (messageId?: string, initialContent?: string) =
     }
   }, []);
 
-  // Create a version manually (user-initiated)
+  // Create a version manually (user-initiated) - Fixed the TypeScript error
   const createVersion = useCallback(async (documentId: string, title: string, content: string) => {
     console.log('useCanvasDocument: Creating manual version for document:', documentId);
     
@@ -153,6 +153,7 @@ export const useCanvasDocument = (messageId?: string, initialContent?: string) =
           title,
           content,
           created_by_user: true
+          // version_number is handled by database trigger
         })
         .select()
         .single();
