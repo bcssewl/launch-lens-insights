@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { X, Download, Printer, Edit } from 'lucide-react';
+import { X, Download, Printer, Edit, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface CanvasHeaderProps {
@@ -10,6 +10,7 @@ interface CanvasHeaderProps {
   onPrint?: () => void;
   onEdit: () => void;
   onClose: () => void;
+  onPdfDownload?: () => void;
 }
 
 const CanvasHeader: React.FC<CanvasHeaderProps> = ({
@@ -18,7 +19,8 @@ const CanvasHeader: React.FC<CanvasHeaderProps> = ({
   onDownload,
   onPrint,
   onEdit,
-  onClose
+  onClose,
+  onPdfDownload
 }) => {
   const handleDownloadClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -30,6 +32,12 @@ const CanvasHeader: React.FC<CanvasHeaderProps> = ({
     e.stopPropagation();
     console.log('CanvasHeader: Print clicked');
     onPrint?.();
+  };
+
+  const handlePdfDownloadClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    console.log('CanvasHeader: PDF Download clicked');
+    onPdfDownload?.();
   };
 
   const handleEditClick = (e: React.MouseEvent) => {
@@ -59,6 +67,17 @@ const CanvasHeader: React.FC<CanvasHeaderProps> = ({
           <Edit className="h-4 w-4" />
           Edit
         </Button>
+        {onPdfDownload && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handlePdfDownloadClick}
+            className="flex items-center gap-2"
+          >
+            <FileText className="h-4 w-4" />
+            Download PDF
+          </Button>
+        )}
         {onDownload && (
           <Button
             variant="outline"

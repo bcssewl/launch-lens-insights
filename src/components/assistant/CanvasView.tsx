@@ -56,12 +56,18 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
     setCurrentContent(content);
   }, [content]);
 
-  // Use keyboard shortcuts hook
+  // PDF download handler
+  const handlePdfDownload = useCallback(() => {
+    console.log('CanvasView: PDF download initiated');
+    window.print();
+  }, []);
+
+  // Use keyboard shortcuts hook with PDF download
   useCanvasKeyboardShortcuts({
     isOpen,
     isEditing: false, // Always false since we have seamless editing
     onClose,
-    onPrint,
+    onPrint: handlePdfDownload, // Use PDF download for Ctrl+P
     onToggleEdit: () => {} // No-op since we don't have edit mode
   });
 
@@ -129,6 +135,7 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
           isEditing={false} // Always false since we have seamless editing
           onDownload={onDownload}
           onPrint={onPrint}
+          onPdfDownload={handlePdfDownload}
           onEdit={() => {}} // No-op since we don't need edit mode
           onClose={onClose}
         />

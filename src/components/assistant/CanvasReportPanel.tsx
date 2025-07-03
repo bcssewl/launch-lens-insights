@@ -44,6 +44,7 @@ const CanvasReportPanel: React.FC<CanvasReportPanelProps> = ({
       <div className="h-full overflow-auto">
         <div className="max-w-4xl mx-auto p-8">
           <div 
+            id="canvas-report"
             style={{ 
               ...canvasStyles,
               userSelect: 'text',

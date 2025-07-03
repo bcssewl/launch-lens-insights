@@ -201,6 +201,11 @@ export const useMessages = (currentSessionId: string | null) => {
     window.print();
   }, []);
 
+  const handleCanvasPdfDownload = useCallback(() => {
+    console.log('useMessages: PDF download initiated');
+    window.print();
+  }, []);
+
   return {
     messages,
     isTyping,
@@ -214,6 +219,7 @@ export const useMessages = (currentSessionId: string | null) => {
     handleOpenCanvas,
     handleCloseCanvas,
     handleCanvasDownload,
-    handleCanvasPrint
+    handleCanvasPrint,
+    handleCanvasPdfDownload
   };
 };
