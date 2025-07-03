@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect, useCallback, useState } from 'react';
 import { cn } from '@/lib/utils';
 import TextSelectionTooltip from './TextSelectionTooltip';
@@ -40,7 +39,6 @@ const SeamlessMarkdownEditor: React.FC<SeamlessMarkdownEditorProps> = ({
     marked.setOptions({
       breaks: true,
       gfm: true,
-      sanitize: false,
       smartypants: false
     });
   }, []);
