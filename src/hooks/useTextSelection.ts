@@ -56,6 +56,15 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
     }
   }, []);
 
+  const isTooltipFocused = useCallback(() => {
+    const activeElement = document.activeElement;
+    if (!activeElement) return false;
+    
+    // Check if the active element is within a tooltip
+    const tooltipElement = activeElement.closest('[data-selection-tooltip]');
+    return !!tooltipElement;
+  }, []);
+
   useEffect(() => {
     const handleMouseUp = () => {
       // Small delay to let browser finalize selection
@@ -63,6 +72,10 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
         const selection = window.getSelection();
         
         if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
+          // Don't clear if tooltip has focus (user is typing in input)
+          if (isTooltipFocused()) {
+            return;
+          }
           clearSelection();
           return;
         }
@@ -71,6 +84,10 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
         const text = selection.toString().trim();
         
         if (text.length < 2) {
+          // Don't clear if tooltip has focus
+          if (isTooltipFocused()) {
+            return;
+          }
           clearSelection();
           return;
         }
@@ -128,16 +145,33 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
       }
     };
 
+    const handleSelectionChange = () => {
+      // Don't react to selection changes if tooltip has focus
+      if (isTooltipFocused()) {
+        return;
+      }
+
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
+        if (isVisible) {
+          clearSelection();
+        }
+      }
+    };
+
     // Listen for mouseup to detect selections
     document.addEventListener('mouseup', handleMouseUp);
     // Listen for mousedown to clear tooltip when clicking elsewhere
     document.addEventListener('mousedown', handleMouseDown);
+    // Listen for selection changes
+    document.addEventListener('selectionchange', handleSelectionChange);
     
     return () => {
       document.removeEventListener('mouseup', handleMouseUp);
       document.removeEventListener('mousedown', handleMouseDown);
+      document.removeEventListener('selectionchange', handleSelectionChange);
     };
-  }, [containerRef, isVisible, clearSelection, getCaretRect]);
+  }, [containerRef, isVisible, clearSelection, getCaretRect, isTooltipFocused]);
 
   return {
     selectedText,

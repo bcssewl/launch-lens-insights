@@ -66,6 +66,12 @@ const TextSelectionTooltip: React.FC<TextSelectionTooltipProps> = ({
     setShowInput(true);
   };
 
+  const handleFollowUpMouseDown = (e: React.MouseEvent) => {
+    // Prevent the browser from collapsing the text selection
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (question.trim()) {
@@ -109,12 +115,20 @@ const TextSelectionTooltip: React.FC<TextSelectionTooltipProps> = ({
       className={`animate-fade-in ${showInput ? '' : 'bg-black/90 backdrop-blur-sm border border-gray-700 rounded-lg shadow-lg p-2'}`}
       data-selection-tooltip
       onMouseDown={handleContainerMouseDown}
+      style={{
+        ...tooltipStyle,
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
+        MozUserSelect: 'none',
+        msUserSelect: 'none'
+      }}
     >
       {!showInput ? (
         <div className="flex items-center gap-1">
           <Button
             size="sm"
             onClick={handleFollowUpClick}
+            onMouseDown={handleFollowUpMouseDown}
             className="h-8 text-xs bg-white text-black hover:bg-gray-100"
             data-tooltip-trigger
           >
@@ -138,7 +152,11 @@ const TextSelectionTooltip: React.FC<TextSelectionTooltipProps> = ({
             backdropFilter: 'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)',
             border: '1px solid rgba(255, 255, 255, 0.2)',
-            boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)'
+            boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
+            userSelect: 'none',
+            WebkitUserSelect: 'none',
+            MozUserSelect: 'none',
+            msUserSelect: 'none'
           }}
           onMouseDown={handleContainerMouseDown}
         >
@@ -154,12 +172,15 @@ const TextSelectionTooltip: React.FC<TextSelectionTooltipProps> = ({
                 background: 'transparent',
                 border: 'none',
                 outline: 'none',
-                boxShadow: 'none'
+                boxShadow: 'none',
+                userSelect: 'text',
+                WebkitUserSelect: 'text',
+                MozUserSelect: 'text',
+                msUserSelect: 'text'
               }}
             />
             <Button
               type="submit"
-              size="sm"
               disabled={!question.trim()}
               className="h-6 w-6 p-0 bg-white/20 hover:bg-white/30 border-none rounded-full"
             >
@@ -167,7 +188,6 @@ const TextSelectionTooltip: React.FC<TextSelectionTooltipProps> = ({
             </Button>
             <Button
               type="button"
-              size="sm"
               variant="ghost"
               onClick={() => {setShowInput(false); setQuestion('');}}
               className="h-6 w-6 p-0 bg-white/20 hover:bg-white/30 border-none rounded-full"
