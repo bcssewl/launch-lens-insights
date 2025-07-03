@@ -1,8 +1,6 @@
-
 import React, { useRef, useEffect, useCallback, useState } from 'react';
 import { cn } from '@/lib/utils';
 import TextSelectionTooltip from './TextSelectionTooltip';
-import FollowUpDialog from './FollowUpDialog';
 import { useTextSelection } from '@/hooks/useTextSelection';
 import { supabase } from '@/integrations/supabase/client';
 import { marked } from 'marked';
@@ -33,8 +31,6 @@ const SeamlessMarkdownEditor: React.FC<SeamlessMarkdownEditorProps> = ({
   const saveTimeoutRef = useRef<NodeJS.Timeout>();
   
   const { selectedText, selectionRect, isVisible, clearSelection } = useTextSelection(containerRef);
-  const [showFollowUpDialog, setShowFollowUpDialog] = useState(false);
-  const [preservedText, setPreservedText] = useState('');
 
   // Configure marked for consistent HTML output
   const configureMarked = useCallback(() => {
@@ -133,7 +129,7 @@ const SeamlessMarkdownEditor: React.FC<SeamlessMarkdownEditorProps> = ({
           updated_at: new Date().toISOString()
         })
         .eq('id', documentId)
-        .eq('created_by', user.id); // Ensure user owns the document
+        .eq('created_by', user.id);
 
       if (error) {
         console.error('Auto-save failed:', error);
@@ -199,7 +195,7 @@ const SeamlessMarkdownEditor: React.FC<SeamlessMarkdownEditorProps> = ({
         saveTimeoutRef.current = setTimeout(() => {
           console.log('Triggering auto-save after debounce');
           saveToServer(markdownContent);
-        }, 1000); // Reduced to 1 second for better UX
+        }, 1000);
       } catch (error) {
         console.error('Error handling input change:', error);
       }
@@ -215,23 +211,16 @@ const SeamlessMarkdownEditor: React.FC<SeamlessMarkdownEditorProps> = ({
     };
   }, [htmlToMarkdown, onContentChange, saveToServer]);
 
-  // Handle follow-up dialog
-  const handleFollowUp = () => {
-    setPreservedText(selectedText);
-    setShowFollowUpDialog(true);
-  };
-
-  const handleSubmitQuestion = (question: string) => {
-    if (onSendMessage && preservedText) {
-      const formattedMessage = `Regarding: "${preservedText}"\n\n${question}`;
+  // Handle follow-up inline input
+  const handleFollowUp = (question: string) => {
+    if (onSendMessage && selectedText) {
+      const formattedMessage = `Regarding: "${selectedText}"\n\n${question}`;
       onSendMessage(formattedMessage);
     }
-    handleDialogClose();
+    clearSelection();
   };
 
-  const handleDialogClose = () => {
-    setShowFollowUpDialog(false);
-    setPreservedText('');
+  const handleClose = () => {
     clearSelection();
   };
 
@@ -266,21 +255,12 @@ const SeamlessMarkdownEditor: React.FC<SeamlessMarkdownEditorProps> = ({
       />
 
       {/* Text Selection Tooltip */}
-      {isVisible && selectionRect && selectedText && !showFollowUpDialog && onSendMessage && (
+      {isVisible && selectionRect && selectedText && onSendMessage && (
         <TextSelectionTooltip
           rect={selectionRect}
           onFollowUp={handleFollowUp}
+          onClose={handleClose}
           containerRef={containerRef}
-        />
-      )}
-
-      {/* Follow-up Dialog */}
-      {onSendMessage && (
-        <FollowUpDialog
-          isOpen={showFollowUpDialog}
-          onClose={handleDialogClose}
-          selectedText={preservedText}
-          onSubmit={handleSubmitQuestion}
         />
       )}
     </div>

@@ -2,7 +2,6 @@
 import React, { useRef, useEffect } from 'react';
 import MarkdownRenderer from './MarkdownRenderer';
 import TextSelectionTooltip from './TextSelectionTooltip';
-import FollowUpDialog from './FollowUpDialog';
 import { useTextSelection } from '@/hooks/useTextSelection';
 import { cn } from '@/lib/utils';
 
@@ -19,39 +18,27 @@ const SelectableMarkdownRenderer: React.FC<SelectableMarkdownRendererProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const { selectedText, selectionRect, isVisible, clearSelection } = useTextSelection(containerRef);
-  const [showFollowUpDialog, setShowFollowUpDialog] = React.useState(false);
-  const [preservedText, setPreservedText] = React.useState('');
 
   useEffect(() => {
     console.log('SelectableMarkdownRenderer: Container mounted:', containerRef.current);
     console.log('SelectableMarkdownRenderer: Selection state:', { 
       selectedText: `"${selectedText}"`, 
       isVisible,
-      hasRect: !!selectionRect,
-      preservedText: `"${preservedText}"`
+      hasRect: !!selectionRect
     });
-  }, [selectedText, isVisible, selectionRect, preservedText]);
+  }, [selectedText, isVisible, selectionRect]);
 
-  const handleFollowUp = () => {
-    console.log('SelectableMarkdownRenderer: Follow up clicked for text:', selectedText);
-    setPreservedText(selectedText);
-    setShowFollowUpDialog(true);
-    console.log('SelectableMarkdownRenderer: Preserved text set to:', selectedText);
-  };
-
-  const handleSubmitQuestion = (question: string) => {
-    if (onSendMessage && preservedText) {
-      const formattedMessage = `Regarding: "${preservedText}"\n\n${question}`;
+  const handleFollowUp = (question: string) => {
+    if (onSendMessage && selectedText) {
+      const formattedMessage = `Regarding: "${selectedText}"\n\n${question}`;
       console.log('SelectableMarkdownRenderer: Sending message:', formattedMessage);
       onSendMessage(formattedMessage);
     }
-    handleDialogClose();
+    clearSelection();
   };
 
-  const handleDialogClose = () => {
-    console.log('SelectableMarkdownRenderer: Dialog closed, clearing all selections');
-    setShowFollowUpDialog(false);
-    setPreservedText('');
+  const handleClose = () => {
+    console.log('SelectableMarkdownRenderer: Tooltip closed, clearing selection');
     clearSelection();
   };
 
@@ -76,21 +63,14 @@ const SelectableMarkdownRenderer: React.FC<SelectableMarkdownRendererProps> = ({
       </div>
       
       {/* Text Selection Tooltip */}
-      {isVisible && selectionRect && selectedText && !showFollowUpDialog && (
+      {isVisible && selectionRect && selectedText && onSendMessage && (
         <TextSelectionTooltip
           rect={selectionRect}
           onFollowUp={handleFollowUp}
+          onClose={handleClose}
           containerRef={containerRef}
         />
       )}
-
-      {/* Follow-up Dialog */}
-      <FollowUpDialog
-        isOpen={showFollowUpDialog}
-        onClose={handleDialogClose}
-        selectedText={preservedText}
-        onSubmit={handleSubmitQuestion}
-      />
     </div>
   );
 };
