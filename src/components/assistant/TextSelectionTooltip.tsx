@@ -21,7 +21,7 @@ const TextSelectionTooltip: React.FC<TextSelectionTooltipProps> = ({
   const [question, setQuestion] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Calculate tooltip position
+  // Calculate tooltip position - position at the end of selection like ChatGPT
   const calculateTooltipPosition = () => {
     const tooltipHeight = showInput ? 48 : 40;
     const tooltipWidth = showInput ? 350 : 120;
@@ -35,9 +35,9 @@ const TextSelectionTooltip: React.FC<TextSelectionTooltipProps> = ({
       height: rect.height
     });
     
-    // Position tooltip below the selection end
+    // Position tooltip right at the selection end, inline with the text
     let left = rect.left;
-    let top = rect.bottom + 8; // 8px below the selection
+    let top = rect.top; // Use rect.top instead of rect.bottom to align with selection
     
     console.log('TextSelectionTooltip: Initial position:', { top, left });
     
@@ -53,7 +53,7 @@ const TextSelectionTooltip: React.FC<TextSelectionTooltipProps> = ({
       left = 10;
     }
     
-    // Vertical boundary check
+    // Vertical boundary check - only move above if absolutely necessary
     if (top + tooltipHeight > viewportHeight - 10) {
       top = rect.top - tooltipHeight - 8; // Show above
       if (top < 10) {

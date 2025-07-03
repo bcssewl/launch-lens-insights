@@ -22,7 +22,7 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
     setIsVisible(false);
   }, []);
 
-  // Get selection rectangle using collapsed caret position for ChatGPT-like behavior
+  // Get selection rectangle at the visual end of the selection
   const getSelectionRect = useCallback((): DOMRect | null => {
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
@@ -33,7 +33,7 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
       const range = selection.getRangeAt(0);
       const rangeBounds = range.getBoundingClientRect();
       
-      console.log('useTextSelection: Original range bounds:', {
+      console.log('useTextSelection: Selection bounds:', {
         top: rangeBounds.top,
         left: rangeBounds.left,
         right: rangeBounds.right,
@@ -42,48 +42,46 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
         height: rangeBounds.height
       });
 
-      // Create a collapsed range at the end of the selection
-      const collapsedRange = range.cloneRange();
-      collapsedRange.collapse(false); // collapse to end
+      // Get all rectangles for the selection (handles multi-line selections)
+      const rects = range.getClientRects();
       
-      // Try to get caret position
-      const caretRects = collapsedRange.getClientRects();
-      
-      if (caretRects.length > 0) {
-        const caretRect = caretRects[0];
-        console.log('useTextSelection: Caret rect found:', {
-          top: caretRect.top,
-          left: caretRect.left,
-          right: caretRect.right,
-          bottom: caretRect.bottom,
-          width: caretRect.width,
-          height: caretRect.height
+      if (rects.length > 0) {
+        // Use the last rectangle (end of selection) for positioning
+        const lastRect = rects[rects.length - 1];
+        
+        console.log('useTextSelection: Using last rect:', {
+          top: lastRect.top,
+          left: lastRect.left,
+          right: lastRect.right,
+          bottom: lastRect.bottom,
+          width: lastRect.width,
+          height: lastRect.height
         });
         
-        // Return a DOMRect positioned at the caret
+        // Position tooltip at the end of the selection (right edge of last line)
         return {
-          top: caretRect.top,
-          left: caretRect.left,
+          top: lastRect.top,
+          left: lastRect.right,
           width: 0,
-          height: caretRect.height || 16, // fallback height
-          right: caretRect.left,
-          bottom: caretRect.bottom,
-          x: caretRect.left,
-          y: caretRect.top,
+          height: lastRect.height,
+          right: lastRect.right,
+          bottom: lastRect.bottom,
+          x: lastRect.right,
+          y: lastRect.top,
           toJSON: () => ({})
         } as DOMRect;
       } else {
-        // Fallback to end of selection
-        console.log('useTextSelection: No caret rect, using selection end');
+        // Fallback to range bounds
+        console.log('useTextSelection: No client rects, using range bounds');
         return {
-          top: rangeBounds.bottom,
+          top: rangeBounds.top,
           left: rangeBounds.right,
           width: 0,
-          height: 16,
+          height: rangeBounds.height,
           right: rangeBounds.right,
-          bottom: rangeBounds.bottom + 16,
+          bottom: rangeBounds.bottom,
           x: rangeBounds.right,
-          y: rangeBounds.bottom,
+          y: rangeBounds.top,
           toJSON: () => ({})
         } as DOMRect;
       }
