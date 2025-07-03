@@ -44,7 +44,7 @@ const TextSelectionTooltip: React.FC<TextSelectionTooltipProps> = ({
     
     // Vertical boundary check - if tooltip would be clipped at bottom, show above
     if (top + tooltipHeight > viewportHeight - 10) {
-      top = rect.top - tooltipHeight - 12; // Show above caret
+      top = rect.top - tooltipHeight - 12; // Show above caret with full height
       // If still clipped, clamp to viewport
       if (top < 10) {
         top = 10;
@@ -76,8 +76,8 @@ const TextSelectionTooltip: React.FC<TextSelectionTooltipProps> = ({
     setShowInput(true);
   };
 
-  // Prevent selection collapse when clicking the follow-up button
-  const handleFollowUpMouseDown = (e: React.MouseEvent) => {
+  // Prevent selection collapse when clicking any button
+  const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault(); // stops the browser from clearing the selection
     e.stopPropagation();
   };
@@ -132,7 +132,7 @@ const TextSelectionTooltip: React.FC<TextSelectionTooltipProps> = ({
           <Button
             size="sm"
             onClick={handleFollowUpClick}
-            onMouseDown={handleFollowUpMouseDown}
+            onMouseDown={handleMouseDown}
             className="h-8 text-xs bg-white text-black hover:bg-gray-100"
             data-tooltip-trigger
           >
@@ -143,6 +143,7 @@ const TextSelectionTooltip: React.FC<TextSelectionTooltipProps> = ({
             size="sm"
             variant="ghost"
             onClick={handleClose}
+            onMouseDown={handleMouseDown}
             className="h-8 w-8 p-0 text-xs text-white hover:bg-white/10"
           >
             <X className="w-3 h-3" />
@@ -175,6 +176,7 @@ const TextSelectionTooltip: React.FC<TextSelectionTooltipProps> = ({
             <Button
               type="submit"
               disabled={!question.trim()}
+              onMouseDown={handleMouseDown}
               className="h-6 w-6 p-0 bg-white/20 hover:bg-white/30 border-none rounded-full"
             >
               <Send className="w-3 h-3 text-white" />
@@ -183,6 +185,7 @@ const TextSelectionTooltip: React.FC<TextSelectionTooltipProps> = ({
               type="button"
               variant="ghost"
               onClick={() => {setShowInput(false); setQuestion('');}}
+              onMouseDown={handleMouseDown}
               className="h-6 w-6 p-0 bg-white/20 hover:bg-white/30 border-none rounded-full"
             >
               <X className="w-3 h-3 text-white" />

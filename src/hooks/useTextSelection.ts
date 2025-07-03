@@ -112,12 +112,12 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
           }
         }
 
-        // Get the selection position for the tooltip
+        // Get the selection position for the tooltip using caret position
         const rect = getSelectionRect();
         
         if (rect) {
           console.log('useTextSelection: Text selected:', text);
-          console.log('useTextSelection: Selection rect:', { 
+          console.log('useTextSelection: Caret rect:', { 
             top: rect.top, 
             left: rect.left, 
             bottom: rect.bottom, 
@@ -139,11 +139,8 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
     const handleMouseDown = (e: MouseEvent) => {
       const target = e.target as Element;
       
-      // Don't clear if clicking on tooltip or its trigger
-      if (target && (
-        isInsideTooltip(target) || 
-        target.closest('[data-tooltip-trigger]')
-      )) {
+      // Don't clear if clicking inside tooltip
+      if (target && isInsideTooltip(target)) {
         return;
       }
       
@@ -153,20 +150,21 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
       }
     };
 
-    // Improved selectionchange handler with debouncing
+    // Debounced selectionchange handler
+    let hideFrame: number;
     const handleSelectionChange = () => {
-      const selection = window.getSelection();
-      if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
-        // if there's still text selected, ignore
-        if (selection && !selection.isCollapsed) return;
-        
-        // Check if we're interacting with the tooltip
-        if (isInsideTooltip(document.activeElement)) {
-          return;
+      cancelAnimationFrame(hideFrame);
+      hideFrame = requestAnimationFrame(() => {
+        const selection = window.getSelection();
+        if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
+          // Check if we're interacting with the tooltip
+          if (isInsideTooltip(document.activeElement)) {
+            return;
+          }
+          
+          clearSelection();
         }
-        
-        scheduleClear();
-      }
+      });
     };
 
     // Listen for pointerup to detect selections
@@ -177,6 +175,7 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
     document.addEventListener('selectionchange', handleSelectionChange);
     
     return () => {
+      cancelAnimationFrame(hideFrame);
       document.removeEventListener('pointerup', handlePointerUp);
       document.removeEventListener('mousedown', handleMouseDown);
       document.removeEventListener('selectionchange', handleSelectionChange);
