@@ -34,7 +34,6 @@ const SelectableMarkdownRenderer: React.FC<SelectableMarkdownRendererProps> = ({
 
   const handleFollowUp = () => {
     console.log('SelectableMarkdownRenderer: Follow up clicked for text:', selectedText);
-    // Preserve the current selected text before opening dialog
     setPreservedText(selectedText);
     setShowFollowUpDialog(true);
     console.log('SelectableMarkdownRenderer: Preserved text set to:', selectedText);
@@ -76,15 +75,16 @@ const SelectableMarkdownRenderer: React.FC<SelectableMarkdownRendererProps> = ({
         <MarkdownRenderer content={content} />
       </div>
       
-      {/* Text Selection Tooltip - only show if not in dialog mode */}
+      {/* Text Selection Tooltip */}
       {isVisible && selectionRect && selectedText && !showFollowUpDialog && (
         <TextSelectionTooltip
           rect={selectionRect}
           onFollowUp={handleFollowUp}
+          containerRef={containerRef}
         />
       )}
 
-      {/* Follow-up Dialog - use preserved text */}
+      {/* Follow-up Dialog */}
       <FollowUpDialog
         isOpen={showFollowUpDialog}
         onClose={handleDialogClose}

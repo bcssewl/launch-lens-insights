@@ -27,7 +27,6 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
         const selection = window.getSelection();
         
         if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
-          // If no selection, just clear our tooltip state but don't touch the selection
           clearSelection();
           return;
         }
@@ -46,23 +45,31 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
           const startInContainer = container.contains(range.startContainer);
           const endInContainer = container.contains(range.endContainer);
           
-          // Only proceed if both start and end are in our container
           if (!startInContainer || !endInContainer) {
             clearSelection();
             return;
           }
         }
 
-        // Get the position for the tooltip - DO NOT modify the selection
+        // Get the position for the tooltip
         const rect = range.getBoundingClientRect();
         
         if (rect.width > 0 && rect.height > 0) {
           console.log('useTextSelection: Text selected:', text);
+          console.log('useTextSelection: Selection rect:', { 
+            top: rect.top, 
+            left: rect.left, 
+            bottom: rect.bottom, 
+            right: rect.right,
+            width: rect.width,
+            height: rect.height
+          });
+          
           setSelectedText(text);
           setSelectionRect(rect);
           setIsVisible(true);
         }
-      }, 10); // Reduced delay
+      }, 10);
     };
 
     const handleMouseDown = (e: MouseEvent) => {

@@ -270,6 +270,7 @@ const SeamlessMarkdownEditor: React.FC<SeamlessMarkdownEditorProps> = ({
         <TextSelectionTooltip
           rect={selectionRect}
           onFollowUp={handleFollowUp}
+          containerRef={containerRef}
         />
       )}
 
