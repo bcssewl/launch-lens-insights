@@ -196,6 +196,38 @@ export type Database = {
         }
         Relationships: []
       }
+      message_canvas_documents: {
+        Row: {
+          created_at: string
+          created_by: string
+          document_id: string
+          id: string
+          message_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          document_id: string
+          id?: string
+          message_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          document_id?: string
+          id?: string
+          message_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_canvas_documents_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "canvas_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       n8n_chat_history: {
         Row: {
           created_at: string
