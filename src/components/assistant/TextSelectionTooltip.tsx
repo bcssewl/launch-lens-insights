@@ -19,30 +19,32 @@ const TextSelectionTooltip: React.FC<TextSelectionTooltipProps> = ({
   const [showInput, setShowInput] = useState(false);
   const [question, setQuestion] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
 
-  // Calculate tooltip position below the selection (ChatGPT style)
+  // Calculate tooltip position using caret position (ChatGPT-like)
   const calculateTooltipPosition = () => {
     const tooltipHeight = showInput ? 48 : 40;
     const tooltipWidth = showInput ? 350 : 120;
     
-    // Position tooltip below the selection, centered horizontally
-    let left = rect.left + rect.width / 2;
-    let top = rect.bottom + 12; // 12px below the selection
+    // Position tooltip below the caret, centered horizontally on the caret
+    let left = rect.left;
+    let top = rect.top + 12; // 12px below the caret
     
     // Boundary checks to ensure tooltip stays in viewport
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
     
-    // Horizontal boundary check - center the tooltip on the selection
-    if (left - tooltipWidth / 2 < 10) {
-      left = tooltipWidth / 2 + 10;
-    } else if (left + tooltipWidth / 2 > viewportWidth - 10) {
-      left = viewportWidth - tooltipWidth / 2 - 10;
+    // Horizontal boundary check - adjust if tooltip would be clipped
+    if (left + tooltipWidth > viewportWidth - 10) {
+      left = viewportWidth - tooltipWidth - 10;
+    }
+    if (left < 10) {
+      left = 10;
     }
     
     // Vertical boundary check - if tooltip would be clipped at bottom, show above
     if (top + tooltipHeight > viewportHeight - 10) {
-      top = rect.top - tooltipHeight - 12; // Show above selection
+      top = rect.top - tooltipHeight - 12; // Show above caret
       // If still clipped, clamp to viewport
       if (top < 10) {
         top = 10;
@@ -59,7 +61,6 @@ const TextSelectionTooltip: React.FC<TextSelectionTooltipProps> = ({
     position: 'fixed',
     left: left,
     top: top,
-    transform: 'translateX(-50%)',
     zIndex: 1000,
     pointerEvents: 'auto',
     userSelect: 'none',
@@ -75,9 +76,9 @@ const TextSelectionTooltip: React.FC<TextSelectionTooltipProps> = ({
     setShowInput(true);
   };
 
+  // Prevent selection collapse when clicking the follow-up button
   const handleFollowUpMouseDown = (e: React.MouseEvent) => {
-    // Prevent the browser from collapsing the text selection
-    e.preventDefault();
+    e.preventDefault(); // stops the browser from clearing the selection
     e.stopPropagation();
   };
 
@@ -120,6 +121,7 @@ const TextSelectionTooltip: React.FC<TextSelectionTooltipProps> = ({
 
   return (
     <div 
+      ref={tooltipRef}
       style={tooltipStyle} 
       className={`animate-fade-in ${showInput ? '' : 'bg-black/90 backdrop-blur-sm border border-gray-700 rounded-lg shadow-lg p-2'}`}
       data-selection-tooltip
