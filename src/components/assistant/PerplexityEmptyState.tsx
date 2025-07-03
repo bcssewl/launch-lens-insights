@@ -49,7 +49,7 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({ onSendMessa
         <div className="mb-12">
           <div className="flex items-center justify-center mb-6">
             <img 
-              src="/lovable-uploads/e2595a95-021e-4a61-a08b-b9619494a985.png" 
+              src="/lovable-uploads/a8ac55c8-457a-45f3-91df-18138d557b7f.png" 
               alt="Optivise NEXUS"
               className="h-16 w-auto"
             />
