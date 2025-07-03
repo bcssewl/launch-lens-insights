@@ -22,12 +22,12 @@ const TextSelectionTooltip: React.FC<TextSelectionTooltipProps> = ({
 
   // Calculate tooltip position above the caret
   const calculateTooltipPosition = () => {
-    const tooltipHeight = showInput ? 80 : 40; // Taller when showing input
-    const tooltipWidth = showInput ? 320 : 120; // Wider when showing input
+    const tooltipHeight = showInput ? 48 : 40; // Consistent height for cylindrical input
+    const tooltipWidth = showInput ? 350 : 120; // Wider for cylindrical input
     
     // Position tooltip above the caret, centered horizontally on the caret
     let left = rect.left + rect.width / 2;
-    let top = rect.top - tooltipHeight - 8; // 8px gap above
+    let top = rect.top - tooltipHeight - 12; // Slightly more gap for the cylindrical design
     
     // Boundary checks to ensure tooltip stays in viewport
     const viewportWidth = window.innerWidth;
@@ -35,14 +35,14 @@ const TextSelectionTooltip: React.FC<TextSelectionTooltipProps> = ({
     
     // Horizontal boundary check
     if (left - tooltipWidth / 2 < 10) {
-      left = tooltipWidth / 2 + 10; // Minimum 10px from left edge
+      left = tooltipWidth / 2 + 10;
     } else if (left + tooltipWidth / 2 > viewportWidth - 10) {
-      left = viewportWidth - tooltipWidth / 2 - 10; // Minimum 10px from right edge
+      left = viewportWidth - tooltipWidth / 2 - 10;
     }
     
-    // Vertical boundary check - if tooltip would go above viewport, show below instead
+    // Vertical boundary check
     if (top < 10) {
-      top = rect.bottom + 8; // Show below with 8px gap
+      top = rect.bottom + 12;
     }
     
     return { top, left };
@@ -106,7 +106,7 @@ const TextSelectionTooltip: React.FC<TextSelectionTooltipProps> = ({
   return (
     <div 
       style={tooltipStyle} 
-      className="animate-fade-in bg-background/95 backdrop-blur-sm border border-border rounded-lg shadow-lg p-2"
+      className={`animate-fade-in ${showInput ? '' : 'bg-black/90 backdrop-blur-sm border border-gray-700 rounded-lg shadow-lg p-2'}`}
       data-selection-tooltip
       onMouseDown={handleMouseDown}
     >
@@ -115,7 +115,7 @@ const TextSelectionTooltip: React.FC<TextSelectionTooltipProps> = ({
           <Button
             size="sm"
             onClick={handleFollowUpClick}
-            className="h-8 text-xs"
+            className="h-8 text-xs bg-white text-black hover:bg-gray-100"
             data-tooltip-trigger
           >
             <MessageSquare className="w-3 h-3 mr-1" />
@@ -125,39 +125,56 @@ const TextSelectionTooltip: React.FC<TextSelectionTooltipProps> = ({
             size="sm"
             variant="ghost"
             onClick={handleClose}
-            className="h-8 w-8 p-0 text-xs"
+            className="h-8 w-8 p-0 text-xs text-white hover:bg-white/10"
           >
             <X className="w-3 h-3" />
           </Button>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="flex items-center gap-2 w-full">
-          <Input
-            ref={inputRef}
-            value={question}
-            onChange={(e) => setQuestion(e.target.value)}
-            placeholder="Ask a question about this text..."
-            className="h-8 text-xs flex-1 min-w-0"
-            onKeyDown={handleKeyDown}
-          />
-          <Button
-            type="submit"
-            size="sm"
-            disabled={!question.trim()}
-            className="h-8 w-8 p-0"
-          >
-            <Send className="w-3 h-3" />
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            onClick={() => {setShowInput(false); setQuestion('');}}
-            className="h-8 w-8 p-0"
-          >
-            <X className="w-3 h-3" />
-          </Button>
-        </form>
+        <div 
+          className="flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-md bg-white/10 border border-white/20 shadow-lg"
+          style={{
+            background: 'rgba(255, 255, 255, 0.1)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)'
+          }}
+        >
+          <form onSubmit={handleSubmit} className="flex items-center gap-2 w-full">
+            <Input
+              ref={inputRef}
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              placeholder="Ask a question about this text..."
+              className="h-8 text-sm flex-1 min-w-0 bg-transparent border-none focus:ring-0 focus:outline-none text-white placeholder-white/70"
+              onKeyDown={handleKeyDown}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                outline: 'none',
+                boxShadow: 'none'
+              }}
+            />
+            <Button
+              type="submit"
+              size="sm"
+              disabled={!question.trim()}
+              className="h-6 w-6 p-0 bg-white/20 hover:bg-white/30 border-none rounded-full"
+            >
+              <Send className="w-3 h-3 text-white" />
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => {setShowInput(false); setQuestion('');}}
+              className="h-6 w-6 p-0 bg-white/20 hover:bg-white/30 border-none rounded-full"
+            >
+              <X className="w-3 h-3 text-white" />
+            </Button>
+          </form>
+        </div>
       )}
     </div>
   );
