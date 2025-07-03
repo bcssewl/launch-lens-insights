@@ -1,7 +1,8 @@
 
 import React, { useMemo } from 'react';
 import { ResizablePanel } from '@/components/ui/resizable';
-import InlineMarkdownEditor from './InlineMarkdownEditor';
+import SeamlessMarkdownEditor from './SeamlessMarkdownEditor';
+import { useCanvasDocument } from '@/hooks/useCanvasDocument';
 
 interface CanvasReportPanelProps {
   isEditing: boolean;
@@ -10,14 +11,18 @@ interface CanvasReportPanelProps {
   onCancel: () => void;
   hasChat: boolean;
   onSendMessage?: (message: string) => void;
+  messageId?: string;
 }
 
 const CanvasReportPanel: React.FC<CanvasReportPanelProps> = ({
   content,
   onSave,
   hasChat,
-  onSendMessage
+  onSendMessage,
+  messageId
 }) => {
+  const { document } = useCanvasDocument(messageId, content);
+
   // Memoize canvas styles to prevent recalculation
   const canvasStyles = useMemo(() => ({
     fontSize: '16px',
@@ -27,6 +32,12 @@ const CanvasReportPanel: React.FC<CanvasReportPanelProps> = ({
   const handleContentChange = (newContent: string) => {
     onSave(newContent);
   };
+
+  // Extract title from content
+  const title = useMemo(() => {
+    const firstLine = content.split('\n')[0];
+    return firstLine.replace(/^#\s*/, '') || 'AI Report';
+  }, [content]);
 
   return (
     <ResizablePanel defaultSize={hasChat ? 60 : 100}>
@@ -41,10 +52,12 @@ const CanvasReportPanel: React.FC<CanvasReportPanelProps> = ({
               msUserSelect: 'text'
             }}
           >
-            <InlineMarkdownEditor
+            <SeamlessMarkdownEditor
               content={content}
               onContentChange={handleContentChange}
               onSendMessage={onSendMessage}
+              documentId={document?.id}
+              title={title}
               className="canvas-content"
             />
           </div>

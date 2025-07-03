@@ -62,6 +62,71 @@ export type Database = {
           },
         ]
       }
+      canvas_documents: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string
+          id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          created_by: string
+          id?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      canvas_versions: {
+        Row: {
+          content: string
+          created_at: string
+          created_by_user: boolean
+          document_id: string
+          id: string
+          title: string
+          version_number: number
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          created_by_user?: boolean
+          document_id: string
+          id?: string
+          title: string
+          version_number: number
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by_user?: boolean
+          document_id?: string
+          id?: string
+          title?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "canvas_versions_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "canvas_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_sessions: {
         Row: {
           created_at: string

@@ -42,6 +42,7 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
   isTyping = false,
   viewportRef,
   onSendMessage,
+  canvasState,
   onCanvasDownload,
   onCanvasPrint,
   onContentUpdate
@@ -55,10 +56,10 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
     setCurrentContent(content);
   }, [content]);
 
-  // Use keyboard shortcuts hook - no edit mode needed anymore
+  // Use keyboard shortcuts hook
   useCanvasKeyboardShortcuts({
     isOpen,
-    isEditing: false, // Always false since we have inline editing
+    isEditing: false, // Always false since we have seamless editing
     onClose,
     onPrint,
     onToggleEdit: () => {} // No-op since we don't have edit mode
@@ -72,9 +73,9 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
   }, [onClose]);
 
   const handleContentUpdate = useCallback((newContent: string) => {
+    console.log('CanvasView: Content updated via seamless editor');
     setCurrentContent(newContent);
     onContentUpdate?.(newContent);
-    console.log('CanvasView: Content updated');
   }, [onContentUpdate]);
 
   // Format timestamp helper
@@ -106,7 +107,7 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
     return null;
   }
 
-  console.log('CanvasView: Rendering full canvas view');
+  console.log('CanvasView: Rendering full canvas view with seamless editing');
 
   const hasChat = Boolean(onSendMessage);
 
@@ -122,10 +123,10 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
         {/* Floating Elements for consistent background */}
         <FloatingElements />
         
-        {/* Header - no edit button needed anymore */}
+        {/* Header */}
         <CanvasHeader
           title={title}
-          isEditing={false} // Always false since we have inline editing
+          isEditing={false} // Always false since we have seamless editing
           onDownload={onDownload}
           onPrint={onPrint}
           onEdit={() => {}} // No-op since we don't need edit mode
@@ -152,7 +153,7 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
               </>
             )}
 
-            {/* Report Panel - now always in inline edit mode */}
+            {/* Report Panel with Seamless Editing */}
             <CanvasReportPanel
               isEditing={false} // Not used anymore
               content={currentContent}
@@ -160,6 +161,7 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
               onCancel={() => {}} // Not used anymore
               hasChat={hasChat}
               onSendMessage={onSendMessage}
+              messageId={canvasState?.messageId}
             />
           </ResizablePanelGroup>
         </div>

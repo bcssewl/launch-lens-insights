@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Message, initialMessages, formatTimestamp } from '@/constants/aiAssistant';
@@ -108,7 +107,13 @@ export const useMessages = (currentSessionId: string | null) => {
     setIsTyping(true);
     
     try {
-      const aiResponseText = await sendMessageToN8n(finalMessageText, currentSessionId);
+      // Include current canvas content in the context if canvas is open
+      let contextMessage = finalMessageText;
+      if (canvasState.isOpen && canvasState.content) {
+        contextMessage = `Current document content:\n\n${canvasState.content}\n\n---\n\nUser message: ${finalMessageText}`;
+      }
+      
+      const aiResponseText = await sendMessageToN8n(contextMessage, currentSessionId);
       
       const aiResponse: Message = {
         id: uuidv4(),
@@ -135,7 +140,7 @@ export const useMessages = (currentSessionId: string | null) => {
     } finally {
       setIsTyping(false);
     }
-  }, [currentSessionId, addMessage, isConfigured, sendMessageToN8n]);
+  }, [currentSessionId, addMessage, isConfigured, sendMessageToN8n, canvasState]);
 
   const handleClearConversation = useCallback(() => {
     console.log('useMessages: Clearing conversation');
