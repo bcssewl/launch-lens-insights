@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import { Logo } from '@/components/icons';
 import { Search, Mic, Plus, Target, Lightbulb, Globe, Paperclip } from 'lucide-react';
@@ -44,12 +45,12 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({ onSendMessa
   };
 
   const handleImageError = () => {
-    console.error('Failed to load image: /lovable-uploads/36c9923f-2538-4c4f-9d1e-7c13d445ba57.png');
+    console.error('Failed to load image: /lovable-uploads/97674e5d-e119-49ed-a49c-e9695dab3378.png');
     setImageError(true);
   };
 
   const handleImageLoad = () => {
-    console.log('Image loaded successfully: /lovable-uploads/36c9923f-2538-4c4f-9d1e-7c13d445ba57.png');
+    console.log('Image loaded successfully: /lovable-uploads/97674e5d-e119-49ed-a49c-e9695dab3378.png');
     setImageError(false);
   };
 
@@ -61,7 +62,7 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({ onSendMessa
           <div className="flex items-center justify-center mb-6">
             {!imageError ? (
               <img 
-                src="/lovable-uploads/36c9923f-2538-4c4f-9d1e-7c13d445ba57.png" 
+                src="/lovable-uploads/97674e5d-e119-49ed-a49c-e9695dab3378.png" 
                 alt="Optivise NEXUS"
                 className="h-16 w-auto"
                 onError={handleImageError}
@@ -229,3 +230,4 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({ onSendMessa
 };
 
 export default PerplexityEmptyState;
+
