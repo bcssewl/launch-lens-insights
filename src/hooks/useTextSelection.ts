@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 interface UseTextSelectionReturn {
@@ -22,7 +21,7 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
     setIsVisible(false);
   }, []);
 
-  // Get selection rectangle at the visual end of the selection
+  // Get selection rectangle at the exact end position where tooltip should appear
   const getSelectionRect = useCallback((): DOMRect | null => {
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
@@ -31,17 +30,7 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
 
     try {
       const range = selection.getRangeAt(0);
-      const rangeBounds = range.getBoundingClientRect();
       
-      console.log('useTextSelection: Selection bounds:', {
-        top: rangeBounds.top,
-        left: rangeBounds.left,
-        right: rangeBounds.right,
-        bottom: rangeBounds.bottom,
-        width: rangeBounds.width,
-        height: rangeBounds.height
-      });
-
       // Get all rectangles for the selection (handles multi-line selections)
       const rects = range.getClientRects();
       
@@ -49,7 +38,7 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
         // Use the last rectangle (end of selection) for positioning
         const lastRect = rects[rects.length - 1];
         
-        console.log('useTextSelection: Using last rect:', {
+        console.log('useTextSelection: Last rect of selection:', {
           top: lastRect.top,
           left: lastRect.left,
           right: lastRect.right,
@@ -58,30 +47,33 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
           height: lastRect.height
         });
         
-        // Position tooltip at the end of the selection (right edge of last line)
+        // Position tooltip at the exact end of the selection
+        // Use bottom of text line for vertical positioning (text baseline)
+        // Use right edge + small offset for horizontal positioning
         return {
-          top: lastRect.top,
-          left: lastRect.right,
+          top: lastRect.bottom - 4, // Position at text baseline, not line top
+          left: lastRect.right + 4, // Small offset from end of text
           width: 0,
           height: lastRect.height,
-          right: lastRect.right,
+          right: lastRect.right + 4,
           bottom: lastRect.bottom,
-          x: lastRect.right,
-          y: lastRect.top,
+          x: lastRect.right + 4,
+          y: lastRect.bottom - 4,
           toJSON: () => ({})
         } as DOMRect;
       } else {
         // Fallback to range bounds
-        console.log('useTextSelection: No client rects, using range bounds');
+        const rangeBounds = range.getBoundingClientRect();
+        console.log('useTextSelection: Using range bounds fallback');
         return {
-          top: rangeBounds.top,
-          left: rangeBounds.right,
+          top: rangeBounds.bottom - 4,
+          left: rangeBounds.right + 4,
           width: 0,
           height: rangeBounds.height,
-          right: rangeBounds.right,
+          right: rangeBounds.right + 4,
           bottom: rangeBounds.bottom,
-          x: rangeBounds.right,
-          y: rangeBounds.top,
+          x: rangeBounds.right + 4,
+          y: rangeBounds.bottom - 4,
           toJSON: () => ({})
         } as DOMRect;
       }
