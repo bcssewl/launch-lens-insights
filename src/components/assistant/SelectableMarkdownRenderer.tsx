@@ -34,7 +34,7 @@ const SelectableMarkdownRenderer: React.FC<SelectableMarkdownRendererProps> = ({
       console.log('SelectableMarkdownRenderer: Sending message:', formattedMessage);
       onSendMessage(formattedMessage);
     }
-    clearSelection();
+    // Remove clearSelection() call - let TextSelectionTooltip handle it after submission
   };
 
   const handleClose = () => {
