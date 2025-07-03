@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 
 interface UseTextSelectionReturn {
@@ -11,12 +12,14 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
   const [capturedText, setCapturedText] = useState('');
   const [tooltipRect, setTooltipRect] = useState<DOMRect | null>(null);
   const [showTooltip, setShowTooltip] = useState(false);
+  const [preservedRange, setPreservedRange] = useState<Range | null>(null);
 
   const clearSelection = useCallback(() => {
     console.log('useTextSelection: Clearing selection');
     setCapturedText('');
     setTooltipRect(null);
     setShowTooltip(false);
+    setPreservedRange(null);
     // Clear the browser selection as well
     window.getSelection()?.removeAllRanges();
   }, []);
@@ -55,12 +58,16 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
         
         if (rect.width > 0 && rect.height > 0) {
           console.log('useTextSelection: Capturing selection:', text);
+          
+          // Clone the range to preserve it
+          const clonedRange = range.cloneRange();
+          setPreservedRange(clonedRange);
+          
           setCapturedText(text);
           setTooltipRect(rect);
           setShowTooltip(true);
           
-          // Keep the selection highlighted by preserving it
-          // Don't call removeAllRanges() here - let it stay highlighted
+          // Don't clear the selection - let it stay highlighted
         }
       }, 50);
     };
@@ -91,6 +98,18 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
       document.removeEventListener('mousedown', handleMouseDown);
     };
   }, [containerRef, showTooltip, clearSelection]);
+
+  // Effect to restore selection if it gets lost
+  useEffect(() => {
+    if (showTooltip && preservedRange && capturedText) {
+      const selection = window.getSelection();
+      if (selection && (selection.rangeCount === 0 || selection.toString().trim() !== capturedText)) {
+        console.log('useTextSelection: Restoring selection');
+        selection.removeAllRanges();
+        selection.addRange(preservedRange);
+      }
+    }
+  }, [showTooltip, preservedRange, capturedText]);
 
   return {
     selectedText: capturedText,
