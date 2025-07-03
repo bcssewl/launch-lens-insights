@@ -1,12 +1,6 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 
-interface TextSelectionData {
-  text: string;
-  rect: DOMRect;
-  range: Range;
-}
-
 interface UseTextSelectionReturn {
   selectedText: string;
   selectionRect: DOMRect | null;
@@ -18,9 +12,10 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
   const [selectedText, setSelectedText] = useState('');
   const [selectionRect, setSelectionRect] = useState<DOMRect | null>(null);
   const [isVisible, setIsVisible] = useState(false);
-  const clearTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const clearSelection = useCallback(() => {
+    console.log('useTextSelection: Clearing selection');
     setSelectedText('');
     setSelectionRect(null);
     setIsVisible(false);
@@ -29,80 +24,91 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
 
   useEffect(() => {
     console.log('useTextSelection: Setting up event listeners');
+    console.log('useTextSelection: Container ref:', containerRef.current);
     
     const handleSelectionChange = () => {
-      console.log('useTextSelection: Selection changed');
-      const selection = window.getSelection();
-      if (!selection || selection.rangeCount === 0) {
-        console.log('useTextSelection: No selection, clearing');
-        clearSelection();
-        return;
-      }
-
-      const range = selection.getRangeAt(0);
-      const text = range.toString().trim();
-      console.log('useTextSelection: Selected text:', text);
+      console.log('useTextSelection: Selection change event fired');
       
-      if (!text || text.length < 3) {
-        console.log('useTextSelection: Text too short, clearing');
-        clearSelection();
-        return;
+      // Clear existing timeout
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
       }
 
-      // Check if selection is within our container (if container is provided)
-      if (containerRef.current) {
-        const isInContainer = containerRef.current.contains(range.commonAncestorContainer);
-        console.log('useTextSelection: Is in container:', isInContainer);
-        if (!isInContainer) {
+      // Debounce the selection handling to avoid rapid updates
+      debounceTimeoutRef.current = setTimeout(() => {
+        const selection = window.getSelection();
+        console.log('useTextSelection: Current selection:', selection);
+        
+        if (!selection || selection.rangeCount === 0) {
+          console.log('useTextSelection: No selection found');
           clearSelection();
           return;
         }
-      }
 
-      const rect = range.getBoundingClientRect();
-      console.log('useTextSelection: Setting selection with rect:', rect);
-      setSelectedText(text);
-      setSelectionRect(rect);
-      setIsVisible(true);
-    };
+        const range = selection.getRangeAt(0);
+        const text = range.toString().trim();
+        console.log('useTextSelection: Selected text:', `"${text}"`);
+        console.log('useTextSelection: Text length:', text.length);
+        
+        if (!text || text.length < 2) {
+          console.log('useTextSelection: Text too short, clearing');
+          clearSelection();
+          return;
+        }
 
-    const handleMouseDown = (event: MouseEvent) => {
-      console.log('useTextSelection: Mouse down event');
-      // Clear any existing timeout
-      if (clearTimeoutRef.current) {
-        clearTimeout(clearTimeoutRef.current);
-        clearTimeoutRef.current = null;
-      }
+        // Check if selection is within our container
+        if (containerRef.current) {
+          const container = containerRef.current;
+          const commonAncestor = range.commonAncestorContainer;
+          
+          // Check if the selection is within the container (including nested elements)
+          const isInContainer = container.contains(commonAncestor) || 
+                               container.contains(range.startContainer) || 
+                               container.contains(range.endContainer);
+          
+          console.log('useTextSelection: Container check:', {
+            container: container,
+            commonAncestor: commonAncestor,
+            isInContainer: isInContainer,
+            startContainer: range.startContainer,
+            endContainer: range.endContainer
+          });
+          
+          if (!isInContainer) {
+            console.log('useTextSelection: Selection not in container, clearing');
+            clearSelection();
+            return;
+          }
+        }
 
-      // Don't clear selection if clicking on tooltip or selected text
-      const target = event.target as Element;
-      if (target.closest('[data-tooltip-trigger]') || target.closest('[data-selection-tooltip]')) {
-        console.log('useTextSelection: Clicked on tooltip, not clearing');
-        return;
-      }
-
-      // Add a small delay to allow tooltip interactions
-      clearTimeoutRef.current = setTimeout(() => {
-        const currentSelection = window.getSelection();
-        if (!currentSelection || currentSelection.toString().trim() === '') {
-          console.log('useTextSelection: Clearing selection after delay');
+        // Get the bounding rect for the selection
+        const rect = range.getBoundingClientRect();
+        console.log('useTextSelection: Selection rect:', rect);
+        
+        // Only show tooltip if rect has valid dimensions
+        if (rect.width > 0 && rect.height > 0) {
+          console.log('useTextSelection: Setting visible selection');
+          setSelectedText(text);
+          setSelectionRect(rect);
+          setIsVisible(true);
+        } else {
+          console.log('useTextSelection: Invalid rect dimensions, clearing');
           clearSelection();
         }
-      }, 200); // Increased delay
+      }, 100); // 100ms debounce
     };
 
+    // Only listen to selectionchange - remove mousedown listener that was interfering
     document.addEventListener('selectionchange', handleSelectionChange);
-    document.addEventListener('mousedown', handleMouseDown);
     
     return () => {
       console.log('useTextSelection: Cleaning up event listeners');
       document.removeEventListener('selectionchange', handleSelectionChange);
-      document.removeEventListener('mousedown', handleMouseDown);
-      if (clearTimeoutRef.current) {
-        clearTimeout(clearTimeoutRef.current);
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
       }
     };
-  }, [containerRef, clearSelection]); // Include dependencies to ensure proper cleanup
+  }, [containerRef, clearSelection]);
 
   return {
     selectedText,

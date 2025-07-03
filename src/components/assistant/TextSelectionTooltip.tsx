@@ -15,11 +15,13 @@ const TextSelectionTooltip: React.FC<TextSelectionTooltipProps> = ({ rect, onFol
     top: Math.min(rect.bottom + 8, window.innerHeight - 60),
     transform: 'translateX(-50%)',
     zIndex: 1000,
+    pointerEvents: 'auto'
   };
 
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    console.log('TextSelectionTooltip: Follow up button clicked');
     onFollowUp();
   };
 

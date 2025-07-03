@@ -22,24 +22,31 @@ const SelectableMarkdownRenderer: React.FC<SelectableMarkdownRendererProps> = ({
   const [showFollowUpDialog, setShowFollowUpDialog] = React.useState(false);
 
   useEffect(() => {
-    console.log('SelectableMarkdownRenderer: Container ref current:', containerRef.current);
-    console.log('SelectableMarkdownRenderer: Selection state:', { selectedText, isVisible });
-  }, [selectedText, isVisible]);
+    console.log('SelectableMarkdownRenderer: Container mounted:', containerRef.current);
+    console.log('SelectableMarkdownRenderer: Selection state:', { 
+      selectedText: `"${selectedText}"`, 
+      isVisible,
+      hasRect: !!selectionRect 
+    });
+  }, [selectedText, isVisible, selectionRect]);
 
   const handleFollowUp = () => {
-    console.log('SelectableMarkdownRenderer: Follow up clicked');
+    console.log('SelectableMarkdownRenderer: Follow up clicked for text:', selectedText);
     setShowFollowUpDialog(true);
   };
 
   const handleSubmitQuestion = (question: string) => {
     if (onSendMessage) {
       const formattedMessage = `Regarding: "${selectedText}"\n\n${question}`;
+      console.log('SelectableMarkdownRenderer: Sending message:', formattedMessage);
       onSendMessage(formattedMessage);
     }
     clearSelection();
+    setShowFollowUpDialog(false);
   };
 
   const handleDialogClose = () => {
+    console.log('SelectableMarkdownRenderer: Dialog closed');
     setShowFollowUpDialog(false);
     clearSelection();
   };
@@ -48,12 +55,24 @@ const SelectableMarkdownRenderer: React.FC<SelectableMarkdownRendererProps> = ({
     <div 
       ref={containerRef} 
       className={cn("relative", className)}
-      style={{ userSelect: 'text' }} // Ensure text is selectable
+      style={{ 
+        userSelect: 'text',
+        WebkitUserSelect: 'text',
+        MozUserSelect: 'text',
+        msUserSelect: 'text'
+      }}
     >
-      <MarkdownRenderer content={content} />
+      <div style={{ 
+        userSelect: 'text',
+        WebkitUserSelect: 'text',
+        MozUserSelect: 'text',
+        msUserSelect: 'text'
+      }}>
+        <MarkdownRenderer content={content} />
+      </div>
       
       {/* Text Selection Tooltip */}
-      {isVisible && selectionRect && (
+      {isVisible && selectionRect && selectedText && (
         <TextSelectionTooltip
           rect={selectionRect}
           onFollowUp={handleFollowUp}

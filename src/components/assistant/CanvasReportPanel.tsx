@@ -43,8 +43,10 @@ const CanvasReportPanel: React.FC<CanvasReportPanelProps> = ({
               className="prose prose-gray dark:prose-invert max-w-none"
               style={{ 
                 ...canvasStyles,
-                userSelect: 'text', // Ensure text selection is enabled
-                WebkitUserSelect: 'text' // For Safari
+                userSelect: 'text',
+                WebkitUserSelect: 'text',
+                MozUserSelect: 'text',
+                msUserSelect: 'text'
               }}
             >
               <SelectableMarkdownRenderer 
