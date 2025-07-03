@@ -40,7 +40,6 @@ const CanvasReportPanel: React.FC<CanvasReportPanelProps> = ({
         <div className="h-full overflow-auto">
           <div className="max-w-4xl mx-auto p-8">
             <div 
-              className="prose prose-gray dark:prose-invert max-w-none"
               style={{ 
                 ...canvasStyles,
                 userSelect: 'text',
