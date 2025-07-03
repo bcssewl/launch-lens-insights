@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 
 interface UseTextSelectionReturn {
@@ -20,38 +19,41 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
     setIsVisible(false);
   }, []);
 
-  const getCaretRect = useCallback(() => {
+  // Get selection rectangle - handles multi-line selections properly
+  const getSelectionRect = useCallback((): DOMRect | null => {
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
       return null;
     }
 
     try {
-      // Use the END of the selection range for natural positioning
       const range = selection.getRangeAt(0).cloneRange();
-      range.collapse(false); // collapse to end-caret
-
-      // For multi-line selections we want just the caret line
-      const rects = range.getClientRects();
-      if (!rects.length) {
-        // Fallback to getBoundingClientRect if getClientRects fails
-        const boundingRect = range.getBoundingClientRect();
-        if (boundingRect.width > 0 || boundingRect.height > 0) {
-          return boundingRect;
-        }
-        return null;
+      
+      // For multi-line selections, we want to position at the end of the selection
+      range.collapse(false); // collapse to end
+      
+      // Create a temporary span to get accurate positioning
+      const tempSpan = document.createElement('span');
+      tempSpan.style.position = 'absolute';
+      tempSpan.style.visibility = 'hidden';
+      tempSpan.style.whiteSpace = 'nowrap';
+      
+      range.insertNode(tempSpan);
+      const rect = tempSpan.getBoundingClientRect();
+      
+      // Clean up temporary element
+      if (tempSpan.parentNode) {
+        tempSpan.parentNode.removeChild(tempSpan);
       }
-
-      const caretRect = rects[0]; // small sliver around the caret
       
       // Ensure we have a valid rectangle
-      if (caretRect.width >= 0 && caretRect.height >= 0) {
-        return caretRect;
+      if (rect.width >= 0 && rect.height >= 0) {
+        return rect;
       }
       
       return null;
     } catch (error) {
-      console.error('Error getting caret rect:', error);
+      console.error('Error getting selection rect:', error);
       return null;
     }
   }, []);
@@ -64,6 +66,19 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
     const tooltipElement = activeElement.closest('[data-selection-tooltip]');
     return !!tooltipElement;
   }, []);
+
+  // Update selection rect on scroll/resize to keep tooltip positioned correctly
+  const updateSelectionRect = useCallback(() => {
+    if (!isVisible || !selectedText) return;
+    
+    const newRect = getSelectionRect();
+    if (newRect) {
+      setSelectionRect(newRect);
+    } else {
+      // Selection lost, clear everything
+      clearSelection();
+    }
+  }, [isVisible, selectedText, getSelectionRect, clearSelection]);
 
   useEffect(() => {
     const handleMouseUp = () => {
@@ -104,25 +119,25 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
           }
         }
 
-        // Get the caret position for the tooltip
-        const caretRect = getCaretRect();
+        // Get the selection position for the tooltip
+        const rect = getSelectionRect();
         
-        if (caretRect) {
+        if (rect) {
           console.log('useTextSelection: Text selected:', text);
-          console.log('useTextSelection: Caret rect:', { 
-            top: caretRect.top, 
-            left: caretRect.left, 
-            bottom: caretRect.bottom, 
-            right: caretRect.right,
-            width: caretRect.width,
-            height: caretRect.height
+          console.log('useTextSelection: Selection rect:', { 
+            top: rect.top, 
+            left: rect.left, 
+            bottom: rect.bottom, 
+            right: rect.right,
+            width: rect.width,
+            height: rect.height
           });
           
           setSelectedText(text);
-          setSelectionRect(caretRect);
+          setSelectionRect(rect);
           setIsVisible(true);
         } else {
-          console.log('useTextSelection: No valid caret rect found');
+          console.log('useTextSelection: No valid selection rect found');
           clearSelection();
         }
       }, 10);
@@ -171,7 +186,30 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
       document.removeEventListener('mousedown', handleMouseDown);
       document.removeEventListener('selectionchange', handleSelectionChange);
     };
-  }, [containerRef, isVisible, clearSelection, getCaretRect, isTooltipFocused]);
+  }, [containerRef, isVisible, clearSelection, getSelectionRect, isTooltipFocused]);
+
+  // Add scroll and resize listeners to update position when visible
+  useEffect(() => {
+    if (!isVisible) return;
+
+    // Listen for scroll events in capture phase to catch all scrollable ancestors
+    const handleScroll = () => {
+      updateSelectionRect();
+    };
+
+    const handleResize = () => {
+      updateSelectionRect();
+    };
+
+    // Use capture phase to catch scroll events from all ancestors
+    window.addEventListener('scroll', handleScroll, true);
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll, true);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [isVisible, updateSelectionRect]);
 
   return {
     selectedText,

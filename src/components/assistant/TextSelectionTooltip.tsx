@@ -20,29 +20,33 @@ const TextSelectionTooltip: React.FC<TextSelectionTooltipProps> = ({
   const [question, setQuestion] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Calculate tooltip position above the caret
+  // Calculate tooltip position below the selection (ChatGPT style)
   const calculateTooltipPosition = () => {
     const tooltipHeight = showInput ? 48 : 40;
     const tooltipWidth = showInput ? 350 : 120;
     
-    // Position tooltip above the caret, centered horizontally on the caret
+    // Position tooltip below the selection, centered horizontally
     let left = rect.left + rect.width / 2;
-    let top = rect.top - tooltipHeight - 12;
+    let top = rect.bottom + 12; // 12px below the selection
     
     // Boundary checks to ensure tooltip stays in viewport
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
     
-    // Horizontal boundary check
+    // Horizontal boundary check - center the tooltip on the selection
     if (left - tooltipWidth / 2 < 10) {
       left = tooltipWidth / 2 + 10;
     } else if (left + tooltipWidth / 2 > viewportWidth - 10) {
       left = viewportWidth - tooltipWidth / 2 - 10;
     }
     
-    // Vertical boundary check
-    if (top < 10) {
-      top = rect.bottom + 12;
+    // Vertical boundary check - if tooltip would be clipped at bottom, show above
+    if (top + tooltipHeight > viewportHeight - 10) {
+      top = rect.top - tooltipHeight - 12; // Show above selection
+      // If still clipped, clamp to viewport
+      if (top < 10) {
+        top = 10;
+      }
     }
     
     return { top, left };
@@ -50,6 +54,7 @@ const TextSelectionTooltip: React.FC<TextSelectionTooltipProps> = ({
 
   const { top, left } = calculateTooltipPosition();
 
+  // Use position: fixed to stay outside scroll containers (like ChatGPT)
   const tooltipStyle: React.CSSProperties = {
     position: 'fixed',
     left: left,
