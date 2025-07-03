@@ -27,6 +27,8 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
         const selection = window.getSelection();
         
         if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
+          // If no selection, just clear our tooltip state but don't touch the selection
+          clearSelection();
           return;
         }
 
@@ -34,6 +36,7 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
         const text = selection.toString().trim();
         
         if (text.length < 2) {
+          clearSelection();
           return;
         }
 
@@ -45,11 +48,12 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
           
           // Only proceed if both start and end are in our container
           if (!startInContainer || !endInContainer) {
+            clearSelection();
             return;
           }
         }
 
-        // Get the position for the tooltip
+        // Get the position for the tooltip - DO NOT modify the selection
         const rect = range.getBoundingClientRect();
         
         if (rect.width > 0 && rect.height > 0) {
@@ -58,7 +62,7 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
           setSelectionRect(rect);
           setIsVisible(true);
         }
-      }, 50);
+      }, 10); // Reduced delay
     };
 
     const handleMouseDown = (e: MouseEvent) => {
@@ -72,15 +76,15 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
         return;
       }
       
-      // Only clear tooltip when starting a new interaction outside the tooltip
+      // Only clear our tooltip state when clicking outside
       if (isVisible) {
         clearSelection();
       }
     };
 
-    // Only listen for mouseup to detect new selections
+    // Listen for mouseup to detect selections
     document.addEventListener('mouseup', handleMouseUp);
-    // Only listen for mousedown to clear when starting new interactions
+    // Listen for mousedown to clear tooltip when clicking elsewhere
     document.addEventListener('mousedown', handleMouseDown);
     
     return () => {
