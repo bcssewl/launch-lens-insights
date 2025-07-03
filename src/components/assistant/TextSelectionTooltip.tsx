@@ -144,17 +144,6 @@ const TextSelectionTooltip: React.FC<TextSelectionTooltipProps> = ({
       ) : (
         <div 
           className="flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-md bg-white/10 border border-white/20 shadow-lg"
-          style={{
-            background: 'rgba(255, 255, 255, 0.1)',
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255, 255, 255, 0.2)',
-            boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
-            userSelect: 'none',
-            WebkitUserSelect: 'none',
-            MozUserSelect: 'none',
-            msUserSelect: 'none'
-          }}
           onMouseDown={handleContainerMouseDown}
         >
           <form onSubmit={handleSubmit} className="flex items-center gap-2 w-full">
