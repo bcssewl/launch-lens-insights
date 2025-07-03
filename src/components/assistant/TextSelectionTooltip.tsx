@@ -91,7 +91,7 @@ const TextSelectionTooltip: React.FC<TextSelectionTooltipProps> = ({
     onClose();
   };
 
-  const handleMouseDown = (e: React.MouseEvent) => {
+  const handleContainerMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
   };
@@ -108,7 +108,7 @@ const TextSelectionTooltip: React.FC<TextSelectionTooltipProps> = ({
       style={tooltipStyle} 
       className={`animate-fade-in ${showInput ? '' : 'bg-black/90 backdrop-blur-sm border border-gray-700 rounded-lg shadow-lg p-2'}`}
       data-selection-tooltip
-      onMouseDown={handleMouseDown}
+      onMouseDown={handleContainerMouseDown}
     >
       {!showInput ? (
         <div className="flex items-center gap-1">
@@ -140,6 +140,7 @@ const TextSelectionTooltip: React.FC<TextSelectionTooltipProps> = ({
             border: '1px solid rgba(255, 255, 255, 0.2)',
             boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)'
           }}
+          onMouseDown={handleContainerMouseDown}
         >
           <form onSubmit={handleSubmit} className="flex items-center gap-2 w-full">
             <Input
