@@ -9,61 +9,33 @@ interface TextSelectionTooltipProps {
   containerRef?: React.RefObject<HTMLElement>;
 }
 
-const TextSelectionTooltip: React.FC<TextSelectionTooltipProps> = ({ rect, onFollowUp, containerRef }) => {
-  // Find the closest scrollable container
-  const getScrollableContainer = (element: Element | null): Element | null => {
-    if (!element || element === document.body) return null;
-    
-    const computedStyle = window.getComputedStyle(element);
-    const overflowY = computedStyle.overflowY;
-    const overflowX = computedStyle.overflowX;
-    
-    if (overflowY === 'auto' || overflowY === 'scroll' || overflowX === 'auto' || overflowX === 'scroll') {
-      return element;
-    }
-    
-    return getScrollableContainer(element.parentElement);
-  };
-
-  // Calculate tooltip position accounting for scroll offsets
+const TextSelectionTooltip: React.FC<TextSelectionTooltipProps> = ({ rect, onFollowUp }) => {
+  // Calculate tooltip position above the caret
   const calculateTooltipPosition = () => {
-    let adjustedTop = rect.bottom + 8;
-    let adjustedLeft = rect.left + rect.width / 2;
-
-    // Check if we're inside a scrollable container
-    if (containerRef?.current) {
-      const scrollableContainer = getScrollableContainer(containerRef.current);
-      
-      if (scrollableContainer) {
-        const containerRect = scrollableContainer.getBoundingClientRect();
-        const scrollTop = scrollableContainer.scrollTop;
-        const scrollLeft = scrollableContainer.scrollLeft;
-        
-        // Adjust position to stay within the visible area of the scrollable container
-        const relativeTop = rect.bottom - containerRect.top;
-        const relativeLeft = rect.left - containerRect.left + rect.width / 2;
-        
-        // Position tooltip just below the selection, within the container bounds
-        adjustedTop = Math.min(
-          containerRect.top + relativeTop + 8,
-          containerRect.bottom - 60 // Leave space for tooltip
-        );
-        
-        adjustedLeft = Math.max(
-          containerRect.left + 60, // Minimum distance from left edge
-          Math.min(
-            containerRect.left + relativeLeft,
-            containerRect.right - 60 // Minimum distance from right edge
-          )
-        );
-      }
+    const tooltipHeight = 40; // Approximate height of the tooltip
+    const tooltipWidth = 120; // Approximate width of the tooltip
+    
+    // Position tooltip above the caret, centered horizontally
+    let left = rect.left + rect.width / 2 + window.scrollX;
+    let top = rect.top + window.scrollY - tooltipHeight - 8; // 8px gap above
+    
+    // Boundary checks to ensure tooltip stays in viewport
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    
+    // Horizontal boundary check
+    if (left - tooltipWidth / 2 < 10) {
+      left = tooltipWidth / 2 + 10; // Minimum 10px from left edge
+    } else if (left + tooltipWidth / 2 > viewportWidth - 10) {
+      left = viewportWidth - tooltipWidth / 2 - 10; // Minimum 10px from right edge
     }
-
-    // Final boundary checks against viewport
-    adjustedLeft = Math.max(60, Math.min(adjustedLeft, window.innerWidth - 120));
-    adjustedTop = Math.min(adjustedTop, window.innerHeight - 60);
-
-    return { top: adjustedTop, left: adjustedLeft };
+    
+    // Vertical boundary check - if tooltip would go above viewport, show below instead
+    if (top < window.scrollY + 10) {
+      top = rect.bottom + window.scrollY + 8; // Show below with 8px gap
+    }
+    
+    return { top, left };
   };
 
   const { top, left } = calculateTooltipPosition();

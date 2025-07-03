@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface UseTextSelectionReturn {
   selectedText: string;
@@ -18,6 +18,21 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
     setSelectedText('');
     setSelectionRect(null);
     setIsVisible(false);
+  }, []);
+
+  const getCaretRect = useCallback(() => {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return null;
+
+    // Use the END of the selection range for natural positioning
+    const range = selection.getRangeAt(0).cloneRange();
+    range.collapse(false); // collapse to end-caret
+
+    // For multi-line selections we want just the caret line
+    const rects = range.getClientRects();
+    if (!rects.length) return null;
+
+    return rects[0]; // small sliver around the caret
   }, []);
 
   useEffect(() => {
@@ -51,22 +66,22 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
           }
         }
 
-        // Get the position for the tooltip
-        const rect = range.getBoundingClientRect();
+        // Get the caret position for the tooltip
+        const caretRect = getCaretRect();
         
-        if (rect.width > 0 && rect.height > 0) {
+        if (caretRect && caretRect.width >= 0 && caretRect.height >= 0) {
           console.log('useTextSelection: Text selected:', text);
-          console.log('useTextSelection: Selection rect:', { 
-            top: rect.top, 
-            left: rect.left, 
-            bottom: rect.bottom, 
-            right: rect.right,
-            width: rect.width,
-            height: rect.height
+          console.log('useTextSelection: Caret rect:', { 
+            top: caretRect.top, 
+            left: caretRect.left, 
+            bottom: caretRect.bottom, 
+            right: caretRect.right,
+            width: caretRect.width,
+            height: caretRect.height
           });
           
           setSelectedText(text);
-          setSelectionRect(rect);
+          setSelectionRect(caretRect);
           setIsVisible(true);
         }
       }, 10);
@@ -98,7 +113,7 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
       document.removeEventListener('mouseup', handleMouseUp);
       document.removeEventListener('mousedown', handleMouseDown);
     };
-  }, [containerRef, isVisible, clearSelection]);
+  }, [containerRef, isVisible, clearSelection, getCaretRect]);
 
   return {
     selectedText,
