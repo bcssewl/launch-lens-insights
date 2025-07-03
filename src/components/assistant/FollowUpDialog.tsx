@@ -39,9 +39,15 @@ const FollowUpDialog: React.FC<FollowUpDialogProps> = ({
     }
   };
 
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      onClose();
+    }
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+      <DialogContent className="max-w-2xl" data-selection-tooltip>
         <DialogHeader>
           <DialogTitle>Ask a follow-up question</DialogTitle>
         </DialogHeader>

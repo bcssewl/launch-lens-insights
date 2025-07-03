@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 interface TextSelectionData {
   text: string;
@@ -18,6 +18,7 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
   const [selectedText, setSelectedText] = useState('');
   const [selectionRect, setSelectionRect] = useState<DOMRect | null>(null);
   const [isVisible, setIsVisible] = useState(false);
+  const clearTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const clearSelection = useCallback(() => {
     setSelectedText('');
@@ -53,15 +54,40 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
     setIsVisible(true);
   }, [containerRef, clearSelection]);
 
+  const handleMouseDown = useCallback((event: MouseEvent) => {
+    // Clear any existing timeout
+    if (clearTimeoutRef.current) {
+      clearTimeout(clearTimeoutRef.current);
+      clearTimeoutRef.current = null;
+    }
+
+    // Don't clear selection if clicking on tooltip or selected text
+    const target = event.target as Element;
+    if (target.closest('[data-tooltip-trigger]') || target.closest('[data-selection-tooltip]')) {
+      return;
+    }
+
+    // Add a small delay to allow tooltip interactions
+    clearTimeoutRef.current = setTimeout(() => {
+      const currentSelection = window.getSelection();
+      if (!currentSelection || currentSelection.toString().trim() === '') {
+        clearSelection();
+      }
+    }, 150);
+  }, [clearSelection]);
+
   useEffect(() => {
     document.addEventListener('selectionchange', handleSelectionChange);
-    document.addEventListener('mousedown', clearSelection);
+    document.addEventListener('mousedown', handleMouseDown);
     
     return () => {
       document.removeEventListener('selectionchange', handleSelectionChange);
-      document.removeEventListener('mousedown', clearSelection);
+      document.removeEventListener('mousedown', handleMouseDown);
+      if (clearTimeoutRef.current) {
+        clearTimeout(clearTimeoutRef.current);
+      }
     };
-  }, [handleSelectionChange, clearSelection]);
+  }, [handleSelectionChange, handleMouseDown]);
 
   return {
     selectedText,
