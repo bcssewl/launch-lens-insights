@@ -1,5 +1,5 @@
 
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import MarkdownRenderer from './MarkdownRenderer';
 import TextSelectionTooltip from './TextSelectionTooltip';
 import FollowUpDialog from './FollowUpDialog';
@@ -21,7 +21,13 @@ const SelectableMarkdownRenderer: React.FC<SelectableMarkdownRendererProps> = ({
   const { selectedText, selectionRect, isVisible, clearSelection } = useTextSelection(containerRef);
   const [showFollowUpDialog, setShowFollowUpDialog] = React.useState(false);
 
+  useEffect(() => {
+    console.log('SelectableMarkdownRenderer: Container ref current:', containerRef.current);
+    console.log('SelectableMarkdownRenderer: Selection state:', { selectedText, isVisible });
+  }, [selectedText, isVisible]);
+
   const handleFollowUp = () => {
+    console.log('SelectableMarkdownRenderer: Follow up clicked');
     setShowFollowUpDialog(true);
   };
 
@@ -39,7 +45,11 @@ const SelectableMarkdownRenderer: React.FC<SelectableMarkdownRendererProps> = ({
   };
 
   return (
-    <div ref={containerRef} className={cn("relative", className)}>
+    <div 
+      ref={containerRef} 
+      className={cn("relative", className)}
+      style={{ userSelect: 'text' }} // Ensure text is selectable
+    >
       <MarkdownRenderer content={content} />
       
       {/* Text Selection Tooltip */}

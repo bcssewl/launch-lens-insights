@@ -27,84 +27,47 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
     window.getSelection()?.removeAllRanges();
   }, []);
 
-  const handleSelectionChange = useCallback(() => {
-    const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) {
-      clearSelection();
-      return;
-    }
-
-    const range = selection.getRangeAt(0);
-    const text = range.toString().trim();
-    
-    if (!text || text.length < 3) {
-      clearSelection();
-      return;
-    }
-
-    // Check if selection is within our container
-    if (containerRef.current && !containerRef.current.contains(range.commonAncestorContainer)) {
-      clearSelection();
-      return;
-    }
-
-    const rect = range.getBoundingClientRect();
-    setSelectedText(text);
-    setSelectionRect(rect);
-    setIsVisible(true);
-  }, [clearSelection]); // Removed containerRef from dependencies to stabilize
-
-  const handleMouseDown = useCallback((event: MouseEvent) => {
-    // Clear any existing timeout
-    if (clearTimeoutRef.current) {
-      clearTimeout(clearTimeoutRef.current);
-      clearTimeoutRef.current = null;
-    }
-
-    // Don't clear selection if clicking on tooltip or selected text
-    const target = event.target as Element;
-    if (target.closest('[data-tooltip-trigger]') || target.closest('[data-selection-tooltip]')) {
-      return;
-    }
-
-    // Add a small delay to allow tooltip interactions
-    clearTimeoutRef.current = setTimeout(() => {
-      const currentSelection = window.getSelection();
-      if (!currentSelection || currentSelection.toString().trim() === '') {
-        clearSelection();
-      }
-    }, 150);
-  }, [clearSelection]);
-
   useEffect(() => {
-    const handleSelectionChangeStable = () => {
+    console.log('useTextSelection: Setting up event listeners');
+    
+    const handleSelectionChange = () => {
+      console.log('useTextSelection: Selection changed');
       const selection = window.getSelection();
       if (!selection || selection.rangeCount === 0) {
+        console.log('useTextSelection: No selection, clearing');
         clearSelection();
         return;
       }
 
       const range = selection.getRangeAt(0);
       const text = range.toString().trim();
+      console.log('useTextSelection: Selected text:', text);
       
       if (!text || text.length < 3) {
+        console.log('useTextSelection: Text too short, clearing');
         clearSelection();
         return;
       }
 
-      // Check if selection is within our container
-      if (containerRef.current && !containerRef.current.contains(range.commonAncestorContainer)) {
-        clearSelection();
-        return;
+      // Check if selection is within our container (if container is provided)
+      if (containerRef.current) {
+        const isInContainer = containerRef.current.contains(range.commonAncestorContainer);
+        console.log('useTextSelection: Is in container:', isInContainer);
+        if (!isInContainer) {
+          clearSelection();
+          return;
+        }
       }
 
       const rect = range.getBoundingClientRect();
+      console.log('useTextSelection: Setting selection with rect:', rect);
       setSelectedText(text);
       setSelectionRect(rect);
       setIsVisible(true);
     };
 
-    const handleMouseDownStable = (event: MouseEvent) => {
+    const handleMouseDown = (event: MouseEvent) => {
+      console.log('useTextSelection: Mouse down event');
       // Clear any existing timeout
       if (clearTimeoutRef.current) {
         clearTimeout(clearTimeoutRef.current);
@@ -114,6 +77,7 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
       // Don't clear selection if clicking on tooltip or selected text
       const target = event.target as Element;
       if (target.closest('[data-tooltip-trigger]') || target.closest('[data-selection-tooltip]')) {
+        console.log('useTextSelection: Clicked on tooltip, not clearing');
         return;
       }
 
@@ -121,22 +85,24 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
       clearTimeoutRef.current = setTimeout(() => {
         const currentSelection = window.getSelection();
         if (!currentSelection || currentSelection.toString().trim() === '') {
+          console.log('useTextSelection: Clearing selection after delay');
           clearSelection();
         }
-      }, 150);
+      }, 200); // Increased delay
     };
 
-    document.addEventListener('selectionchange', handleSelectionChangeStable);
-    document.addEventListener('mousedown', handleMouseDownStable);
+    document.addEventListener('selectionchange', handleSelectionChange);
+    document.addEventListener('mousedown', handleMouseDown);
     
     return () => {
-      document.removeEventListener('selectionchange', handleSelectionChangeStable);
-      document.removeEventListener('mousedown', handleMouseDownStable);
+      console.log('useTextSelection: Cleaning up event listeners');
+      document.removeEventListener('selectionchange', handleSelectionChange);
+      document.removeEventListener('mousedown', handleMouseDown);
       if (clearTimeoutRef.current) {
         clearTimeout(clearTimeoutRef.current);
       }
     };
-  }, []); // Empty dependency array to prevent re-registration
+  }, [containerRef, clearSelection]); // Include dependencies to ensure proper cleanup
 
   return {
     selectedText,
