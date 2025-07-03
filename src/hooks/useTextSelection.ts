@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface UseTextSelectionReturn {
   selectedText: string;
@@ -21,49 +21,50 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
   }, []);
 
   useEffect(() => {
-    const handleSelectionChange = () => {
-      const selection = window.getSelection();
-      
-      if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
-        return;
-      }
-
-      const range = selection.getRangeAt(0);
-      
-      // Check if selection is within our container
-      if (containerRef.current) {
-        const container = containerRef.current;
-        const isInContainer = container.contains(range.commonAncestorContainer) || 
-                             container.contains(range.startContainer) || 
-                             container.contains(range.endContainer);
+    const handleMouseUp = () => {
+      // Small delay to let browser finalize selection
+      setTimeout(() => {
+        const selection = window.getSelection();
         
-        if (!isInContainer) {
+        if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
           return;
         }
-      }
 
-      // Get the selected text
-      const text = selection.toString().trim();
-      
-      if (text.length < 2) {
-        return;
-      }
+        const range = selection.getRangeAt(0);
+        const text = selection.toString().trim();
+        
+        if (text.length < 2) {
+          return;
+        }
 
-      // Get the position for the tooltip
-      const rect = range.getBoundingClientRect();
-      
-      if (rect.width > 0 && rect.height > 0) {
-        console.log('useTextSelection: Capturing selection:', text);
-        setCapturedText(text);
-        setTooltipRect(rect);
-        setShowTooltip(true);
-      }
+        // Check if selection is within our container
+        if (containerRef.current) {
+          const container = containerRef.current;
+          const startInContainer = container.contains(range.startContainer);
+          const endInContainer = container.contains(range.endContainer);
+          
+          // Only proceed if both start and end are in our container
+          if (!startInContainer || !endInContainer) {
+            return;
+          }
+        }
+
+        // Get the position for the tooltip
+        const rect = range.getBoundingClientRect();
+        
+        if (rect.width > 0 && rect.height > 0) {
+          console.log('useTextSelection: Capturing selection:', text);
+          setCapturedText(text);
+          setTooltipRect(rect);
+          setShowTooltip(true);
+        }
+      }, 50);
     };
 
     const handleMouseDown = (e: MouseEvent) => {
       const target = e.target as Element;
       
-      // Don't clear if clicking on tooltip
+      // Don't clear if clicking on tooltip or its trigger
       if (target && (
         target.closest('[data-selection-tooltip]') || 
         target.closest('[data-tooltip-trigger]')
@@ -77,11 +78,12 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
       }
     };
 
-    document.addEventListener('selectionchange', handleSelectionChange);
+    // Use mouseup instead of selectionchange to avoid interfering with browser selection
+    document.addEventListener('mouseup', handleMouseUp);
     document.addEventListener('mousedown', handleMouseDown);
     
     return () => {
-      document.removeEventListener('selectionchange', handleSelectionChange);
+      document.removeEventListener('mouseup', handleMouseUp);
       document.removeEventListener('mousedown', handleMouseDown);
     };
   }, [containerRef, showTooltip, clearSelection]);
