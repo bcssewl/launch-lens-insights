@@ -56,7 +56,11 @@ const TextSelectionTooltip: React.FC<TextSelectionTooltipProps> = ({
     top: top,
     transform: 'translateX(-50%)',
     zIndex: 1000,
-    pointerEvents: 'auto'
+    pointerEvents: 'auto',
+    userSelect: 'none',
+    WebkitUserSelect: 'none',
+    MozUserSelect: 'none',
+    msUserSelect: 'none'
   };
 
   const handleFollowUpClick = (e: React.MouseEvent) => {
@@ -115,13 +119,6 @@ const TextSelectionTooltip: React.FC<TextSelectionTooltipProps> = ({
       className={`animate-fade-in ${showInput ? '' : 'bg-black/90 backdrop-blur-sm border border-gray-700 rounded-lg shadow-lg p-2'}`}
       data-selection-tooltip
       onMouseDown={handleContainerMouseDown}
-      style={{
-        ...tooltipStyle,
-        userSelect: 'none',
-        WebkitUserSelect: 'none',
-        MozUserSelect: 'none',
-        msUserSelect: 'none'
-      }}
     >
       {!showInput ? (
         <div className="flex items-center gap-1">
