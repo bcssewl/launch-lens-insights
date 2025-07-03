@@ -15,9 +15,9 @@ const TextSelectionTooltip: React.FC<TextSelectionTooltipProps> = ({ rect, onFol
     const tooltipHeight = 40; // Approximate height of the tooltip
     const tooltipWidth = 120; // Approximate width of the tooltip
     
-    // Position tooltip above the caret, centered horizontally
-    let left = rect.left + rect.width / 2 + window.scrollX;
-    let top = rect.top + window.scrollY - tooltipHeight - 8; // 8px gap above
+    // Position tooltip above the caret, centered horizontally on the caret
+    let left = rect.left + rect.width / 2;
+    let top = rect.top - tooltipHeight - 8; // 8px gap above
     
     // Boundary checks to ensure tooltip stays in viewport
     const viewportWidth = window.innerWidth;
@@ -31,8 +31,8 @@ const TextSelectionTooltip: React.FC<TextSelectionTooltipProps> = ({ rect, onFol
     }
     
     // Vertical boundary check - if tooltip would go above viewport, show below instead
-    if (top < window.scrollY + 10) {
-      top = rect.bottom + window.scrollY + 8; // Show below with 8px gap
+    if (top < 10) {
+      top = rect.bottom + 8; // Show below with 8px gap
     }
     
     return { top, left };

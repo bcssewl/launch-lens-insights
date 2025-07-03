@@ -22,17 +22,38 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
 
   const getCaretRect = useCallback(() => {
     const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) return null;
+    if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
+      return null;
+    }
 
-    // Use the END of the selection range for natural positioning
-    const range = selection.getRangeAt(0).cloneRange();
-    range.collapse(false); // collapse to end-caret
+    try {
+      // Use the END of the selection range for natural positioning
+      const range = selection.getRangeAt(0).cloneRange();
+      range.collapse(false); // collapse to end-caret
 
-    // For multi-line selections we want just the caret line
-    const rects = range.getClientRects();
-    if (!rects.length) return null;
+      // For multi-line selections we want just the caret line
+      const rects = range.getClientRects();
+      if (!rects.length) {
+        // Fallback to getBoundingClientRect if getClientRects fails
+        const boundingRect = range.getBoundingClientRect();
+        if (boundingRect.width > 0 || boundingRect.height > 0) {
+          return boundingRect;
+        }
+        return null;
+      }
 
-    return rects[0]; // small sliver around the caret
+      const caretRect = rects[0]; // small sliver around the caret
+      
+      // Ensure we have a valid rectangle
+      if (caretRect.width >= 0 && caretRect.height >= 0) {
+        return caretRect;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error getting caret rect:', error);
+      return null;
+    }
   }, []);
 
   useEffect(() => {
@@ -69,7 +90,7 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
         // Get the caret position for the tooltip
         const caretRect = getCaretRect();
         
-        if (caretRect && caretRect.width >= 0 && caretRect.height >= 0) {
+        if (caretRect) {
           console.log('useTextSelection: Text selected:', text);
           console.log('useTextSelection: Caret rect:', { 
             top: caretRect.top, 
@@ -83,6 +104,9 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
           setSelectedText(text);
           setSelectionRect(caretRect);
           setIsVisible(true);
+        } else {
+          console.log('useTextSelection: No valid caret rect found');
+          clearSelection();
         }
       }, 10);
     };
