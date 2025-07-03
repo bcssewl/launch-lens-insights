@@ -1,8 +1,7 @@
 
 import React, { useMemo } from 'react';
 import { ResizablePanel } from '@/components/ui/resizable';
-import SelectableMarkdownRenderer from './SelectableMarkdownRenderer';
-import CanvasEditor from './CanvasEditor';
+import InlineMarkdownEditor from './InlineMarkdownEditor';
 
 interface CanvasReportPanelProps {
   isEditing: boolean;
@@ -14,10 +13,8 @@ interface CanvasReportPanelProps {
 }
 
 const CanvasReportPanel: React.FC<CanvasReportPanelProps> = ({
-  isEditing,
   content,
   onSave,
-  onCancel,
   hasChat,
   onSendMessage
 }) => {
@@ -27,36 +24,32 @@ const CanvasReportPanel: React.FC<CanvasReportPanelProps> = ({
     lineHeight: '1.7',
   }), []);
 
+  const handleContentChange = (newContent: string) => {
+    onSave(newContent);
+  };
+
   return (
     <ResizablePanel defaultSize={hasChat ? 60 : 100}>
-      {isEditing ? (
-        <CanvasEditor
-          content={content}
-          onSave={onSave}
-          onCancel={onCancel}
-          className="h-full"
-        />
-      ) : (
-        <div className="h-full overflow-auto">
-          <div className="max-w-4xl mx-auto p-8">
-            <div 
-              style={{ 
-                ...canvasStyles,
-                userSelect: 'text',
-                WebkitUserSelect: 'text',
-                MozUserSelect: 'text',
-                msUserSelect: 'text'
-              }}
-            >
-              <SelectableMarkdownRenderer 
-                content={content} 
-                className="canvas-content"
-                onSendMessage={onSendMessage}
-              />
-            </div>
+      <div className="h-full overflow-auto">
+        <div className="max-w-4xl mx-auto p-8">
+          <div 
+            style={{ 
+              ...canvasStyles,
+              userSelect: 'text',
+              WebkitUserSelect: 'text',
+              MozUserSelect: 'text',
+              msUserSelect: 'text'
+            }}
+          >
+            <InlineMarkdownEditor
+              content={content}
+              onContentChange={handleContentChange}
+              onSendMessage={onSendMessage}
+              className="canvas-content"
+            />
           </div>
         </div>
-      )}
+      </div>
     </ResizablePanel>
   );
 };

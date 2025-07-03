@@ -46,7 +46,6 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
   onCanvasPrint,
   onContentUpdate
 }) => {
-  const [isEditing, setIsEditing] = useState(false);
   const [currentContent, setCurrentContent] = useState(content);
 
   console.log('CanvasView: Rendering with isOpen:', isOpen);
@@ -56,17 +55,13 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
     setCurrentContent(content);
   }, [content]);
 
-  const handleToggleEdit = useCallback(() => {
-    setIsEditing(!isEditing);
-  }, [isEditing]);
-
-  // Use keyboard shortcuts hook
+  // Use keyboard shortcuts hook - no edit mode needed anymore
   useCanvasKeyboardShortcuts({
     isOpen,
-    isEditing,
+    isEditing: false, // Always false since we have inline editing
     onClose,
     onPrint,
-    onToggleEdit: handleToggleEdit
+    onToggleEdit: () => {} // No-op since we don't have edit mode
   });
 
   const handleBackdropClick = useCallback((event: React.MouseEvent) => {
@@ -76,16 +71,11 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
     }
   }, [onClose]);
 
-  const handleSaveEdit = useCallback((newContent: string) => {
+  const handleContentUpdate = useCallback((newContent: string) => {
     setCurrentContent(newContent);
-    setIsEditing(false);
     onContentUpdate?.(newContent);
     console.log('CanvasView: Content updated');
   }, [onContentUpdate]);
-
-  const handleCancelEdit = useCallback(() => {
-    setIsEditing(false);
-  }, []);
 
   // Format timestamp helper
   const formatTimestamp = useCallback((timestamp: Date): string => {
@@ -132,13 +122,13 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
         {/* Floating Elements for consistent background */}
         <FloatingElements />
         
-        {/* Header */}
+        {/* Header - no edit button needed anymore */}
         <CanvasHeader
           title={title}
-          isEditing={isEditing}
+          isEditing={false} // Always false since we have inline editing
           onDownload={onDownload}
           onPrint={onPrint}
-          onEdit={() => setIsEditing(true)}
+          onEdit={() => {}} // No-op since we don't need edit mode
           onClose={onClose}
         />
 
@@ -162,12 +152,12 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
               </>
             )}
 
-            {/* Report Panel */}
+            {/* Report Panel - now always in inline edit mode */}
             <CanvasReportPanel
-              isEditing={isEditing}
+              isEditing={false} // Not used anymore
               content={currentContent}
-              onSave={handleSaveEdit}
-              onCancel={handleCancelEdit}
+              onSave={handleContentUpdate}
+              onCancel={() => {}} // Not used anymore
               hasChat={hasChat}
               onSendMessage={onSendMessage}
             />
