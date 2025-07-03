@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 
 interface UseTextSelectionReturn {
@@ -19,7 +20,7 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
     setIsVisible(false);
   }, []);
 
-  // Get selection rectangle - handles multi-line selections properly
+  // Get selection rectangle without DOM mutations - more performant
   const getSelectionRect = useCallback((): DOMRect | null => {
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
@@ -27,27 +28,24 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
     }
 
     try {
-      const range = selection.getRangeAt(0).cloneRange();
+      const range = selection.getRangeAt(0);
+      const rangeRect = range.getBoundingClientRect();
       
-      // For multi-line selections, we want to position at the end of the selection
-      range.collapse(false); // collapse to end
-      
-      // Create a temporary span to get accurate positioning
-      const tempSpan = document.createElement('span');
-      tempSpan.style.position = 'absolute';
-      tempSpan.style.visibility = 'hidden';
-      tempSpan.style.whiteSpace = 'nowrap';
-      
-      range.insertNode(tempSpan);
-      const rect = tempSpan.getBoundingClientRect();
-      
-      // Clean up temporary element
-      if (tempSpan.parentNode) {
-        tempSpan.parentNode.removeChild(tempSpan);
-      }
+      // Create a DOMRect-like object positioned at the end of selection
+      const rect = {
+        top: rangeRect.bottom,
+        left: rangeRect.left,
+        width: 0,
+        height: 0,
+        right: rangeRect.right,
+        bottom: rangeRect.bottom,
+        x: rangeRect.left,
+        y: rangeRect.bottom,
+        toJSON: () => ({})
+      } as DOMRect;
       
       // Ensure we have a valid rectangle
-      if (rect.width >= 0 && rect.height >= 0) {
+      if (rangeRect.width >= 0 && rangeRect.height >= 0) {
         return rect;
       }
       
@@ -67,7 +65,7 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
     return !!tooltipElement;
   }, []);
 
-  // Update selection rect on scroll/resize to keep tooltip positioned correctly
+  // Update selection rect on scroll/resize with debouncing
   const updateSelectionRect = useCallback(() => {
     if (!isVisible || !selectedText) return;
     
@@ -80,10 +78,11 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
     }
   }, [isVisible, selectedText, getSelectionRect, clearSelection]);
 
+  // Use pointerup instead of mouseup for better performance
   useEffect(() => {
-    const handleMouseUp = () => {
-      // Small delay to let browser finalize selection
-      setTimeout(() => {
+    const handlePointerUp = () => {
+      // Run in next micro-task; no timeout needed
+      Promise.resolve().then(() => {
         const selection = window.getSelection();
         
         if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
@@ -140,7 +139,7 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
           console.log('useTextSelection: No valid selection rect found');
           clearSelection();
         }
-      }, 10);
+      });
     };
 
     const handleMouseDown = (e: MouseEvent) => {
@@ -160,6 +159,7 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
       }
     };
 
+    // Clear only when the selection is really gone
     const handleSelectionChange = () => {
       // Don't react to selection changes if tooltip has focus
       if (isTooltipFocused()) {
@@ -174,42 +174,43 @@ export const useTextSelection = (containerRef: React.RefObject<HTMLElement>): Us
       }
     };
 
-    // Listen for mouseup to detect selections
-    document.addEventListener('mouseup', handleMouseUp);
+    // Listen for pointerup to detect selections
+    document.addEventListener('pointerup', handlePointerUp);
     // Listen for mousedown to clear tooltip when clicking elsewhere
     document.addEventListener('mousedown', handleMouseDown);
     // Listen for selection changes
     document.addEventListener('selectionchange', handleSelectionChange);
     
     return () => {
-      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('pointerup', handlePointerUp);
       document.removeEventListener('mousedown', handleMouseDown);
       document.removeEventListener('selectionchange', handleSelectionChange);
     };
   }, [containerRef, isVisible, clearSelection, getSelectionRect, isTooltipFocused]);
 
-  // Add scroll and resize listeners to update position when visible
+  // Debounce scroll and resize listeners with requestAnimationFrame
   useEffect(() => {
     if (!isVisible) return;
 
-    // Listen for scroll events in capture phase to catch all scrollable ancestors
-    const handleScroll = () => {
-      updateSelectionRect();
-    };
-
-    const handleResize = () => {
-      updateSelectionRect();
+    let frame: number;
+    const sync = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const rect = getSelectionRect();
+        rect ? setSelectionRect(rect) : clearSelection();
+      });
     };
 
     // Use capture phase to catch scroll events from all ancestors
-    window.addEventListener('scroll', handleScroll, true);
-    window.addEventListener('resize', handleResize);
+    window.addEventListener('scroll', sync, true);
+    window.addEventListener('resize', sync);
     
     return () => {
-      window.removeEventListener('scroll', handleScroll, true);
-      window.removeEventListener('resize', handleResize);
+      cancelAnimationFrame(frame);
+      window.removeEventListener('scroll', sync, true);
+      window.removeEventListener('resize', sync);
     };
-  }, [isVisible, updateSelectionRect]);
+  }, [isVisible, getSelectionRect, clearSelection]);
 
   return {
     selectedText,
