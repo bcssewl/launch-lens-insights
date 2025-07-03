@@ -1,5 +1,4 @@
 
-
 import React, { useState } from 'react';
 import { Logo } from '@/components/icons';
 import { Search, Mic, Plus, Target, Lightbulb, Globe, Paperclip } from 'lucide-react';
@@ -60,19 +59,13 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({ onSendMessa
         {/* Logo/Branding Section */}
         <div className="mb-12">
           <div className="flex items-center justify-center mb-6">
-            {!imageError ? (
-              <img 
-                src="/lovable-uploads/97674e5d-e119-49ed-a49c-e9695dab3378.png" 
-                alt="Optivise NEXUS"
-                className="h-16 w-auto"
-                onError={handleImageError}
-                onLoad={handleImageLoad}
-              />
-            ) : (
-              <div className="h-16 w-32 bg-gray-200 rounded flex items-center justify-center">
-                <span className="text-sm text-gray-500">Logo</span>
-              </div>
-            )}
+            <img 
+              src="/lovable-uploads/97674e5d-e119-49ed-a49c-e9695dab3378.png" 
+              alt="Optivise NEXUS"
+              className="h-16 w-auto"
+              onError={handleImageError}
+              onLoad={handleImageLoad}
+            />
           </div>
           <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed">
             Get instant insights, market analysis, and strategic advice for your startup ideas. 
@@ -230,4 +223,3 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({ onSendMessa
 };
 
 export default PerplexityEmptyState;
-
