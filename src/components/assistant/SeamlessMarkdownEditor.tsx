@@ -29,114 +29,134 @@ const SeamlessMarkdownEditor: React.FC<SeamlessMarkdownEditorProps> = ({
   const editorRef = useRef<HTMLDivElement>(null);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
   const [lastSavedContent, setLastSavedContent] = useState(content);
-  const saveTimeoutRef = useRef<NodeJS.Timeout>();
   const isInitializedRef = useRef(false);
   
   const { selectedText, selectionRect, isVisible, clearSelection } = useTextSelection(containerRef);
   const [showFollowUpDialog, setShowFollowUpDialog] = useState(false);
   const [preservedText, setPreservedText] = useState('');
 
-  // Initialize conversion libraries
-  const turndownService = useCallback(() => {
+  // Configure marked for consistent HTML output
+  const configureMarked = useCallback(() => {
+    marked.setOptions({
+      breaks: true,
+      gfm: true,
+      sanitize: false,
+      smartypants: false
+    });
+  }, []);
+
+  // Configure turndown for consistent markdown output
+  const createTurndownService = useCallback(() => {
     const service = new TurndownService({
       headingStyle: 'atx',
-      codeBlockStyle: 'fenced'
+      codeBlockStyle: 'fenced',
+      fence: '```',
+      emDelimiter: '*',
+      strongDelimiter: '**',
+      linkStyle: 'inlined',
+      linkReferenceStyle: 'full'
     });
     
-    // Configure turndown to handle common elements properly
+    // Add custom rules for better conversion
     service.addRule('lineBreak', {
       filter: 'br',
       replacement: () => '\n'
+    });
+
+    // Handle paragraphs properly
+    service.addRule('paragraph', {
+      filter: 'p',
+      replacement: (content) => {
+        return content ? '\n\n' + content + '\n\n' : '';
+      }
     });
     
     return service;
   }, []);
 
-  // Convert markdown to HTML for display
+  // Convert markdown to HTML for display - only called once on load
   const markdownToHtml = useCallback(async (markdown: string): Promise<string> => {
+    if (!markdown.trim()) return '<p></p>';
+    
     try {
-      console.log('Converting markdown to HTML:', markdown.substring(0, 100) + '...');
-      
-      // Configure marked for better HTML output
-      marked.setOptions({
-        breaks: true,
-        gfm: true
-      });
-      
-      const html = await marked(markdown);
-      console.log('Converted HTML:', html.substring(0, 100) + '...');
+      configureMarked();
+      console.log('Converting markdown to HTML for display');
+      const html = await marked(markdown.trim());
       return html;
     } catch (error) {
       console.error('Error converting markdown to HTML:', error);
-      // Fallback: return the original markdown wrapped in a paragraph
+      // Fallback: wrap in paragraph
       return `<p>${markdown}</p>`;
     }
-  }, []);
+  }, [configureMarked]);
 
-  // Convert HTML back to markdown
+  // Convert HTML back to markdown for storage - only called on save
   const htmlToMarkdown = useCallback((html: string): string => {
+    if (!html.trim()) return '';
+    
     try {
-      console.log('Converting HTML to markdown:', html.substring(0, 100) + '...');
-      
-      const service = turndownService();
+      console.log('Converting HTML to markdown for storage');
+      const service = createTurndownService();
       const markdown = service.turndown(html);
-      
-      console.log('Converted markdown:', markdown.substring(0, 100) + '...');
       return markdown.trim();
     } catch (error) {
       console.error('Error converting HTML to markdown:', error);
-      // Fallback: try to extract text content
+      // Fallback: extract text content
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = html;
-      return tempDiv.textContent || tempDiv.innerText || html;
+      return tempDiv.textContent || tempDiv.innerText || '';
     }
-  }, [turndownService]);
+  }, [createTurndownService]);
 
-  // Auto-save functionality
-  const saveToServer = useCallback(async (contentToSave: string) => {
-    if (!documentId || contentToSave === lastSavedContent) return;
+  // Auto-save functionality with proper error handling
+  const saveToServer = useCallback(async (markdownContent: string) => {
+    if (!documentId || markdownContent === lastSavedContent) {
+      console.log('Skipping save - no changes or no document ID');
+      return;
+    }
     
-    console.log('SeamlessMarkdownEditor: Auto-saving content');
+    console.log('Auto-saving content to server');
     setIsAutoSaving(true);
     
     try {
       const { error } = await supabase
         .from('canvas_documents')
         .update({ 
-          content: contentToSave,
+          content: markdownContent,
           title: title,
           updated_at: new Date().toISOString()
         })
         .eq('id', documentId);
 
       if (error) {
-        console.error('SeamlessMarkdownEditor: Auto-save failed:', error);
+        console.error('Auto-save failed:', error);
         throw error;
-      } else {
-        setLastSavedContent(contentToSave);
-        console.log('SeamlessMarkdownEditor: Auto-save successful');
       }
+      
+      setLastSavedContent(markdownContent);
+      console.log('Auto-save successful');
     } catch (error) {
-      console.error('SeamlessMarkdownEditor: Auto-save error:', error);
-      throw error;
+      console.error('Auto-save error:', error);
+      // Don't throw - just log the error to avoid breaking the UI
     } finally {
       setIsAutoSaving(false);
     }
   }, [documentId, lastSavedContent, title]);
 
-  // Initialize editor content only once
+  // Initialize editor content once when component mounts
   useEffect(() => {
     const initializeEditor = async () => {
       if (editorRef.current && content && !isInitializedRef.current) {
         try {
+          console.log('Initializing editor with content:', content.substring(0, 100));
           const html = await markdownToHtml(content);
           editorRef.current.innerHTML = html;
           setLastSavedContent(content);
           isInitializedRef.current = true;
-          console.log('SeamlessMarkdownEditor: Editor initialized with HTML');
+          console.log('Editor initialized successfully');
         } catch (error) {
-          console.error('SeamlessMarkdownEditor: Failed to initialize editor:', error);
-          // Fallback: set content as plain text
+          console.error('Failed to initialize editor:', error);
+          // Fallback: set as plain text
           if (editorRef.current) {
             editorRef.current.textContent = content;
             isInitializedRef.current = true;
@@ -148,7 +168,7 @@ const SeamlessMarkdownEditor: React.FC<SeamlessMarkdownEditorProps> = ({
     initializeEditor();
   }, [content, markdownToHtml]);
 
-  // Set up input event listener for uncontrolled editing
+  // Handle input changes with debounced saving
   useEffect(() => {
     const editorElement = editorRef.current;
     if (!editorElement) return;
@@ -158,24 +178,21 @@ const SeamlessMarkdownEditor: React.FC<SeamlessMarkdownEditorProps> = ({
     const handleInput = () => {
       try {
         const htmlContent = editorElement.innerHTML;
-        console.log('SeamlessMarkdownEditor: Content changed, converting to markdown');
+        console.log('Content changed, processing...');
         
+        // Convert to markdown for storage and parent update
         const markdownContent = htmlToMarkdown(htmlContent);
         
-        // Update parent component immediately for AI interactions
+        // Immediately update parent component for AI interactions
         onContentChange(markdownContent);
         
-        // Debounced auto-save
+        // Debounced auto-save to server
         if (saveTimeout) clearTimeout(saveTimeout);
-        saveTimeout = setTimeout(async () => {
-          try {
-            await saveToServer(markdownContent);
-          } catch (error) {
-            console.error('SeamlessMarkdownEditor: Save failed:', error);
-          }
-        }, 1000);
+        saveTimeout = setTimeout(() => {
+          saveToServer(markdownContent);
+        }, 2000); // 2 second delay for better UX
       } catch (error) {
-        console.error('SeamlessMarkdownEditor: Error handling input:', error);
+        console.error('Error handling input change:', error);
       }
     };
 
@@ -220,12 +237,12 @@ const SeamlessMarkdownEditor: React.FC<SeamlessMarkdownEditorProps> = ({
     >
       {/* Auto-save indicator */}
       {isAutoSaving && (
-        <div className="absolute top-2 right-2 text-xs text-muted-foreground bg-background/80 px-2 py-1 rounded">
+        <div className="absolute top-2 right-2 text-xs text-muted-foreground bg-background/80 px-2 py-1 rounded z-10">
           Saving...
         </div>
       )}
 
-      {/* Main editable content - now uncontrolled */}
+      {/* Main editable content */}
       <div
         ref={editorRef}
         contentEditable
