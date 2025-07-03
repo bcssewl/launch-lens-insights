@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useCallback, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import InlineEditableElement from './InlineEditableElement';
@@ -140,6 +141,18 @@ const InlineMarkdownEditor: React.FC<InlineMarkdownEditorProps> = ({
     clearSelection();
   };
 
+  const handleFollowUpSubmit = (question: string) => {
+    if (onSendMessage && selectedText) {
+      const formattedMessage = `Regarding: "${selectedText}"\n\n${question}`;
+      onSendMessage(formattedMessage);
+    }
+    clearSelection();
+  };
+
+  const handleTooltipClose = () => {
+    clearSelection();
+  };
+
   return (
     <div 
       ref={containerRef}
@@ -194,7 +207,9 @@ const InlineMarkdownEditor: React.FC<InlineMarkdownEditorProps> = ({
       {isVisible && selectionRect && selectedText && !showFollowUpDialog && onSendMessage && (
         <TextSelectionTooltip
           rect={selectionRect}
-          onFollowUp={handleFollowUp}
+          onFollowUp={handleFollowUpSubmit}
+          onClose={handleTooltipClose}
+          containerRef={containerRef}
         />
       )}
 
