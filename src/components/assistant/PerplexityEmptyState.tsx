@@ -22,6 +22,7 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({ onSendMessa
   
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [showLocalUploader, setShowLocalUploader] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   const handlePromptClick = (prompt: string) => {
     onSendMessage(prompt, attachedFiles);
@@ -42,17 +43,35 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({ onSendMessa
     }
   };
 
+  const handleImageError = () => {
+    console.error('Failed to load image: /lovable-uploads/a8ac55c8-457a-45f3-91df-18138d557b7f.png');
+    setImageError(true);
+  };
+
+  const handleImageLoad = () => {
+    console.log('Image loaded successfully: /lovable-uploads/a8ac55c8-457a-45f3-91df-18138d557b7f.png');
+    setImageError(false);
+  };
+
   return (
     <TooltipProvider>
       <div className="flex flex-col items-center justify-center min-h-[70vh] px-6 py-12 text-center max-w-4xl mx-auto bg-transparent">
         {/* Logo/Branding Section */}
         <div className="mb-12">
           <div className="flex items-center justify-center mb-6">
-            <img 
-              src="/lovable-uploads/a8ac55c8-457a-45f3-91df-18138d557b7f.png" 
-              alt="Optivise NEXUS"
-              className="h-16 w-auto"
-            />
+            {!imageError ? (
+              <img 
+                src="/lovable-uploads/a8ac55c8-457a-45f3-91df-18138d557b7f.png" 
+                alt="Optivise NEXUS"
+                className="h-16 w-auto"
+                onError={handleImageError}
+                onLoad={handleImageLoad}
+              />
+            ) : (
+              <div className="h-16 w-32 bg-gray-200 rounded flex items-center justify-center">
+                <span className="text-sm text-gray-500">Logo</span>
+              </div>
+            )}
           </div>
           <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed">
             Get instant insights, market analysis, and strategic advice for your startup ideas. 
