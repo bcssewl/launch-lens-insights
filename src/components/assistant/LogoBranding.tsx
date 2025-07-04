@@ -13,7 +13,7 @@ const LogoBranding: React.FC<LogoBrandingProps> = ({ onImageError, onImageLoad }
         <img 
           src="/lovable-uploads/27eeeb27-272a-499d-8a5b-7575fc44479f.png" 
           alt="Optivise NEXUS"
-          className="h-16 w-auto"
+          className="h-24 w-auto"
           onError={onImageError}
           onLoad={onImageLoad}
         />
