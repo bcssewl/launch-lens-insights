@@ -48,12 +48,11 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({ onSendMessa
         {/* Logo/Branding Section */}
         <div className="mb-12">
           <div className="flex items-center justify-center mb-6">
-            <img 
-              src="/lovable-uploads/e2595a95-021e-4a61-a08b-b9619494a985.png" 
-              alt="Optivise NEXUS"
-              className="h-16 w-auto"
-            />
+            <Logo className="w-12 h-12" />
           </div>
+          <h1 className="text-4xl font-semibold text-foreground mb-4 tracking-tight">
+            AI Business Assistant
+          </h1>
           <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed">
             Get instant insights, market analysis, and strategic advice for your startup ideas. 
             Ask anything about business validation, market research, or growth strategies.
