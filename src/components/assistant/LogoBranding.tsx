@@ -11,7 +11,7 @@ const LogoBranding: React.FC<LogoBrandingProps> = ({ onImageError, onImageLoad }
     <div className="mb-12">
       <div className="flex items-center justify-center mb-6">
         <img 
-          src="/lovable-uploads/97674e5d-e119-49ed-a49c-e9695dab3378.png" 
+          src="/lovable-uploads/27eeeb27-272a-499d-8a5b-7575fc44479f.png" 
           alt="Optivise NEXUS"
           className="h-16 w-auto"
           onError={onImageError}
