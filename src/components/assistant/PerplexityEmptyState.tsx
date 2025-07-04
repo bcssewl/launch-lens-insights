@@ -61,14 +61,14 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
       <div className="flex flex-col items-center justify-center min-h-[70vh] px-6 py-12 text-center max-w-4xl mx-auto bg-transparent">
         {/* Logo/Branding Section */}
         <div className="mb-12">
-          <div className="flex items-center justify-center mb-6 gap-4">
+          <div className="flex items-center justify-center gap-4 mb-6">
+            <h1 className="text-4xl font-semibold text-foreground tracking-tight">Optivise</h1>
             <img 
               src="/lovable-uploads/5cb6a965-c41d-482b-9c9a-da3a7fa02d8c.png" 
               alt="NEXUS" 
               className="h-16" 
             />
           </div>
-          <h1 className="text-4xl font-semibold text-foreground mb-4 tracking-tight">Optivise</h1>
           <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed">
             Get instant insights, market analysis, and strategic advice for your startup ideas. 
             Ask anything about business validation, market research, or growth strategies.
