@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Search, Mic, Plus, Target, Lightbulb, Globe, Paperclip } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -66,7 +65,7 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
             <img 
               src="/lovable-uploads/5cb6a965-c41d-482b-9c9a-da3a7fa02d8c.png" 
               alt="NEXUS" 
-              className="h-20" 
+              className="h-24" 
             />
           </div>
           <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed">
