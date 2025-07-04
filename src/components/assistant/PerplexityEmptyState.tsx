@@ -66,7 +66,7 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
             <img 
               src="/lovable-uploads/5cb6a965-c41d-482b-9c9a-da3a7fa02d8c.png" 
               alt="NEXUS" 
-              className="h-16" 
+              className="h-20" 
             />
           </div>
           <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed">
