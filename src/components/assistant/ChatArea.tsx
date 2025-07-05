@@ -64,11 +64,11 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     );
   }
 
-  // Show conversation with dashboard background styling and fixed input
+  // Show conversation with dashboard background styling
   return (
     <div className="flex flex-col flex-1 min-h-0 w-full relative bg-background/10 backdrop-blur-sm">
       {/* Chat Messages Area - full height with padding for fixed input */}
-      <div className="flex-1 min-h-0 overflow-hidden pb-32">
+      <div className="flex-1 min-h-0 overflow-hidden">
         <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
           <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
             {messages.map((msg) => (
@@ -82,12 +82,13 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             ))}
             {isTyping && <TypingIndicator />}
           </div>
+          <div className="h-24" /> {/* Spacer for fixed input */}
         </ScrollArea>
       </div>
 
-      {/* Fixed Input Area - always visible at bottom */}
+      {/* Fixed Input Area - floating appearance like Lovable */}
       <div className={finalInputPositionClass}>
-        <div className="bg-background/95 backdrop-blur-sm border-t border-border px-6 py-4">
+        <div className="px-6 py-4">
           <EnhancedChatInput 
             onSendMessage={onSendMessage} 
             isTyping={isTyping}
