@@ -55,6 +55,17 @@ const mockClients = {
     engagementStart: '2024-03-10',
     contactPerson: 'Alex Rodriguez',
     contactEmail: 'alex@fintechstartup.com'
+  },
+  'local-restaurant': {
+    name: 'Local Restaurant Chain',
+    description: 'Expansion strategy and operational efficiency optimization',
+    industry: 'Hospitality',
+    potential: 'Medium Potential',
+    reportCount: 1,
+    ideaCount: 2,
+    engagementStart: '2024-04-05',
+    contactPerson: 'Maria Garcia',
+    contactEmail: 'maria@localrestaurant.com'
   }
 };
 

@@ -104,31 +104,33 @@ const ProjectsTabContent: React.FC = () => {
           </Card>
         </Link>
 
-        {/* Local Restaurant Chain Client Card */}
-        <Card className="hover:shadow-md transition-shadow cursor-pointer">
-          <CardHeader className="flex flex-row items-center space-y-0 pb-2">
-            <div className="p-2 bg-primary/10 rounded-lg mr-3">
-              <Building2 className="h-5 w-5 text-primary" />
-            </div>
-            <div className="flex-1">
-              <CardTitle className="text-lg">Local Restaurant Chain</CardTitle>
-              <p className="text-sm text-muted-foreground">1 report • 2 ideas</p>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground mb-3">
-              Expansion strategy and operational efficiency optimization
-            </p>
-            <div className="flex gap-2">
-              <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full">
-                Medium Potential
-              </span>
-              <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full">
-                Hospitality
-              </span>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Local Restaurant Chain Client Card - Now with Link */}
+        <Link to="/dashboard/client/local-restaurant">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer">
+            <CardHeader className="flex flex-row items-center space-y-0 pb-2">
+              <div className="p-2 bg-primary/10 rounded-lg mr-3">
+                <Building2 className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <CardTitle className="text-lg">Local Restaurant Chain</CardTitle>
+                <p className="text-sm text-muted-foreground">1 report • 2 ideas</p>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-3">
+                Expansion strategy and operational efficiency optimization
+              </p>
+              <div className="flex gap-2">
+                <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full">
+                  Medium Potential
+                </span>
+                <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full">
+                  Hospitality
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
 
         {/* Empty State Card */}
         <Card className="border-dashed border-2 hover:border-primary/50 transition-colors cursor-pointer">
