@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
@@ -24,7 +25,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Logo } from '@/components/icons';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Home, Lightbulb, FolderOpen, Bot, Settings as SettingsIcon, UserCircle, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Home, Lightbulb, FolderOpen, Bot, Settings as SettingsIcon, UserCircle, LogOut, ChevronLeft, ChevronRight, Folder } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -32,6 +33,7 @@ const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
   { href: "/dashboard/validate", label: "Analyze Idea", icon: Lightbulb },
   { href: "/dashboard/ideas", label: "Projects", icon: FolderOpen },
+  { href: "/dashboard/projects", label: "Projects (Mock)", icon: Folder },
   { href: "/dashboard/assistant", label: "Advisor", icon: Bot },
   { href: "/dashboard/settings", label: "Settings", icon: SettingsIcon },
 ];

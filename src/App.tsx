@@ -23,6 +23,7 @@ import AIAssistantPage from "./pages/AIAssistantPage";
 import SettingsPage from "./pages/SettingsPage";
 import ProfilePage from "./pages/ProfilePage";
 import SharedReportPage from "./pages/SharedReportPage";
+import ProjectsPage from "./pages/ProjectsPage";
 
 // Placeholder pages for now
 const ForgotPasswordPage = () => <div className="h-screen flex items-center justify-center">Forgot Password Page Placeholder - Coming Soon!</div>;
@@ -56,6 +57,7 @@ const App = () => (
               <Route path="/results" element={<ResultsPage />} />
               <Route path="/results/:reportId" element={<ResultsPage />} />
               <Route path="/dashboard/ideas" element={<MyBusinessIdeasPage />} />
+              <Route path="/dashboard/projects" element={<ProjectsPage />} />
               <Route path="/dashboard/reports" element={<MyReportsPage />} />
               <Route path="/dashboard/business-idea/:ideaId" element={<BusinessDashboardPage />} />
               <Route path="/dashboard/assistant" element={<AIAssistantPage />} />
