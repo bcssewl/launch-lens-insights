@@ -75,8 +75,9 @@ const ModelSelectionDropdown: React.FC<ModelSelectionDropdownProps> = ({
       
       <DropdownMenuContent 
         align="center" 
-        className="w-80 p-2 bg-background border border-border shadow-lg"
-        sideOffset={8}
+        side="top"
+        className="w-80 p-2 bg-background border border-border shadow-lg z-50"
+        sideOffset={12}
       >
         <div className="mb-2 px-2 py-1">
           <h3 className="text-sm font-medium text-foreground">Choose AI Model</h3>
