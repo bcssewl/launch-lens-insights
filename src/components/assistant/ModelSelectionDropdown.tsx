@@ -8,6 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export interface AIModel {
   id: string;
@@ -76,7 +77,7 @@ const ModelSelectionDropdown: React.FC<ModelSelectionDropdownProps> = ({
       <DropdownMenuContent 
         align="center" 
         side="bottom"
-        className="w-64 max-w-[85vw] p-1.5 backdrop-blur-md bg-background/80 border border-border/50 shadow-glass rounded-xl z-50"
+        className="w-64 max-w-[85vw] max-h-[70vh] overflow-hidden backdrop-blur-md bg-background/80 border border-border/50 shadow-glass rounded-xl z-50"
         sideOffset={12}
         avoidCollisions={false}
         collisionPadding={10}
@@ -86,37 +87,41 @@ const ModelSelectionDropdown: React.FC<ModelSelectionDropdownProps> = ({
           <p className="text-xs text-muted-foreground">Select the best model for your task</p>
         </div>
         
-        {AI_MODELS.map((model) => (
-          <DropdownMenuItem
-            key={model.id}
-            onClick={() => handleModelSelect(model)}
-            className="flex items-start gap-2.5 p-2.5 cursor-pointer hover:bg-muted/30 rounded-lg transition-colors"
-          >
-            <div className="flex-shrink-0 mt-0.5">
-              {selectedModel === model.id ? (
-                <Check className="h-4 w-4 text-primary" />
-              ) : (
-                <div className="h-4 w-4" />
-              )}
-            </div>
-            
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-foreground">
-                  {model.name}
-                </span>
-                {model.isDefault && (
-                  <span className="px-1 py-0.5 text-xs bg-primary/20 text-primary rounded backdrop-blur-sm">
-                    Default
-                  </span>
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-                {model.description}
-              </p>
-            </div>
-          </DropdownMenuItem>
-        ))}
+        <ScrollArea className="max-h-[50vh]">
+          <div className="px-1.5 pb-1.5">
+            {AI_MODELS.map((model) => (
+              <DropdownMenuItem
+                key={model.id}
+                onClick={() => handleModelSelect(model)}
+                className="flex items-start gap-2.5 p-2.5 cursor-pointer hover:bg-muted/30 rounded-lg transition-colors"
+              >
+                <div className="flex-shrink-0 mt-0.5">
+                  {selectedModel === model.id ? (
+                    <Check className="h-4 w-4 text-primary" />
+                  ) : (
+                    <div className="h-4 w-4" />
+                  )}
+                </div>
+                
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-foreground">
+                      {model.name}
+                    </span>
+                    {model.isDefault && (
+                      <span className="px-1 py-0.5 text-xs bg-primary/20 text-primary rounded backdrop-blur-sm">
+                        Default
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                    {model.description}
+                  </p>
+                </div>
+              </DropdownMenuItem>
+            ))}
+          </div>
+        </ScrollArea>
       </DropdownMenuContent>
     </DropdownMenu>
   );
