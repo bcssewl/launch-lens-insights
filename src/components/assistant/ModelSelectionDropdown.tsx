@@ -78,7 +78,7 @@ const ModelSelectionDropdown: React.FC<ModelSelectionDropdownProps> = ({
       <DropdownMenuContent 
         align="start" 
         side="bottom"
-        className="w-64 max-w-[85vw] max-h-[40vh] overflow-hidden backdrop-blur-xl bg-white/10 dark:bg-black/10 border border-white/20 dark:border-white/10 shadow-2xl rounded-xl z-50"
+        className="w-64 max-w-[85vw] max-h-[50vh] overflow-hidden backdrop-blur-xl bg-white/10 dark:bg-black/10 border border-white/20 dark:border-white/10 shadow-2xl rounded-xl z-50"
         sideOffset={8}
         avoidCollisions={false}
         collisionPadding={10}
@@ -88,7 +88,7 @@ const ModelSelectionDropdown: React.FC<ModelSelectionDropdownProps> = ({
           <p className="text-xs text-muted-foreground">Select the best model for your task</p>
         </div>
         
-        <ScrollArea className="max-h-[25vh]">
+        <ScrollArea className="max-h-[35vh]">
           <div className="px-1.5 pb-1.5">
             {AI_MODELS.map((model) => (
               <DropdownMenuItem
