@@ -43,7 +43,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     );
   }
 
-  // Show conversation with fixed input bar similar to canvas chat panel
+  // Show conversation with fixed input bar that blends seamlessly
   return (
     <div className="h-full flex flex-col relative bg-background/10 backdrop-blur-sm">
       {/* Chat Messages Area with proper scrolling */}
@@ -62,12 +62,12 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             {isTyping && <TypingIndicator />}
           </div>
           {/* Spacer for input */}
-          <div className="h-20" />
+          <div className="h-24" />
         </ScrollArea>
       </div>
 
-      {/* Fixed Input Area at bottom - similar to canvas chat panel */}
-      <div className="absolute bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border/50 shadow-lg">
+      {/* Floating Input Area that blends seamlessly */}
+      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-background/80 via-background/40 to-transparent backdrop-blur-sm">
         <div className="max-w-4xl mx-auto px-6 py-4">
           <EnhancedChatInput 
             onSendMessage={onSendMessage} 
