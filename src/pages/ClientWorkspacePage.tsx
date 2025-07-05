@@ -2,8 +2,8 @@
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import DashboardLayout from '@/layouts/DashboardLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Sidebar, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
+import { Card, CardContent } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Building2, FileText, Upload, CheckSquare, Clock, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ClientOverview from '@/components/client-workspace/ClientOverview';
@@ -13,7 +13,7 @@ import ClientTasks from '@/components/client-workspace/ClientTasks';
 import ClientTimeline from '@/components/client-workspace/ClientTimeline';
 import { Link } from 'react-router-dom';
 
-const sectionItems = [
+const tabItems = [
   { id: 'overview', title: 'Overview', icon: Home },
   { id: 'reports', title: 'AI Reports', icon: FileText },
   { id: 'files', title: 'File Vault', icon: Upload },
@@ -60,7 +60,7 @@ const mockClients = {
 
 const ClientWorkspacePage: React.FC = () => {
   const { clientId } = useParams<{ clientId: string }>();
-  const [activeSection, setActiveSection] = useState('overview');
+  const [activeTab, setActiveTab] = useState('overview');
   
   const client = clientId ? mockClients[clientId as keyof typeof mockClients] : null;
 
@@ -82,80 +82,62 @@ const ClientWorkspacePage: React.FC = () => {
     );
   }
 
-  const renderSection = () => {
-    switch (activeSection) {
-      case 'overview':
-        return <ClientOverview client={client} />;
-      case 'reports':
-        return <ClientReports client={client} />;
-      case 'files':
-        return <ClientFileVault client={client} />;
-      case 'tasks':
-        return <ClientTasks client={client} />;
-      case 'timeline':
-        return <ClientTimeline client={client} />;
-      default:
-        return <ClientOverview client={client} />;
-    }
-  };
-
   return (
     <DashboardLayout>
-      <div className="apple-hero">
-        <SidebarProvider>
-          <div className="flex h-full w-full">
-            <Sidebar className="w-64 border-r border-border-subtle">
-              <SidebarContent className="p-4">
-                <div className="mb-6">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="p-2 bg-primary/10 rounded-lg">
-                      <Building2 className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <h2 className="font-semibold text-lg">{client.name}</h2>
-                      <p className="text-sm text-muted-foreground">{client.industry}</p>
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm" asChild className="w-full">
-                    <Link to="/dashboard/projects">← Back to Clients</Link>
-                  </Button>
+      <div className="apple-hero p-6">
+        {/* Client Header */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-primary/10 rounded-lg">
+                  <Building2 className="h-6 w-6 text-primary" />
                 </div>
-                
-                <SidebarMenu>
-                  {sectionItems.map((item) => (
-                    <SidebarMenuItem key={item.id}>
-                      <SidebarMenuButton
-                        isActive={activeSection === item.id}
-                        onClick={() => setActiveSection(item.id)}
-                        className="w-full justify-start"
-                      >
-                        <item.icon className="h-4 w-4 mr-2" />
-                        {item.title}
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarContent>
-            </Sidebar>
-            
-            <SidebarInset className="flex-1">
-              <div className="p-6">
-                <div className="mb-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h1 className="text-2xl font-bold">{sectionItems.find(item => item.id === activeSection)?.title}</h1>
-                      <p className="text-muted-foreground">{client.description}</p>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="max-w-7xl">
-                  {renderSection()}
+                <div>
+                  <h1 className="text-2xl font-bold">{client.name}</h1>
+                  <p className="text-muted-foreground">{client.description}</p>
                 </div>
               </div>
-            </SidebarInset>
+            </div>
+            <Button variant="outline" asChild>
+              <Link to="/dashboard/projects">← Back to Clients</Link>
+            </Button>
           </div>
-        </SidebarProvider>
+        </div>
+
+        {/* Tabs Navigation */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-5 mb-6">
+            {tabItems.map((item) => (
+              <TabsTrigger key={item.id} value={item.id} className="flex items-center gap-2">
+                <item.icon className="h-4 w-4" />
+                <span className="hidden sm:inline">{item.title}</span>
+              </TabsTrigger>
+            ))}
+          </TabsList>
+
+          <div className="max-w-7xl">
+            <TabsContent value="overview" className="mt-0">
+              <ClientOverview client={client} />
+            </TabsContent>
+            
+            <TabsContent value="reports" className="mt-0">
+              <ClientReports client={client} />
+            </TabsContent>
+            
+            <TabsContent value="files" className="mt-0">
+              <ClientFileVault client={client} />
+            </TabsContent>
+            
+            <TabsContent value="tasks" className="mt-0">
+              <ClientTasks client={client} />
+            </TabsContent>
+            
+            <TabsContent value="timeline" className="mt-0">
+              <ClientTimeline client={client} />
+            </TabsContent>
+          </div>
+        </Tabs>
       </div>
     </DashboardLayout>
   );
