@@ -43,10 +43,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     );
   }
 
-  // Show conversation with sticky input bar
+  // Show conversation with fixed input bar using flexbox layout
   return (
     <div className="flex flex-col flex-1 min-h-0 w-full relative bg-background/10 backdrop-blur-sm">
-      {/* Chat Messages Area - scrollable with flex-grow */}
+      {/* Chat Messages Area - takes all available space and scrolls */}
       <div className="flex-1 min-h-0 overflow-hidden">
         <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
           <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
@@ -61,13 +61,13 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             ))}
             {isTyping && <TypingIndicator />}
           </div>
-          {/* Bottom spacer to prevent content from being hidden behind sticky input */}
-          <div className="h-32" />
+          {/* Bottom spacer to prevent last message from being hidden behind input */}
+          <div className="h-24" />
         </ScrollArea>
       </div>
 
-      {/* Sticky Input Bar - stays at bottom of ChatArea container */}
-      <div className="sticky bottom-0 z-50 bg-background/95 backdrop-blur-sm border-t border-border/50 shadow-lg">
+      {/* Input Bar - fixed at bottom, doesn't scroll */}
+      <div className="flex-shrink-0 bg-background/95 backdrop-blur-sm border-t border-border/50 shadow-lg">
         <div className="max-w-4xl mx-auto px-6 py-4">
           <EnhancedChatInput 
             onSendMessage={onSendMessage} 
