@@ -76,7 +76,7 @@ const ModelSelectionDropdown: React.FC<ModelSelectionDropdownProps> = ({
       <DropdownMenuContent 
         align="center" 
         side="bottom"
-        className="w-80 p-2 bg-background border border-border shadow-lg z-50"
+        className="w-72 sm:w-80 max-w-[90vw] p-2 backdrop-blur-md bg-background/80 border border-border/50 shadow-glass rounded-xl z-50"
         sideOffset={12}
         avoidCollisions={false}
         collisionPadding={10}
@@ -90,7 +90,7 @@ const ModelSelectionDropdown: React.FC<ModelSelectionDropdownProps> = ({
           <DropdownMenuItem
             key={model.id}
             onClick={() => handleModelSelect(model)}
-            className="flex items-start gap-3 p-3 cursor-pointer hover:bg-muted/50 rounded-md"
+            className="flex items-start gap-3 p-3 cursor-pointer hover:bg-muted/30 rounded-lg transition-colors"
           >
             <div className="flex-shrink-0 mt-0.5">
               {selectedModel === model.id ? (
@@ -106,7 +106,7 @@ const ModelSelectionDropdown: React.FC<ModelSelectionDropdownProps> = ({
                   {model.name}
                 </span>
                 {model.isDefault && (
-                  <span className="px-1.5 py-0.5 text-xs bg-primary/10 text-primary rounded">
+                  <span className="px-1.5 py-0.5 text-xs bg-primary/20 text-primary rounded-md backdrop-blur-sm">
                     Default
                   </span>
                 )}
