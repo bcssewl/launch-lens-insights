@@ -43,11 +43,11 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     );
   }
 
-  // Show conversation with fixed input bar using flexbox layout
+  // Show conversation with fixed input bar similar to canvas chat panel
   return (
-    <div className="flex flex-col flex-1 min-h-0 w-full relative bg-background/10 backdrop-blur-sm">
-      {/* Chat Messages Area - takes all available space and scrolls */}
-      <div className="flex-1 min-h-0 overflow-hidden">
+    <div className="h-full flex flex-col relative bg-background/10 backdrop-blur-sm">
+      {/* Chat Messages Area with proper scrolling */}
+      <div className="flex-1 overflow-hidden">
         <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
           <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
             {messages.map((msg) => (
@@ -61,13 +61,13 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             ))}
             {isTyping && <TypingIndicator />}
           </div>
-          {/* Bottom spacer to prevent last message from being hidden behind input */}
-          <div className="h-24" />
+          {/* Spacer for input */}
+          <div className="h-20" />
         </ScrollArea>
       </div>
 
-      {/* Input Bar - fixed at bottom, doesn't scroll */}
-      <div className="flex-shrink-0 bg-background/95 backdrop-blur-sm border-t border-border/50 shadow-lg">
+      {/* Fixed Input Area at bottom - similar to canvas chat panel */}
+      <div className="absolute bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border/50 shadow-lg">
         <div className="max-w-4xl mx-auto px-6 py-4">
           <EnhancedChatInput 
             onSendMessage={onSendMessage} 

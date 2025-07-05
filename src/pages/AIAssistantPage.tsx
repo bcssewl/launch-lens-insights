@@ -14,12 +14,12 @@ import { useMessages } from '@/hooks/useMessages';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTheme } from 'next-themes';
 import { Loader2 } from 'lucide-react';
+
 const AIAssistantPage: React.FC = () => {
   const isMobile = useIsMobile();
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const {
-    theme
-  } = useTheme();
+  const { theme } = useTheme();
+
   const {
     currentSessionId,
     setCurrentSessionId,
@@ -83,6 +83,7 @@ const AIAssistantPage: React.FC = () => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isFullscreen]);
+
   const handleSendMessageWithSession = async (text: string) => {
     console.log('AIAssistantPage: Sending message with session:', currentSessionId);
 
@@ -105,6 +106,7 @@ const AIAssistantPage: React.FC = () => {
       handleSendMessage(text);
     }
   };
+
   const handleClearConversationWithHistory = async () => {
     console.log('AIAssistantPage: Clearing conversation and history for session:', currentSessionId);
     handleClearConversation();
@@ -112,6 +114,7 @@ const AIAssistantPage: React.FC = () => {
       await clearHistory();
     }
   };
+
   const handleSessionSelect = (sessionId: string) => {
     console.log('AIAssistantPage: Session selected:', sessionId);
     if (sessionId === '') {
@@ -121,9 +124,11 @@ const AIAssistantPage: React.FC = () => {
       setCurrentSessionId(sessionId);
     }
   };
+
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
   };
+
   const handleCanvasContentUpdate = (newContent: string) => {
     console.log('AIAssistantPage: Canvas content updated');
     setEditedCanvasContent(newContent);
@@ -132,7 +137,8 @@ const AIAssistantPage: React.FC = () => {
 
   // Show loading state while history is being loaded
   if (isLoadingHistory) {
-    return <div className="min-h-screen flex w-full apple-hero relative">
+    return (
+      <div className="min-h-screen flex w-full apple-hero relative">
         <FloatingElements />
         <SidebarProvider>
           <AppSidebar />
@@ -145,42 +151,102 @@ const AIAssistantPage: React.FC = () => {
             </div>
           </SidebarInset>
         </SidebarProvider>
-      </div>;
+      </div>
+    );
   }
 
   // Fullscreen mode
   if (isFullscreen) {
-    return <FullscreenChatLayout messages={messages} isTyping={isTyping} viewportRef={viewportRef} isConfigured={isConfigured} currentSessionId={currentSessionId} onSendMessage={handleSendMessageWithSession} onDownloadChat={handleDownloadChat} onClearConversation={handleClearConversationWithHistory} onSessionSelect={handleSessionSelect} onToggleFullscreen={toggleFullscreen} canvasState={canvasState} onOpenCanvas={handleOpenCanvas} onCloseCanvas={handleCloseCanvas} onCanvasDownload={handleCanvasDownload} onCanvasPrint={handleCanvasPrint} />;
+    return (
+      <FullscreenChatLayout 
+        messages={messages} 
+        isTyping={isTyping} 
+        viewportRef={viewportRef} 
+        isConfigured={isConfigured} 
+        currentSessionId={currentSessionId} 
+        onSendMessage={handleSendMessageWithSession} 
+        onDownloadChat={handleDownloadChat} 
+        onClearConversation={handleClearConversationWithHistory} 
+        onSessionSelect={handleSessionSelect} 
+        onToggleFullscreen={toggleFullscreen} 
+        canvasState={canvasState} 
+        onOpenCanvas={handleOpenCanvas} 
+        onCloseCanvas={handleCloseCanvas} 
+        onCanvasDownload={handleCanvasDownload} 
+        onCanvasPrint={handleCanvasPrint} 
+      />
+    );
   }
 
-  // Normal mode with proper dashboard background structure
-  return <div className="min-h-screen flex w-full apple-hero relative">
+  // Normal mode with proper height constraints for sticky header and input
+  return (
+    <div className="min-h-screen flex w-full apple-hero relative">
       {/* Floating Elements at the root level */}
       <FloatingElements />
       
       <SidebarProvider>
         <AppSidebar />
         
-        <SidebarInset className="flex-1 flex flex-col bg-transparent">
-          {/* Header with transparent background */}
-          {isMobile ? <MobileDashboardHeader title="AI Assistant" /> : <div className="border-b bg-background/10 backdrop-blur-sm">
+        <SidebarInset className="flex-1 flex flex-col bg-transparent h-screen">
+          {/* Fixed Header */}
+          {isMobile ? (
+            <MobileDashboardHeader title="AI Assistant" />
+          ) : (
+            <div className="flex-shrink-0 border-b bg-background/10 backdrop-blur-sm">
               <div className="px-6 flex items-center justify-between py-[10px]">
                 <h1 className="text-lg font-semibold text-foreground">AI Assistant</h1>
                 <div className="flex items-center">
-                  <ChatSubheader isConfigured={isConfigured} currentSessionId={currentSessionId} isFullscreen={isFullscreen} onToggleFullscreen={toggleFullscreen} onDownloadChat={handleDownloadChat} onClearConversation={handleClearConversationWithHistory} onSessionSelect={handleSessionSelect} />
+                  <ChatSubheader 
+                    isConfigured={isConfigured} 
+                    currentSessionId={currentSessionId} 
+                    isFullscreen={isFullscreen} 
+                    onToggleFullscreen={toggleFullscreen} 
+                    onDownloadChat={handleDownloadChat} 
+                    onClearConversation={handleClearConversationWithHistory} 
+                    onSessionSelect={handleSessionSelect} 
+                  />
                 </div>
               </div>
-            </div>}
+            </div>
+          )}
           
-          {/* Main chat area with transparent background */}
-          <div className="flex flex-col flex-1 min-h-0 w-full bg-transparent">
-            <ChatArea messages={messages} isTyping={isTyping} viewportRef={viewportRef} onSendMessage={handleSendMessageWithSession} onOpenCanvas={handleOpenCanvas} onCloseCanvas={handleCloseCanvas} onCanvasDownload={handleCanvasDownload} onCanvasPrint={handleCanvasPrint} />
+          {/* Main chat area - takes remaining height */}
+          <div className="flex-1 min-h-0 bg-transparent">
+            <ChatArea 
+              messages={messages} 
+              isTyping={isTyping} 
+              viewportRef={viewportRef} 
+              onSendMessage={handleSendMessageWithSession} 
+              onOpenCanvas={handleOpenCanvas} 
+              onCloseCanvas={handleCloseCanvas} 
+              onCanvasDownload={handleCanvasDownload} 
+              onCanvasPrint={handleCanvasPrint} 
+            />
           </div>
         </SidebarInset>
       </SidebarProvider>
 
       {/* SINGLE Canvas View - Only rendered here */}
-      <CanvasView isOpen={canvasState.isOpen} onClose={handleCloseCanvas} content={editedCanvasContent} title="AI Report" onDownload={handleCanvasDownload} onPrint={handleCanvasPdfDownload} messages={messages} isTyping={isTyping} viewportRef={viewportRef} onSendMessage={handleSendMessageWithSession} canvasState={canvasState} onOpenCanvas={handleOpenCanvas} onCloseCanvas={handleCloseCanvas} onCanvasDownload={handleCanvasDownload} onCanvasPrint={handleCanvasPdfDownload} onContentUpdate={handleCanvasContentUpdate} />
-    </div>;
+      <CanvasView 
+        isOpen={canvasState.isOpen} 
+        onClose={handleCloseCanvas} 
+        content={editedCanvasContent} 
+        title="AI Report" 
+        onDownload={handleCanvasDownload} 
+        onPrint={handleCanvasPdfDownload} 
+        messages={messages} 
+        isTyping={isTyping} 
+        viewportRef={viewportRef} 
+        onSendMessage={handleSendMessageWithSession} 
+        canvasState={canvasState} 
+        onOpenCanvas={handleOpenCanvas} 
+        onCloseCanvas={handleCloseCanvas} 
+        onCanvasDownload={handleCanvasDownload} 
+        onCanvasPrint={handleCanvasPdfDownload} 
+        onContentUpdate={handleCanvasContentUpdate} 
+      />
+    </div>
+  );
 };
+
 export default AIAssistantPage;
