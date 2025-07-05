@@ -53,6 +53,7 @@ const ModelSelectionDropdown: React.FC<ModelSelectionDropdownProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   
   const currentModel = AI_MODELS.find(model => model.id === selectedModel) || AI_MODELS[0];
+  const isModelSelected = selectedModel !== 'best';
 
   const handleModelSelect = (model: AIModel) => {
     onModelSelect(model);
@@ -64,21 +65,21 @@ const ModelSelectionDropdown: React.FC<ModelSelectionDropdownProps> = ({
       <DropdownMenuTrigger asChild>
         <Button 
           variant="ghost" 
-          size="icon" 
-          className="h-10 w-10 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground relative"
+          className="h-10 px-3 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground flex items-center gap-2"
         >
-          <Lightbulb className="h-5 w-5" />
-          {selectedModel !== 'best' && (
-            <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full border-2 border-background" />
-          )}
+          <Lightbulb className={`h-4 w-4 ${isModelSelected ? 'text-yellow-500' : ''}`} />
+          <span className="text-sm font-medium">
+            {isModelSelected ? currentModel.name : 'Model'}
+          </span>
+          <ChevronDown className="h-3 w-3" />
         </Button>
       </DropdownMenuTrigger>
       
       <DropdownMenuContent 
-        align="center" 
+        align="start" 
         side="bottom"
         className="w-64 max-w-[85vw] max-h-[70vh] overflow-hidden backdrop-blur-md bg-background/80 border border-border/50 shadow-glass rounded-xl z-50"
-        sideOffset={12}
+        sideOffset={8}
         avoidCollisions={false}
         collisionPadding={10}
       >
