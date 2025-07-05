@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { X, Download, Printer, Edit, FileText } from 'lucide-react';
+import { X, Download, Printer, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface CanvasHeaderProps {
@@ -18,7 +18,6 @@ const CanvasHeader: React.FC<CanvasHeaderProps> = ({
   isEditing,
   onDownload,
   onPrint,
-  onEdit,
   onClose,
   onPdfDownload
 }) => {
@@ -40,11 +39,6 @@ const CanvasHeader: React.FC<CanvasHeaderProps> = ({
     onPdfDownload?.();
   };
 
-  const handleEditClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onEdit();
-  };
-
   const handleCloseClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     console.log('CanvasHeader: Close button clicked');
@@ -57,16 +51,6 @@ const CanvasHeader: React.FC<CanvasHeaderProps> = ({
         {title} {isEditing && <span className="text-sm text-orange-500">(Editing)</span>}
       </h2>
       <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleEditClick}
-          disabled={isEditing}
-          className="flex items-center gap-2"
-        >
-          <Edit className="h-4 w-4" />
-          Edit
-        </Button>
         {onPdfDownload && (
           <Button
             variant="outline"
