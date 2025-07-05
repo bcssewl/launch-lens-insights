@@ -75,7 +75,7 @@ const ModelSelectionDropdown: React.FC<ModelSelectionDropdownProps> = ({
       
       <DropdownMenuContent 
         align="center" 
-        side="top"
+        side="bottom"
         className="w-80 p-2 bg-background border border-border shadow-lg z-50"
         sideOffset={12}
       >
