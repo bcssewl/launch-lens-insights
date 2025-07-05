@@ -45,7 +45,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     // Use default positioning
   }
 
-  // Calculate proper positioning based on sidebar state for fixed input
+  // Calculate proper positioning based on sidebar state for sticky input
   const inputPositionClass = sidebarState === 'expanded' 
     ? 'fixed bottom-0 left-[var(--sidebar-width)] right-0 z-50'
     : 'fixed bottom-0 left-[var(--sidebar-width-icon)] right-0 z-50';
@@ -64,10 +64,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     );
   }
 
-  // Show conversation with dashboard background styling
+  // Show conversation with sticky input bar
   return (
     <div className="flex flex-col flex-1 min-h-0 w-full relative bg-background/10 backdrop-blur-sm">
-      {/* Chat Messages Area - full height with padding for fixed input */}
+      {/* Chat Messages Area - full height with bottom padding for sticky input */}
       <div className="flex-1 min-h-0 overflow-hidden">
         <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
           <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
@@ -82,13 +82,14 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             ))}
             {isTyping && <TypingIndicator />}
           </div>
-          <div className="h-24" /> {/* Spacer for fixed input */}
+          {/* Bottom spacer to prevent content from being hidden behind sticky input */}
+          <div className="h-32" />
         </ScrollArea>
       </div>
 
-      {/* Fixed Input Area - floating appearance like Lovable */}
+      {/* Sticky Input Bar - Fixed to bottom of viewport */}
       <div className={finalInputPositionClass}>
-        <div className="px-6 py-4">
+        <div className="bg-background/95 backdrop-blur-sm border-t border-border/50 px-6 py-4 shadow-lg">
           <EnhancedChatInput 
             onSendMessage={onSendMessage} 
             isTyping={isTyping}
