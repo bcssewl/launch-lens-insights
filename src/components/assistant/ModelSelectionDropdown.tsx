@@ -88,7 +88,7 @@ const ModelSelectionDropdown: React.FC<ModelSelectionDropdownProps> = ({
           <p className="text-xs text-muted-foreground">Select the best model for your task</p>
         </div>
         
-        <ScrollArea className="max-h-[35vh]">
+        <ScrollArea className="max-h-[35vh]" type="always">
           <div className="px-1.5 pb-1.5">
             {AI_MODELS.map((model) => (
               <DropdownMenuItem
