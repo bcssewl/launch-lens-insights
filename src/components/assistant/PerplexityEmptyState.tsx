@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Search, Mic, Plus, Target, Lightbulb, Globe, Paperclip } from 'lucide-react';
+import { Search, Mic, Target, Globe, Paperclip } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useVoiceRecording } from '@/hooks/useVoiceRecording';
@@ -10,6 +10,7 @@ import AttachmentOptionsDropdown from './AttachmentOptionsDropdown';
 import ProjectSelectionModal from './ProjectSelectionModal';
 import LocalFileUploader from './LocalFileUploader';
 import AttachmentsList from './AttachmentsList';
+import ModelSelectionDropdown, { AIModel } from './ModelSelectionDropdown';
 
 interface PerplexityEmptyStateProps {
   onSendMessage: (message: string, attachments?: any[]) => void;
@@ -36,6 +37,7 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
   } = useFileAttachments();
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [showLocalUploader, setShowLocalUploader] = useState(false);
+  const [selectedModel, setSelectedModel] = useState<string>('best');
 
   const handlePromptClick = (prompt: string) => {
     onSendMessage(prompt, attachedFiles);
@@ -54,6 +56,11 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
       handlePromptClick(e.currentTarget.value);
       e.currentTarget.value = '';
     }
+  };
+
+  const handleModelSelect = (model: AIModel) => {
+    setSelectedModel(model.id);
+    console.log('Selected AI model:', model.name);
   };
 
   return (
@@ -104,9 +111,10 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
               <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground">
                 <Target className="h-5 w-5" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground">
-                <Lightbulb className="h-5 w-5" />
-              </Button>
+              <ModelSelectionDropdown 
+                selectedModel={selectedModel}
+                onModelSelect={handleModelSelect}
+              />
             </div>
 
             {/* Right Side Button Group */}
