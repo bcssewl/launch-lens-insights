@@ -11,16 +11,16 @@ const ProjectsPage: React.FC = () => {
         <div className="p-4 md:p-6 lg:p-8">
           <div className="max-w-7xl mx-auto">
             <div className="mb-8">
-              <h1 className="text-3xl font-bold text-foreground mb-2">Projects (Mock)</h1>
-              <p className="text-muted-foreground">Organize your ideas and reports into projects</p>
+              <h1 className="text-3xl font-bold text-foreground mb-2">Clients (Mock)</h1>
+              <p className="text-muted-foreground">Manage your client workspaces and consulting engagements</p>
             </div>
 
-            <Tabs defaultValue="projects" className="w-full">
+            <Tabs defaultValue="clients" className="w-full">
               <TabsList className="grid w-full sm:w-auto grid-cols-1">
-                <TabsTrigger value="projects">All Projects</TabsTrigger>
+                <TabsTrigger value="clients">All Clients</TabsTrigger>
               </TabsList>
               
-              <TabsContent value="projects" className="mt-6">
+              <TabsContent value="clients" className="mt-6">
                 <ProjectsTabContent />
               </TabsContent>
             </Tabs>
