@@ -76,12 +76,12 @@ const ModelSelectionDropdown: React.FC<ModelSelectionDropdownProps> = ({
       <DropdownMenuContent 
         align="center" 
         side="bottom"
-        className="w-72 sm:w-80 max-w-[90vw] p-2 backdrop-blur-md bg-background/80 border border-border/50 shadow-glass rounded-xl z-50"
+        className="w-64 max-w-[85vw] p-1.5 backdrop-blur-md bg-background/80 border border-border/50 shadow-glass rounded-xl z-50"
         sideOffset={12}
         avoidCollisions={false}
         collisionPadding={10}
       >
-        <div className="mb-2 px-2 py-1">
+        <div className="mb-1.5 px-2 py-1">
           <h3 className="text-sm font-medium text-foreground">Choose AI Model</h3>
           <p className="text-xs text-muted-foreground">Select the best model for your task</p>
         </div>
@@ -90,7 +90,7 @@ const ModelSelectionDropdown: React.FC<ModelSelectionDropdownProps> = ({
           <DropdownMenuItem
             key={model.id}
             onClick={() => handleModelSelect(model)}
-            className="flex items-start gap-3 p-3 cursor-pointer hover:bg-muted/30 rounded-lg transition-colors"
+            className="flex items-start gap-2.5 p-2.5 cursor-pointer hover:bg-muted/30 rounded-lg transition-colors"
           >
             <div className="flex-shrink-0 mt-0.5">
               {selectedModel === model.id ? (
@@ -106,7 +106,7 @@ const ModelSelectionDropdown: React.FC<ModelSelectionDropdownProps> = ({
                   {model.name}
                 </span>
                 {model.isDefault && (
-                  <span className="px-1.5 py-0.5 text-xs bg-primary/20 text-primary rounded-md backdrop-blur-sm">
+                  <span className="px-1 py-0.5 text-xs bg-primary/20 text-primary rounded backdrop-blur-sm">
                     Default
                   </span>
                 )}
