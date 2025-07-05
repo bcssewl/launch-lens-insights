@@ -66,8 +66,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         </ScrollArea>
       </div>
 
-      {/* Floating Input Area that blends seamlessly */}
-      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-background/80 via-background/40 to-transparent backdrop-blur-sm">
+      {/* Floating Input Area */}
+      <div className="absolute bottom-0 left-0 right-0">
         <div className="max-w-4xl mx-auto px-6 py-4">
           <EnhancedChatInput 
             onSendMessage={onSendMessage} 
