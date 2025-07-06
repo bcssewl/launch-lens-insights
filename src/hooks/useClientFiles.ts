@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -17,9 +18,6 @@ export interface ClientFile {
   version_count: number;
   current_version: number;
   has_versions: boolean;
-  embedding_status: string | null;
-  embedding_processed_at: string | null;
-  total_chunks: number | null;
 }
 
 export interface FileFilters {
@@ -79,7 +77,7 @@ export const useClientFiles = (clientId: string) => {
 
       if (uploadError) throw uploadError;
 
-      // Save metadata to database with embedding status
+      // Save metadata to database
       const { error: dbError } = await supabase
         .from('client_files')
         .insert({
@@ -89,8 +87,7 @@ export const useClientFiles = (clientId: string) => {
           file_type: file.type,
           file_size: file.size,
           file_path: filePath,
-          category: category || getCategoryFromFileType(file.type),
-          embedding_status: 'pending' // New files start with pending embedding status
+          category: category || getCategoryFromFileType(file.type)
         });
 
       if (dbError) throw dbError;

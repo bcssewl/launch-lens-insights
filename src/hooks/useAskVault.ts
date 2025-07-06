@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,16 +19,13 @@ export interface AskVaultResult {
 interface UseAskVaultProps {
   clientId: string;
   onResultSelect?: (result: AskVaultResult) => void;
-  enableStreaming?: boolean;
 }
 
-export const useAskVault = ({ clientId, onResultSelect, enableStreaming = false }: UseAskVaultProps) => {
+export const useAskVault = ({ clientId, onResultSelect }: UseAskVaultProps) => {
   const [results, setResults] = useState<AskVaultResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
-  const [answer, setAnswer] = useState('');
-  const [streaming, setStreaming] = useState(false);
   const { toast } = useToast();
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -51,10 +49,10 @@ export const useAskVault = ({ clientId, onResultSelect, enableStreaming = false 
     });
   }, [clientId]);
 
-  const askVault = useCallback(async (searchQuery: string, useStreaming = enableStreaming) => {
+  const searchVault = useCallback(async (searchQuery: string) => {
+    // Minimum 2-character guard
     if (searchQuery.length < 2) {
       setResults([]);
-      setAnswer('');
       setIsOpen(false);
       return;
     }
@@ -67,111 +65,52 @@ export const useAskVault = ({ clientId, onResultSelect, enableStreaming = false 
     abortControllerRef.current = new AbortController();
     setLoading(true);
     setQuery(searchQuery);
-    setAnswer('');
 
     try {
-      console.log('Calling ask-vault function with:', { query: searchQuery, clientId, streaming: useStreaming });
+      console.log('Calling ask-vault function with:', { query: searchQuery, clientId });
       
-      if (useStreaming) {
-        setStreaming(true);
-        
-        // Streaming request - use the Supabase URL directly
-        const response = await fetch(`https://jtnedstugyvkfthtsumh.supabase.co/functions/v1/ask-vault?stream=true`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${supabase.supabaseKey}`,
-            'Content-Type': 'application/json',
-            'Accept': 'text/stream',
-          },
-          body: JSON.stringify({
-            query: searchQuery,
-            clientId
-          }),
-          signal: abortControllerRef.current.signal
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const reader = response.body?.getReader();
-        let citations: AskVaultResult[] = [];
-        
-        if (reader) {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-
-            const chunk = new TextDecoder().decode(value);
-            const lines = chunk.split('\n');
-
-            for (const line of lines) {
-              if (line.startsWith('data: ')) {
-                const dataStr = line.slice(6);
-                if (dataStr === '[DONE]') break;
-                
-                try {
-                  const data = JSON.parse(dataStr);
-                  if (data.text) {
-                    setAnswer(prev => prev + data.text);
-                  }
-                  if (data.citations && !citations.length) {
-                    citations = data.citations;
-                    setResults(citations);
-                  }
-                } catch (e) {
-                  // Skip invalid JSON
-                }
-              }
-            }
-          }
-        }
-
-        setStreaming(false);
-      } else {
-        // Regular request
-        const { data, error } = await supabase.functions.invoke('ask-vault', {
-          body: {
-            query: searchQuery,
-            clientId
-          }
-        });
-
-        if (error) {
-          console.error('Supabase function error:', error);
-          throw error;
-        }
-
-        const searchResults: AskVaultResult[] = data?.citations || [];
-        const aiAnswer = data?.answer || '';
-        
-        console.log('Ask Vault API response:', {
+      // Call the enhanced ask-vault edge function
+      const { data, error } = await supabase.functions.invoke('ask-vault', {
+        body: {
           query: searchQuery,
-          resultCount: searchResults.length,
-          answer: aiAnswer.substring(0, 100) + '...',
-          cached: data?.cached
-        });
+          clientId
+        }
+      });
 
-        setResults(searchResults);
-        setAnswer(aiAnswer);
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw error;
       }
+
+      const searchResults: AskVaultResult[] = data?.results || [];
       
-      setIsOpen(true);
+      console.log('Ask Vault API response:', {
+        query: searchQuery,
+        enhancedQuery: data?.enhancedQuery,
+        resultCount: searchResults.length,
+        results: searchResults
+      });
+
+      setResults(searchResults);
+      setIsOpen(searchResults.length > 0);
       
       // Track analytics
-      trackSearch(searchQuery, results.length);
+      trackSearch(searchQuery, searchResults.length);
+
+      // Show enhanced query info if available
+      if (data?.enhancedQuery && data.enhancedQuery !== searchQuery) {
+        console.log(`Query enhanced: "${searchQuery}" → "${data.enhancedQuery}"`);
+      }
 
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
         return; // Request was cancelled, ignore
       }
 
-      console.error('Ask Vault error:', error);
+      console.error('Ask Vault search error:', error);
       
       setResults([]);
-      setAnswer('');
       setIsOpen(false);
-      setStreaming(false);
       
       toast({
         title: "Search Error",
@@ -182,11 +121,7 @@ export const useAskVault = ({ clientId, onResultSelect, enableStreaming = false 
       setLoading(false);
       abortControllerRef.current = null;
     }
-  }, [clientId, trackSearch, toast, enableStreaming]);
-
-  const searchVault = useCallback(async (searchQuery: string) => {
-    return askVault(searchQuery, false);
-  }, [askVault]);
+  }, [clientId, trackSearch, toast]);
 
   const handleResultSelect = useCallback((result: AskVaultResult) => {
     setIsOpen(false);
@@ -218,9 +153,7 @@ export const useAskVault = ({ clientId, onResultSelect, enableStreaming = false 
   const clearSearch = useCallback(() => {
     setQuery('');
     setResults([]);
-    setAnswer('');
     setIsOpen(false);
-    setStreaming(false);
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
@@ -229,13 +162,10 @@ export const useAskVault = ({ clientId, onResultSelect, enableStreaming = false 
   return {
     results,
     loading,
-    streaming,
     query,
-    answer,
     isOpen,
     setIsOpen,
     searchVault,
-    askVault,
     handleResultSelect,
     clearSearch
   };

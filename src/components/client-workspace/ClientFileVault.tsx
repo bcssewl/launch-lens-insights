@@ -10,8 +10,6 @@ import EnhancedFilePreview from './EnhancedFilePreview';
 import FileVersionHistoryModal from './FileVersionHistoryModal';
 import FilePreviewDrawer from './FilePreviewDrawer';
 import { useToast } from '@/hooks/use-toast';
-import EmbeddingStatusBadge from './EmbeddingStatusBadge';
-import { useFileEmbedding } from '@/hooks/useFileEmbedding';
 
 interface ClientFileVaultProps {
   client: {
@@ -49,13 +47,6 @@ const ClientFileVault: React.FC<ClientFileVaultProps> = ({ client }) => {
     filterFiles,
     refreshFiles
   } = useClientFiles(client.id);
-
-  const { 
-    generateEmbeddings, 
-    chunkText, 
-    isProcessing: isEmbeddingProcessing,
-    checkEmbeddingStatus 
-  } = useFileEmbedding();
 
   const filteredFiles = filterFiles(filters);
 
@@ -142,22 +133,6 @@ const ClientFileVault: React.FC<ClientFileVaultProps> = ({ client }) => {
       category: 'all',
       search: ''
     });
-  };
-
-  const handleProcessEmbeddings = async (file: any) => {
-    try {
-      // For now, we'll use a simple text extraction approach
-      // In a real implementation, you'd extract text from PDF, DOC, etc.
-      const sampleText = `File: ${file.file_name}\nType: ${file.file_type}\nSize: ${file.file_size} bytes\nUploaded: ${file.upload_date}`;
-      const chunks = chunkText(sampleText);
-      
-      await generateEmbeddings(file.id, chunks);
-      
-      // Refresh the files to show updated embedding status
-      refreshFiles();
-    } catch (error) {
-      console.error('Error processing embeddings:', error);
-    }
   };
 
   const getCategoryStats = () => {
@@ -285,7 +260,7 @@ const ClientFileVault: React.FC<ClientFileVaultProps> = ({ client }) => {
                           size="small"
                           showTextPreview={false}
                         />
-                        <div className="flex-1">
+                        <div>
                           <div className="flex items-center gap-2">
                             <div className="font-medium">{file.file_name}</div>
                             {file.has_versions && (
@@ -302,14 +277,6 @@ const ClientFileVault: React.FC<ClientFileVaultProps> = ({ client }) => {
                           </div>
                           <div className="text-sm text-muted-foreground">
                             {file.category} • {(file.file_size / 1024 / 1024).toFixed(2)} MB • {new Date(file.upload_date).toLocaleDateString()}
-                          </div>
-                          <div className="mt-1">
-                            <EmbeddingStatusBadge
-                              status={file.embedding_status || 'pending'}
-                              totalChunks={file.total_chunks}
-                              onReprocess={() => handleProcessEmbeddings(file)}
-                              isProcessing={isEmbeddingProcessing(file.id)}
-                            />
                           </div>
                         </div>
                       </div>
