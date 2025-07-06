@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -111,13 +110,18 @@ const ClientFileVault: React.FC<ClientFileVaultProps> = ({ client }) => {
 
   const categoryStats = getCategoryStats();
 
+  const handleUploadComplete = () => {
+    // Refresh the files list after successful upload
+    fetchFiles();
+  };
+
   if (loading) {
     return <div className="flex justify-center p-8">Loading files...</div>;
   }
 
   return (
     <div className="space-y-6">
-      {/* New File Vault Header */}
+      {/* Updated File Vault Header */}
       <FileVaultHeader
         filters={filters}
         onFiltersChange={setFilters}
@@ -126,17 +130,11 @@ const ClientFileVault: React.FC<ClientFileVaultProps> = ({ client }) => {
         onViewModeChange={setViewMode}
         fileCount={filteredFiles.length}
         totalFiles={files.length}
+        clientId={client.id}
+        onUploadComplete={handleUploadComplete}
       />
 
-      {/* Upload Files Button */}
-      <div className="flex justify-end">
-        <Button onClick={() => setShowUploadArea(!showUploadArea)}>
-          <Upload className="h-4 w-4 mr-2" />
-          Upload Files
-        </Button>
-      </div>
-
-      {/* Upload Area */}
+      {/* Upload Area - keeping this for backward compatibility if needed */}
       {showUploadArea && (
         <FileUploadArea
           onFileUpload={handleFileUpload}
