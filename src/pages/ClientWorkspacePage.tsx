@@ -24,6 +24,7 @@ const tabItems = [
 // Mock client data
 const mockClients = {
   'tesla': {
+    id: 'tesla',
     name: 'Tesla',
     description: 'Electric vehicle strategy and market expansion consulting',
     industry: 'Automotive',
@@ -35,6 +36,7 @@ const mockClients = {
     contactEmail: 'sarah.johnson@tesla.com'
   },
   'drip-drinks': {
+    id: 'drip-drinks',
     name: 'Drip Drinks',
     description: 'Beverage brand positioning and growth strategy development',
     industry: 'Consumer Goods',
@@ -46,6 +48,7 @@ const mockClients = {
     contactEmail: 'mike.chen@dripdrinks.com'
   },
   'fintech-startup': {
+    id: 'fintech-startup',
     name: 'FinTech Startup',
     description: 'Digital banking platform validation and market entry strategy',
     industry: 'FinTech',
@@ -57,6 +60,7 @@ const mockClients = {
     contactEmail: 'alex@fintechstartup.com'
   },
   'local-restaurant': {
+    id: 'local-restaurant',
     name: 'Local Restaurant Chain',
     description: 'Expansion strategy and operational efficiency optimization',
     industry: 'Hospitality',

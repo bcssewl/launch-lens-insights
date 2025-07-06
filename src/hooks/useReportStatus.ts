@@ -9,6 +9,8 @@ interface ReportStatus {
   recommendation?: string;
   completed_at?: string;
   report_data?: any;
+  idea_name?: string;
+  one_line_description?: string;
 }
 
 export const useReportStatus = (reportId: string) => {
@@ -23,7 +25,13 @@ export const useReportStatus = (reportId: string) => {
       try {
         const { data: report, error: reportError } = await supabase
           .from('validation_reports')
-          .select('*')
+          .select(`
+            *,
+            idea_validations!inner (
+              idea_name,
+              one_line_description
+            )
+          `)
           .eq('id', reportId)
           .single();
 
@@ -32,10 +40,12 @@ export const useReportStatus = (reportId: string) => {
           return;
         }
 
-        // Ensure status is properly typed
+        // Ensure status is properly typed and include idea validation data
         const typedReport: ReportStatus = {
           ...report,
-          status: report.status as 'generating' | 'completed' | 'failed' | 'archived'
+          status: report.status as 'generating' | 'completed' | 'failed' | 'archived',
+          idea_name: report.idea_validations?.idea_name,
+          one_line_description: report.idea_validations?.one_line_description
         };
 
         setReportStatus(typedReport);
