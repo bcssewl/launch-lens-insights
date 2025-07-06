@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -14,6 +13,7 @@ import { Building2, Plus, MoreVertical, FolderOpen, Upload, Archive, FileText } 
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import CreateClientDialog from '@/components/client-workspace/CreateClientDialog';
 
 interface ClientData {
   id: string;
@@ -76,7 +76,8 @@ const ProjectsTabContent: React.FC = () => {
           'Automotive': 'bg-red-100 text-red-700',
           'Consumer Goods': 'bg-orange-100 text-orange-700',
           'FinTech': 'bg-indigo-100 text-indigo-700',
-          'Hospitality': 'bg-yellow-100 text-yellow-700'
+          'Hospitality': 'bg-yellow-100 text-yellow-700',
+          'Energy': 'bg-emerald-100 text-emerald-700'
         };
 
         const potentialColors = {
@@ -125,6 +126,11 @@ const ProjectsTabContent: React.FC = () => {
     // Placeholder for future implementations
   };
 
+  const handleClientCreated = () => {
+    // Refresh the clients list when a new client is created
+    fetchClients();
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -166,10 +172,12 @@ const ProjectsTabContent: React.FC = () => {
           <h2 className="text-2xl font-bold text-foreground">Client Workspaces</h2>
           <p className="text-muted-foreground">Manage your consulting engagements and client deliverables</p>
         </div>
-        <Button className="gap-2">
-          <Plus className="h-4 w-4" />
-          New Client
-        </Button>
+        <CreateClientDialog onSuccess={handleClientCreated}>
+          <Button className="gap-2">
+            <Plus className="h-4 w-4" />
+            New Client
+          </Button>
+        </CreateClientDialog>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -178,7 +186,6 @@ const ProjectsTabContent: React.FC = () => {
             <Link to={`/dashboard/client/${client.id}`}>
               <Card className="hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-[1.02]">
                 <CardHeader className="pb-3">
-                  {/* Header with Avatar, Info, and Menu */}
                   <div className="flex items-start justify-between">
                     <div className="flex items-center space-x-3 flex-1">
                       <Avatar className="h-12 w-12">
@@ -195,7 +202,6 @@ const ProjectsTabContent: React.FC = () => {
                       </div>
                     </div>
                     
-                    {/* 3-dot menu */}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild onClick={(e) => e.preventDefault()}>
                         <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-muted">
@@ -225,7 +231,6 @@ const ProjectsTabContent: React.FC = () => {
                 </CardHeader>
                 
                 <CardContent className="space-y-4">
-                  {/* Progress Bar */}
                   <div>
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-sm font-medium text-muted-foreground">Engagement Progress</span>
@@ -234,12 +239,10 @@ const ProjectsTabContent: React.FC = () => {
                     <Progress value={client.progress} className="h-2" />
                   </div>
 
-                  {/* Description */}
                   <p className="text-sm text-muted-foreground leading-relaxed">
                     {client.description}
                   </p>
 
-                  {/* Tags */}
                   <div className="flex gap-2 flex-wrap">
                     <span className={`px-2 py-1 text-xs rounded-full ${client.potentialColor}`}>
                       {client.potential}
@@ -256,18 +259,20 @@ const ProjectsTabContent: React.FC = () => {
           </div>
         ))}
 
-        {/* Empty State Card */}
-        <Card className="border-dashed border-2 hover:border-primary/50 transition-colors cursor-pointer">
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <div className="p-3 bg-muted rounded-lg mb-4">
-              <Plus className="h-6 w-6 text-muted-foreground" />
-            </div>
-            <h3 className="font-semibold mb-2">Add New Client</h3>
-            <p className="text-sm text-muted-foreground text-center">
-              Start a new consulting engagement
-            </p>
-          </CardContent>
-        </Card>
+        {/* Add New Client Card */}
+        <CreateClientDialog onSuccess={handleClientCreated}>
+          <Card className="border-dashed border-2 hover:border-primary/50 transition-colors cursor-pointer">
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <div className="p-3 bg-muted rounded-lg mb-4">
+                <Plus className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <h3 className="font-semibold mb-2">Add New Client</h3>
+              <p className="text-sm text-muted-foreground text-center">
+                Start a new consulting engagement
+              </p>
+            </CardContent>
+          </Card>
+        </CreateClientDialog>
       </div>
     </div>
   );
