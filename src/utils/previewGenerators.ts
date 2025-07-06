@@ -1,10 +1,7 @@
 
-import * as pdfjsLib from 'pdfjs-dist';
 import mammoth from 'mammoth';
 import * as XLSX from 'xlsx';
-
-// Configure PDF.js worker - using version that matches our installed pdfjs-dist@5.3.31
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@5.3.31/build/pdf.worker.min.js`;
+import { generatePDFThumbnail } from '@/components/client-workspace/PDFViewer';
 
 export interface PreviewResult {
   type: 'image' | 'text' | 'error';
@@ -14,35 +11,11 @@ export interface PreviewResult {
 
 export const generatePDFPreview = async (file: File): Promise<PreviewResult> => {
   try {
-    console.log('Starting PDF preview generation for:', file.name);
-    
-    const arrayBuffer = await file.arrayBuffer();
-    console.log('PDF file size:', arrayBuffer.byteLength, 'bytes');
-    
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    console.log('PDF loaded, pages:', pdf.numPages);
-    
-    const page = await pdf.getPage(1);
-    console.log('First page loaded');
-    
-    const scale = 0.75; // Increased scale for better quality
-    const viewport = page.getViewport({ scale });
-    
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d')!;
-    canvas.height = viewport.height;
-    canvas.width = viewport.width;
-    
-    console.log('Canvas created:', canvas.width, 'x', canvas.height);
-    
-    await page.render({ canvasContext: context, viewport }).promise;
-    console.log('PDF page rendered successfully');
-    
-    const dataUrl = canvas.toDataURL('image/png', 0.8);
+    const thumbnailDataUrl = await generatePDFThumbnail(file);
     
     return {
       type: 'image',
-      content: dataUrl
+      content: thumbnailDataUrl
     };
   } catch (error) {
     console.error('PDF preview generation failed:', error);

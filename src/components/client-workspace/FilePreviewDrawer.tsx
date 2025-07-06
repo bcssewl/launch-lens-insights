@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { ClientFile } from '@/hooks/useClientFiles';
 import { getPreviewGenerator } from '@/utils/previewGenerators';
+import { loadPDFDocument, renderPDFPage } from '@/components/client-workspace/PDFViewer';
 import { useToast } from '@/hooks/use-toast';
 
 interface FilePreviewDrawerProps {
@@ -216,7 +217,6 @@ const FilePreviewDrawer: React.FC<FilePreviewDrawerProps> = ({
           const response = await fetch(url);
           const blob = await response.blob();
           
-          // Create a proper File object using the global File constructor
           const fileObject = new globalThis.File([blob], file.file_name, { 
             type: file.file_type,
             lastModified: Date.now()
@@ -241,30 +241,20 @@ const FilePreviewDrawer: React.FC<FilePreviewDrawerProps> = ({
 
   const loadPDFPreview = async (url: string) => {
     try {
-      // Lazy load PDF.js
-      const pdfjsLib = await import(/* webpackChunkName: "pdfjs" */ 'pdfjs-dist');
-      const pdf = await pdfjsLib.getDocument(url).promise;
+      const pdf = await loadPDFDocument(url);
       dispatch({ type: 'SET_PDF_DATA', payload: { document: pdf, totalPages: pdf.numPages, currentPage: 1 } });
-      await renderPDFPage(pdf, 1);
+      await renderPDFPagePreview(pdf, 1);
     } catch (error) {
       console.error('Error loading PDF:', error);
       dispatch({ type: 'SET_PREVIEW', payload: { content: null, type: 'error' } });
     }
   };
 
-  const renderPDFPage = async (pdf: any, pageNumber: number) => {
+  const renderPDFPagePreview = async (pdf: any, pageNumber: number) => {
     try {
-      const page = await pdf.getPage(pageNumber);
       const scale = state.zoomLevel * 1.5;
-      const viewport = page.getViewport({ scale });
-      
-      const canvas = document.createElement('canvas');
-      const context = canvas.getContext('2d')!;
-      canvas.height = viewport.height;
-      canvas.width = viewport.width;
-      
-      await page.render({ canvasContext: context, viewport }).promise;
-      dispatch({ type: 'SET_PREVIEW', payload: { content: canvas.toDataURL(), type: 'pdf' } });
+      const dataUrl = await renderPDFPage(pdf, pageNumber, scale);
+      dispatch({ type: 'SET_PREVIEW', payload: { content: dataUrl, type: 'pdf' } });
       dispatch({ type: 'SET_PAGE', payload: pageNumber });
     } catch (error) {
       console.error('Error rendering PDF page:', error);
@@ -273,13 +263,13 @@ const FilePreviewDrawer: React.FC<FilePreviewDrawerProps> = ({
 
   const handlePrevPage = useCallback(() => {
     if (state.pdfDocument && state.currentPage > 1) {
-      renderPDFPage(state.pdfDocument, state.currentPage - 1);
+      renderPDFPagePreview(state.pdfDocument, state.currentPage - 1);
     }
   }, [state.pdfDocument, state.currentPage]);
 
   const handleNextPage = useCallback(() => {
     if (state.pdfDocument && state.currentPage < state.totalPages) {
-      renderPDFPage(state.pdfDocument, state.currentPage + 1);
+      renderPDFPagePreview(state.pdfDocument, state.currentPage + 1);
     }
   }, [state.pdfDocument, state.currentPage, state.totalPages]);
 
@@ -287,7 +277,7 @@ const FilePreviewDrawer: React.FC<FilePreviewDrawerProps> = ({
     const newZoom = Math.min(state.zoomLevel + 0.25, 3);
     dispatch({ type: 'SET_ZOOM', payload: newZoom });
     if (state.pdfDocument) {
-      renderPDFPage(state.pdfDocument, state.currentPage);
+      renderPDFPagePreview(state.pdfDocument, state.currentPage);
     }
   }, [state.zoomLevel, state.pdfDocument, state.currentPage]);
 
@@ -295,7 +285,7 @@ const FilePreviewDrawer: React.FC<FilePreviewDrawerProps> = ({
     const newZoom = Math.max(state.zoomLevel - 0.25, 0.5);
     dispatch({ type: 'SET_ZOOM', payload: newZoom });
     if (state.pdfDocument) {
-      renderPDFPage(state.pdfDocument, state.currentPage);
+      renderPDFPagePreview(state.pdfDocument, state.currentPage);
     }
   }, [state.zoomLevel, state.pdfDocument, state.currentPage]);
 
@@ -303,7 +293,6 @@ const FilePreviewDrawer: React.FC<FilePreviewDrawerProps> = ({
     if (!file || !state.tempFilename.trim()) return;
 
     try {
-      // TODO: Implement actual filename update API call
       toast({
         title: "Success",
         description: "Filename updated successfully"
@@ -326,7 +315,6 @@ const FilePreviewDrawer: React.FC<FilePreviewDrawerProps> = ({
         timestamp: new Date()
       };
 
-      // Console log for debugging (as requested)
       console.log({
         action: 'ask_nexus',
         fileId: file.id,
@@ -361,8 +349,7 @@ const FilePreviewDrawer: React.FC<FilePreviewDrawerProps> = ({
 
   if (!file) return null;
 
-  // Check if viewing older version (for greying out download)
-  const isCurrentVersion = file.current_version === file.current_version; // TODO: Update when version selection is implemented
+  const isCurrentVersion = file.current_version === file.current_version;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -403,12 +390,9 @@ const FilePreviewDrawer: React.FC<FilePreviewDrawerProps> = ({
         </SheetHeader>
 
         <div className="flex-1 flex overflow-hidden">
-          {/* Main Preview Area - CSS Grid Layout */}
           <div className={`grid ${state.metadataCollapsed ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-[3fr_1fr]'} w-full h-full`}>
             
-            {/* Preview Content */}
             <div className="flex flex-col min-w-0">
-              {/* PDF Controls */}
               {state.previewType === 'pdf' && (
                 <div className="p-4 border-b flex items-center justify-between bg-muted/20">
                   <div className="flex items-center gap-2">
@@ -447,7 +431,6 @@ const FilePreviewDrawer: React.FC<FilePreviewDrawerProps> = ({
                 </div>
               )}
 
-              {/* Preview Content */}
               <ScrollArea className="flex-1 p-4">
                 {state.isLoading ? (
                   <div className="flex items-center justify-center h-64">
@@ -482,9 +465,7 @@ const FilePreviewDrawer: React.FC<FilePreviewDrawerProps> = ({
                 ) : null}
               </ScrollArea>
 
-              {/* Ask Nexus Chat Input */}
               <div className="p-4 border-t">
-                {/* Chat History */}
                 {state.chatHistory.length > 0 && (
                   <div className="mb-4 max-h-32 overflow-y-auto">
                     {state.chatHistory.map((msg) => (
@@ -523,12 +504,10 @@ const FilePreviewDrawer: React.FC<FilePreviewDrawerProps> = ({
               </div>
             </div>
 
-            {/* Metadata Sidebar */}
             {!state.metadataCollapsed && (
               <div className="border-l bg-muted/20 min-w-0">
                 <ScrollArea className="h-full p-6">
                   <div className="space-y-6">
-                    {/* Mobile collapse toggle */}
                     <Button
                       variant="ghost"
                       size="sm"
@@ -539,7 +518,6 @@ const FilePreviewDrawer: React.FC<FilePreviewDrawerProps> = ({
                       Hide Details
                     </Button>
 
-                    {/* File Information */}
                     <div>
                       <h3 className="font-semibold mb-3">File Information</h3>
                       <div className="space-y-3">
@@ -562,7 +540,6 @@ const FilePreviewDrawer: React.FC<FilePreviewDrawerProps> = ({
 
                     <Separator />
 
-                    {/* Category */}
                     {file.category && (
                       <>
                         <div>
@@ -573,7 +550,6 @@ const FilePreviewDrawer: React.FC<FilePreviewDrawerProps> = ({
                       </>
                     )}
 
-                    {/* Version Information */}
                     {file.has_versions && (
                       <>
                         <div>
@@ -604,7 +580,6 @@ const FilePreviewDrawer: React.FC<FilePreviewDrawerProps> = ({
                       </>
                     )}
 
-                    {/* Actions */}
                     <div>
                       <h3 className="font-semibold mb-3">Actions</h3>
                       <div className="space-y-2">
@@ -627,7 +602,6 @@ const FilePreviewDrawer: React.FC<FilePreviewDrawerProps> = ({
             )}
           </div>
 
-          {/* Mobile metadata toggle when collapsed */}
           {state.metadataCollapsed && (
             <Button
               variant="ghost"
