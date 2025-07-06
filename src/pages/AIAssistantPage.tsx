@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { AppSidebar } from '@/components/AppSidebar';
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
@@ -8,6 +9,7 @@ import ChatArea from '@/components/assistant/ChatArea';
 import CanvasView from '@/components/assistant/CanvasView';
 import FullscreenChatLayout from '@/components/assistant/FullscreenChatLayout';
 import ChatSubheader from '@/components/assistant/ChatSubheader';
+import { AIModel } from '@/components/assistant/ModelSelectionDropdown';
 import { useChatSessions } from '@/hooks/useChatSessions';
 import { useChatHistory } from '@/hooks/useChatHistory';
 import { useMessages } from '@/hooks/useMessages';
