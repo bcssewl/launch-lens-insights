@@ -63,16 +63,20 @@ export const useAskNexus = ({ fileId }: UseAskNexusProps) => {
         }
       });
 
+      console.log('Ask Nexus response:', { data, error });
+
       if (error) {
         console.error('Supabase function error:', error);
         throw error;
       }
 
       if (data?.error) {
+        console.error('Function returned error:', data.error);
         throw new Error(data.error);
       }
 
       if (!data?.response) {
+        console.error('No response from function:', data);
         throw new Error('No response received from Nexus');
       }
 
@@ -95,9 +99,21 @@ export const useAskNexus = ({ fileId }: UseAskNexusProps) => {
     } catch (error) {
       console.error('Error asking Nexus:', error);
       
+      let errorMessage = "Failed to get response from Nexus";
+      
+      if (error instanceof Error) {
+        if (error.message.includes('File not found') || error.message.includes('content not accessible')) {
+          errorMessage = "File content not yet extracted. Please extract content first.";
+        } else if (error.message.includes('Text content not yet extracted')) {
+          errorMessage = "File content is being processed. Please try again in a moment.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to get response from Nexus",
+        description: errorMessage,
         variant: "destructive",
       });
 

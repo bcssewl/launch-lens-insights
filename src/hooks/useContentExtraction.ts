@@ -27,15 +27,18 @@ export const useContentExtraction = () => {
     updateStatus(fileId, { status: 'processing' });
     
     try {
-      console.log('Starting content extraction for:', fileName);
+      console.log('Starting content extraction for:', fileName, 'fileId:', fileId);
       
       const { data, error } = await supabase.functions.invoke('extract-file-content', {
         body: { fileId }
       });
 
       if (error) {
+        console.error('Supabase function error:', error);
         throw error;
       }
+
+      console.log('Content extraction response:', data);
 
       if (data?.success) {
         updateStatus(fileId, { 

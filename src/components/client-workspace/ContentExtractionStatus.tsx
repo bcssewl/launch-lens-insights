@@ -18,11 +18,19 @@ const ContentExtractionStatus: React.FC<ContentExtractionStatusProps> = ({
   const { extractContent, getExtractionStatus } = useContentExtraction();
   const extractionStatus = getExtractionStatus(file.id);
 
-  const hasExtractedContent = file.content_extracted_at && file.file_content_text;
+  console.log('ContentExtractionStatus for file:', file.file_name, {
+    content_extracted_at: file.content_extracted_at,
+    file_content_text: file.file_content_text ? 'Present' : 'Not present',
+    extractionStatus: extractionStatus?.status
+  });
+
+  // Check if content has been extracted
+  const hasExtractedContent = Boolean(file.content_extracted_at && file.file_content_text);
   const isExtracting = extractionStatus?.status === 'processing';
   const hasFailed = extractionStatus?.status === 'failed';
 
   const handleExtractContent = async () => {
+    console.log('Triggering content extraction for file:', file.file_name);
     await extractContent(file.id, file.file_name);
   };
 
