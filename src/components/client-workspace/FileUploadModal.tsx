@@ -1,7 +1,7 @@
 
 import React, { useCallback, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -129,6 +129,9 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({
         <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Upload Files</DialogTitle>
+            <DialogDescription>
+              Upload documents, images, and other files to this client workspace. Files will be automatically categorized and tagged.
+            </DialogDescription>
           </DialogHeader>
 
           <div className="flex-1 space-y-6 overflow-hidden">

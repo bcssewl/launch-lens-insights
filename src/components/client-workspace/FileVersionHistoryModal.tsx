@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -125,6 +125,9 @@ const FileVersionHistoryModal: React.FC<FileVersionHistoryModalProps> = ({
       <DialogContent className="max-w-2xl max-h-[80vh]">
         <DialogHeader>
           <DialogTitle>Version History: {file.file_name}</DialogTitle>
+          <DialogDescription>
+            View and manage all versions of this file. You can download or preview any version from the history below.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">

@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -113,6 +113,9 @@ const CreateClientDialog: React.FC<CreateClientDialogProps> = ({ children, onSuc
             <Building2 className="h-5 w-5" />
             Create New Client
           </DialogTitle>
+          <DialogDescription>
+            Add a new client to your workspace. You'll be able to manage their files, projects, and communications from their dedicated workspace.
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">

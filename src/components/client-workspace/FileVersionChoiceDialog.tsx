@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { FileText, Image, Presentation, File, AlertTriangle } from 'lucide-react';
@@ -52,6 +52,9 @@ const FileVersionChoiceDialog: React.FC<FileVersionChoiceDialogProps> = ({
             <AlertTriangle className="h-5 w-5 text-amber-500" />
             File Already Exists
           </DialogTitle>
+          <DialogDescription>
+            A file with this name already exists in the workspace. Choose how you'd like to handle the duplicate file.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
