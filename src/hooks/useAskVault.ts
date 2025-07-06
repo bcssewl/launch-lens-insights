@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -76,8 +75,8 @@ export const useAskVault = ({ clientId, onResultSelect, enableStreaming = false 
       if (useStreaming) {
         setStreaming(true);
         
-        // Streaming request
-        const response = await fetch(`${supabase.supabaseUrl}/functions/v1/ask-vault?stream=true`, {
+        // Streaming request - use the Supabase URL directly
+        const response = await fetch(`https://jtnedstugyvkfthtsumh.supabase.co/functions/v1/ask-vault?stream=true`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${supabase.supabaseKey}`,
