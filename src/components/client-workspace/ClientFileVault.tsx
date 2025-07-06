@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -256,7 +257,7 @@ const ClientFileVault: React.FC<ClientFileVaultProps> = ({ client }) => {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Button size="sm" variant="ghost" onClick={() => handleView(file)}>
+                        <Button size="sm" variant="ghost" onClick={() => handlePreview(file)}>
                           <Eye className="h-3 w-3" />
                         </Button>
                         <Button size="sm" variant="ghost" onClick={() => handleDownload(file)}>
