@@ -218,8 +218,14 @@ const FilePreviewDrawer: React.FC<FilePreviewDrawerProps> = ({
         try {
           const response = await fetch(url);
           const blob = await response.blob();
-          const tempFile = new File([blob], file.file_name, { type: file.file_type });
-          const result = await generator(tempFile);
+          
+          // Create a proper File object instead of modifying blob properties
+          const fileObject = new File([blob], file.file_name, { 
+            type: file.file_type,
+            lastModified: Date.now()
+          });
+          
+          const result = await generator(fileObject);
           
           if (result.type === 'error') {
             dispatch({ type: 'SET_PREVIEW', payload: { content: null, type: 'error' } });

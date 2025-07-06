@@ -3,8 +3,8 @@ import * as pdfjsLib from 'pdfjs-dist';
 import mammoth from 'mammoth';
 import * as XLSX from 'xlsx';
 
-// Configure PDF.js worker - using a more reliable CDN
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js`;
+// Configure PDF.js worker - using version that matches our installed pdfjs-dist@5.3.31
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@5.3.31/build/pdf.worker.min.js`;
 
 export interface PreviewResult {
   type: 'image' | 'text' | 'error';
