@@ -194,7 +194,7 @@ export const useFileUpload = (clientId: string) => {
   }, []);
 
   // Create new version of existing file
-  const createFileVersion = useCallback(async (originalFileId: string, newFile: File, filePath: string) => {
+  const createFileVersion = useCallback(async (originalFileId: string, newFile: File, originalFileName: string) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
@@ -208,6 +208,17 @@ export const useFileUpload = (clientId: string) => {
     if (fetchError) throw fetchError;
 
     const newVersionNumber = (currentFile.version_count || 1) + 1;
+    
+    // Create unique storage path for the new version
+    const timestamp = Date.now();
+    const versionFilePath = `${user.id}/${clientId}/versions/${originalFileName}_v${newVersionNumber}_${timestamp}`;
+
+    // Upload new version to unique storage path
+    const { error: uploadError } = await supabase.storage
+      .from('client-files')
+      .upload(versionFilePath, newFile);
+
+    if (uploadError) throw uploadError;
 
     // Create version record
     const { error: versionError } = await supabase
@@ -216,7 +227,7 @@ export const useFileUpload = (clientId: string) => {
         parent_file_id: originalFileId,
         version_number: newVersionNumber,
         file_name: newFile.name,
-        file_path: filePath,
+        file_path: versionFilePath,
         file_size: newFile.size,
         file_type: newFile.type,
         uploaded_by: user.id
@@ -224,24 +235,23 @@ export const useFileUpload = (clientId: string) => {
 
     if (versionError) throw versionError;
 
-    // Update main file record
+    // Update main file record (increment version count and set as current)
     const { error: updateError } = await supabase
       .from('client_files')
       .update({
         version_count: newVersionNumber,
         current_version: newVersionNumber,
         has_versions: true,
-        file_path: filePath,
         file_size: newFile.size,
         upload_date: new Date().toISOString()
       })
       .eq('id', originalFileId);
 
     if (updateError) throw updateError;
-  }, []);
+  }, [clientId]);
 
   // Replace existing file (move current to version history)
-  const replaceExistingFile = useCallback(async (originalFileId: string, newFile: File, filePath: string) => {
+  const replaceExistingFile = useCallback(async (originalFileId: string, newFile: File) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
@@ -272,6 +282,17 @@ export const useFileUpload = (clientId: string) => {
 
     if (versionError) throw versionError;
 
+    // Create unique storage path for the replacement file
+    const timestamp = Date.now();
+    const newFilePath = `${user.id}/${clientId}/${newFile.name}_replaced_${timestamp}`;
+
+    // Upload new file to unique storage path
+    const { error: uploadError } = await supabase.storage
+      .from('client-files')
+      .upload(newFilePath, newFile);
+
+    if (uploadError) throw uploadError;
+
     // Update main file record with new file
     const { error: updateError } = await supabase
       .from('client_files')
@@ -279,7 +300,7 @@ export const useFileUpload = (clientId: string) => {
         version_count: newVersionNumber,
         current_version: newVersionNumber,
         has_versions: true,
-        file_path: filePath,
+        file_path: newFilePath,
         file_size: newFile.size,
         file_name: newFile.name,
         file_type: newFile.type,
@@ -288,7 +309,7 @@ export const useFileUpload = (clientId: string) => {
       .eq('id', originalFileId);
 
     if (updateError) throw updateError;
-  }, []);
+  }, [clientId]);
 
   // Update file tags
   const updateFileTags = useCallback((fileId: string, tags: string[]) => {
@@ -339,24 +360,29 @@ export const useFileUpload = (clientId: string) => {
               : f
           ));
 
-          const filePath = `${user.id}/${clientId}/${fileMetadata.file.name}`;
-          
-          // Upload file to storage
-          const { error: uploadError } = await supabase.storage
-            .from('client-files')
-            .upload(filePath, fileMetadata.file);
-
-          if (uploadError) throw uploadError;
-
           // Handle versioning or new file creation
           if (fileMetadata.duplicateInfo && fileMetadata.versionChoice) {
             if (fileMetadata.versionChoice === 'version') {
-              await createFileVersion(fileMetadata.duplicateInfo.existingFileId, fileMetadata.file, filePath);
+              await createFileVersion(
+                fileMetadata.duplicateInfo.existingFileId, 
+                fileMetadata.file, 
+                fileMetadata.duplicateInfo.existingFileName
+              );
             } else if (fileMetadata.versionChoice === 'replace') {
-              await replaceExistingFile(fileMetadata.duplicateInfo.existingFileId, fileMetadata.file, filePath);
+              await replaceExistingFile(fileMetadata.duplicateInfo.existingFileId, fileMetadata.file);
             }
           } else {
-            // Create new file record
+            // Create new file record - generate unique path for new files
+            const timestamp = Date.now();
+            const filePath = `${user.id}/${clientId}/${fileMetadata.file.name}_${timestamp}`;
+            
+            // Upload file to storage
+            const { error: uploadError } = await supabase.storage
+              .from('client-files')
+              .upload(filePath, fileMetadata.file);
+
+            if (uploadError) throw uploadError;
+
             const { error: dbError } = await supabase
               .from('client_files')
               .insert({
