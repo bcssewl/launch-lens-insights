@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
@@ -12,76 +12,152 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Building2, Plus, MoreVertical, FolderOpen, Upload, Archive, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
-// Enhanced client data with new fields
-const clientsData = [
-  {
-    id: 'tesla',
-    name: 'Tesla',
-    description: 'Electric vehicle strategy and market expansion consulting',
-    industry: 'Automotive',
-    potential: 'High Potential',
-    potentialColor: 'bg-green-100 text-green-700',
-    industryColor: 'bg-blue-100 text-blue-700',
-    reportCount: 4,
-    ideaCount: 6,
-    initials: 'T',
-    avatarColor: 'bg-blue-500',
-    lastUpdated: '2 days ago',
-    progress: 85,
-  },
-  {
-    id: 'drip-drinks',
-    name: 'Drip Drinks',
-    description: 'Beverage brand positioning and growth strategy development',
-    industry: 'Consumer Goods',
-    potential: 'High Potential',
-    potentialColor: 'bg-green-100 text-green-700',
-    industryColor: 'bg-purple-100 text-purple-700',
-    reportCount: 3,
-    ideaCount: 4,
-    initials: 'DD',
-    avatarColor: 'bg-purple-500',
-    lastUpdated: '5 days ago',
-    progress: 70,
-  },
-  {
-    id: 'fintech-startup',
-    name: 'FinTech Startup',
-    description: 'Digital banking platform validation and market entry strategy',
-    industry: 'FinTech',
-    potential: 'Medium Potential',
-    potentialColor: 'bg-yellow-100 text-yellow-700',
-    industryColor: 'bg-green-100 text-green-700',
-    reportCount: 2,
-    ideaCount: 3,
-    initials: 'FS',
-    avatarColor: 'bg-green-500',
-    lastUpdated: '1 week ago',
-    progress: 45,
-  },
-  {
-    id: 'local-restaurant',
-    name: 'Local Restaurant Chain',
-    description: 'Expansion strategy and operational efficiency optimization',
-    industry: 'Hospitality',
-    potential: 'Medium Potential',
-    potentialColor: 'bg-yellow-100 text-yellow-700',
-    industryColor: 'bg-orange-100 text-orange-700',
-    reportCount: 1,
-    ideaCount: 2,
-    initials: 'LR',
-    avatarColor: 'bg-orange-500',
-    lastUpdated: '3 days ago',
-    progress: 25,
-  },
-];
+interface ClientData {
+  id: string;
+  name: string;
+  description: string | null;
+  industry: string | null;
+  potential: string | null;
+  created_at: string;
+  updated_at: string;
+  report_count: number;
+  initials: string;
+  avatarColor: string;
+  lastUpdated: string;
+  progress: number;
+  industryColor: string;
+  potentialColor: string;
+}
 
 const ProjectsTabContent: React.FC = () => {
+  const [clients, setClients] = useState<ClientData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  const fetchClients = async () => {
+    try {
+      // Fetch clients with report counts
+      const { data: clientsData, error: clientsError } = await supabase
+        .from('clients')
+        .select(`
+          *,
+          client_reports(count)
+        `)
+        .order('updated_at', { ascending: false });
+
+      if (clientsError) throw clientsError;
+
+      // Transform the data
+      const transformedClients: ClientData[] = (clientsData || []).map((client: any) => {
+        const reportCount = client.client_reports?.[0]?.count || 0;
+        const initials = client.name
+          .split(' ')
+          .map((word: string) => word[0])
+          .join('')
+          .toUpperCase()
+          .slice(0, 2);
+
+        // Generate avatar color based on name
+        const colors = ['bg-blue-500', 'bg-purple-500', 'bg-green-500', 'bg-orange-500', 'bg-red-500', 'bg-indigo-500'];
+        const avatarColor = colors[client.name.length % colors.length];
+
+        // Calculate progress based on report count and recent activity
+        const daysSinceUpdate = Math.floor((Date.now() - new Date(client.updated_at).getTime()) / (1000 * 60 * 60 * 24));
+        const progress = Math.min(85, Math.max(10, reportCount * 20 - daysSinceUpdate * 2));
+
+        // Determine colors for badges
+        const industryColors = {
+          'Technology': 'bg-blue-100 text-blue-700',
+          'Healthcare': 'bg-green-100 text-green-700',
+          'Finance': 'bg-purple-100 text-purple-700',
+          'Automotive': 'bg-red-100 text-red-700',
+          'Consumer Goods': 'bg-orange-100 text-orange-700',
+          'FinTech': 'bg-indigo-100 text-indigo-700',
+          'Hospitality': 'bg-yellow-100 text-yellow-700'
+        };
+
+        const potentialColors = {
+          'High Potential': 'bg-green-100 text-green-700',
+          'Medium Potential': 'bg-yellow-100 text-yellow-700',
+          'Low Potential': 'bg-red-100 text-red-700'
+        };
+
+        return {
+          id: client.id,
+          name: client.name,
+          description: client.description || `${client.industry || 'Business'} consulting and strategic analysis`,
+          industry: client.industry,
+          potential: client.potential || 'Medium Potential',
+          created_at: client.created_at,
+          updated_at: client.updated_at,
+          report_count: reportCount,
+          initials,
+          avatarColor,
+          lastUpdated: daysSinceUpdate === 0 ? 'Today' : `${daysSinceUpdate} days ago`,
+          progress,
+          industryColor: industryColors[client.industry as keyof typeof industryColors] || 'bg-gray-100 text-gray-700',
+          potentialColor: potentialColors[client.potential as keyof typeof potentialColors] || 'bg-yellow-100 text-yellow-700'
+        };
+      });
+
+      setClients(transformedClients);
+    } catch (error) {
+      console.error('Error fetching clients:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch client data",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchClients();
+  }, []);
+
   const handleMenuAction = (action: string, clientName: string) => {
     console.log(`${action} for ${clientName}`);
     // Placeholder for future implementations
   };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold text-foreground">Client Workspaces</h2>
+            <p className="text-muted-foreground">Loading your consulting engagements...</p>
+          </div>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {[...Array(3)].map((_, i) => (
+            <Card key={i} className="animate-pulse">
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center space-x-3 flex-1">
+                    <div className="h-12 w-12 bg-muted rounded-full"></div>
+                    <div className="flex-1">
+                      <div className="h-4 bg-muted rounded w-2/3 mb-2"></div>
+                      <div className="h-3 bg-muted rounded w-1/2"></div>
+                    </div>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="h-2 bg-muted rounded w-full"></div>
+                <div className="h-3 bg-muted rounded w-3/4"></div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -97,7 +173,7 @@ const ProjectsTabContent: React.FC = () => {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {clientsData.map((client) => (
+        {clients.map((client) => (
           <div key={client.id} className="relative">
             <Link to={`/dashboard/client/${client.id}`}>
               <Card className="hover:shadow-md transition-all duration-200 cursor-pointer hover:scale-[1.02]">
@@ -114,7 +190,7 @@ const ProjectsTabContent: React.FC = () => {
                         <CardTitle className="text-lg leading-tight">{client.name}</CardTitle>
                         <p className="text-xs text-muted-foreground">Updated {client.lastUpdated}</p>
                         <p className="text-sm text-muted-foreground mt-1">
-                          {client.reportCount} reports • {client.ideaCount} ideas
+                          {client.report_count} reports
                         </p>
                       </div>
                     </div>
@@ -168,9 +244,11 @@ const ProjectsTabContent: React.FC = () => {
                     <span className={`px-2 py-1 text-xs rounded-full ${client.potentialColor}`}>
                       {client.potential}
                     </span>
-                    <span className={`px-2 py-1 text-xs rounded-full ${client.industryColor}`}>
-                      {client.industry}
-                    </span>
+                    {client.industry && (
+                      <span className={`px-2 py-1 text-xs rounded-full ${client.industryColor}`}>
+                        {client.industry}
+                      </span>
+                    )}
                   </div>
                 </CardContent>
               </Card>

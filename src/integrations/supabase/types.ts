@@ -201,6 +201,51 @@ export type Database = {
           },
         ]
       }
+      client_reports: {
+        Row: {
+          assigned_at: string | null
+          assigned_by: string | null
+          client_id: string
+          created_at: string | null
+          id: string
+          report_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          client_id: string
+          created_at?: string | null
+          id?: string
+          report_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          client_id?: string
+          created_at?: string | null
+          id?: string
+          report_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_reports_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_reports_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "validation_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           contact_email: string | null
@@ -467,6 +512,7 @@ export type Database = {
       }
       validation_reports: {
         Row: {
+          client_id: string | null
           completed_at: string | null
           created_at: string
           id: string
@@ -478,6 +524,7 @@ export type Database = {
           validation_id: string
         }
         Insert: {
+          client_id?: string | null
           completed_at?: string | null
           created_at?: string
           id?: string
@@ -489,6 +536,7 @@ export type Database = {
           validation_id: string
         }
         Update: {
+          client_id?: string | null
           completed_at?: string | null
           created_at?: string
           id?: string
@@ -500,6 +548,13 @@ export type Database = {
           validation_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "validation_reports_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "validation_reports_validation_id_fkey"
             columns: ["validation_id"]

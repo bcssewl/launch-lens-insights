@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+
+import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,20 +8,32 @@ import DashboardHeader from '@/components/DashboardHeader';
 import { useReportStatus } from '@/hooks/useReportStatus';
 import EnhancedAnalysisLoader from '@/components/analysis/EnhancedAnalysisLoader';
 import LoadingMessages from '@/components/analysis/LoadingMessages';
+import ClientAssignmentModal from '@/components/reports/ClientAssignmentModal';
+import { useClientOperations } from '@/hooks/useClientOperations';
 import { toast } from '@/hooks/use-toast';
 
 const AnalyzingIdeaPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [showClientModal, setShowClientModal] = useState(false);
+  const [completedReport, setCompletedReport] = useState<any>(null);
+  
   const {
     reportId,
     validationId
   } = location.state || {};
+  
   const {
     reportStatus,
     loading,
     error
   } = useReportStatus(reportId);
+
+  const {
+    clients,
+    createClient,
+    assignReportToClient
+  } = useClientOperations();
 
   useEffect(() => {
     if (!reportId || !validationId) {
@@ -35,12 +48,16 @@ const AnalyzingIdeaPage: React.FC = () => {
   }, [reportId, validationId, navigate]);
 
   useEffect(() => {
-    if (reportStatus?.status === 'completed') {
-      toast({
-        title: "Analysis Complete!",
-        description: "Your startup idea analysis is ready to view."
+    if (reportStatus?.status === 'completed' && !showClientModal && !completedReport) {
+      // Show client assignment modal when report is completed
+      setCompletedReport({
+        id: reportId,
+        idea_name: reportStatus.idea_name || 'Untitled Report',
+        overall_score: reportStatus.overall_score,
+        completed_at: reportStatus.completed_at || new Date().toISOString(),
+        one_line_description: reportStatus.one_line_description || 'AI-generated business analysis report'
       });
-      navigate(`/results/${reportId}`);
+      setShowClientModal(true);
     } else if (reportStatus?.status === 'failed') {
       toast({
         title: "Analysis Failed",
@@ -48,7 +65,24 @@ const AnalyzingIdeaPage: React.FC = () => {
         variant: "destructive"
       });
     }
-  }, [reportStatus?.status, navigate, reportId]);
+  }, [reportStatus?.status, reportId, showClientModal, completedReport]);
+
+  const handleAssignToClient = async (reportId: string, clientId: string) => {
+    await assignReportToClient(reportId, clientId);
+  };
+
+  const handleSkipAssignment = () => {
+    // Navigate to results page without assignment
+    navigate(`/results/${reportId}`);
+  };
+
+  const handleModalClose = (open: boolean) => {
+    setShowClientModal(open);
+    if (!open && completedReport) {
+      // If modal is closed and we have a completed report, navigate to results
+      navigate(`/results/${reportId}`);
+    }
+  };
 
   const handleRetry = () => {
     toast({
@@ -60,7 +94,8 @@ const AnalyzingIdeaPage: React.FC = () => {
 
   // Show error state if there's an error
   if (error) {
-    return <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
         <DashboardHeader>Analysis Error</DashboardHeader>
         <div className="container mx-auto p-6">
           <Card className="max-w-2xl mx-auto apple-card">
@@ -84,12 +119,15 @@ const AnalyzingIdeaPage: React.FC = () => {
             </CardContent>
           </Card>
         </div>
-      </div>;
+      </div>
+    );
   }
 
   // Default to 'generating' status if no reportStatus yet
   const currentStatus = reportStatus?.status || 'generating';
-  return <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
+  
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
       <DashboardHeader>Analyzing Your Idea</DashboardHeader>
       <div className="container mx-auto p-6">
         <div className="max-w-4xl mx-auto space-y-6">
@@ -116,28 +154,28 @@ const AnalyzingIdeaPage: React.FC = () => {
                     </div>
                     <div className="flex items-center space-x-3">
                       <div className="w-2 h-2 bg-accent rounded-full animate-pulse" style={{
-                      animationDelay: '0.2s'
-                    }}></div>
+                        animationDelay: '0.2s'
+                      }}></div>
                       <span className="text-sm text-muted-foreground">Competition analysis identifying key players</span>
                     </div>
                     <div className="flex items-center space-x-3">
                       <div className="w-2 h-2 bg-success rounded-full animate-pulse" style={{
-                      animationDelay: '0.4s'
-                    }}></div>
+                        animationDelay: '0.4s'
+                      }}></div>
                       <span className="text-sm text-muted-foreground">Financial models calculating market opportunity</span>
                     </div>
                   </div>
                   <div className="space-y-3">
                     <div className="flex items-center space-x-3">
                       <div className="w-2 h-2 bg-warning rounded-full animate-pulse" style={{
-                      animationDelay: '0.6s'
-                    }}></div>
+                        animationDelay: '0.6s'
+                      }}></div>
                       <span className="text-sm text-muted-foreground">SWOT analysis evaluating strengths and risks</span>
                     </div>
                     <div className="flex items-center space-x-3">
                       <div className="w-2 h-2 bg-info rounded-full animate-pulse" style={{
-                      animationDelay: '0.8s'
-                    }}></div>
+                        animationDelay: '0.8s'
+                      }}></div>
                       <span className="text-sm text-muted-foreground">Comprehensive scoring across multiple factors</span>
                     </div>
                   </div>
@@ -155,14 +193,28 @@ const AnalyzingIdeaPage: React.FC = () => {
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Dashboard
             </Button>
-            {reportStatus?.status === 'failed' && <Button onClick={handleRetry} className="gradient-button">
+            {reportStatus?.status === 'failed' && (
+              <Button onClick={handleRetry} className="gradient-button">
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Retry Analysis
-              </Button>}
+              </Button>
+            )}
           </div>
         </div>
       </div>
-    </div>;
+
+      {/* Client Assignment Modal */}
+      <ClientAssignmentModal
+        open={showClientModal}
+        onOpenChange={handleModalClose}
+        report={completedReport}
+        clients={clients}
+        onAssignToClient={handleAssignToClient}
+        onCreateClient={createClient}
+        onSkip={handleSkipAssignment}
+      />
+    </div>
+  );
 };
 
 export default AnalyzingIdeaPage;
