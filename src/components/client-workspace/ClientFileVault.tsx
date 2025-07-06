@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,7 @@ import FileGridView from './FileGridView';
 import EnhancedFilePreview from './EnhancedFilePreview';
 import FileVersionHistoryModal from './FileVersionHistoryModal';
 import FilePreviewDrawer from './FilePreviewDrawer';
+import AutoContentExtraction from './AutoContentExtraction';
 import { useToast } from '@/hooks/use-toast';
 
 interface ClientFileVaultProps {
