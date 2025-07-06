@@ -7,23 +7,128 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface SearchRequest {
-  query: string;
-  clientId: string;
-  limit?: number;
+// Simple in-memory cache with TTL
+class SimpleCache {
+  private cache = new Map<string, { data: any; expires: number }>();
+  
+  set(key: string, data: any, ttlMinutes: number = 10) {
+    const expires = Date.now() + (ttlMinutes * 60 * 1000);
+    this.cache.set(key, { data, expires });
+  }
+  
+  get(key: string) {
+    const item = this.cache.get(key);
+    if (!item) return null;
+    
+    if (Date.now() > item.expires) {
+      this.cache.delete(key);
+      return null;
+    }
+    
+    return item.data;
+  }
+  
+  // Clean expired entries periodically
+  cleanup() {
+    const now = Date.now();
+    for (const [key, item] of this.cache.entries()) {
+      if (now > item.expires) {
+        this.cache.delete(key);
+      }
+    }
+  }
 }
 
-interface SearchResult {
-  id: string;
-  title: string;
-  snippet: string;
-  source: 'content' | 'title' | 'metadata';
-  fileType: string;
-  relevanceScore: number;
-  filePath: string;
-  matchedFragment?: string;
-  fileSize?: number;
-  uploadDate?: string;
+const cache = new SimpleCache();
+
+// Cleanup expired cache entries every 5 minutes
+setInterval(() => cache.cleanup(), 5 * 60 * 1000);
+
+interface AskVaultRequest {
+  query: string;
+  clientId: string;
+}
+
+async function generateQueryEmbedding(query: string): Promise<number[]> {
+  const GOOGLE_AI_API_KEY = Deno.env.get('GOOGLE_AI_API_KEY');
+  if (!GOOGLE_AI_API_KEY) {
+    throw new Error('Google AI API key not configured');
+  }
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/embedding-001:embedContent?key=${GOOGLE_AI_API_KEY}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'models/embedding-001',
+        content: { parts: [{ text: query }] }
+      })
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Failed to generate query embedding: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return data.embedding?.values || [];
+}
+
+async function searchSimilarChunks(supabaseClient: any, queryEmbedding: number[], clientId: string, userId: string) {
+  const { data, error } = await supabaseClient.rpc('search_file_embeddings', {
+    query_embedding: `[${queryEmbedding.join(',')}]`,
+    client_id: clientId,
+    user_id: userId,
+    match_threshold: 0.7,
+    match_count: 6
+  });
+
+  if (error) {
+    console.error('Error searching embeddings:', error);
+    throw error;
+  }
+
+  return data || [];
+}
+
+async function generateStreamingResponse(query: string, context: string, citations: any[]) {
+  const GOOGLE_AI_API_KEY = Deno.env.get('GOOGLE_AI_API_KEY');
+  
+  const prompt = `You are a helpful AI assistant that answers questions based on the provided context from uploaded files.
+
+Context from files:
+${context}
+
+Question: ${query}
+
+Instructions:
+- Answer the question using only the information provided in the context
+- If you can't find relevant information in the context, say so clearly
+- Be concise and accurate
+- Include relevant details from the source files when helpful
+- Do not make up information that isn't in the context
+
+Answer:`;
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?key=${GOOGLE_AI_API_KEY}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.3,
+          topK: 32,
+          topP: 0.95,
+          maxOutputTokens: 1024,
+        }
+      })
+    }
+  );
+
+  return response;
 }
 
 serve(async (req) => {
@@ -37,156 +142,213 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { query, clientId, limit = 10 }: SearchRequest = await req.json();
-
-    if (!query || !clientId) {
-      throw new Error('Query and clientId are required');
-    }
-
-    console.log(`Searching vault for client ${clientId} with query: "${query}"`);
-
-    // Get user from request
+    // Get the authorization header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       throw new Error('No authorization header');
     }
 
-    const { data: { user } } = await supabaseClient.auth.getUser(
+    // Extract user from JWT
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(
       authHeader.replace('Bearer ', '')
     );
 
-    if (!user) {
+    if (userError || !user) {
       throw new Error('Invalid authentication');
     }
 
-    const results: SearchResult[] = [];
+    const { query, clientId }: AskVaultRequest = await req.json();
 
-    // First, try semantic search using embeddings
-    try {
-      const GOOGLE_AI_API_KEY = Deno.env.get('GOOGLE_AI_API_KEY');
+    if (!query || !clientId) {
+      throw new Error('Query and clientId are required');
+    }
+
+    // Generate cache key
+    const cacheKey = `${query}|${clientId}|${user.id}`;
+    
+    // Check cache first
+    const cachedResult = cache.get(cacheKey);
+    if (cachedResult) {
+      console.log('Cache hit for query:', query);
+      return new Response(
+        JSON.stringify({
+          answer: cachedResult.answer,
+          citations: cachedResult.citations,
+          cached: true
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    console.log('Cache miss - processing query:', query);
+
+    // Generate query embedding
+    const queryEmbedding = await generateQueryEmbedding(query);
+    
+    // Search for similar chunks
+    const similarChunks = await searchSimilarChunks(supabaseClient, queryEmbedding, clientId, user.id);
+    
+    if (similarChunks.length === 0) {
+      return new Response(
+        JSON.stringify({
+          answer: "I couldn't find any relevant information in the uploaded files to answer your question.",
+          citations: [],
+          cached: false
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    // Build context and citations
+    const context = similarChunks
+      .map((chunk: any, index: number) => 
+        `[${index + 1}] From "${chunk.file_name}": ${chunk.chunk_text}`
+      )
+      .join('\n\n');
+
+    const citations = similarChunks.map((chunk: any) => ({
+      id: chunk.file_id,
+      title: chunk.file_name,
+      snippet: chunk.chunk_text.substring(0, 200) + '...',
+      source: 'content',
+      fileType: chunk.file_type,
+      relevanceScore: chunk.similarity,
+      filePath: chunk.file_path,
+      matchedFragment: chunk.chunk_text.substring(0, 150) + '...',
+      fileSize: chunk.file_size,
+      uploadDate: chunk.upload_date
+    }));
+
+    // Check if streaming is requested
+    const acceptHeader = req.headers.get('Accept') || '';
+    const wantsStream = acceptHeader.includes('text/stream') || req.url.includes('stream=true');
+
+    if (wantsStream) {
+      // Streaming response
+      const geminiResponse = await generateStreamingResponse(query, context, citations);
       
-      if (GOOGLE_AI_API_KEY) {
-        console.log('Generating query embedding...');
-        
-        // Generate embedding for the search query
-        const embeddingResponse = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/embedding-001:embedContent?key=${GOOGLE_AI_API_KEY}`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              model: 'models/embedding-001',
-              content: {
-                parts: [{ text: query }]
-              }
-            })
+      if (!geminiResponse.ok) {
+        throw new Error(`Streaming API error: ${geminiResponse.status}`);
+      }
+
+      // Create a transform stream to process the Gemini streaming response
+      const readable = new ReadableStream({
+        async start(controller) {
+          const reader = geminiResponse.body?.getReader();
+          if (!reader) {
+            controller.close();
+            return;
           }
-        );
 
-        if (embeddingResponse.ok) {
-          const embeddingData = await embeddingResponse.json();
-          const queryEmbedding = embeddingData.embedding?.values;
+          let fullAnswer = '';
 
-          if (queryEmbedding && Array.isArray(queryEmbedding)) {
-            console.log('Performing semantic search...');
-            
-            // Perform vector similarity search
-            const { data: semanticResults, error: semanticError } = await supabaseClient.rpc('search_file_embeddings', {
-              query_embedding: `[${queryEmbedding.join(',')}]`,
-              client_id: clientId,
-              user_id: user.id,
-              match_threshold: 0.7,
-              match_count: Math.floor(limit / 2)
-            });
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
 
-            if (!semanticError && semanticResults) {
-              console.log(`Found ${semanticResults.length} semantic matches`);
-              
-              semanticResults.forEach((result: any) => {
-                results.push({
-                  id: result.file_id,
-                  title: result.file_name,
-                  snippet: result.chunk_text.substring(0, 200) + '...',
-                  source: 'content',
-                  fileType: result.file_type,
-                  relevanceScore: 1 - result.similarity, // Convert distance to similarity
-                  filePath: result.file_path,
-                  matchedFragment: result.chunk_text,
-                  fileSize: result.file_size,
-                  uploadDate: result.upload_date
-                });
-              });
+              const chunk = new TextDecoder().decode(value);
+              const lines = chunk.split('\n');
+
+              for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                  try {
+                    const data = JSON.parse(line.slice(6));
+                    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                    if (text) {
+                      fullAnswer += text;
+                      controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ text, citations })}\n\n`));
+                    }
+                  } catch (e) {
+                    // Skip invalid JSON
+                  }
+                }
+              }
+            }
+
+            // Cache the complete answer
+            if (fullAnswer) {
+              cache.set(cacheKey, { answer: fullAnswer, citations }, 10);
+            }
+
+            controller.enqueue(new TextEncoder().encode('data: [DONE]\n\n'));
+          } catch (error) {
+            console.error('Streaming error:', error);
+          } finally {
+            controller.close();
+          }
+        }
+      });
+
+      return new Response(readable, {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'text/stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
+        },
+      });
+    } else {
+      // Non-streaming response
+      const geminiResponse = await generateStreamingResponse(query, context, citations);
+      
+      if (!geminiResponse.ok) {
+        throw new Error(`API error: ${geminiResponse.status}`);
+      }
+
+      // Process the streaming response to get the full answer
+      const reader = geminiResponse.body?.getReader();
+      let fullAnswer = '';
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = new TextDecoder().decode(value);
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                fullAnswer += text;
+              } catch (e) {
+                // Skip invalid JSON
+              }
             }
           }
         }
       }
-    } catch (error) {
-      console.log('Semantic search failed, falling back to keyword search:', error);
-    }
 
-    // Add keyword-based search as fallback/supplement
-    const keywordQuery = `%${query.toLowerCase()}%`;
-    
-    const { data: keywordResults, error: keywordError } = await supabaseClient
-      .from('client_files')
-      .select('*')
-      .eq('client_id', clientId)
-      .eq('user_id', user.id)
-      .or(`file_name.ilike.${keywordQuery},file_content_text.ilike.${keywordQuery}`)
-      .limit(limit - results.length);
+      // Cache the result
+      cache.set(cacheKey, { answer: fullAnswer, citations }, 10);
 
-    if (!keywordError && keywordResults) {
-      console.log(`Found ${keywordResults.length} keyword matches`);
-      
-      keywordResults.forEach((file: any) => {
-        // Avoid duplicates from semantic search
-        if (!results.some(r => r.id === file.id)) {
-          const snippet = file.file_content_text 
-            ? file.file_content_text.substring(0, 200) + '...'
-            : `${file.category || 'File'} • ${(file.file_size / 1024 / 1024).toFixed(2)} MB`;
-
-          results.push({
-            id: file.id,
-            title: file.file_name,
-            snippet,
-            source: file.file_name.toLowerCase().includes(query.toLowerCase()) ? 'title' : 'content',
-            fileType: file.file_type,
-            relevanceScore: 0.5, // Default relevance for keyword matches
-            filePath: file.file_path,
-            fileSize: file.file_size,
-            uploadDate: file.upload_date
-          });
+      return new Response(
+        JSON.stringify({
+          answer: fullAnswer,
+          citations,
+          cached: false
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
-      });
+      );
     }
-
-    // Sort by relevance score (highest first)
-    results.sort((a, b) => b.relevanceScore - a.relevanceScore);
-
-    console.log(`Returning ${results.length} total results`);
-
-    return new Response(
-      JSON.stringify({
-        results: results.slice(0, limit),
-        query,
-        enhancedQuery: query, // Could be enhanced with AI later
-        resultCount: results.length
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      }
-    );
 
   } catch (error) {
     console.error('Error in ask-vault function:', error);
+    
     return new Response(
-      JSON.stringify({ 
-        error: error.message,
-        results: [],
-        resultCount: 0
+      JSON.stringify({
+        error: error.message || 'Internal server error',
+        answer: '',
+        citations: []
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -195,46 +357,3 @@ serve(async (req) => {
     );
   }
 });
-
-// Database function for semantic search (to be created via SQL)
-/*
-CREATE OR REPLACE FUNCTION search_file_embeddings(
-  query_embedding vector(1536),
-  client_id text,
-  user_id uuid,
-  match_threshold float DEFAULT 0.8,
-  match_count int DEFAULT 10
-)
-RETURNS TABLE (
-  file_id uuid,
-  file_name text,
-  file_type text,
-  file_path text,
-  file_size int,
-  upload_date timestamptz,
-  chunk_text text,
-  similarity float
-)
-LANGUAGE plpgsql
-AS $$
-BEGIN
-  RETURN QUERY
-  SELECT 
-    cf.id as file_id,
-    cf.file_name,
-    cf.file_type,
-    cf.file_path,
-    cf.file_size,
-    cf.upload_date,
-    fe.chunk_text,
-    (1 - (fe.embedding <=> query_embedding)) as similarity
-  FROM file_embeddings fe
-  JOIN client_files cf ON fe.file_id = cf.id
-  WHERE cf.client_id = search_file_embeddings.client_id
-    AND cf.user_id = search_file_embeddings.user_id
-    AND (1 - (fe.embedding <=> query_embedding)) > match_threshold
-  ORDER BY fe.embedding <=> query_embedding
-  LIMIT match_count;
-END;
-$$;
-*/
