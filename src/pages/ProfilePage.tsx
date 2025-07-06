@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { Button } from "@/components/ui/button";
@@ -36,14 +35,53 @@ const ProfilePage: React.FC = () => {
         .from('profiles')
         .select('*')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
       
-      if (data && !error) {
+      if (error) {
+        console.error('Error loading profile:', error);
+        return;
+      }
+      
+      if (data) {
         setFullName(data.full_name || '');
         setAvatarUrl(data.avatar_url || '');
+      } else {
+        // Create profile if it doesn't exist
+        console.log('Profile not found, creating new profile for user:', user.id);
+        await createProfile();
       }
     } catch (error) {
       console.error('Error loading profile:', error);
+    }
+  };
+
+  const createProfile = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .insert({
+          id: user.id,
+          email: user.email,
+          full_name: user.user_metadata?.full_name || '',
+          avatar_url: user.user_metadata?.avatar_url || null
+        })
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Error creating profile:', error);
+        return;
+      }
+      
+      if (data) {
+        setFullName(data.full_name || '');
+        setAvatarUrl(data.avatar_url || '');
+        console.log('Profile created successfully');
+      }
+    } catch (error) {
+      console.error('Error creating profile:', error);
     }
   };
 
@@ -54,12 +92,13 @@ const ProfilePage: React.FC = () => {
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({
+        .upsert({
+          id: user.id,
           full_name: fullName,
           avatar_url: avatarUrl,
+          email: user.email,
           updated_at: new Date().toISOString(),
-        })
-        .eq('id', user.id);
+        });
 
       if (error) {
         toast({

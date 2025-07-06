@@ -54,17 +54,55 @@ export const AppSidebar: React.FC = () => {
     if (!user) return;
     
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
+      
+      if (error) {
+        console.error('Error loading profile:', error);
+        return;
+      }
       
       if (data) {
         setProfile(data);
+      } else {
+        // Create profile if it doesn't exist
+        console.log('Profile not found, creating new profile for user:', user.id);
+        await createProfile();
       }
     } catch (error) {
       console.error('Error loading profile:', error);
+    }
+  };
+
+  const createProfile = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .insert({
+          id: user.id,
+          email: user.email,
+          full_name: user.user_metadata?.full_name || '',
+          avatar_url: user.user_metadata?.avatar_url || null
+        })
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Error creating profile:', error);
+        return;
+      }
+      
+      if (data) {
+        setProfile(data);
+        console.log('Profile created successfully');
+      }
+    } catch (error) {
+      console.error('Error creating profile:', error);
     }
   };
 
