@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { FileText, Image, Presentation, File, FileCode, FileSpreadsheet, Loader2 } from 'lucide-react';
 import { ClientFile } from '@/hooks/useClientFiles';
@@ -59,8 +58,8 @@ const EnhancedFilePreview: React.FC<EnhancedFilePreviewProps> = ({
             const response = await fetch(url);
             const blob = await response.blob();
             
-            // Create a proper File object instead of modifying blob properties
-            const fileObject = new File([blob], file.file_name, { 
+            // Create a proper File object using the global File constructor
+            const fileObject = new globalThis.File([blob], file.file_name, { 
               type: file.file_type,
               lastModified: Date.now()
             });

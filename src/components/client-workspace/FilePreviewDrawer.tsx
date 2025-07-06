@@ -1,4 +1,3 @@
-
 import React, { useReducer, useState, useEffect, useCallback } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
@@ -141,7 +140,6 @@ const FilePreviewDrawer: React.FC<FilePreviewDrawerProps> = ({
   const [chatMessage, setChatMessage] = useState('');
   const { toast } = useToast();
 
-  // Load file URL and preview when file changes
   useEffect(() => {
     if (file && open) {
       loadFilePreview();
@@ -150,7 +148,6 @@ const FilePreviewDrawer: React.FC<FilePreviewDrawerProps> = ({
     }
   }, [file, open]);
 
-  // Keyboard shortcuts
   useEffect(() => {
     if (!open) return;
 
@@ -219,8 +216,8 @@ const FilePreviewDrawer: React.FC<FilePreviewDrawerProps> = ({
           const response = await fetch(url);
           const blob = await response.blob();
           
-          // Create a proper File object instead of modifying blob properties
-          const fileObject = new File([blob], file.file_name, { 
+          // Create a proper File object using the global File constructor
+          const fileObject = new globalThis.File([blob], file.file_name, { 
             type: file.file_type,
             lastModified: Date.now()
           });
