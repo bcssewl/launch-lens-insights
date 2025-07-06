@@ -17,7 +17,7 @@ const GOOGLE_AI_API_KEY = Deno.env.get('GOOGLE_AI_API_KEY');
 
 async function checkCachedResponse(questionHash: string, userId: string, fileId?: string): Promise<any> {
   try {
-    console.log('Checking cache for question hash:', questionHash);
+    console.log('Checking cache for question hash:', questionHash, 'user:', userId);
     
     const query = supabase
       .from('nexus_query_cache')
@@ -66,7 +66,7 @@ async function checkCachedResponse(questionHash: string, userId: string, fileId?
 
 async function saveToCache(questionHash: string, question: string, answer: string, userId: string, fileId?: string, contextUsed?: string, responseTime?: number) {
   try {
-    console.log('Saving response to cache');
+    console.log('Saving response to cache for user:', userId);
     
     const { error } = await supabase
       .from('nexus_query_cache')
@@ -194,7 +194,7 @@ serve(async (req) => {
 
     console.log('Processing question:', question, 'for fileId:', fileId);
 
-    // Get user ID from request (this should be set by Supabase Auth)
+    // Get user from JWT token
     const authHeader = req.headers.get('authorization');
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Authorization required' }), {
@@ -203,8 +203,31 @@ serve(async (req) => {
       });
     }
 
-    // Extract user info (simplified - in production you'd verify the JWT)
-    const userId = 'user-placeholder'; // This should be properly extracted from auth
+    // Create a supabase client with the user's JWT to get their ID
+    const userSupabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: {
+            Authorization: authHeader
+          }
+        }
+      }
+    );
+
+    const { data: { user }, error: userError } = await userSupabase.auth.getUser();
+    
+    if (userError || !user) {
+      console.error('Auth error:', userError);
+      return new Response(JSON.stringify({ error: 'Invalid authentication' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const userId = user.id;
+    console.log('Authenticated user:', userId);
 
     // Generate question hash for caching
     const questionHash = await generateQuestionHash(question, fileId);
