@@ -205,8 +205,12 @@ export type Database = {
         Row: {
           category: string | null
           client_id: string
+          content_extracted_at: string | null
+          content_keywords: string[] | null
+          content_summary: string | null
           created_at: string
           current_version: number
+          file_content_text: string | null
           file_name: string
           file_path: string
           file_size: number
@@ -221,8 +225,12 @@ export type Database = {
         Insert: {
           category?: string | null
           client_id: string
+          content_extracted_at?: string | null
+          content_keywords?: string[] | null
+          content_summary?: string | null
           created_at?: string
           current_version?: number
+          file_content_text?: string | null
           file_name: string
           file_path: string
           file_size: number
@@ -237,8 +245,12 @@ export type Database = {
         Update: {
           category?: string | null
           client_id?: string
+          content_extracted_at?: string | null
+          content_keywords?: string[] | null
+          content_summary?: string | null
           created_at?: string
           current_version?: number
+          file_content_text?: string | null
           file_name?: string
           file_path?: string
           file_size?: number
@@ -449,6 +461,47 @@ export type Database = {
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "chat_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nexus_conversations: {
+        Row: {
+          context_used: string | null
+          created_at: string | null
+          file_id: string | null
+          id: string
+          question: string
+          response: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          context_used?: string | null
+          created_at?: string | null
+          file_id?: string | null
+          id?: string
+          question: string
+          response: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          context_used?: string | null
+          created_at?: string | null
+          file_id?: string | null
+          id?: string
+          question?: string
+          response?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nexus_conversations_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "client_files"
             referencedColumns: ["id"]
           },
         ]
