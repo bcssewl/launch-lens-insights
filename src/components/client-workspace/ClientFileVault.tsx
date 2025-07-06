@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -78,12 +77,12 @@ const ClientFileVault: React.FC<ClientFileVaultProps> = ({ client }) => {
   const handleDownload = async (file: any) => {
     const url = await getFileUrl(file.file_path);
     if (url) {
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = file.file_name;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      // Use window.open instead of programmatic a.click() to avoid Chrome blocking
+      window.open(url, '_blank');
+      toast({
+        title: "File opened",
+        description: "File opened in new tab. You can save it from there.",
+      });
     } else {
       toast({
         title: "Error",
