@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -18,6 +17,9 @@ export interface ClientFile {
   version_count: number;
   current_version: number;
   has_versions: boolean;
+  embedding_status: string | null;
+  embedding_processed_at: string | null;
+  total_chunks: number | null;
 }
 
 export interface FileFilters {
