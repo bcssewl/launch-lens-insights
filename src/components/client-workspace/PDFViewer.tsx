@@ -1,8 +1,7 @@
-
 import * as pdfjsLib from 'pdfjs-dist';
 
-// Configure PDF.js worker to use CDN version that works reliably
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+// Configure PDF.js worker to use local bundled version
+pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
 
 export interface PDFRenderOptions {
   scale?: number;
