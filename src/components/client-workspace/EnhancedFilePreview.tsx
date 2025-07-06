@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { FileText, Image, Presentation, File, FileCode, FileSpreadsheet, Loader2 } from 'lucide-react';
 import { ClientFile } from '@/hooks/useClientFiles';
@@ -55,11 +56,16 @@ const EnhancedFilePreview: React.FC<EnhancedFilePreviewProps> = ({
           if (url && showTextPreview) {
             const response = await fetch(url);
             const blob = await response.blob();
-            const fileBlob = new File([blob], file.file_name, { type: file.file_type });
+            
+            // Create a File-like object without using the File constructor
+            const fileObject = Object.assign(blob, {
+              name: file.file_name,
+              type: file.file_type
+            }) as File;
             
             const previewGenerator = getPreviewGenerator(file.file_type);
             if (previewGenerator) {
-              const result: PreviewResult = await previewGenerator(fileBlob);
+              const result: PreviewResult = await previewGenerator(fileObject);
               
               if (result.type === 'image') {
                 setPreviewUrl(result.content);
