@@ -4,9 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { FileText, Image, Presentation, File, Download, Eye, Trash2, Upload } from 'lucide-react';
-import { useClientFiles, FileFilters } from '@/hooks/useClientFiles';
+import { useClientFiles, FileFilters as FileFiltersType } from '@/hooks/useClientFiles';
 import FileUploadArea from './FileUploadArea';
-import FileFilters from './FileFilters';
+import FileFiltersComponent from './FileFilters';
 import FileViewToggle, { ViewMode } from './FileViewToggle';
 import FileGridView from './FileGridView';
 import { useToast } from '@/hooks/use-toast';
@@ -35,7 +35,7 @@ const getFileIcon = (type: string) => {
 const ClientFileVault: React.FC<ClientFileVaultProps> = ({ client }) => {
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [showUploadArea, setShowUploadArea] = useState(false);
-  const [filters, setFilters] = useState<FileFilters>({
+  const [filters, setFilters] = useState<FileFiltersType>({
     fileType: 'all',
     dateRange: { start: null, end: null },
     category: 'all',
@@ -145,7 +145,7 @@ const ClientFileVault: React.FC<ClientFileVaultProps> = ({ client }) => {
       </div>
 
       {/* File Filters */}
-      <FileFilters
+      <FileFiltersComponent
         filters={filters}
         onFiltersChange={setFilters}
         onClearFilters={clearFilters}
