@@ -10,21 +10,32 @@ export interface PreviewResult {
 
 export const generatePDFPreview = async (file: File): Promise<PreviewResult> => {
   try {
-    console.log('Generating PDF preview for:', file.name, 'type:', file.type, 'size:', file.size);
+    console.log('Preview: Starting PDF preview generation');
+    console.log(`Preview: File details - name: ${file.name}, type: ${file.type}, size: ${file.size} bytes`);
     
+    const startTime = Date.now();
     const thumbnailDataUrl = await generatePDFThumbnail(file);
+    const endTime = Date.now();
+    
+    console.log(`Preview: PDF thumbnail generated successfully in ${endTime - startTime}ms`);
+    console.log(`Preview: Thumbnail data URL length: ${thumbnailDataUrl.length}`);
     
     return {
       type: 'image',
       content: thumbnailDataUrl
     };
   } catch (error) {
-    console.error('PDF preview generation failed:', error);
+    console.error('Preview: PDF preview generation failed:', error);
     
     // Return more specific error information
     let errorMessage = 'Failed to generate PDF preview';
     if (error instanceof Error) {
       errorMessage = error.message;
+      console.error('Preview: Detailed error info:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      });
     }
     
     return {
@@ -102,22 +113,25 @@ export const generateExcelPreview = async (file: File): Promise<PreviewResult> =
 };
 
 export const getPreviewGenerator = (fileType: string) => {
-  console.log('Getting preview generator for file type:', fileType);
+  console.log('Preview: Getting preview generator for file type:', fileType);
   
   if (fileType.includes('pdf')) {
-    console.log('PDF preview generator selected');
+    console.log('Preview: PDF preview generator selected');
     return generatePDFPreview;
   }
   if (fileType.includes('text') || fileType.includes('json') || fileType.includes('csv')) {
+    console.log('Preview: Text preview generator selected');
     return generateTextPreview;
   }
   if (fileType.includes('word') || fileType.includes('document')) {
+    console.log('Preview: Word preview generator selected');  
     return generateWordPreview;
   }
   if (fileType.includes('sheet') || fileType.includes('excel')) {
+    console.log('Preview: Excel preview generator selected');
     return generateExcelPreview;
   }
   
-  console.log('No preview generator found for file type:', fileType);
+  console.log('Preview: No preview generator found for file type:', fileType);
   return null;
 };
