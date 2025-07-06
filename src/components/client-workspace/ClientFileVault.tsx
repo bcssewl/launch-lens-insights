@@ -172,6 +172,19 @@ const ClientFileVault: React.FC<ClientFileVaultProps> = ({ client }) => {
         onPreviewFile={handlePreview}
       />
 
+      {/* Show extraction progress for recently uploaded files */}
+      {files.slice(0, 3).map(file => (
+        !file.content_extracted_at && (
+          <AutoContentExtraction
+            key={file.id}
+            fileId={file.id}
+            fileName={file.file_name}
+            hasContent={Boolean(file.file_content_text)}
+            onExtractionComplete={handleUploadComplete}
+          />
+        )
+      ))}
+
       {/* Upload Area - keeping this for backward compatibility if needed */}
       {showUploadArea && (
         <FileUploadArea

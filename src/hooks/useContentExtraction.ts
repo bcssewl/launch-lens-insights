@@ -8,6 +8,8 @@ export interface ExtractionStatus {
   status: 'pending' | 'processing' | 'completed' | 'failed';
   progress?: number;
   error?: string;
+  processingTimeMs?: number;
+  extractedLength?: number;
 }
 
 export const useContentExtraction = () => {
@@ -23,19 +25,26 @@ export const useContentExtraction = () => {
     });
   };
 
-  const extractContent = async (fileId: string, fileName: string) => {
-    updateStatus(fileId, { status: 'processing' });
+  const extractContentWithGemini = async (fileId: string, fileName: string) => {
+    updateStatus(fileId, { status: 'processing', progress: 10 });
     
     try {
-      console.log('Starting content extraction for:', fileName, 'fileId:', fileId);
+      console.log('Starting Gemini content extraction for:', fileName, 'fileId:', fileId);
       
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
       
-      const { data, error } = await supabase.functions.invoke('extract-file-content', {
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
+      // Update progress
+      updateStatus(fileId, { progress: 30 });
+
+      const { data, error } = await supabase.functions.invoke('gemini-extract-content', {
         body: { 
           fileId,
-          userId: user?.id 
+          userId: user.id 
         }
       });
 
@@ -44,17 +53,19 @@ export const useContentExtraction = () => {
         throw error;
       }
 
-      console.log('Content extraction response:', data);
+      console.log('Gemini extraction response:', data);
 
       if (data?.success) {
         updateStatus(fileId, { 
           status: 'completed',
-          progress: 100
+          progress: 100,
+          processingTimeMs: data.processingTimeMs,
+          extractedLength: data.extractedLength
         });
         
         toast({
-          title: "Content Extracted",
-          description: `Successfully extracted content from ${fileName}. ${data.extractedLength} characters processed.`,
+          title: "Content Extracted with AI",
+          description: `Successfully processed ${fileName} using Gemini AI. ${data.extractedLength} characters extracted.`,
         });
         
         return true;
@@ -70,7 +81,7 @@ export const useContentExtraction = () => {
       });
       
       toast({
-        title: "Extraction Failed",
+        title: "AI Extraction Failed",
         description: `Failed to extract content from ${fileName}: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive"
       });
@@ -83,13 +94,23 @@ export const useContentExtraction = () => {
     return extractionStatuses.get(fileId) || null;
   };
 
+  // Auto-extract content when files are uploaded using Gemini
+  const autoExtractOnUpload = async (fileId: string, fileName: string) => {
+    console.log('Auto-extracting content with Gemini for uploaded file:', fileName);
+    
+    // Small delay to ensure file is fully uploaded
+    setTimeout(() => {
+      extractContentWithGemini(fileId, fileName);
+    }, 1000);
+  };
+
   const batchExtractContent = async (fileIds: string[]) => {
-    console.log('Starting batch extraction for', fileIds.length, 'files');
+    console.log('Starting batch Gemini extraction for', fileIds.length, 'files');
     
     const results = await Promise.all(
       fileIds.map(async (fileId) => {
         try {
-          await extractContent(fileId, `File ${fileId}`);
+          await extractContentWithGemini(fileId, `File ${fileId}`);
           return { fileId, success: true };
         } catch (error) {
           return { fileId, success: false, error };
@@ -101,25 +122,15 @@ export const useContentExtraction = () => {
     const failed = results.length - successful;
     
     toast({
-      title: "Batch Extraction Complete",
-      description: `Processed ${results.length} files: ${successful} successful, ${failed} failed`,
+      title: "Batch AI Extraction Complete",
+      description: `Processed ${results.length} files with Gemini AI: ${successful} successful, ${failed} failed`,
     });
     
     return results;
   };
 
-  // Auto-extract content when files are uploaded
-  const autoExtractOnUpload = async (fileId: string, fileName: string) => {
-    console.log('Auto-extracting content for uploaded file:', fileName);
-    
-    // Small delay to ensure file is fully uploaded
-    setTimeout(() => {
-      extractContent(fileId, fileName);
-    }, 1000);
-  };
-
   return {
-    extractContent,
+    extractContent: extractContentWithGemini,
     getExtractionStatus,
     batchExtractContent,
     autoExtractOnUpload,
