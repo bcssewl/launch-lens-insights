@@ -8,19 +8,32 @@ import { User, Mail, Calendar, FileText, Lightbulb, CheckSquare } from 'lucide-r
 
 interface ClientOverviewProps {
   client: {
+    id: string;
     name: string;
-    description: string;
-    industry: string;
-    potential: string;
-    reportCount: number;
-    ideaCount: number;
-    engagementStart: string;
-    contactPerson: string;
-    contactEmail: string;
+    description: string | null;
+    industry: string | null;
+    potential: string | null;
+    engagement_start: string | null;
+    contact_person: string | null;
+    contact_email: string | null;
+    created_at: string;
+    reportCount?: number;
+    ideaCount?: number;
   };
 }
 
 const ClientOverview: React.FC<ClientOverviewProps> = ({ client }) => {
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'Not set';
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  const getDaysAgo = (dateString: string | null) => {
+    if (!dateString) return 'N/A';
+    const days = Math.floor((new Date().getTime() - new Date(dateString).getTime()) / (1000 * 60 * 60 * 24));
+    return days === 0 ? 'Today' : `${days} days ago`;
+  };
+
   return (
     <div className="space-y-6">
       {/* Client Info Cards */}
@@ -31,11 +44,13 @@ const ClientOverview: React.FC<ClientOverviewProps> = ({ client }) => {
             <CardTitle className="text-sm font-medium">Contact Person</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-lg font-semibold">{client.contactPerson}</div>
-            <div className="flex items-center text-sm text-muted-foreground mt-1">
-              <Mail className="h-3 w-3 mr-1" />
-              {client.contactEmail}
-            </div>
+            <div className="text-lg font-semibold">{client.contact_person || 'Not specified'}</div>
+            {client.contact_email && (
+              <div className="flex items-center text-sm text-muted-foreground mt-1">
+                <Mail className="h-3 w-3 mr-1" />
+                {client.contact_email}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -46,10 +61,10 @@ const ClientOverview: React.FC<ClientOverviewProps> = ({ client }) => {
           </CardHeader>
           <CardContent>
             <div className="text-lg font-semibold">
-              {new Date(client.engagementStart).toLocaleDateString()}
+              {formatDate(client.engagement_start)}
             </div>
             <div className="text-sm text-muted-foreground">
-              {Math.floor((new Date().getTime() - new Date(client.engagementStart).getTime()) / (1000 * 60 * 60 * 24))} days ago
+              {getDaysAgo(client.engagement_start)}
             </div>
           </CardContent>
         </Card>
@@ -63,12 +78,14 @@ const ClientOverview: React.FC<ClientOverviewProps> = ({ client }) => {
               className={
                 client.potential === 'High Potential' 
                   ? 'bg-green-100 text-green-700' 
-                  : 'bg-yellow-100 text-yellow-700'
+                  : client.potential === 'Medium Potential'
+                  ? 'bg-yellow-100 text-yellow-700'
+                  : 'bg-gray-100 text-gray-700'
               }
             >
-              {client.potential}
+              {client.potential || 'Not assessed'}
             </Badge>
-            <div className="text-sm text-muted-foreground mt-1">{client.industry}</div>
+            <div className="text-sm text-muted-foreground mt-1">{client.industry || 'Not specified'}</div>
           </CardContent>
         </Card>
       </div>
@@ -81,7 +98,7 @@ const ClientOverview: React.FC<ClientOverviewProps> = ({ client }) => {
             <CardTitle className="text-sm font-medium">AI Reports Generated</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{client.reportCount}</div>
+            <div className="text-2xl font-bold">{client.reportCount || 0}</div>
           </CardContent>
         </Card>
 
@@ -91,7 +108,7 @@ const ClientOverview: React.FC<ClientOverviewProps> = ({ client }) => {
             <CardTitle className="text-sm font-medium">Business Ideas</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{client.ideaCount}</div>
+            <div className="text-2xl font-bold">{client.ideaCount || 0}</div>
           </CardContent>
         </Card>
 
@@ -101,7 +118,7 @@ const ClientOverview: React.FC<ClientOverviewProps> = ({ client }) => {
             <CardTitle className="text-sm font-medium">Completed Tasks</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">12</div>
+            <div className="text-2xl font-bold">0</div>
           </CardContent>
         </Card>
       </div>
@@ -115,7 +132,7 @@ const ClientOverview: React.FC<ClientOverviewProps> = ({ client }) => {
           <Textarea 
             placeholder="Add notes about this client engagement..."
             className="min-h-32"
-            defaultValue="Initial consultation completed. Focus on market expansion strategy for electric vehicle segment. Client is particularly interested in European market penetration."
+            defaultValue={client.description || ''}
           />
           <Button>Save Notes</Button>
         </CardContent>
@@ -130,19 +147,16 @@ const ClientOverview: React.FC<ClientOverviewProps> = ({ client }) => {
           <div className="space-y-3">
             <div className="flex items-center gap-3 text-sm">
               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span className="text-muted-foreground">2 hours ago</span>
-              <span>New market analysis report generated</span>
+              <span className="text-muted-foreground">{getDaysAgo(client.created_at)}</span>
+              <span>Client workspace created</span>
             </div>
-            <div className="flex items-center gap-3 text-sm">
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <span className="text-muted-foreground">1 day ago</span>
-              <span>Financial projections uploaded</span>
-            </div>
-            <div className="flex items-center gap-3 text-sm">
-              <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-              <span className="text-muted-foreground">3 days ago</span>
-              <span>Task "Competitive analysis" completed</span>
-            </div>
+            {client.engagement_start && (
+              <div className="flex items-center gap-3 text-sm">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <span className="text-muted-foreground">{getDaysAgo(client.engagement_start)}</span>
+                <span>Engagement started</span>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

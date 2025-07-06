@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { Card, CardContent } from '@/components/ui/card';
@@ -12,6 +12,8 @@ import ClientFileVault from '@/components/client-workspace/ClientFileVault';
 import ClientTasks from '@/components/client-workspace/ClientTasks';
 import ClientTimeline from '@/components/client-workspace/ClientTimeline';
 import { Link } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 const tabItems = [
   { id: 'overview', title: 'Overview', icon: Home },
@@ -21,63 +23,88 @@ const tabItems = [
   { id: 'timeline', title: 'Timeline & Activity', icon: Clock },
 ];
 
-// Mock client data
-const mockClients = {
-  'tesla': {
-    id: 'tesla',
-    name: 'Tesla',
-    description: 'Electric vehicle strategy and market expansion consulting',
-    industry: 'Automotive',
-    potential: 'High Potential',
-    reportCount: 4,
-    ideaCount: 6,
-    engagementStart: '2024-01-15',
-    contactPerson: 'Sarah Johnson',
-    contactEmail: 'sarah.johnson@tesla.com'
-  },
-  'drip-drinks': {
-    id: 'drip-drinks',
-    name: 'Drip Drinks',
-    description: 'Beverage brand positioning and growth strategy development',
-    industry: 'Consumer Goods',
-    potential: 'High Potential',
-    reportCount: 3,
-    ideaCount: 4,
-    engagementStart: '2024-02-01',
-    contactPerson: 'Mike Chen',
-    contactEmail: 'mike.chen@dripdrinks.com'
-  },
-  'fintech-startup': {
-    id: 'fintech-startup',
-    name: 'FinTech Startup',
-    description: 'Digital banking platform validation and market entry strategy',
-    industry: 'FinTech',
-    potential: 'Medium Potential',
-    reportCount: 2,
-    ideaCount: 3,
-    engagementStart: '2024-03-10',
-    contactPerson: 'Alex Rodriguez',
-    contactEmail: 'alex@fintechstartup.com'
-  },
-  'local-restaurant': {
-    id: 'local-restaurant',
-    name: 'Local Restaurant Chain',
-    description: 'Expansion strategy and operational efficiency optimization',
-    industry: 'Hospitality',
-    potential: 'Medium Potential',
-    reportCount: 1,
-    ideaCount: 2,
-    engagementStart: '2024-04-05',
-    contactPerson: 'Maria Garcia',
-    contactEmail: 'maria@localrestaurant.com'
-  }
-};
+interface Client {
+  id: string;
+  name: string;
+  description: string | null;
+  industry: string | null;
+  potential: string | null;
+  engagement_start: string | null;
+  contact_person: string | null;
+  contact_email: string | null;
+  created_at: string;
+  updated_at: string;
+  reportCount?: number;
+  ideaCount?: number;
+}
 
 const ClientWorkspacePage: React.FC = () => {
   const { clientId } = useParams<{ clientId: string }>();
   const [activeTab, setActiveTab] = useState('overview');
-  
-  const client = clientId ? mockClients[clientId as keyof typeof mockClients] : null;
+  const [client, setClient] = useState<Client | null>(null);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchClient = async () => {
+      if (!clientId) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('clients')
+          .select('*')
+          .eq('id', clientId)
+          .single();
+
+        if (error) {
+          console.error('Error fetching client:', error);
+          toast({
+            title: "Error",
+            description: "Failed to fetch client data",
+            variant: "destructive"
+          });
+          return;
+        }
+
+        if (data) {
+          setClient({
+            ...data,
+            reportCount: 0, // TODO: Fetch actual report count
+            ideaCount: 0 // TODO: Fetch actual idea count
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching client:', error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch client data",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchClient();
+  }, [clientId, toast]);
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-full">
+          <Card className="p-8 text-center">
+            <CardContent>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Loading client workspace...</p>
+            </CardContent>
+          </Card>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   if (!client) {
     return (
@@ -110,7 +137,7 @@ const ClientWorkspacePage: React.FC = () => {
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold">{client.name}</h1>
-                  <p className="text-muted-foreground">{client.description}</p>
+                  <p className="text-muted-foreground">{client.description || `${client.industry || 'Business'} consulting engagement`}</p>
                 </div>
               </div>
             </div>
