@@ -77,7 +77,7 @@ export const useClientFiles = (clientId: string) => {
 
       if (uploadError) throw uploadError;
 
-      // Save metadata to database
+      // Save metadata to database with embedding status
       const { error: dbError } = await supabase
         .from('client_files')
         .insert({
@@ -87,7 +87,8 @@ export const useClientFiles = (clientId: string) => {
           file_type: file.type,
           file_size: file.size,
           file_path: filePath,
-          category: category || getCategoryFromFileType(file.type)
+          category: category || getCategoryFromFileType(file.type),
+          embedding_status: 'pending' // New files start with pending embedding status
         });
 
       if (dbError) throw dbError;
