@@ -53,26 +53,37 @@ const ClientFileVault: React.FC<ClientFileVaultProps> = ({ client }) => {
   const filteredFiles = filterFiles(filters);
 
   const handleFileUpload = async (uploadedFiles: File[]) => {
-    const uploadedFileIds = new Set<string>();
+    // Get the current file count before upload to track new files
+    const initialFileCount = files.length;
     
+    // Upload all files
     for (const file of uploadedFiles) {
-      const result = await uploadFile(file);
-      if (result?.id) {
-        uploadedFileIds.add(result.id);
-      }
+      await uploadFile(file);
     }
     
-    // Track recently uploaded files for extraction
-    setRecentlyUploadedFiles(prev => new Set([...prev, ...uploadedFileIds]));
+    // Refresh files to get the updated list
+    await refreshFiles();
     
-    // Clear the tracking after a reasonable time
+    // Since we can't get IDs directly from uploadFile, we'll track newly uploaded files
+    // by comparing the file list before and after upload
     setTimeout(() => {
-      setRecentlyUploadedFiles(prev => {
-        const newSet = new Set(prev);
-        uploadedFileIds.forEach(id => newSet.delete(id));
-        return newSet;
-      });
-    }, 60000); // Clear after 1 minute
+      // After refresh, get the new files (this is a simple approach)
+      // In a real scenario, you might want to track by upload timestamp
+      const newFileIds = files
+        .filter(file => {
+          const uploadTime = new Date(file.upload_date).getTime();
+          const now = Date.now();
+          return now - uploadTime < 30000; // Files uploaded in last 30 seconds
+        })
+        .map(file => file.id);
+      
+      setRecentlyUploadedFiles(new Set(newFileIds));
+      
+      // Clear the tracking after a reasonable time
+      setTimeout(() => {
+        setRecentlyUploadedFiles(new Set());
+      }, 60000); // Clear after 1 minute
+    }, 1000);
     
     setShowUploadArea(false);
   };
