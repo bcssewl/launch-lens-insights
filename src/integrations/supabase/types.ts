@@ -808,6 +808,25 @@ export type Database = {
         Args: { question_text: string }
         Returns: string
       }
+      search_file_embeddings: {
+        Args: {
+          query_embedding: string
+          client_id: string
+          user_id: string
+          match_threshold?: number
+          match_count?: number
+        }
+        Returns: {
+          file_id: string
+          file_name: string
+          file_type: string
+          file_path: string
+          file_size: number
+          upload_date: string
+          chunk_text: string
+          similarity: number
+        }[]
+      }
       sparsevec_out: {
         Args: { "": unknown }
         Returns: unknown
