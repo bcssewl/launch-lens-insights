@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,7 +9,7 @@ import FileUploadArea from './FileUploadArea';
 import FileFiltersComponent from './FileFilters';
 import FileViewToggle, { ViewMode } from './FileViewToggle';
 import FileGridView from './FileGridView';
-import FilePreview from './FilePreview';
+import EnhancedFilePreview from './EnhancedFilePreview';
 import { useToast } from '@/hooks/use-toast';
 
 interface ClientFileVaultProps {
@@ -232,10 +233,11 @@ const ClientFileVault: React.FC<ClientFileVaultProps> = ({ client }) => {
                   {filteredFiles.map((file) => (
                     <div key={file.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
                       <div className="flex items-center gap-3">
-                        <FilePreview 
+                        <EnhancedFilePreview 
                           file={file} 
                           getFileUrl={getFileUrl}
                           size="small"
+                          showTextPreview={false}
                         />
                         <div>
                           <div className="font-medium">{file.file_name}</div>

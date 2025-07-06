@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Download, Eye, Trash2 } from 'lucide-react';
 import { ClientFile } from '@/hooks/useClientFiles';
-import FilePreview from './FilePreview';
+import EnhancedFilePreview from './EnhancedFilePreview';
 
 interface FileGridViewProps {
   files: ClientFile[];
@@ -35,12 +35,13 @@ const FileGridView: React.FC<FileGridViewProps> = ({
         <Card key={file.id} className="hover:shadow-md transition-shadow group">
           <CardContent className="p-4">
             <div className="flex flex-col items-center text-center space-y-3">
-              {/* File Preview */}
-              <FilePreview 
+              {/* Enhanced File Preview */}
+              <EnhancedFilePreview 
                 file={file} 
                 getFileUrl={getFileUrl}
                 size="large"
                 className="border"
+                showTextPreview={true}
               />
 
               {/* File Info */}
