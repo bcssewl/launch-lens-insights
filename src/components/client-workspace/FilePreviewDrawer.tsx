@@ -14,10 +14,6 @@ import {
   MessageCircle,
   Send,
   FileStack,
-  ZoomIn,
-  ZoomOut,
-  ChevronLeft,
-  ChevronRight,
   ChevronDown,
   ChevronUp,
   Edit3,
@@ -25,8 +21,6 @@ import {
   X
 } from 'lucide-react';
 import { ClientFile } from '@/hooks/useClientFiles';
-import { getPreviewGenerator } from '@/utils/previewGenerators';
-import { loadPDFDocument, renderPDFPage } from '@/components/client-workspace/PDFViewer';
 import { useToast } from '@/hooks/use-toast';
 
 interface FilePreviewDrawerProps {
@@ -47,13 +41,7 @@ interface ChatMessage {
 
 interface FilePreviewState {
   fileUrl: string | null;
-  previewContent: string | null;
-  previewType: 'pdf' | 'image' | 'text' | 'error' | null;
   isLoading: boolean;
-  currentPage: number;
-  totalPages: number;
-  zoomLevel: number;
-  pdfDocument: any;
   metadataCollapsed: boolean;
   editingFilename: boolean;
   tempFilename: string;
@@ -63,10 +51,6 @@ interface FilePreviewState {
 type FilePreviewAction =
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_FILE_URL'; payload: string | null }
-  | { type: 'SET_PREVIEW'; payload: { content: string | null; type: 'pdf' | 'image' | 'text' | 'error' | null } }
-  | { type: 'SET_PDF_DATA'; payload: { document: any; totalPages: number; currentPage: number } }
-  | { type: 'SET_PAGE'; payload: number }
-  | { type: 'SET_ZOOM'; payload: number }
   | { type: 'TOGGLE_METADATA' }
   | { type: 'START_EDIT_FILENAME'; payload: string }
   | { type: 'CANCEL_EDIT_FILENAME' }
@@ -76,13 +60,7 @@ type FilePreviewAction =
 
 const initialState: FilePreviewState = {
   fileUrl: null,
-  previewContent: null,
-  previewType: null,
   isLoading: false,
-  currentPage: 1,
-  totalPages: 1,
-  zoomLevel: 1,
-  pdfDocument: null,
   metadataCollapsed: false,
   editingFilename: false,
   tempFilename: '',
@@ -95,20 +73,6 @@ function filePreviewReducer(state: FilePreviewState, action: FilePreviewAction):
       return { ...state, isLoading: action.payload };
     case 'SET_FILE_URL':
       return { ...state, fileUrl: action.payload };
-    case 'SET_PREVIEW':
-      return { ...state, previewContent: action.payload.content, previewType: action.payload.type };
-    case 'SET_PDF_DATA':
-      return { 
-        ...state, 
-        pdfDocument: action.payload.document, 
-        totalPages: action.payload.totalPages,
-        currentPage: action.payload.currentPage,
-        previewType: 'pdf'
-      };
-    case 'SET_PAGE':
-      return { ...state, currentPage: action.payload };
-    case 'SET_ZOOM':
-      return { ...state, zoomLevel: action.payload };
     case 'TOGGLE_METADATA':
       return { ...state, metadataCollapsed: !state.metadataCollapsed };
     case 'START_EDIT_FILENAME':
@@ -120,7 +84,7 @@ function filePreviewReducer(state: FilePreviewState, action: FilePreviewAction):
     case 'ADD_CHAT_MESSAGE':
       return { 
         ...state, 
-        chatHistory: [...state.chatHistory.slice(-4), action.payload] // Keep last 5 messages
+        chatHistory: [...state.chatHistory.slice(-4), action.payload]
       };
     case 'RESET':
       return initialState;
@@ -149,145 +113,21 @@ const FilePreviewDrawer: React.FC<FilePreviewDrawerProps> = ({
     }
   }, [file, open]);
 
-  useEffect(() => {
-    if (!open) return;
-
-    const handleKeyPress = (event: KeyboardEvent) => {
-      if (event.target instanceof HTMLInputElement) return;
-
-      switch (event.key) {
-        case 'Escape':
-          onOpenChange(false);
-          break;
-        case 'ArrowLeft':
-          if (state.previewType === 'pdf' && state.currentPage > 1) {
-            handlePrevPage();
-          }
-          break;
-        case 'ArrowRight':
-          if (state.previewType === 'pdf' && state.currentPage < state.totalPages) {
-            handleNextPage();
-          }
-          break;
-        case 'z':
-        case 'Z':
-          if (event.shiftKey) {
-            handleZoomOut();
-          } else {
-            handleZoomIn();
-          }
-          break;
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyPress);
-    return () => document.removeEventListener('keydown', handleKeyPress);
-  }, [open, state.currentPage, state.totalPages, state.previewType]);
-
   const loadFilePreview = async () => {
     if (!file) return;
 
     dispatch({ type: 'SET_LOADING', payload: true });
     try {
+      console.log('Loading file preview:', file.file_name, 'type:', file.file_type);
       const url = await getFileUrl(file.file_path);
       dispatch({ type: 'SET_FILE_URL', payload: url });
-
-      if (url) {
-        await generatePreview(url);
-      }
     } catch (error) {
       console.error('Error loading file preview:', error);
-      dispatch({ type: 'SET_PREVIEW', payload: { content: null, type: 'error' } });
+      dispatch({ type: 'SET_FILE_URL', payload: null });
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
     }
   };
-
-  const generatePreview = async (url: string) => {
-    if (!file) return;
-
-    if (file.file_type.includes('image')) {
-      dispatch({ type: 'SET_PREVIEW', payload: { content: url, type: 'image' } });
-    } else if (file.file_type.includes('pdf')) {
-      await loadPDFPreview(url);
-    } else {
-      const generator = getPreviewGenerator(file.file_type);
-      if (generator) {
-        try {
-          const response = await fetch(url);
-          const blob = await response.blob();
-          
-          const fileObject = new globalThis.File([blob], file.file_name, { 
-            type: file.file_type,
-            lastModified: Date.now()
-          });
-          
-          const result = await generator(fileObject);
-          
-          if (result.type === 'error') {
-            dispatch({ type: 'SET_PREVIEW', payload: { content: null, type: 'error' } });
-          } else {
-            dispatch({ type: 'SET_PREVIEW', payload: { content: result.content, type: result.type as 'text' | 'image' } });
-          }
-        } catch (error) {
-          console.error('Error generating preview:', error);
-          dispatch({ type: 'SET_PREVIEW', payload: { content: null, type: 'error' } });
-        }
-      } else {
-        dispatch({ type: 'SET_PREVIEW', payload: { content: null, type: 'error' } });
-      }
-    }
-  };
-
-  const loadPDFPreview = async (url: string) => {
-    try {
-      const pdf = await loadPDFDocument(url);
-      dispatch({ type: 'SET_PDF_DATA', payload: { document: pdf, totalPages: pdf.numPages, currentPage: 1 } });
-      await renderPDFPagePreview(pdf, 1);
-    } catch (error) {
-      console.error('Error loading PDF:', error);
-      dispatch({ type: 'SET_PREVIEW', payload: { content: null, type: 'error' } });
-    }
-  };
-
-  const renderPDFPagePreview = async (pdf: any, pageNumber: number) => {
-    try {
-      const scale = state.zoomLevel * 1.5;
-      const dataUrl = await renderPDFPage(pdf, pageNumber, scale);
-      dispatch({ type: 'SET_PREVIEW', payload: { content: dataUrl, type: 'pdf' } });
-      dispatch({ type: 'SET_PAGE', payload: pageNumber });
-    } catch (error) {
-      console.error('Error rendering PDF page:', error);
-    }
-  };
-
-  const handlePrevPage = useCallback(() => {
-    if (state.pdfDocument && state.currentPage > 1) {
-      renderPDFPagePreview(state.pdfDocument, state.currentPage - 1);
-    }
-  }, [state.pdfDocument, state.currentPage]);
-
-  const handleNextPage = useCallback(() => {
-    if (state.pdfDocument && state.currentPage < state.totalPages) {
-      renderPDFPagePreview(state.pdfDocument, state.currentPage + 1);
-    }
-  }, [state.pdfDocument, state.currentPage, state.totalPages]);
-
-  const handleZoomIn = useCallback(() => {
-    const newZoom = Math.min(state.zoomLevel + 0.25, 3);
-    dispatch({ type: 'SET_ZOOM', payload: newZoom });
-    if (state.pdfDocument) {
-      renderPDFPagePreview(state.pdfDocument, state.currentPage);
-    }
-  }, [state.zoomLevel, state.pdfDocument, state.currentPage]);
-
-  const handleZoomOut = useCallback(() => {
-    const newZoom = Math.max(state.zoomLevel - 0.25, 0.5);
-    dispatch({ type: 'SET_ZOOM', payload: newZoom });
-    if (state.pdfDocument) {
-      renderPDFPagePreview(state.pdfDocument, state.currentPage);
-    }
-  }, [state.zoomLevel, state.pdfDocument, state.currentPage]);
 
   const handleFilenameEdit = async () => {
     if (!file || !state.tempFilename.trim()) return;
@@ -347,6 +187,73 @@ const FilePreviewDrawer: React.FC<FilePreviewDrawerProps> = ({
     return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
   };
 
+  const renderFilePreview = () => {
+    if (state.isLoading) {
+      return (
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      );
+    }
+
+    if (!state.fileUrl) {
+      return (
+        <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
+          <FileText className="h-12 w-12 mb-4" />
+          <p>Preview not available</p>
+          <p className="text-sm">Click download to view this file</p>
+        </div>
+      );
+    }
+
+    // Handle different file types with direct URLs
+    if (file?.file_type.includes('image')) {
+      return (
+        <div className="flex justify-center">
+          <img 
+            src={state.fileUrl} 
+            alt={file.file_name}
+            className="max-w-full h-auto shadow-lg"
+          />
+        </div>
+      );
+    }
+
+    if (file?.file_type.includes('pdf')) {
+      return (
+        <div className="w-full h-full">
+          <iframe
+            src={state.fileUrl}
+            title={file.file_name}
+            className="w-full h-full min-h-[600px] border-0 rounded-lg"
+          />
+        </div>
+      );
+    }
+
+    // For other file types that can be displayed in iframe
+    if (file?.file_type.includes('text') || file?.file_type.includes('json')) {
+      return (
+        <div className="w-full h-full">
+          <iframe
+            src={state.fileUrl}
+            title={file.file_name}
+            className="w-full h-full min-h-[400px] border-0 rounded-lg bg-white"
+          />
+        </div>
+      );
+    }
+
+    // Fallback for other file types
+    return (
+      <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
+        <FileText className="h-12 w-12 mb-4" />
+        <p>Preview not available for this file type</p>
+        <p className="text-sm">Click download to view this file</p>
+      </div>
+    );
+  };
+
   if (!file) return null;
 
   const isCurrentVersion = file.current_version === file.current_version;
@@ -393,76 +300,8 @@ const FilePreviewDrawer: React.FC<FilePreviewDrawerProps> = ({
           <div className={`grid ${state.metadataCollapsed ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-[3fr_1fr]'} w-full h-full`}>
             
             <div className="flex flex-col min-w-0">
-              {state.previewType === 'pdf' && (
-                <div className="p-4 border-b flex items-center justify-between bg-muted/20">
-                  <div className="flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={handlePrevPage}
-                      disabled={state.currentPage <= 1}
-                      aria-label="Previous page"
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <span className="text-sm" aria-live="polite">
-                      Page {state.currentPage} of {state.totalPages}
-                    </span>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={handleNextPage}
-                      disabled={state.currentPage >= state.totalPages}
-                      aria-label="Next page"
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <Button size="sm" variant="outline" onClick={handleZoomOut} aria-label="Zoom out">
-                      <ZoomOut className="h-4 w-4" />
-                    </Button>
-                    <span className="text-sm">{Math.round(state.zoomLevel * 100)}%</span>
-                    <Button size="sm" variant="outline" onClick={handleZoomIn} aria-label="Zoom in">
-                      <ZoomIn className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              )}
-
               <ScrollArea className="flex-1 p-4">
-                {state.isLoading ? (
-                  <div className="flex items-center justify-center h-64">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                  </div>
-                ) : state.previewType === 'image' && state.previewContent ? (
-                  <div className="flex justify-center">
-                    <img 
-                      src={state.previewContent} 
-                      alt={file.file_name}
-                      className="max-w-full h-auto shadow-lg"
-                    />
-                  </div>
-                ) : state.previewType === 'pdf' && state.previewContent ? (
-                  <div className="flex justify-center" role="document" aria-label={`PDF document: ${file.file_name}`}>
-                    <img 
-                      src={state.previewContent} 
-                      alt={`Page ${state.currentPage} of ${file.file_name}`}
-                      className="max-w-full h-auto shadow-lg"
-                    />
-                  </div>
-                ) : state.previewType === 'text' && state.previewContent ? (
-                  <div className="bg-muted/20 p-4 rounded-lg">
-                    <pre className="whitespace-pre-wrap text-sm">{state.previewContent}</pre>
-                  </div>
-                ) : state.previewType === 'error' ? (
-                  <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
-                    <FileText className="h-12 w-12 mb-4" />
-                    <p>Preview not available</p>
-                    <p className="text-sm">Click download to view this file</p>
-                  </div>
-                ) : null}
+                {renderFilePreview()}
               </ScrollArea>
 
               <div className="p-4 border-t">
