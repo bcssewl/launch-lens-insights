@@ -151,6 +151,98 @@ export type Database = {
         }
         Relationships: []
       }
+      client_files: {
+        Row: {
+          category: string | null
+          client_id: string
+          created_at: string
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          id: string
+          updated_at: string
+          upload_date: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          client_id: string
+          created_at?: string
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          id?: string
+          updated_at?: string
+          upload_date?: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          client_id?: string
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          file_type?: string
+          id?: string
+          updated_at?: string
+          upload_date?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_files_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clients: {
+        Row: {
+          contact_email: string | null
+          contact_person: string | null
+          created_at: string
+          description: string | null
+          engagement_start: string | null
+          id: string
+          industry: string | null
+          name: string
+          potential: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          contact_email?: string | null
+          contact_person?: string | null
+          created_at?: string
+          description?: string | null
+          engagement_start?: string | null
+          id: string
+          industry?: string | null
+          name: string
+          potential?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          contact_email?: string | null
+          contact_person?: string | null
+          created_at?: string
+          description?: string | null
+          engagement_start?: string | null
+          id?: string
+          industry?: string | null
+          name?: string
+          potential?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       idea_validations: {
         Row: {
           archived_at: string | null
