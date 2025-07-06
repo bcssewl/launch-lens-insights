@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -14,18 +14,26 @@ export interface ExtractionStatus {
 
 export const useContentExtraction = () => {
   const [extractionStatuses, setExtractionStatuses] = useState<Map<string, ExtractionStatus>>(new Map());
+  const processingFiles = useRef<Set<string>>(new Set());
   const { toast } = useToast();
 
-  const updateStatus = (fileId: string, status: Partial<ExtractionStatus>) => {
+  const updateStatus = useCallback((fileId: string, status: Partial<ExtractionStatus>) => {
     setExtractionStatuses(prev => {
       const newMap = new Map(prev);
       const existing = newMap.get(fileId) || { fileId, status: 'pending' };
       newMap.set(fileId, { ...existing, ...status });
       return newMap;
     });
-  };
+  }, []);
 
-  const extractContentWithGemini = async (fileId: string, fileName: string) => {
+  const extractContentWithGemini = useCallback(async (fileId: string, fileName: string) => {
+    // Prevent duplicate processing
+    if (processingFiles.current.has(fileId)) {
+      console.log('File already being processed:', fileId);
+      return false;
+    }
+
+    processingFiles.current.add(fileId);
     updateStatus(fileId, { status: 'processing', progress: 10 });
     
     try {
@@ -87,24 +95,27 @@ export const useContentExtraction = () => {
       });
       
       return false;
+    } finally {
+      // Always remove from processing set
+      processingFiles.current.delete(fileId);
     }
-  };
+  }, [updateStatus, toast]);
 
-  const getExtractionStatus = (fileId: string): ExtractionStatus | null => {
+  const getExtractionStatus = useCallback((fileId: string): ExtractionStatus | null => {
     return extractionStatuses.get(fileId) || null;
-  };
+  }, [extractionStatuses]);
 
   // Auto-extract content when files are uploaded using Gemini
-  const autoExtractOnUpload = async (fileId: string, fileName: string) => {
+  const autoExtractOnUpload = useCallback(async (fileId: string, fileName: string) => {
     console.log('Auto-extracting content with Gemini for uploaded file:', fileName);
     
     // Small delay to ensure file is fully uploaded
     setTimeout(() => {
       extractContentWithGemini(fileId, fileName);
     }, 1000);
-  };
+  }, [extractContentWithGemini]);
 
-  const batchExtractContent = async (fileIds: string[]) => {
+  const batchExtractContent = useCallback(async (fileIds: string[]) => {
     console.log('Starting batch Gemini extraction for', fileIds.length, 'files');
     
     const results = await Promise.all(
@@ -127,7 +138,7 @@ export const useContentExtraction = () => {
     });
     
     return results;
-  };
+  }, [extractContentWithGemini, toast]);
 
   return {
     extractContent: extractContentWithGemini,

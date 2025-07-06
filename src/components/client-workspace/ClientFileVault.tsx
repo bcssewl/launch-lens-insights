@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -30,6 +29,7 @@ const ClientFileVault: React.FC<ClientFileVaultProps> = ({ client }) => {
   const [showUploadArea, setShowUploadArea] = useState(false);
   const [versionHistoryFile, setVersionHistoryFile] = useState(null);
   const [previewFile, setPreviewFile] = useState(null);
+  const [recentlyUploadedFiles, setRecentlyUploadedFiles] = useState<Set<string>>(new Set());
   const [filters, setFilters] = useState<FileFiltersType>({
     fileType: 'all',
     dateRange: { start: null, end: null },
@@ -53,9 +53,27 @@ const ClientFileVault: React.FC<ClientFileVaultProps> = ({ client }) => {
   const filteredFiles = filterFiles(filters);
 
   const handleFileUpload = async (uploadedFiles: File[]) => {
+    const uploadedFileIds = new Set<string>();
+    
     for (const file of uploadedFiles) {
-      await uploadFile(file);
+      const result = await uploadFile(file);
+      if (result?.id) {
+        uploadedFileIds.add(result.id);
+      }
     }
+    
+    // Track recently uploaded files for extraction
+    setRecentlyUploadedFiles(prev => new Set([...prev, ...uploadedFileIds]));
+    
+    // Clear the tracking after a reasonable time
+    setTimeout(() => {
+      setRecentlyUploadedFiles(prev => {
+        const newSet = new Set(prev);
+        uploadedFileIds.forEach(id => newSet.delete(id));
+        return newSet;
+      });
+    }, 60000); // Clear after 1 minute
+    
     setShowUploadArea(false);
   };
 
@@ -174,18 +192,31 @@ const ClientFileVault: React.FC<ClientFileVaultProps> = ({ client }) => {
         onPreviewFile={handlePreview}
       />
 
-      {/* Show extraction progress for recently uploaded files */}
-      {files.slice(0, 3).map(file => (
-        !file.content_extracted_at && (
+      {/* Show extraction progress only for recently uploaded files without content */}
+      {files
+        .filter(file => 
+          recentlyUploadedFiles.has(file.id) && 
+          !file.content_extracted_at && 
+          !file.file_content_text
+        )
+        .slice(0, 3) // Limit to 3 simultaneous extractions
+        .map(file => (
           <AutoContentExtraction
             key={file.id}
             fileId={file.id}
             fileName={file.file_name}
             hasContent={Boolean(file.file_content_text)}
-            onExtractionComplete={handleUploadComplete}
+            onExtractionComplete={() => {
+              handleUploadComplete();
+              // Remove from recently uploaded tracking after successful extraction
+              setRecentlyUploadedFiles(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(file.id);
+                return newSet;
+              });
+            }}
           />
-        )
-      ))}
+        ))}
 
       {/* Upload Area - keeping this for backward compatibility if needed */}
       {showUploadArea && (
