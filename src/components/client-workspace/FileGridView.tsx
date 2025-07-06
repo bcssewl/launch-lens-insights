@@ -9,7 +9,9 @@ import {
   Trash2, 
   Eye,
   Calendar,
-  HardDrive
+  HardDrive,
+  FileStack,
+  Share
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -27,6 +29,9 @@ interface FileGridViewProps {
   onFileDelete: (fileId: string) => void;
   onFileDownload?: (file: ClientFile) => void;
   getFileUrl: (filePath: string) => Promise<string | null>;
+  onPreview: (file: ClientFile) => void;
+  onShare: (file: ClientFile) => Promise<void>;
+  onVersionHistory: (file: ClientFile) => void;
 }
 
 const FileGridView: React.FC<FileGridViewProps> = ({
@@ -34,7 +39,10 @@ const FileGridView: React.FC<FileGridViewProps> = ({
   onFileSelect,
   onFileDelete,
   onFileDownload,
-  getFileUrl
+  getFileUrl,
+  onPreview,
+  onShare,
+  onVersionHistory
 }) => {
   const formatFileSize = (bytes: number) => {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
@@ -83,10 +91,20 @@ const FileGridView: React.FC<FileGridViewProps> = ({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => onFileSelect(file)}>
+                      <DropdownMenuItem onClick={() => onPreview(file)}>
                         <Eye className="mr-2 h-4 w-4" />
                         View
                       </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onShare(file)}>
+                        <Share className="mr-2 h-4 w-4" />
+                        Share
+                      </DropdownMenuItem>
+                      {file.has_versions && (
+                        <DropdownMenuItem onClick={() => onVersionHistory(file)}>
+                          <FileStack className="mr-2 h-4 w-4" />
+                          Version History
+                        </DropdownMenuItem>
+                      )}
                       {onFileDownload && (
                         <DropdownMenuItem onClick={() => onFileDownload(file)}>
                           <Download className="mr-2 h-4 w-4" />

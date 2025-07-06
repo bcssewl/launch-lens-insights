@@ -238,11 +238,13 @@ const ClientFileVault: React.FC<ClientFileVaultProps> = ({ client }) => {
           {viewMode === 'grid' ? (
             <FileGridView
               files={filteredFiles}
+              onFileSelect={handlePreview}
+              onFileDelete={handleDelete}
+              onFileDownload={handleShare}
+              getFileUrl={getFileUrl}
               onPreview={handlePreview}
               onShare={handleShare}
-              onDelete={handleDelete}
               onVersionHistory={handleVersionHistory}
-              getFileUrl={getFileUrl}
             />
           ) : (
             <Card>

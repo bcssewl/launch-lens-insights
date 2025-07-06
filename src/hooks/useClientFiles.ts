@@ -17,6 +17,10 @@ export interface ClientFile {
   version_count: number;
   current_version: number;
   has_versions: boolean;
+  content_extracted_at: string | null;
+  file_content_text: string | null;
+  content_summary: string | null;
+  content_keywords: string[] | null;
 }
 
 export interface FileFilters {
