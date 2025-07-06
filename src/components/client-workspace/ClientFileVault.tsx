@@ -8,6 +8,7 @@ import FileVaultHeader from './FileVaultHeader';
 import FileGridView from './FileGridView';
 import EnhancedFilePreview from './EnhancedFilePreview';
 import FileVersionHistoryModal from './FileVersionHistoryModal';
+import FilePreviewDrawer from './FilePreviewDrawer';
 import { useToast } from '@/hooks/use-toast';
 
 interface ClientFileVaultProps {
@@ -26,6 +27,7 @@ const ClientFileVault: React.FC<ClientFileVaultProps> = ({ client }) => {
   
   const [showUploadArea, setShowUploadArea] = useState(false);
   const [versionHistoryFile, setVersionHistoryFile] = useState(null);
+  const [previewFile, setPreviewFile] = useState(null);
   const [filters, setFilters] = useState<FileFiltersType>({
     fileType: 'all',
     dateRange: { start: null, end: null },
@@ -53,6 +55,10 @@ const ClientFileVault: React.FC<ClientFileVaultProps> = ({ client }) => {
       await uploadFile(file);
     }
     setShowUploadArea(false);
+  };
+
+  const handlePreview = (file: any) => {
+    setPreviewFile(file);
   };
 
   const handleView = async (file: any) => {
@@ -128,7 +134,7 @@ const ClientFileVault: React.FC<ClientFileVaultProps> = ({ client }) => {
 
   return (
     <div className="space-y-6">
-      {/* Updated File Vault Header */}
+      {/* File Vault Header */}
       <FileVaultHeader
         filters={filters}
         onFiltersChange={setFilters}
@@ -207,7 +213,7 @@ const ClientFileVault: React.FC<ClientFileVaultProps> = ({ client }) => {
           {viewMode === 'grid' ? (
             <FileGridView
               files={filteredFiles}
-              onView={handleView}
+              onPreview={handlePreview}
               onDownload={handleDownload}
               onDelete={handleDelete}
               onVersionHistory={handleVersionHistory}
@@ -299,6 +305,16 @@ const ClientFileVault: React.FC<ClientFileVaultProps> = ({ client }) => {
           </div>
         </CardContent>
       </Card>
+
+      {/* File Preview Drawer */}
+      <FilePreviewDrawer
+        open={!!previewFile}
+        onOpenChange={(open) => !open && setPreviewFile(null)}
+        file={previewFile}
+        getFileUrl={getFileUrl}
+        onDownload={handleDownload}
+        onVersionHistory={handleVersionHistory}
+      />
 
       {/* Version History Modal */}
       <FileVersionHistoryModal

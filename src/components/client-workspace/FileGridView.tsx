@@ -9,7 +9,7 @@ import EnhancedFilePreview from './EnhancedFilePreview';
 
 interface FileGridViewProps {
   files: ClientFile[];
-  onView: (file: ClientFile) => void;
+  onPreview: (file: ClientFile) => void;  // Changed from onView to onPreview
   onDownload: (file: ClientFile) => void;
   onDelete: (file: ClientFile) => void;
   onVersionHistory?: (file: ClientFile) => void;
@@ -18,7 +18,7 @@ interface FileGridViewProps {
 
 const FileGridView: React.FC<FileGridViewProps> = ({
   files,
-  onView,
+  onPreview,  // Updated prop name
   onDownload,
   onDelete,
   onVersionHistory,
@@ -93,7 +93,7 @@ const FileGridView: React.FC<FileGridViewProps> = ({
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => onView(file)}
+                  onClick={() => onPreview(file)}  // Updated to use onPreview
                   className="flex-1"
                 >
                   <Eye className="h-3 w-3" />
