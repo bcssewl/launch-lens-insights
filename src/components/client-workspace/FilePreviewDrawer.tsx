@@ -17,14 +17,10 @@ import {
   ChevronUp,
   Edit3,
   Check,
-  X,
-  Sparkles,
-  Trash2,
-  Loader2
+  X
 } from 'lucide-react';
 import { ClientFile } from '@/hooks/useClientFiles';
 import { useToast } from '@/hooks/use-toast';
-import { useAskNexus } from '@/hooks/useAskNexus';
 
 interface FilePreviewDrawerProps {
   open: boolean;
@@ -35,12 +31,20 @@ interface FilePreviewDrawerProps {
   onVersionHistory?: (file: ClientFile) => void;
 }
 
+interface ChatMessage {
+  id: string;
+  question: string;
+  timestamp: Date;
+  response?: string;
+}
+
 interface FilePreviewState {
   fileUrl: string | null;
   isLoading: boolean;
   metadataCollapsed: boolean;
   editingFilename: boolean;
   tempFilename: string;
+  chatHistory: ChatMessage[];
 }
 
 type FilePreviewAction =
@@ -50,6 +54,7 @@ type FilePreviewAction =
   | { type: 'START_EDIT_FILENAME'; payload: string }
   | { type: 'CANCEL_EDIT_FILENAME' }
   | { type: 'UPDATE_TEMP_FILENAME'; payload: string }
+  | { type: 'ADD_CHAT_MESSAGE'; payload: ChatMessage }
   | { type: 'RESET' };
 
 const initialState: FilePreviewState = {
@@ -57,7 +62,8 @@ const initialState: FilePreviewState = {
   isLoading: false,
   metadataCollapsed: false,
   editingFilename: false,
-  tempFilename: ''
+  tempFilename: '',
+  chatHistory: []
 };
 
 function filePreviewReducer(state: FilePreviewState, action: FilePreviewAction): FilePreviewState {
@@ -74,6 +80,11 @@ function filePreviewReducer(state: FilePreviewState, action: FilePreviewAction):
       return { ...state, editingFilename: false, tempFilename: '' };
     case 'UPDATE_TEMP_FILENAME':
       return { ...state, tempFilename: action.payload };
+    case 'ADD_CHAT_MESSAGE':
+      return { 
+        ...state, 
+        chatHistory: [...state.chatHistory.slice(-4), action.payload]
+      };
     case 'RESET':
       return initialState;
     default:
@@ -90,30 +101,16 @@ const FilePreviewDrawer: React.FC<FilePreviewDrawerProps> = ({
   onVersionHistory
 }) => {
   const [state, dispatch] = useReducer(filePreviewReducer, initialState);
-  const [nexusMessage, setNexusMessage] = useState('');
+  const [chatMessage, setChatMessage] = useState('');
   const { toast } = useToast();
-
-  // Initialize Ask Nexus hook
-  const {
-    conversations,
-    loading: nexusLoading,
-    loadingHistory,
-    askQuestion,
-    loadConversationHistory,
-    clearConversations,
-    getSuggestedQuestions
-  } = useAskNexus({ fileId: file?.id || '' });
-
-  const suggestedQuestions = file ? getSuggestedQuestions(file.file_name, file.file_type) : [];
 
   useEffect(() => {
     if (file && open) {
       loadFilePreview();
-      loadConversationHistory();
     } else {
       dispatch({ type: 'RESET' });
     }
-  }, [file, open, loadConversationHistory]);
+  }, [file, open]);
 
   const loadFilePreview = async () => {
     if (!file) return;
@@ -149,27 +146,36 @@ const FilePreviewDrawer: React.FC<FilePreviewDrawerProps> = ({
     }
   };
 
-  const handleSendNexusMessage = async () => {
-    if (nexusMessage.trim() && file) {
-      const success = await askQuestion(nexusMessage.trim());
-      if (success) {
-        setNexusMessage('');
-      }
-    }
-  };
+  const handleSendMessage = () => {
+    if (chatMessage.trim() && file) {
+      const newMessage: ChatMessage = {
+        id: Date.now().toString(),
+        question: chatMessage.trim(),
+        timestamp: new Date()
+      };
 
-  const handleSuggestedQuestion = async (question: string) => {
-    setNexusMessage(question);
-    const success = await askQuestion(question);
-    if (success) {
-      setNexusMessage('');
+      console.log({
+        action: 'ask_nexus',
+        fileId: file.id,
+        fileName: file.file_name,
+        question: chatMessage.trim(),
+        timestamp: new Date()
+      });
+
+      dispatch({ type: 'ADD_CHAT_MESSAGE', payload: newMessage });
+      setChatMessage('');
+      
+      toast({
+        title: "Question sent to Nexus",
+        description: "AI response coming soon..."
+      });
     }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSendNexusMessage();
+      handleSendMessage();
     }
   };
 
@@ -305,92 +311,40 @@ const FilePreviewDrawer: React.FC<FilePreviewDrawerProps> = ({
                 {renderFilePreview()}
               </ScrollArea>
 
-              {/* Ask Nexus Section */}
-              <div className="p-4 border-t bg-gradient-to-r from-purple-50 to-blue-50">
-                <div className="flex items-center gap-2 mb-3">
-                  <Sparkles className="h-5 w-5 text-purple-600" />
-                  <h3 className="font-semibold text-purple-900">Ask Nexus about this file</h3>
-                  {conversations.length > 0 && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={clearConversations}
-                      className="ml-auto text-red-600 hover:text-red-700"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-
-                {/* Conversation History */}
-                {loadingHistory ? (
-                  <div className="flex items-center justify-center py-4">
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    <span className="text-sm text-muted-foreground">Loading conversations...</span>
-                  </div>
-                ) : conversations.length > 0 ? (
-                  <div className="mb-4 max-h-48 overflow-y-auto space-y-3">
-                    {conversations.map((conv) => (
-                      <div key={conv.id} className="bg-white rounded-lg p-3 shadow-sm border">
-                        <div className="text-sm font-medium text-gray-700 mb-1">
-                          Q: {conv.question}
+              <div className="p-4 border-t">
+                {state.chatHistory.length > 0 && (
+                  <div className="mb-4 max-h-32 overflow-y-auto">
+                    {state.chatHistory.map((msg) => (
+                      <div key={msg.id} className="mb-2 p-2 bg-muted/20 rounded text-sm">
+                        <div className="font-medium">You: {msg.question}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {msg.timestamp.toLocaleTimeString()}
                         </div>
-                        <div className="text-sm text-gray-600 mb-2">
-                          A: {conv.response}
-                        </div>
-                        <div className="text-xs text-gray-400">
-                          {new Date(conv.created_at).toLocaleString()}
-                        </div>
+                        {msg.response && (
+                          <div className="mt-1 text-primary">Nexus: {msg.response}</div>
+                        )}
                       </div>
                     ))}
                   </div>
-                ) : null}
-
-                {/* Suggested Questions */}
-                {conversations.length === 0 && suggestedQuestions.length > 0 && (
-                  <div className="mb-4">
-                    <p className="text-sm text-gray-600 mb-2">Try asking:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {suggestedQuestions.slice(0, 3).map((question, index) => (
-                        <Button
-                          key={index}
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleSuggestedQuestion(question)}
-                          disabled={nexusLoading}
-                          className="text-xs"
-                        >
-                          {question}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
                 )}
 
-                {/* Input Area */}
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-2 flex-1">
-                    <MessageCircle className="h-4 w-4 text-purple-600" />
+                    <MessageCircle className="h-4 w-4 text-muted-foreground" />
                     <Input
-                      placeholder="Ask about this file..."
-                      value={nexusMessage}
-                      onChange={(e) => setNexusMessage(e.target.value)}
+                      placeholder="Ask Nexus about this file..."
+                      value={chatMessage}
+                      onChange={(e) => setChatMessage(e.target.value)}
                       onKeyPress={handleKeyPress}
                       className="flex-1"
-                      disabled={nexusLoading}
                     />
                   </div>
                   <Button 
                     size="sm" 
-                    onClick={handleSendNexusMessage}
-                    disabled={!nexusMessage.trim() || nexusLoading}
-                    className="bg-purple-600 hover:bg-purple-700"
+                    onClick={handleSendMessage}
+                    disabled={!chatMessage.trim()}
                   >
-                    {nexusLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Send className="h-4 w-4" />
-                    )}
+                    <Send className="h-4 w-4" />
                   </Button>
                 </div>
               </div>

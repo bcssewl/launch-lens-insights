@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,7 +13,6 @@ export interface FileWithMetadata {
   status: 'pending' | 'uploading' | 'completed' | 'error' | 'duplicate-choice';
   error?: string;
   previewUrl?: string;
-  uploadedFileId?: string; // Add this field
   duplicateInfo?: {
     existingFileId: string;
     existingFileName: string;
@@ -336,7 +336,7 @@ export const useFileUpload = (clientId: string) => {
     });
   }, []);
 
-  // Upload all files with auto-extraction
+  // Upload all files
   const uploadFiles = useCallback(async () => {
     if (files.length === 0) return;
 
@@ -360,8 +360,6 @@ export const useFileUpload = (clientId: string) => {
               : f
           ));
 
-          let uploadedFileId: string | null = null;
-
           // Handle versioning or new file creation
           if (fileMetadata.duplicateInfo && fileMetadata.versionChoice) {
             if (fileMetadata.versionChoice === 'version') {
@@ -370,10 +368,8 @@ export const useFileUpload = (clientId: string) => {
                 fileMetadata.file, 
                 fileMetadata.duplicateInfo.existingFileName
               );
-              uploadedFileId = fileMetadata.duplicateInfo.existingFileId;
             } else if (fileMetadata.versionChoice === 'replace') {
               await replaceExistingFile(fileMetadata.duplicateInfo.existingFileId, fileMetadata.file);
-              uploadedFileId = fileMetadata.duplicateInfo.existingFileId;
             }
           } else {
             // Create new file record - generate unique path for new files
@@ -387,7 +383,7 @@ export const useFileUpload = (clientId: string) => {
 
             if (uploadError) throw uploadError;
 
-            const { data: insertData, error: dbError } = await supabase
+            const { error: dbError } = await supabase
               .from('client_files')
               .insert({
                 client_id: clientId,
@@ -397,18 +393,15 @@ export const useFileUpload = (clientId: string) => {
                 file_size: fileMetadata.file.size,
                 file_path: filePath,
                 category: fileMetadata.category
-              })
-              .select('id')
-              .single();
+              });
 
             if (dbError) throw dbError;
-            uploadedFileId = insertData.id;
           }
 
           // Update status to completed
           setFiles(prev => prev.map(f => 
             f.id === fileMetadata.id 
-              ? { ...f, status: 'completed' as const, uploadProgress: 100, uploadedFileId }
+              ? { ...f, status: 'completed' as const, uploadProgress: 100 }
               : f
           ));
 
@@ -434,7 +427,7 @@ export const useFileUpload = (clientId: string) => {
       if (successCount > 0) {
         toast({
           title: "Files Uploaded Successfully",
-          description: `${successCount} file(s) uploaded successfully${errorCount > 0 ? `, ${errorCount} failed` : ''}. AI content extraction is now processing your files.`
+          description: `${successCount} file(s) uploaded successfully${errorCount > 0 ? `, ${errorCount} failed` : ''}.`
         });
       }
 

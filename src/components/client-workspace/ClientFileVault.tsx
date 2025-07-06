@@ -9,7 +9,6 @@ import FileGridView from './FileGridView';
 import EnhancedFilePreview from './EnhancedFilePreview';
 import FileVersionHistoryModal from './FileVersionHistoryModal';
 import FilePreviewDrawer from './FilePreviewDrawer';
-import AutoContentExtraction from './AutoContentExtraction';
 import { useToast } from '@/hooks/use-toast';
 
 interface ClientFileVaultProps {
@@ -29,7 +28,6 @@ const ClientFileVault: React.FC<ClientFileVaultProps> = ({ client }) => {
   const [showUploadArea, setShowUploadArea] = useState(false);
   const [versionHistoryFile, setVersionHistoryFile] = useState(null);
   const [previewFile, setPreviewFile] = useState(null);
-  const [recentlyUploadedFiles, setRecentlyUploadedFiles] = useState<Set<string>>(new Set());
   const [filters, setFilters] = useState<FileFiltersType>({
     fileType: 'all',
     dateRange: { start: null, end: null },
@@ -53,38 +51,9 @@ const ClientFileVault: React.FC<ClientFileVaultProps> = ({ client }) => {
   const filteredFiles = filterFiles(filters);
 
   const handleFileUpload = async (uploadedFiles: File[]) => {
-    // Get the current file count before upload to track new files
-    const initialFileCount = files.length;
-    
-    // Upload all files
     for (const file of uploadedFiles) {
       await uploadFile(file);
     }
-    
-    // Refresh files to get the updated list
-    await refreshFiles();
-    
-    // Since we can't get IDs directly from uploadFile, we'll track newly uploaded files
-    // by comparing the file list before and after upload
-    setTimeout(() => {
-      // After refresh, get the new files (this is a simple approach)
-      // In a real scenario, you might want to track by upload timestamp
-      const newFileIds = files
-        .filter(file => {
-          const uploadTime = new Date(file.upload_date).getTime();
-          const now = Date.now();
-          return now - uploadTime < 30000; // Files uploaded in last 30 seconds
-        })
-        .map(file => file.id);
-      
-      setRecentlyUploadedFiles(new Set(newFileIds));
-      
-      // Clear the tracking after a reasonable time
-      setTimeout(() => {
-        setRecentlyUploadedFiles(new Set());
-      }, 60000); // Clear after 1 minute
-    }, 1000);
-    
     setShowUploadArea(false);
   };
 
@@ -203,32 +172,6 @@ const ClientFileVault: React.FC<ClientFileVaultProps> = ({ client }) => {
         onPreviewFile={handlePreview}
       />
 
-      {/* Show extraction progress only for recently uploaded files without content */}
-      {files
-        .filter(file => 
-          recentlyUploadedFiles.has(file.id) && 
-          !file.content_extracted_at && 
-          !file.file_content_text
-        )
-        .slice(0, 3) // Limit to 3 simultaneous extractions
-        .map(file => (
-          <AutoContentExtraction
-            key={file.id}
-            fileId={file.id}
-            fileName={file.file_name}
-            hasContent={Boolean(file.file_content_text)}
-            onExtractionComplete={() => {
-              handleUploadComplete();
-              // Remove from recently uploaded tracking after successful extraction
-              setRecentlyUploadedFiles(prev => {
-                const newSet = new Set(prev);
-                newSet.delete(file.id);
-                return newSet;
-              });
-            }}
-          />
-        ))}
-
       {/* Upload Area - keeping this for backward compatibility if needed */}
       {showUploadArea && (
         <FileUploadArea
@@ -295,13 +238,11 @@ const ClientFileVault: React.FC<ClientFileVaultProps> = ({ client }) => {
           {viewMode === 'grid' ? (
             <FileGridView
               files={filteredFiles}
-              onFileSelect={handlePreview}
-              onFileDelete={handleDelete}
-              onFileDownload={handleShare}
-              getFileUrl={getFileUrl}
               onPreview={handlePreview}
               onShare={handleShare}
+              onDelete={handleDelete}
               onVersionHistory={handleVersionHistory}
+              getFileUrl={getFileUrl}
             />
           ) : (
             <Card>

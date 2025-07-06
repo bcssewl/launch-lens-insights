@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -17,10 +18,6 @@ export interface ClientFile {
   version_count: number;
   current_version: number;
   has_versions: boolean;
-  content_extracted_at: string | null;
-  file_content_text: string | null;
-  content_summary: string | null;
-  content_keywords: string[] | null;
 }
 
 export interface FileFilters {
@@ -81,7 +78,7 @@ export const useClientFiles = (clientId: string) => {
       if (uploadError) throw uploadError;
 
       // Save metadata to database
-      const { data: insertedFile, error: dbError } = await supabase
+      const { error: dbError } = await supabase
         .from('client_files')
         .insert({
           client_id: clientId,
@@ -91,9 +88,7 @@ export const useClientFiles = (clientId: string) => {
           file_size: file.size,
           file_path: filePath,
           category: category || getCategoryFromFileType(file.type)
-        })
-        .select()
-        .single();
+        });
 
       if (dbError) throw dbError;
 
@@ -101,28 +96,6 @@ export const useClientFiles = (clientId: string) => {
         title: "Success",
         description: `${file.name} uploaded successfully`
       });
-
-      // Trigger content extraction in the background
-      if (insertedFile) {
-        try {
-          console.log('Triggering content extraction for:', insertedFile.id);
-          supabase.functions.invoke('extract-file-content', {
-            body: { fileId: insertedFile.id }
-          }).then(({ error }) => {
-            if (error) {
-              console.error('Background content extraction failed:', error);
-            } else {
-              console.log('Background content extraction started for:', file.name);
-              // Refresh files list after a delay to show updated content status
-              setTimeout(() => {
-                fetchFiles();
-              }, 2000);
-            }
-          });
-        } catch (extractionError) {
-          console.error('Failed to trigger content extraction:', extractionError);
-        }
-      }
 
       // Refresh files list
       fetchFiles();
