@@ -12,10 +12,6 @@ interface ChunkEmbeddingRequest {
   textChunks: string[];
 }
 
-interface EmbeddingResponse {
-  embedding: number[];
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -59,6 +55,7 @@ serve(async (req) => {
       .single();
 
     if (fileError || !fileData) {
+      console.error('File verification error:', fileError);
       throw new Error('File not found or access denied');
     }
 
@@ -80,7 +77,7 @@ serve(async (req) => {
     let errorCount = 0;
 
     // Process chunks in batches to avoid overwhelming the API
-    const BATCH_SIZE = 5;
+    const BATCH_SIZE = 3; // Reduced batch size to be more conservative
     const embeddings: Array<{ chunkIndex: number; chunkText: string; embedding: number[] }> = [];
 
     for (let i = 0; i < textChunks.length; i += BATCH_SIZE) {
@@ -91,7 +88,14 @@ serve(async (req) => {
         try {
           console.log(`Processing chunk ${chunkIndex + 1}/${textChunks.length}`);
           
-          // Call Google AI Embedding API
+          // Ensure chunk is not empty and has reasonable length
+          const cleanChunk = chunk.trim();
+          if (!cleanChunk || cleanChunk.length < 10) {
+            console.log(`Skipping chunk ${chunkIndex} - too short or empty`);
+            return null;
+          }
+
+          // Call Google AI Embedding API with better error handling
           const response = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models/embedding-001:embedContent?key=${GOOGLE_AI_API_KEY}`,
             {
@@ -102,7 +106,7 @@ serve(async (req) => {
               body: JSON.stringify({
                 model: 'models/embedding-001',
                 content: {
-                  parts: [{ text: chunk }]
+                  parts: [{ text: cleanChunk }]
                 }
               })
             }
@@ -110,22 +114,29 @@ serve(async (req) => {
 
           if (!response.ok) {
             const errorText = await response.text();
-            console.error(`Gemini API error for chunk ${chunkIndex}:`, errorText);
-            throw new Error(`Gemini API error: ${response.status}`);
+            console.error(`Gemini API error for chunk ${chunkIndex} (${response.status}):`, errorText);
+            throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
           }
 
           const data = await response.json();
           const embedding = data.embedding?.values;
 
           if (!embedding || !Array.isArray(embedding)) {
+            console.error(`Invalid embedding response for chunk ${chunkIndex}:`, data);
             throw new Error('Invalid embedding response from Gemini API');
+          }
+
+          // Validate embedding dimensions
+          if (embedding.length !== 768) {
+            console.error(`Unexpected embedding dimensions for chunk ${chunkIndex}: ${embedding.length}`);
+            throw new Error(`Expected 768 dimensions, got ${embedding.length}`);
           }
 
           console.log(`Successfully generated embedding for chunk ${chunkIndex + 1} (${embedding.length} dimensions)`);
           
           return {
             chunkIndex,
-            chunkText: chunk,
+            chunkText: cleanChunk,
             embedding
           };
         } catch (error) {
@@ -140,12 +151,18 @@ serve(async (req) => {
       
       // Small delay between batches to respect rate limits
       if (i + BATCH_SIZE < textChunks.length) {
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 500)); // Increased delay
       }
     }
 
     // Store embeddings in database
     if (embeddings.length > 0) {
+      // Delete existing embeddings for this file first
+      await supabaseClient
+        .from('file_embeddings')
+        .delete()
+        .eq('file_id', fileId);
+
       const embeddingRows = embeddings.map(({ chunkIndex, chunkText, embedding }) => ({
         file_id: fileId,
         chunk_index: chunkIndex,
@@ -167,7 +184,7 @@ serve(async (req) => {
     }
 
     // Update file status
-    const finalStatus = errorCount === 0 ? 'completed' : 'partial';
+    const finalStatus = errorCount === 0 ? 'completed' : (successCount > 0 ? 'partial' : 'error');
     await supabaseClient
       .from('client_files')
       .update({ 
