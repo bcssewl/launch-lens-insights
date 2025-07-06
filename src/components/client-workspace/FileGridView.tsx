@@ -3,28 +3,24 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Image, Presentation, File, Download, Eye, Trash2 } from 'lucide-react';
+import { Download, Eye, Trash2 } from 'lucide-react';
 import { ClientFile } from '@/hooks/useClientFiles';
+import FilePreview from './FilePreview';
 
 interface FileGridViewProps {
   files: ClientFile[];
   onView: (file: ClientFile) => void;
   onDownload: (file: ClientFile) => void;
   onDelete: (file: ClientFile) => void;
+  getFileUrl: (filePath: string) => Promise<string | null>;
 }
-
-const getFileIcon = (type: string) => {
-  if (type.includes('pdf')) return <FileText className="h-8 w-8 text-red-500" />;
-  if (type.includes('presentation') || type.includes('powerpoint')) return <Presentation className="h-8 w-8 text-orange-500" />;
-  if (type.includes('image')) return <Image className="h-8 w-8 text-green-500" />;
-  return <File className="h-8 w-8 text-blue-500" />;
-};
 
 const FileGridView: React.FC<FileGridViewProps> = ({
   files,
   onView,
   onDownload,
-  onDelete
+  onDelete,
+  getFileUrl
 }) => {
   const formatFileSize = (bytes: number) => {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
@@ -39,10 +35,13 @@ const FileGridView: React.FC<FileGridViewProps> = ({
         <Card key={file.id} className="hover:shadow-md transition-shadow group">
           <CardContent className="p-4">
             <div className="flex flex-col items-center text-center space-y-3">
-              {/* File Icon */}
-              <div className="p-3 bg-muted/50 rounded-lg">
-                {getFileIcon(file.file_type)}
-              </div>
+              {/* File Preview */}
+              <FilePreview 
+                file={file} 
+                getFileUrl={getFileUrl}
+                size="large"
+                className="border"
+              />
 
               {/* File Info */}
               <div className="flex-1 min-w-0 w-full">

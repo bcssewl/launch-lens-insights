@@ -8,6 +8,7 @@ import FileUploadArea from './FileUploadArea';
 import FileFiltersComponent from './FileFilters';
 import FileViewToggle, { ViewMode } from './FileViewToggle';
 import FileGridView from './FileGridView';
+import FilePreview from './FilePreview';
 import { useToast } from '@/hooks/use-toast';
 
 interface ClientFileVaultProps {
@@ -219,6 +220,7 @@ const ClientFileVault: React.FC<ClientFileVaultProps> = ({ client }) => {
               onView={handleView}
               onDownload={handleDownload}
               onDelete={handleDelete}
+              getFileUrl={getFileUrl}
             />
           ) : (
             <Card>
@@ -230,7 +232,11 @@ const ClientFileVault: React.FC<ClientFileVaultProps> = ({ client }) => {
                   {filteredFiles.map((file) => (
                     <div key={file.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
                       <div className="flex items-center gap-3">
-                        {getFileIcon(file.file_type)}
+                        <FilePreview 
+                          file={file} 
+                          getFileUrl={getFileUrl}
+                          size="small"
+                        />
                         <div>
                           <div className="font-medium">{file.file_name}</div>
                           <div className="text-sm text-muted-foreground">
