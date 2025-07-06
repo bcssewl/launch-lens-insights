@@ -151,45 +151,104 @@ export type Database = {
         }
         Relationships: []
       }
-      client_files: {
+      client_file_versions: {
         Row: {
-          category: string | null
-          client_id: string
           created_at: string
           file_name: string
           file_path: string
           file_size: number
           file_type: string
           id: string
+          parent_file_id: string
           updated_at: string
           upload_date: string
-          user_id: string
+          uploaded_by: string
+          version_number: number
         }
         Insert: {
-          category?: string | null
-          client_id: string
           created_at?: string
           file_name: string
           file_path: string
           file_size: number
           file_type: string
           id?: string
+          parent_file_id: string
           updated_at?: string
           upload_date?: string
-          user_id: string
+          uploaded_by: string
+          version_number: number
         }
         Update: {
-          category?: string | null
-          client_id?: string
           created_at?: string
           file_name?: string
           file_path?: string
           file_size?: number
           file_type?: string
           id?: string
+          parent_file_id?: string
+          updated_at?: string
+          upload_date?: string
+          uploaded_by?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_file_versions_parent_file_id_fkey"
+            columns: ["parent_file_id"]
+            isOneToOne: false
+            referencedRelation: "client_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_files: {
+        Row: {
+          category: string | null
+          client_id: string
+          created_at: string
+          current_version: number
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          has_versions: boolean
+          id: string
+          updated_at: string
+          upload_date: string
+          user_id: string
+          version_count: number
+        }
+        Insert: {
+          category?: string | null
+          client_id: string
+          created_at?: string
+          current_version?: number
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          has_versions?: boolean
+          id?: string
+          updated_at?: string
+          upload_date?: string
+          user_id: string
+          version_count?: number
+        }
+        Update: {
+          category?: string | null
+          client_id?: string
+          created_at?: string
+          current_version?: number
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          file_type?: string
+          has_versions?: boolean
+          id?: string
           updated_at?: string
           upload_date?: string
           user_id?: string
+          version_count?: number
         }
         Relationships: [
           {

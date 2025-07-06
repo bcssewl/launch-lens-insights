@@ -10,9 +10,17 @@ export interface FileWithMetadata {
   suggestedTags: string[];
   confidenceScore: number;
   uploadProgress: number;
-  status: 'pending' | 'uploading' | 'completed' | 'error';
+  status: 'pending' | 'uploading' | 'completed' | 'error' | 'duplicate-choice';
   error?: string;
   previewUrl?: string;
+  duplicateInfo?: {
+    existingFileId: string;
+    existingFileName: string;
+    existingFileSize: number;
+    existingUploadDate: string;
+    versionCount: number;
+  };
+  versionChoice?: 'replace' | 'version' | null;
 }
 
 export interface EnhancedFileMetadata {
@@ -110,34 +118,46 @@ export const useFileUpload = (clientId: string) => {
     return { category, tags: [...new Set(tags)], confidence };
   }, []);
 
-  // Check for duplicate filenames
+  // Check for duplicate filenames with detailed info
   const checkForDuplicates = useCallback(async (filenames: string[]) => {
     try {
       const { data, error } = await supabase
         .from('client_files')
-        .select('file_name')
+        .select('id, file_name, file_size, upload_date, version_count, has_versions')
         .eq('client_id', clientId)
         .in('file_name', filenames);
 
       if (error) throw error;
       
+      const duplicateMap = new Map();
+      data?.forEach(file => {
+        duplicateMap.set(file.file_name, {
+          existingFileId: file.id,
+          existingFileName: file.file_name,
+          existingFileSize: file.file_size,
+          existingUploadDate: file.upload_date,
+          versionCount: file.version_count || 1
+        });
+      });
+      
       const existingFilenames = data?.map(f => f.file_name) || [];
       setDuplicateFiles(existingFilenames);
       
-      return existingFilenames;
+      return duplicateMap;
     } catch (error) {
       console.error('Error checking for duplicates:', error);
-      return [];
+      return new Map();
     }
   }, [clientId]);
 
   // Add files to upload queue
   const addFiles = useCallback(async (newFiles: File[]) => {
-    const filenames = newFiles.map(f => f.name); // Fixed: use f.name instead of f.file_name
-    const duplicates = await checkForDuplicates(filenames);
+    const filenames = newFiles.map(f => f.name);
+    const duplicateMap = await checkForDuplicates(filenames);
     
     const filesWithMetadata: FileWithMetadata[] = newFiles.map(file => {
       const { category, tags, confidence } = autoTagFile(file);
+      const duplicateInfo = duplicateMap.get(file.name);
       
       return {
         file,
@@ -146,21 +166,129 @@ export const useFileUpload = (clientId: string) => {
         suggestedTags: tags,
         confidenceScore: confidence,
         uploadProgress: 0,
-        status: 'pending' as const,
-        previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined
+        status: duplicateInfo ? 'duplicate-choice' as const : 'pending' as const,
+        previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
+        duplicateInfo,
+        versionChoice: null
       };
     });
 
     setFiles(prev => [...prev, ...filesWithMetadata]);
     
-    if (duplicates.length > 0) {
+    if (duplicateMap.size > 0) {
       toast({
         title: "Duplicate Files Detected",
-        description: `${duplicates.length} file(s) already exist. Choose to replace or keep both versions.`,
-        variant: "destructive"
+        description: `${duplicateMap.size} file(s) already exist. Please choose how to handle them.`,
+        variant: "default"
       });
     }
   }, [autoTagFile, checkForDuplicates, toast]);
+
+  // Handle version choice for duplicate files
+  const handleVersionChoice = useCallback((fileId: string, choice: 'replace' | 'version') => {
+    setFiles(prev => prev.map(f => 
+      f.id === fileId 
+        ? { ...f, versionChoice: choice, status: 'pending' as const }
+        : f
+    ));
+  }, []);
+
+  // Create new version of existing file
+  const createFileVersion = useCallback(async (originalFileId: string, newFile: File, filePath: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    // Get current version info
+    const { data: currentFile, error: fetchError } = await supabase
+      .from('client_files')
+      .select('version_count, current_version')
+      .eq('id', originalFileId)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    const newVersionNumber = (currentFile.version_count || 1) + 1;
+
+    // Create version record
+    const { error: versionError } = await supabase
+      .from('client_file_versions')
+      .insert({
+        parent_file_id: originalFileId,
+        version_number: newVersionNumber,
+        file_name: newFile.name,
+        file_path: filePath,
+        file_size: newFile.size,
+        file_type: newFile.type,
+        uploaded_by: user.id
+      });
+
+    if (versionError) throw versionError;
+
+    // Update main file record
+    const { error: updateError } = await supabase
+      .from('client_files')
+      .update({
+        version_count: newVersionNumber,
+        current_version: newVersionNumber,
+        has_versions: true,
+        file_path: filePath,
+        file_size: newFile.size,
+        upload_date: new Date().toISOString()
+      })
+      .eq('id', originalFileId);
+
+    if (updateError) throw updateError;
+  }, []);
+
+  // Replace existing file (move current to version history)
+  const replaceExistingFile = useCallback(async (originalFileId: string, newFile: File, filePath: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    // Get current file info to create version
+    const { data: currentFile, error: fetchError } = await supabase
+      .from('client_files')
+      .select('*')
+      .eq('id', originalFileId)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    const newVersionNumber = (currentFile.version_count || 1) + 1;
+
+    // Create version record for the current file
+    const { error: versionError } = await supabase
+      .from('client_file_versions')
+      .insert({
+        parent_file_id: originalFileId,
+        version_number: currentFile.current_version || 1,
+        file_name: currentFile.file_name,
+        file_path: currentFile.file_path,
+        file_size: currentFile.file_size,
+        file_type: currentFile.file_type,
+        uploaded_by: user.id,
+        upload_date: currentFile.upload_date
+      });
+
+    if (versionError) throw versionError;
+
+    // Update main file record with new file
+    const { error: updateError } = await supabase
+      .from('client_files')
+      .update({
+        version_count: newVersionNumber,
+        current_version: newVersionNumber,
+        has_versions: true,
+        file_path: filePath,
+        file_size: newFile.size,
+        file_name: newFile.name,
+        file_type: newFile.type,
+        upload_date: new Date().toISOString()
+      })
+      .eq('id', originalFileId);
+
+    if (updateError) throw updateError;
+  }, []);
 
   // Update file tags
   const updateFileTags = useCallback((fileId: string, tags: string[]) => {
@@ -200,6 +328,9 @@ export const useFileUpload = (clientId: string) => {
       if (!user) throw new Error('User not authenticated');
 
       for (const fileMetadata of files) {
+        // Skip files waiting for version choice
+        if (fileMetadata.status === 'duplicate-choice') continue;
+
         try {
           // Update status to uploading
           setFiles(prev => prev.map(f => 
@@ -217,32 +348,29 @@ export const useFileUpload = (clientId: string) => {
 
           if (uploadError) throw uploadError;
 
-          // Create enhanced metadata
-          const enhancedMetadata: EnhancedFileMetadata = {
-            clientId,
-            uploadedAt: new Date().toISOString(),
-            category: fileMetadata.category,
-            tags: fileMetadata.suggestedTags,
-            suggestedTags: fileMetadata.suggestedTags,
-            confidenceScore: fileMetadata.confidenceScore,
-            autoDetectedType: fileMetadata.file.type,
-            originalFilename: fileMetadata.file.name
-          };
+          // Handle versioning or new file creation
+          if (fileMetadata.duplicateInfo && fileMetadata.versionChoice) {
+            if (fileMetadata.versionChoice === 'version') {
+              await createFileVersion(fileMetadata.duplicateInfo.existingFileId, fileMetadata.file, filePath);
+            } else if (fileMetadata.versionChoice === 'replace') {
+              await replaceExistingFile(fileMetadata.duplicateInfo.existingFileId, fileMetadata.file, filePath);
+            }
+          } else {
+            // Create new file record
+            const { error: dbError } = await supabase
+              .from('client_files')
+              .insert({
+                client_id: clientId,
+                user_id: user.id,
+                file_name: fileMetadata.file.name,
+                file_type: fileMetadata.file.type,
+                file_size: fileMetadata.file.size,
+                file_path: filePath,
+                category: fileMetadata.category
+              });
 
-          // Save to database
-          const { error: dbError } = await supabase
-            .from('client_files')
-            .insert({
-              client_id: clientId,
-              user_id: user.id,
-              file_name: fileMetadata.file.name,
-              file_type: fileMetadata.file.type,
-              file_size: fileMetadata.file.size,
-              file_path: filePath,
-              category: fileMetadata.category
-            });
-
-          if (dbError) throw dbError;
+            if (dbError) throw dbError;
+          }
 
           // Update status to completed
           setFiles(prev => prev.map(f => 
@@ -287,7 +415,7 @@ export const useFileUpload = (clientId: string) => {
     } finally {
       setUploading(false);
     }
-  }, [files, clientId, toast]);
+  }, [files, clientId, toast, createFileVersion, replaceExistingFile]);
 
   // Clear all files
   const clearFiles = useCallback(() => {
@@ -309,6 +437,7 @@ export const useFileUpload = (clientId: string) => {
     updateFileCategory,
     removeFile,
     uploadFiles,
-    clearFiles
+    clearFiles,
+    handleVersionChoice
   };
 };

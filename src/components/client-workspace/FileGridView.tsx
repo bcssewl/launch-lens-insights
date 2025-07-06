@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Download, Eye, Trash2 } from 'lucide-react';
+import { Download, Eye, Trash2, FileStack } from 'lucide-react';
 import { ClientFile } from '@/hooks/useClientFiles';
 import EnhancedFilePreview from './EnhancedFilePreview';
 
@@ -12,6 +12,7 @@ interface FileGridViewProps {
   onView: (file: ClientFile) => void;
   onDownload: (file: ClientFile) => void;
   onDelete: (file: ClientFile) => void;
+  onVersionHistory?: (file: ClientFile) => void;
   getFileUrl: (filePath: string) => Promise<string | null>;
 }
 
@@ -20,6 +21,7 @@ const FileGridView: React.FC<FileGridViewProps> = ({
   onView,
   onDownload,
   onDelete,
+  onVersionHistory,
   getFileUrl
 }) => {
   const formatFileSize = (bytes: number) => {
@@ -35,20 +37,42 @@ const FileGridView: React.FC<FileGridViewProps> = ({
         <Card key={file.id} className="hover:shadow-md transition-shadow group">
           <CardContent className="p-4">
             <div className="flex flex-col items-center text-center space-y-3">
-              {/* Enhanced File Preview */}
-              <EnhancedFilePreview 
-                file={file} 
-                getFileUrl={getFileUrl}
-                size="large"
-                className="border"
-                showTextPreview={true}
-              />
+              {/* Enhanced File Preview with Version Indicator */}
+              <div className="relative">
+                <EnhancedFilePreview 
+                  file={file} 
+                  getFileUrl={getFileUrl}
+                  size="large"
+                  className="border"
+                  showTextPreview={true}
+                />
+                {file.has_versions && (
+                  <div className="absolute -top-2 -right-2">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="h-6 w-6 p-0 rounded-full"
+                      onClick={() => onVersionHistory?.(file)}
+                      title={`${file.version_count} versions`}
+                    >
+                      <FileStack className="h-3 w-3" />
+                    </Button>
+                  </div>
+                )}
+              </div>
 
               {/* File Info */}
               <div className="flex-1 min-w-0 w-full">
-                <h4 className="font-medium text-sm truncate" title={file.file_name}>
-                  {file.file_name}
-                </h4>
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <h4 className="font-medium text-sm truncate" title={file.file_name}>
+                    {file.file_name}
+                  </h4>
+                  {file.has_versions && (
+                    <Badge variant="outline" className="text-xs px-1 h-5">
+                      v{file.current_version}
+                    </Badge>
+                  )}
+                </div>
                 <p className="text-xs text-muted-foreground mt-1">
                   {formatFileSize(file.file_size)}
                 </p>

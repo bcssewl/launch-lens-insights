@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText, Image, Presentation, File, Download, Eye, Trash2, Upload } from 'lucide-react';
+import { FileText, Image, Presentation, File, Download, Eye, Trash2, Upload, FileStack } from 'lucide-react';
 import { useClientFiles, FileFilters as FileFiltersType, ViewMode } from '@/hooks/useClientFiles';
 import FileUploadArea from './FileUploadArea';
 import FileVaultHeader from './FileVaultHeader';
 import FileGridView from './FileGridView';
 import EnhancedFilePreview from './EnhancedFilePreview';
+import FileVersionHistoryModal from './FileVersionHistoryModal';
 import { useToast } from '@/hooks/use-toast';
 
 interface ClientFileVaultProps {
@@ -24,6 +25,7 @@ const ClientFileVault: React.FC<ClientFileVaultProps> = ({ client }) => {
   });
   
   const [showUploadArea, setShowUploadArea] = useState(false);
+  const [versionHistoryFile, setVersionHistoryFile] = useState(null);
   const [filters, setFilters] = useState<FileFiltersType>({
     fileType: 'all',
     dateRange: { start: null, end: null },
@@ -88,6 +90,10 @@ const ClientFileVault: React.FC<ClientFileVaultProps> = ({ client }) => {
     if (confirm(`Are you sure you want to delete ${file.file_name}?`)) {
       deleteFile(file.id);
     }
+  };
+
+  const handleVersionHistory = (file: any) => {
+    setVersionHistoryFile(file);
   };
 
   const clearFilters = () => {
@@ -204,6 +210,7 @@ const ClientFileVault: React.FC<ClientFileVaultProps> = ({ client }) => {
               onView={handleView}
               onDownload={handleDownload}
               onDelete={handleDelete}
+              onVersionHistory={handleVersionHistory}
               getFileUrl={getFileUrl}
             />
           ) : (
@@ -223,7 +230,20 @@ const ClientFileVault: React.FC<ClientFileVaultProps> = ({ client }) => {
                           showTextPreview={false}
                         />
                         <div>
-                          <div className="font-medium">{file.file_name}</div>
+                          <div className="flex items-center gap-2">
+                            <div className="font-medium">{file.file_name}</div>
+                            {file.has_versions && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 px-2 text-xs"
+                                onClick={() => handleVersionHistory(file)}
+                              >
+                                <FileStack className="h-3 w-3 mr-1" />
+                                {file.version_count}
+                              </Button>
+                            )}
+                          </div>
                           <div className="text-sm text-muted-foreground">
                             {file.category} • {(file.file_size / 1024 / 1024).toFixed(2)} MB • {new Date(file.upload_date).toLocaleDateString()}
                           </div>
@@ -279,6 +299,14 @@ const ClientFileVault: React.FC<ClientFileVaultProps> = ({ client }) => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Version History Modal */}
+      <FileVersionHistoryModal
+        open={!!versionHistoryFile}
+        onOpenChange={(open) => !open && setVersionHistoryFile(null)}
+        file={versionHistoryFile}
+        onVersionUpdate={refreshFiles}
+      />
     </div>
   );
 };
