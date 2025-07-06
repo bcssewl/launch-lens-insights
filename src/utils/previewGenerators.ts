@@ -3,8 +3,8 @@ import * as pdfjsLib from 'pdfjs-dist';
 import mammoth from 'mammoth';
 import * as XLSX from 'xlsx';
 
-// Configure PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
+// Configure PDF.js worker - using a more reliable CDN
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js`;
 
 export interface PreviewResult {
   type: 'image' | 'text' | 'error';
@@ -14,11 +14,18 @@ export interface PreviewResult {
 
 export const generatePDFPreview = async (file: File): Promise<PreviewResult> => {
   try {
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    const page = await pdf.getPage(1);
+    console.log('Starting PDF preview generation for:', file.name);
     
-    const scale = 0.5;
+    const arrayBuffer = await file.arrayBuffer();
+    console.log('PDF file size:', arrayBuffer.byteLength, 'bytes');
+    
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    console.log('PDF loaded, pages:', pdf.numPages);
+    
+    const page = await pdf.getPage(1);
+    console.log('First page loaded');
+    
+    const scale = 0.75; // Increased scale for better quality
     const viewport = page.getViewport({ scale });
     
     const canvas = document.createElement('canvas');
@@ -26,18 +33,23 @@ export const generatePDFPreview = async (file: File): Promise<PreviewResult> => 
     canvas.height = viewport.height;
     canvas.width = viewport.width;
     
+    console.log('Canvas created:', canvas.width, 'x', canvas.height);
+    
     await page.render({ canvasContext: context, viewport }).promise;
+    console.log('PDF page rendered successfully');
+    
+    const dataUrl = canvas.toDataURL('image/png', 0.8);
     
     return {
       type: 'image',
-      content: canvas.toDataURL()
+      content: dataUrl
     };
   } catch (error) {
     console.error('PDF preview generation failed:', error);
     return {
       type: 'error',
       content: '',
-      error: 'Failed to generate PDF preview'
+      error: `Failed to generate PDF preview: ${error instanceof Error ? error.message : 'Unknown error'}`
     };
   }
 };
@@ -109,7 +121,10 @@ export const generateExcelPreview = async (file: File): Promise<PreviewResult> =
 };
 
 export const getPreviewGenerator = (fileType: string) => {
+  console.log('Getting preview generator for file type:', fileType);
+  
   if (fileType.includes('pdf')) {
+    console.log('PDF preview generator selected');
     return generatePDFPreview;
   }
   if (fileType.includes('text') || fileType.includes('json') || fileType.includes('csv')) {
@@ -121,5 +136,7 @@ export const getPreviewGenerator = (fileType: string) => {
   if (fileType.includes('sheet') || fileType.includes('excel')) {
     return generateExcelPreview;
   }
+  
+  console.log('No preview generator found for file type:', fileType);
   return null;
 };

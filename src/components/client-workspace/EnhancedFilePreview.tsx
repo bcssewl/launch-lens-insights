@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { FileText, Image, Presentation, File, FileCode, FileSpreadsheet, Loader2 } from 'lucide-react';
 import { ClientFile } from '@/hooks/useClientFiles';
@@ -42,6 +41,8 @@ const EnhancedFilePreview: React.FC<EnhancedFilePreviewProps> = ({
       setHasError(false);
 
       try {
+        console.log('Loading preview for file:', file.file_name, 'type:', file.file_type);
+        
         // For images, use direct URL
         if (file.file_type.includes('image')) {
           const url = await getFileUrl(file.file_path);
@@ -57,28 +58,36 @@ const EnhancedFilePreview: React.FC<EnhancedFilePreviewProps> = ({
             const response = await fetch(url);
             const blob = await response.blob();
             
-            // Create a File-like object without using the File constructor
-            const fileObject = Object.assign(blob, {
-              name: file.file_name,
-              type: file.file_type
-            }) as File;
+            // Create a proper File object using the File constructor with array buffer
+            const fileObject = new File([blob], file.file_name, { 
+              type: file.file_type,
+              lastModified: Date.now()
+            });
+            
+            console.log('Created file object for preview generation:', fileObject.name, fileObject.type);
             
             const previewGenerator = getPreviewGenerator(file.file_type);
             if (previewGenerator) {
+              console.log('Found preview generator for type:', file.file_type);
               const result: PreviewResult = await previewGenerator(fileObject);
+              
+              console.log('Preview generation result:', result.type, result.error || 'success');
               
               if (result.type === 'image') {
                 setPreviewUrl(result.content);
               } else if (result.type === 'text') {
                 setTextPreview(result.content);
-              } else {
+              } else if (result.type === 'error') {
+                console.error('Preview generation error:', result.error);
                 setHasError(true);
               }
+            } else {
+              console.log('No preview generator found for type:', file.file_type);
             }
           }
         }
       } catch (error) {
-        console.error('Error loading preview:', error);
+        console.error('Error loading preview for', file.file_name, ':', error);
         setHasError(true);
       } finally {
         setIsLoading(false);
