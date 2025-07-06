@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 
 interface ClientFileVaultProps {
   client: {
+    id: string;
     name: string;
   };
 }
@@ -44,8 +44,7 @@ const ClientFileVault: React.FC<ClientFileVaultProps> = ({ client }) => {
 
   const { toast } = useToast();
   
-  // For now, using mock client ID - this will be replaced when integrating with real client data
-  const clientId = 'tesla'; // This should come from route params or props
+  // Use the actual client ID from props instead of hardcoded value
   const { 
     files, 
     loading, 
@@ -54,7 +53,7 @@ const ClientFileVault: React.FC<ClientFileVaultProps> = ({ client }) => {
     deleteFile, 
     getFileUrl, 
     filterFiles 
-  } = useClientFiles(clientId);
+  } = useClientFiles(client.id);
 
   const filteredFiles = filterFiles(filters);
 
