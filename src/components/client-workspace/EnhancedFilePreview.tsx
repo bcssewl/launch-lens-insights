@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { FileText, Image, Presentation, File, FileCode, FileSpreadsheet, Loader2 } from 'lucide-react';
 import { ClientFile } from '@/hooks/useClientFiles';
