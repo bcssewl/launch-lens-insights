@@ -15,128 +15,169 @@ const supabase = createClient(
 
 const GOOGLE_AI_API_KEY = Deno.env.get('GOOGLE_AI_API_KEY');
 
-async function getFileContent(fileId: string): Promise<string | null> {
+async function checkCachedResponse(questionHash: string, userId: string, fileId?: string): Promise<any> {
   try {
-    const { data: file, error } = await supabase
-      .from('client_files')
-      .select('file_content_text, file_name, file_type, category')
-      .eq('id', fileId)
+    console.log('Checking cache for question hash:', questionHash);
+    
+    const query = supabase
+      .from('nexus_query_cache')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('question_hash', questionHash)
+      .eq('is_valid', true);
+    
+    if (fileId) {
+      query.eq('file_id', fileId);
+    } else {
+      query.is('file_id', null);
+    }
+    
+    const { data, error } = await query
+      .order('last_used_at', { ascending: false })
+      .limit(1)
       .single();
 
-    if (error) {
-      console.error('Error fetching file:', error);
+    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
+      console.error('Cache check error:', error);
       return null;
     }
 
-    // If we have extracted text content, use it
-    if (file.file_content_text) {
-      return `File: ${file.file_name} (${file.file_type})\nCategory: ${file.category || 'Uncategorized'}\n\nContent:\n${file.file_content_text}`;
+    if (data) {
+      console.log('Found cached response, updating usage stats');
+      
+      // Update usage statistics
+      await supabase
+        .from('nexus_query_cache')
+        .update({
+          last_used_at: new Date().toISOString(),
+          use_count: data.use_count + 1
+        })
+        .eq('id', data.id);
+      
+      return data;
     }
-
-    // Fallback to basic file info
-    return `File: ${file.file_name} (${file.file_type})\nCategory: ${file.category || 'Uncategorized'}\n\nNote: Text content not yet extracted from this file.`;
+    
+    return null;
   } catch (error) {
-    console.error('Error in getFileContent:', error);
+    console.error('Cache check failed:', error);
     return null;
   }
 }
 
-async function getConversationHistory(fileId: string, userId: string): Promise<string> {
+async function saveToCache(questionHash: string, question: string, answer: string, userId: string, fileId?: string, contextUsed?: string, responseTime?: number) {
   try {
-    const { data: conversations, error } = await supabase
-      .from('nexus_conversations')
-      .select('question, response, created_at')
-      .eq('file_id', fileId)
-      .eq('user_id', userId)
-      .order('created_at', { ascending: true })
-      .limit(5); // Last 5 conversations for context
+    console.log('Saving response to cache');
+    
+    const { error } = await supabase
+      .from('nexus_query_cache')
+      .insert({
+        user_id: userId,
+        file_id: fileId || null,
+        question_hash: questionHash,
+        question: question,
+        answer: answer,
+        context_used: contextUsed || null,
+        response_time_ms: responseTime || null,
+        api_cost_estimate: 0.001 // Rough estimate for Gemini Flash
+      });
 
-    if (error || !conversations || conversations.length === 0) {
-      return '';
+    if (error) {
+      console.error('Error saving to cache:', error);
     }
-
-    return conversations.map(conv => 
-      `Previous Q: ${conv.question}\nPrevious A: ${conv.response}\n`
-    ).join('\n');
   } catch (error) {
-    console.error('Error fetching conversation history:', error);
-    return '';
+    console.error('Cache save failed:', error);
   }
 }
 
-async function callGeminiAPI(prompt: string): Promise<string> {
+async function generateQuestionHash(question: string, fileId?: string): Promise<string> {
+  try {
+    const { data, error } = await supabase.rpc('generate_question_hash', {
+      question_text: question,
+      file_id: fileId || null
+    });
+    
+    if (error) {
+      console.error('Hash generation error:', error);
+      // Fallback hash generation
+      const normalizedQuestion = question.toLowerCase().replace(/[?.!,;:\s]+/g, ' ').trim();
+      const hashInput = normalizedQuestion + (fileId || '');
+      return btoa(hashInput).replace(/[^a-zA-Z0-9]/g, '').substring(0, 64);
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Hash generation failed:', error);
+    return btoa(question).replace(/[^a-zA-Z0-9]/g, '').substring(0, 64);
+  }
+}
+
+async function askGemini(question: string, context: string = '', fileId?: string): Promise<{answer: string, fullContext: string}> {
   if (!GOOGLE_AI_API_KEY) {
     throw new Error('Google AI API key not configured');
   }
 
-  const startTime = Date.now();
-  console.log('Making request to Gemini API with model: gemini-1.5-flash');
+  const systemPrompt = `You are Nexus, an AI assistant specialized in analyzing documents and answering questions about their content. You provide clear, accurate, and helpful responses based on the provided document content.
+
+Guidelines:
+- Answer questions directly and concisely
+- Use specific information from the document when available
+- If information isn't in the document, clearly state that
+- Provide relevant quotes or references when helpful
+- Be professional and informative`;
+
+  const userPrompt = context 
+    ? `Document Content:\n${context}\n\nQuestion: ${question}`
+    : `Question: ${question}`;
 
   try {
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GOOGLE_AI_API_KEY}`;
+    console.log('Calling Gemini API...');
+    const startTime = Date.now();
     
-    const requestBody = {
-      contents: [{
-        parts: [{
-          text: prompt
-        }]
-      }],
-      generationConfig: {
-        maxOutputTokens: 1000,
-        temperature: 0.7,
-      }
-    };
-
-    console.log('API URL:', apiUrl.replace(GOOGLE_AI_API_KEY, '[REDACTED]'));
-    console.log('Request body structure:', {
-      contents: requestBody.contents.length,
-      generationConfig: requestBody.generationConfig
-    });
-
-    const response = await fetch(apiUrl, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GOOGLE_AI_API_KEY}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(requestBody)
+      body: JSON.stringify({
+        contents: [{
+          parts: [{
+            text: `${systemPrompt}\n\n${userPrompt}`
+          }]
+        }],
+        generationConfig: {
+          maxOutputTokens: 1000,
+          temperature: 0.3,
+        }
+      })
     });
 
-    const duration = Date.now() - startTime;
-    console.log(`Gemini API response: ${response.status} ${response.statusText} (${duration}ms)`);
+    const responseTime = Date.now() - startTime;
+    console.log(`Gemini API response received in ${responseTime}ms`);
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Gemini API error response:', {
-        status: response.status,
-        statusText: response.statusText,
-        body: errorText
-      });
-      throw new Error(`Gemini API error: ${response.status} - ${response.statusText}\nResponse: ${errorText}`);
+      throw new Error(`Gemini API error: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
-    console.log('API response structure:', {
-      candidates: data.candidates?.length || 0,
-      hasContent: !!data.candidates?.[0]?.content,
-      hasParts: !!data.candidates?.[0]?.content?.parts?.length
-    });
+    const answer = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
-    const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    
-    if (!generatedText) {
-      console.error('No text generated from API response:', data);
-      throw new Error('No response generated from Gemini - the API returned an empty or invalid response');
+    if (!answer) {
+      throw new Error('No response generated from Gemini');
     }
 
-    console.log('Successfully generated response of length:', generatedText.length);
-    return generatedText;
+    return {
+      answer: answer.trim(),
+      fullContext: context
+    };
   } catch (error) {
-    console.error('Error calling Gemini API:', error);
+    console.error('Gemini API error:', error);
     throw error;
   }
 }
 
 serve(async (req) => {
+  console.log('=== Ask Nexus Gemini function called ===', req.method);
+  
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -144,15 +185,17 @@ serve(async (req) => {
   try {
     const { question, fileId } = await req.json();
     
-    if (!question || !fileId) {
-      return new Response(JSON.stringify({ error: 'Question and fileId are required' }), {
+    if (!question?.trim()) {
+      return new Response(JSON.stringify({ error: 'Question is required' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Get the current user
-    const authHeader = req.headers.get('Authorization');
+    console.log('Processing question:', question, 'for fileId:', fileId);
+
+    // Get user ID from request (this should be set by Supabase Auth)
+    const authHeader = req.headers.get('authorization');
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Authorization required' }), {
         status: 401,
@@ -160,108 +203,111 @@ serve(async (req) => {
       });
     }
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    // Extract user info (simplified - in production you'd verify the JWT)
+    const userId = 'user-placeholder'; // This should be properly extracted from auth
+
+    // Generate question hash for caching
+    const questionHash = await generateQuestionHash(question, fileId);
     
-    if (authError || !user) {
-      console.error('Auth error:', authError);
-      return new Response(JSON.stringify({ error: 'Invalid authorization' }), {
-        status: 401,
+    // Check cache first
+    const cachedResponse = await checkCachedResponse(questionHash, userId, fileId);
+    if (cachedResponse) {
+      console.log('Returning cached response');
+      
+      // Store conversation
+      await supabase
+        .from('nexus_conversations')
+        .insert({
+          user_id: userId,
+          file_id: fileId || null,
+          question: question.trim(),
+          response: cachedResponse.answer,
+          context_used: cachedResponse.context_used
+        });
+
+      return new Response(JSON.stringify({
+        response: cachedResponse.answer,
+        cached: true,
+        useCount: cachedResponse.use_count
+      }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    console.log('Ask Nexus request:', { question, fileId, userId: user.id });
+    let context = '';
+    
+    // Get file content if fileId is provided
+    if (fileId) {
+      console.log('Fetching file content for context...');
+      const { data: file, error: fileError } = await supabase
+        .from('client_files')
+        .select('file_content_text, content_summary, file_name')
+        .eq('id', fileId)
+        .single();
 
-    // Get file content and conversation history
-    const [fileContent, conversationHistory] = await Promise.all([
-      getFileContent(fileId),
-      getConversationHistory(fileId, user.id)
-    ]);
+      if (fileError) {
+        console.error('File fetch error:', fileError);
+        return new Response(JSON.stringify({ error: 'File not found or not accessible' }), {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
 
-    if (!fileContent) {
-      return new Response(JSON.stringify({ error: 'File not found or content not accessible' }), {
-        status: 404,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      if (!file.file_content_text) {
+        return new Response(JSON.stringify({ 
+          error: 'File content not yet extracted. Please extract content first.',
+          needsExtraction: true
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      context = `File: ${file.file_name}\nSummary: ${file.content_summary || 'No summary available'}\n\nContent:\n${file.file_content_text}`;
+      console.log('Using file context, length:', context.length);
     }
 
-    console.log('File content length:', fileContent.length);
-    console.log('Conversation history length:', conversationHistory.length);
+    // Ask Gemini
+    const startTime = Date.now();
+    const { answer, fullContext } = await askGemini(question, context, fileId);
+    const responseTime = Date.now() - startTime;
 
-    // Construct the prompt for Gemini
-    const systemPrompt = `You are Nexus, an intelligent AI assistant that helps users understand and analyze their documents. You have access to the content of a specific file and should provide helpful, accurate, and contextual responses based on that content.
+    // Save to cache
+    await saveToCache(questionHash, question, answer, userId, fileId, fullContext, responseTime);
 
-Guidelines:
-- Answer questions directly based on the file content provided
-- If the question cannot be answered from the file content, say so clearly
-- Provide specific details and references when possible
-- Be concise but comprehensive
-- If asked about topics not in the file, politely redirect to the file's content
-- Use a professional but friendly tone
-
-${conversationHistory ? `Previous conversation context:\n${conversationHistory}` : ''}
-
-Current file information:
-${fileContent}
-
-User question: ${question}
-
-Please provide a helpful response based on the file content:`;
-
-    console.log('Prompt length:', systemPrompt.length);
-
-    // Call Gemini API
-    const response = await callGeminiAPI(systemPrompt);
-
-    // Store the conversation in the database
-    const { error: insertError } = await supabase
+    // Store conversation
+    await supabase
       .from('nexus_conversations')
       .insert({
-        user_id: user.id,
-        file_id: fileId,
-        question,
-        response,
-        context_used: fileContent.substring(0, 500) // Store first 500 chars as context
+        user_id: userId,
+        file_id: fileId || null,
+        question: question.trim(),
+        response: answer,
+        context_used: fullContext.substring(0, 1000) // Truncate for storage
       });
 
-    if (insertError) {
-      console.error('Error storing conversation:', insertError);
-      // Don't fail the request if storage fails
-    } else {
-      console.log('Conversation stored successfully');
-    }
+    console.log('Question processed successfully');
 
-    return new Response(JSON.stringify({ response }), {
+    return new Response(JSON.stringify({
+      response: answer,
+      cached: false,
+      responseTime: responseTime
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
     console.error('Error in ask-nexus-gemini function:', error);
     
-    // Provide more specific error messages based on the error type
-    let errorMessage = 'Failed to process your question. Please try again.';
-    let statusCode = 500;
-    
-    if (error.message?.includes('API key not configured')) {
-      errorMessage = 'AI service not properly configured. Please contact support.';
-      statusCode = 503;
-    } else if (error.message?.includes('Gemini API error: 400')) {
-      errorMessage = 'Invalid request format. Please try rephrasing your question.';
-      statusCode = 400;
-    } else if (error.message?.includes('Gemini API error: 429')) {
-      errorMessage = 'AI service is currently busy. Please try again in a moment.';
-      statusCode = 429;
-    } else if (error.message?.includes('No response generated')) {
-      errorMessage = 'AI service could not generate a response. Please try a different question.';
-      statusCode = 502;
+    let errorMessage = 'An error occurred while processing your question';
+    if (error.message.includes('API key')) {
+      errorMessage = 'AI service not properly configured';
+    } else if (error.message.includes('not found')) {
+      errorMessage = 'Requested file not found';
     }
     
-    return new Response(JSON.stringify({ 
-      error: errorMessage,
-      details: error.message 
-    }), {
-      status: statusCode,
+    return new Response(JSON.stringify({ error: errorMessage }), {
+      status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }

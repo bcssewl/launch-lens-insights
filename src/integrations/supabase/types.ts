@@ -359,6 +359,56 @@ export type Database = {
         }
         Relationships: []
       }
+      file_processing_queue: {
+        Row: {
+          attempts: number
+          completed_at: string | null
+          created_at: string
+          file_id: string
+          id: string
+          last_error: string | null
+          processing_status: string
+          scheduled_at: string
+          started_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          completed_at?: string | null
+          created_at?: string
+          file_id: string
+          id?: string
+          last_error?: string | null
+          processing_status?: string
+          scheduled_at?: string
+          started_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          completed_at?: string | null
+          created_at?: string
+          file_id?: string
+          id?: string
+          last_error?: string | null
+          processing_status?: string
+          scheduled_at?: string
+          started_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "file_processing_queue_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "client_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       idea_validations: {
         Row: {
           archived_at: string | null
@@ -499,6 +549,65 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "nexus_conversations_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "client_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nexus_query_cache: {
+        Row: {
+          answer: string
+          api_cost_estimate: number | null
+          context_used: string | null
+          created_at: string
+          file_id: string | null
+          gemini_model_used: string | null
+          id: string
+          is_valid: boolean
+          last_used_at: string
+          question: string
+          question_hash: string
+          response_time_ms: number | null
+          use_count: number
+          user_id: string
+        }
+        Insert: {
+          answer: string
+          api_cost_estimate?: number | null
+          context_used?: string | null
+          created_at?: string
+          file_id?: string | null
+          gemini_model_used?: string | null
+          id?: string
+          is_valid?: boolean
+          last_used_at?: string
+          question: string
+          question_hash: string
+          response_time_ms?: number | null
+          use_count?: number
+          user_id: string
+        }
+        Update: {
+          answer?: string
+          api_cost_estimate?: number | null
+          context_used?: string | null
+          created_at?: string
+          file_id?: string | null
+          gemini_model_used?: string | null
+          id?: string
+          is_valid?: boolean
+          last_used_at?: string
+          question?: string
+          question_hash?: string
+          response_time_ms?: number | null
+          use_count?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nexus_query_cache_file_id_fkey"
             columns: ["file_id"]
             isOneToOne: false
             referencedRelation: "client_files"
@@ -721,6 +830,10 @@ export type Database = {
           share_url: string
         }[]
       }
+      generate_question_hash: {
+        Args: { question_text: string; file_id?: string }
+        Returns: string
+      }
       get_shared_report: {
         Args: { p_share_token: string }
         Returns: {
@@ -737,6 +850,10 @@ export type Database = {
           access_level: string
           expires_at: string
         }[]
+      }
+      normalize_question: {
+        Args: { question_text: string }
+        Returns: string
       }
       verify_user: {
         Args: { jwt_token: string } | { user_id: string }

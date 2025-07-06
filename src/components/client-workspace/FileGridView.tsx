@@ -22,6 +22,7 @@ import {
 import { ClientFile } from '@/hooks/useClientFiles';
 import EnhancedFilePreview from './EnhancedFilePreview';
 import ContentExtractionStatus from './ContentExtractionStatus';
+import AutoContentExtraction from './AutoContentExtraction';
 
 interface FileGridViewProps {
   files: ClientFile[];
@@ -64,6 +65,13 @@ const FileGridView: React.FC<FileGridViewProps> = ({
       {files.map((file) => (
         <Card key={file.id} className="group hover:shadow-md transition-shadow">
           <CardContent className="p-4">
+            {/* Auto-extract content for files that don't have it */}
+            <AutoContentExtraction
+              fileId={file.id}
+              fileName={file.file_name}
+              hasContent={Boolean(file.content_extracted_at && file.file_content_text)}
+            />
+            
             <div className="flex flex-col space-y-3">
               {/* File Preview */}
               <div className="flex justify-center">
@@ -145,6 +153,22 @@ const FileGridView: React.FC<FileGridViewProps> = ({
                   <p className="text-xs text-muted-foreground line-clamp-2">
                     {file.content_summary}
                   </p>
+                )}
+
+                {/* Keywords */}
+                {file.content_keywords && file.content_keywords.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {file.content_keywords.slice(0, 3).map((keyword, index) => (
+                      <Badge key={index} variant="secondary" className="text-xs px-1 py-0">
+                        {keyword}
+                      </Badge>
+                    ))}
+                    {file.content_keywords.length > 3 && (
+                      <Badge variant="secondary" className="text-xs px-1 py-0">
+                        +{file.content_keywords.length - 3}
+                      </Badge>
+                    )}
+                  </div>
                 )}
               </div>
             </div>

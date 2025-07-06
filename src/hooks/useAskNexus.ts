@@ -8,6 +8,7 @@ export interface NexusConversation {
   question: string;
   response: string;
   created_at: string;
+  cached?: boolean;
 }
 
 interface UseAskNexusProps {
@@ -71,6 +72,15 @@ export const useAskNexus = ({ fileId }: UseAskNexusProps) => {
       }
 
       if (data?.error) {
+        if (data.needsExtraction) {
+          toast({
+            title: "Content Not Ready",
+            description: "Please extract the file content first before asking questions.",
+            variant: "destructive",
+          });
+          return false;
+        }
+        
         console.error('Function returned error:', data.error);
         throw new Error(data.error);
       }
@@ -82,17 +92,23 @@ export const useAskNexus = ({ fileId }: UseAskNexusProps) => {
 
       // Add the new conversation to the local state
       const newConversation: NexusConversation = {
-        id: Date.now().toString(), // Temporary ID
+        id: Date.now().toString(),
         question: question.trim(),
         response: data.response,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        cached: data.cached || false
       };
 
       setConversations(prev => [...prev, newConversation]);
 
+      const toastTitle = data.cached ? "Cached Response" : "Response received";
+      const toastDescription = data.cached 
+        ? `Found previous answer (used ${data.useCount} times)`
+        : "Nexus has analyzed your question";
+
       toast({
-        title: "Response received",
-        description: "Nexus has analyzed your question",
+        title: toastTitle,
+        description: toastDescription,
       });
 
       return true;
@@ -159,7 +175,6 @@ export const useAskNexus = ({ fileId }: UseAskNexusProps) => {
       "What are the main topics covered?"
     ];
 
-    // File type specific suggestions
     if (fileType.includes('pdf') || fileType.includes('document')) {
       return [
         ...baseQuestions,
@@ -190,6 +205,33 @@ export const useAskNexus = ({ fileId }: UseAskNexusProps) => {
     return baseQuestions;
   }, []);
 
+  const getCacheStats = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('nexus_query_cache')
+        .select('use_count, api_cost_estimate')
+        .eq('file_id', fileId);
+
+      if (error) {
+        console.error('Error fetching cache stats:', error);
+        return null;
+      }
+
+      const totalQueries = data?.length || 0;
+      const totalUses = data?.reduce((sum, item) => sum + item.use_count, 0) || 0;
+      const estimatedSavings = data?.reduce((sum, item) => sum + (item.api_cost_estimate * (item.use_count - 1)), 0) || 0;
+
+      return {
+        totalQueries,
+        totalUses,
+        estimatedSavings: estimatedSavings.toFixed(4)
+      };
+    } catch (error) {
+      console.error('Error getting cache stats:', error);
+      return null;
+    }
+  }, [fileId]);
+
   return {
     conversations,
     loading,
@@ -197,6 +239,7 @@ export const useAskNexus = ({ fileId }: UseAskNexusProps) => {
     askQuestion,
     loadConversationHistory,
     clearConversations,
-    getSuggestedQuestions
+    getSuggestedQuestions,
+    getCacheStats
   };
 };

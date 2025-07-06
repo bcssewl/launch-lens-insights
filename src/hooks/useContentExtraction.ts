@@ -29,8 +29,14 @@ export const useContentExtraction = () => {
     try {
       console.log('Starting content extraction for:', fileName, 'fileId:', fileId);
       
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
       const { data, error } = await supabase.functions.invoke('extract-file-content', {
-        body: { fileId }
+        body: { 
+          fileId,
+          userId: user?.id 
+        }
       });
 
       if (error) {
@@ -48,7 +54,7 @@ export const useContentExtraction = () => {
         
         toast({
           title: "Content Extracted",
-          description: `Successfully extracted content from ${fileName}`,
+          description: `Successfully extracted content from ${fileName}. ${data.extractedLength} characters processed.`,
         });
         
         return true;
@@ -78,6 +84,8 @@ export const useContentExtraction = () => {
   };
 
   const batchExtractContent = async (fileIds: string[]) => {
+    console.log('Starting batch extraction for', fileIds.length, 'files');
+    
     const results = await Promise.all(
       fileIds.map(async (fileId) => {
         try {
@@ -100,10 +108,21 @@ export const useContentExtraction = () => {
     return results;
   };
 
+  // Auto-extract content when files are uploaded
+  const autoExtractOnUpload = async (fileId: string, fileName: string) => {
+    console.log('Auto-extracting content for uploaded file:', fileName);
+    
+    // Small delay to ensure file is fully uploaded
+    setTimeout(() => {
+      extractContent(fileId, fileName);
+    }, 1000);
+  };
+
   return {
     extractContent,
     getExtractionStatus,
     batchExtractContent,
+    autoExtractOnUpload,
     extractionStatuses
   };
 };
