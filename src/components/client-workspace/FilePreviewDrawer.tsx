@@ -222,11 +222,25 @@ const FilePreviewDrawer: React.FC<FilePreviewDrawerProps> = ({
     if (file?.file_type.includes('pdf')) {
       return (
         <div className="w-full h-full">
-          <iframe
-            src={state.fileUrl}
-            title={file.file_name}
-            className="w-full h-full min-h-[600px] border-0 rounded-lg"
-          />
+          <div className="bg-muted/20 p-4 rounded-lg mb-4 text-center">
+            <FileText className="h-12 w-12 mx-auto mb-2 text-red-500" />
+            <p className="font-medium">{file.file_name}</p>
+            <p className="text-sm text-muted-foreground mb-4">PDF Document</p>
+            <div className="flex gap-2 justify-center">
+              <button
+                onClick={() => window.open(state.fileUrl, '_blank')}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90"
+              >
+                Open in New Tab
+              </button>
+              <button
+                onClick={() => onDownload?.(file)}
+                className="px-4 py-2 bg-secondary text-secondary-foreground rounded hover:bg-secondary/90"
+              >
+                Download
+              </button>
+            </div>
+          </div>
         </div>
       );
     }

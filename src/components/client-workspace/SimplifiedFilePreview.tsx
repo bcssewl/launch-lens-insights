@@ -94,21 +94,8 @@ const SimplifiedFilePreview: React.FC<SimplifiedFilePreviewProps> = ({
     );
   }
 
-  // For PDFs, show a preview thumbnail if requested and size is not small
-  if (file.file_type.includes('pdf') && previewUrl && !hasError && showDirectPreview && size !== 'small') {
-    return (
-      <div className={`${className} rounded-lg overflow-hidden bg-muted/50 min-h-[${sizeClasses[size].split(' ')[1]}]`}>
-        <iframe
-          src={`${previewUrl}#toolbar=0&navpanes=0&scrollbar=0`}
-          className="w-full h-32 border-0"
-          title={`Preview of ${file.file_name}`}
-          onError={() => setHasError(true)}
-        />
-      </div>
-    );
-  }
-
-  // Fallback to file type icons
+  // For all other files (including PDFs), just show appropriate icons
+  // PDF preview in iframe will be handled by the FilePreviewDrawer for full view
   return (
     <div className={containerClass}>
       {getFileIcon(file.file_type)}
