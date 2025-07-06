@@ -58,11 +58,12 @@ const EnhancedFilePreview: React.FC<EnhancedFilePreviewProps> = ({
             const response = await fetch(url);
             const blob = await response.blob();
             
-            // Create a proper File object using the correct File constructor
-            const fileObject = new File([blob], file.file_name, { 
-              type: file.file_type,
-              lastModified: Date.now()
-            });
+            // Create a file-like object that preserves blob methods and adds File properties
+            const fileObject = Object.create(blob);
+            fileObject.name = file.file_name;
+            fileObject.type = file.file_type;
+            fileObject.lastModified = Date.now();
+            fileObject.size = blob.size;
             
             console.log('Created file object for preview generation:', fileObject.name, fileObject.type);
             
