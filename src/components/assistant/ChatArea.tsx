@@ -12,7 +12,7 @@ interface ChatAreaProps {
   messages: Message[];
   isTyping: boolean;
   viewportRef: React.RefObject<HTMLDivElement>;
-  onSendMessage: (message: string, selectedModel?: string) => void;
+  onSendMessage: (message: string) => void;
   canvasState?: {
     isOpen: boolean;
     messageId: string | null;
@@ -22,6 +22,8 @@ interface ChatAreaProps {
   onCloseCanvas?: () => void;
   onCanvasDownload?: () => void;
   onCanvasPrint?: () => void;
+  selectedModel?: string;
+  onModelSelect?: (model: AIModel) => void;
 }
 
 const ChatArea: React.FC<ChatAreaProps> = ({
@@ -31,18 +33,21 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   onSendMessage,
   onOpenCanvas,
   onCanvasDownload,
-  onCanvasPrint
+  onCanvasPrint,
+  selectedModel = 'best',
+  onModelSelect
 }) => {
-  const [selectedModel, setSelectedModel] = useState<string>('best');
   const hasConversation = messages.length > 1 || isTyping;
 
   const handleModelSelect = (model: AIModel) => {
-    setSelectedModel(model.id);
+    if (onModelSelect) {
+      onModelSelect(model);
+    }
     console.log('Selected AI model:', model.name);
   };
 
   const handleSendMessage = (message: string) => {
-    onSendMessage(message, selectedModel);
+    onSendMessage(message);
   };
 
   if (!hasConversation) {

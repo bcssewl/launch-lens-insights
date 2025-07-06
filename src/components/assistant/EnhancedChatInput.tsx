@@ -118,6 +118,8 @@ const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
                   onSendMessage={handleSendMessage}
                   onDatabaseSelect={handleDatabaseSelect}
                   onLocalFileSelect={handleLocalFileSelect}
+                  selectedModel={selectedModel}
+                  onModelSelect={onModelSelect}
                 />
               </ChatInputCore>
             </div>
@@ -147,6 +149,8 @@ const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
               onSendMessage={handleSendMessage}
               onDatabaseSelect={handleDatabaseSelect}
               onLocalFileSelect={handleLocalFileSelect}
+              selectedModel={selectedModel}
+              onModelSelect={onModelSelect}
             />
           </ChatInputCore>
         )}

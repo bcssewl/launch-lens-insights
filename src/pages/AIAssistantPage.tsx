@@ -18,6 +18,7 @@ import { Loader2 } from 'lucide-react';
 const AIAssistantPage: React.FC = () => {
   const isMobile = useIsMobile();
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [selectedModel, setSelectedModel] = useState<string>('best');
   const { theme } = useTheme();
 
   const {
@@ -84,7 +85,12 @@ const AIAssistantPage: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isFullscreen]);
 
-  const handleSendMessageWithSession = async (text: string, selectedModel?: string) => {
+  const handleModelSelect = (model: AIModel) => {
+    setSelectedModel(model.id);
+    console.log('Selected AI model:', model.name);
+  };
+
+  const handleSendMessageWithSession = async (text: string) => {
     console.log('AIAssistantPage: Sending message with session:', currentSessionId, 'and model:', selectedModel);
 
     // Create session if none exists
@@ -203,7 +209,8 @@ const AIAssistantPage: React.FC = () => {
                     onToggleFullscreen={toggleFullscreen} 
                     onDownloadChat={handleDownloadChat} 
                     onClearConversation={handleClearConversationWithHistory} 
-                    onSessionSelect={handleSessionSelect} 
+                    onSessionSelect={handleSessionSelect}
+                    selectedModel={selectedModel}
                   />
                 </div>
               </div>
@@ -220,7 +227,9 @@ const AIAssistantPage: React.FC = () => {
               onOpenCanvas={handleOpenCanvas} 
               onCloseCanvas={handleCloseCanvas} 
               onCanvasDownload={handleCanvasDownload} 
-              onCanvasPrint={handleCanvasPrint} 
+              onCanvasPrint={handleCanvasPrint}
+              selectedModel={selectedModel}
+              onModelSelect={handleModelSelect}
             />
           </div>
         </SidebarInset>
