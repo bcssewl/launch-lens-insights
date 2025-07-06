@@ -2,115 +2,89 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Download, Eye, Trash2, FileStack } from 'lucide-react';
+import { Eye, Share, Trash2, FileStack } from 'lucide-react';
 import { ClientFile } from '@/hooks/useClientFiles';
 import EnhancedFilePreview from './EnhancedFilePreview';
 
 interface FileGridViewProps {
   files: ClientFile[];
-  onPreview: (file: ClientFile) => void;  // Changed from onView to onPreview
-  onDownload: (file: ClientFile) => void;
+  onPreview: (file: ClientFile) => void;
+  onShare: (file: ClientFile) => void;
   onDelete: (file: ClientFile) => void;
-  onVersionHistory?: (file: ClientFile) => void;
+  onVersionHistory: (file: ClientFile) => void;
   getFileUrl: (filePath: string) => Promise<string | null>;
 }
 
 const FileGridView: React.FC<FileGridViewProps> = ({
   files,
-  onPreview,  // Updated prop name
-  onDownload,
+  onPreview,
+  onShare,
   onDelete,
   onVersionHistory,
   getFileUrl
 }) => {
-  const formatFileSize = (bytes: number) => {
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    if (bytes === 0) return '0 Bytes';
-    const i = Math.floor(Math.log(bytes) / Math.log(1024));
-    return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
-  };
-
   return (
-    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {files.map((file) => (
-        <Card key={file.id} className="hover:shadow-md transition-shadow group">
+        <Card key={file.id} className="group hover:shadow-md transition-shadow">
           <CardContent className="p-4">
-            <div className="flex flex-col items-center text-center space-y-3">
-              {/* Enhanced File Preview with Version Indicator */}
-              <div className="relative">
-                <EnhancedFilePreview 
-                  file={file} 
-                  getFileUrl={getFileUrl}
-                  size="large"
-                  className="border"
-                  showTextPreview={true}
-                />
+            <div className="aspect-square mb-3 flex items-center justify-center bg-muted/20 rounded-lg">
+              <EnhancedFilePreview 
+                file={file} 
+                getFileUrl={getFileUrl}
+                size="large"
+                className="w-full h-full"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <h3 className="font-medium text-sm truncate flex-1 mr-2">
+                  {file.file_name}
+                </h3>
                 {file.has_versions && (
-                  <div className="absolute -top-2 -right-2">
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      className="h-6 w-6 p-0 rounded-full"
-                      onClick={() => onVersionHistory?.(file)}
-                      title={`${file.version_count} versions`}
-                    >
-                      <FileStack className="h-3 w-3" />
-                    </Button>
-                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 px-2 text-xs"
+                    onClick={() => onVersionHistory(file)}
+                  >
+                    <FileStack className="h-3 w-3 mr-1" />
+                    {file.version_count}
+                  </Button>
                 )}
               </div>
-
-              {/* File Info */}
-              <div className="flex-1 min-w-0 w-full">
-                <div className="flex items-center justify-center gap-2 mb-1">
-                  <h4 className="font-medium text-sm truncate" title={file.file_name}>
-                    {file.file_name}
-                  </h4>
-                  {file.has_versions && (
-                    <Badge variant="outline" className="text-xs px-1 h-5">
-                      v{file.current_version}
-                    </Badge>
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {formatFileSize(file.file_size)}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {new Date(file.upload_date).toLocaleDateString()}
-                </p>
+              
+              <div className="text-xs text-muted-foreground">
+                <div>{file.category}</div>
+                <div>{(file.file_size / 1024 / 1024).toFixed(2)} MB</div>
+                <div>{new Date(file.upload_date).toLocaleDateString()}</div>
               </div>
-
-              {/* Category Badge */}
-              {file.category && (
-                <Badge variant="outline" className="text-xs">
-                  {file.category}
-                </Badge>
-              )}
-
-              {/* Actions */}
-              <div className="flex gap-1 w-full opacity-0 group-hover:opacity-100 transition-opacity">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => onPreview(file)}  // Updated to use onPreview
+              
+              <div className="flex items-center gap-1 pt-2">
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
                   className="flex-1"
+                  onClick={() => onPreview(file)}
                 >
-                  <Eye className="h-3 w-3" />
+                  <Eye className="h-3 w-3 mr-1" />
+                  View
                 </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => onDownload(file)}
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
                   className="flex-1"
+                  onClick={() => onShare(file)}
                 >
-                  <Download className="h-3 w-3" />
+                  <Share className="h-3 w-3 mr-1" />
+                  Share
                 </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
                   onClick={() => onDelete(file)}
-                  className="flex-1 text-destructive hover:text-destructive"
+                  className="text-destructive hover:text-destructive"
                 >
                   <Trash2 className="h-3 w-3" />
                 </Button>

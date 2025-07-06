@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText, Image, Presentation, File, Download, Eye, Trash2, Upload, FileStack } from 'lucide-react';
+import { FileText, Image, Presentation, File, Eye, Trash2, Upload, FileStack, Share } from 'lucide-react';
 import { useClientFiles, FileFilters as FileFiltersType, ViewMode } from '@/hooks/useClientFiles';
 import FileUploadArea from './FileUploadArea';
 import FileVaultHeader from './FileVaultHeader';
@@ -74,21 +74,45 @@ const ClientFileVault: React.FC<ClientFileVaultProps> = ({ client }) => {
     }
   };
 
-  const handleDownload = async (file: any) => {
-    const url = await getFileUrl(file.file_path);
-    if (url) {
-      // Use window.open instead of programmatic a.click() to avoid Chrome blocking
-      window.open(url, '_blank');
-      toast({
-        title: "File opened",
-        description: "File opened in new tab. You can save it from there.",
-      });
-    } else {
-      toast({
-        title: "Error",
-        description: "Unable to download file",
-        variant: "destructive"
-      });
+  const handleShare = async (file: any) => {
+    try {
+      const url = await getFileUrl(file.file_path);
+      if (url) {
+        await navigator.clipboard.writeText(url);
+        toast({
+          title: "Link copied!",
+          description: `Share link for ${file.file_name} copied to clipboard`,
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Unable to generate share link",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      // Fallback for browsers that don't support clipboard API
+      const url = await getFileUrl(file.file_path);
+      if (url) {
+        // Create a temporary input element to copy the URL
+        const tempInput = document.createElement('input');
+        tempInput.value = url;
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        document.execCommand('copy');
+        document.body.removeChild(tempInput);
+        
+        toast({
+          title: "Link copied!",
+          description: `Share link for ${file.file_name} copied to clipboard`,
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Unable to generate share link",
+          variant: "destructive"
+        });
+      }
     }
   };
 
@@ -214,7 +238,7 @@ const ClientFileVault: React.FC<ClientFileVaultProps> = ({ client }) => {
             <FileGridView
               files={filteredFiles}
               onPreview={handlePreview}
-              onDownload={handleDownload}
+              onShare={handleShare}
               onDelete={handleDelete}
               onVersionHistory={handleVersionHistory}
               getFileUrl={getFileUrl}
@@ -259,8 +283,8 @@ const ClientFileVault: React.FC<ClientFileVaultProps> = ({ client }) => {
                         <Button size="sm" variant="ghost" onClick={() => handlePreview(file)}>
                           <Eye className="h-3 w-3" />
                         </Button>
-                        <Button size="sm" variant="ghost" onClick={() => handleDownload(file)}>
-                          <Download className="h-3 w-3" />
+                        <Button size="sm" variant="ghost" onClick={() => handleShare(file)}>
+                          <Share className="h-3 w-3" />
                         </Button>
                         <Button 
                           size="sm" 
@@ -312,7 +336,7 @@ const ClientFileVault: React.FC<ClientFileVaultProps> = ({ client }) => {
         onOpenChange={(open) => !open && setPreviewFile(null)}
         file={previewFile}
         getFileUrl={getFileUrl}
-        onDownload={handleDownload}
+        onDownload={handleShare}
         onVersionHistory={handleVersionHistory}
       />
 
