@@ -40,7 +40,8 @@ const ClientFileVault: React.FC<ClientFileVaultProps> = ({ client }) => {
     uploadFile, 
     deleteFile, 
     getFileUrl, 
-    filterFiles 
+    filterFiles,
+    refreshFiles
   } = useClientFiles(client.id);
 
   const filteredFiles = filterFiles(filters);
@@ -112,7 +113,7 @@ const ClientFileVault: React.FC<ClientFileVaultProps> = ({ client }) => {
 
   const handleUploadComplete = () => {
     // Refresh the files list after successful upload
-    fetchFiles();
+    refreshFiles();
   };
 
   if (loading) {

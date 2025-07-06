@@ -133,7 +133,7 @@ export const useFileUpload = (clientId: string) => {
 
   // Add files to upload queue
   const addFiles = useCallback(async (newFiles: File[]) => {
-    const filenames = newFiles.map(f => f.file_name);
+    const filenames = newFiles.map(f => f.name); // Fixed: use f.name instead of f.file_name
     const duplicates = await checkForDuplicates(filenames);
     
     const filesWithMetadata: FileWithMetadata[] = newFiles.map(file => {
