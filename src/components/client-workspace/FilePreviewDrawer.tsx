@@ -6,7 +6,6 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
-  Download, 
   FileText, 
   Calendar, 
   HardDrive, 
@@ -233,12 +232,6 @@ const FilePreviewDrawer: React.FC<FilePreviewDrawerProps> = ({
               >
                 Open in New Tab
               </button>
-              <button
-                onClick={() => onDownload?.(file)}
-                className="px-4 py-2 bg-secondary text-secondary-foreground rounded hover:bg-secondary/90"
-              >
-                Download
-              </button>
             </div>
           </div>
         </div>
@@ -436,17 +429,6 @@ const FilePreviewDrawer: React.FC<FilePreviewDrawerProps> = ({
                     <div>
                       <h3 className="font-semibold mb-3">Actions</h3>
                       <div className="space-y-2">
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          className={`w-full ${!isCurrentVersion ? 'opacity-50' : ''}`}
-                          onClick={() => onDownload?.(file)}
-                          disabled={!isCurrentVersion}
-                          title={!isCurrentVersion ? 'Download not available for older versions' : 'Download file'}
-                        >
-                          <Download className="h-4 w-4 mr-2" />
-                          Download {!isCurrentVersion && '(Current Version Only)'}
-                        </Button>
                       </div>
                     </div>
                   </div>
