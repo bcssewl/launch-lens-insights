@@ -205,14 +205,21 @@ export type Database = {
         Row: {
           category: string | null
           client_id: string
+          content_extracted_at: string | null
+          content_keywords: string[] | null
+          content_summary: string | null
           created_at: string
           current_version: number
+          embedding_processed_at: string | null
+          embedding_status: string | null
+          file_content_text: string | null
           file_name: string
           file_path: string
           file_size: number
           file_type: string
           has_versions: boolean
           id: string
+          total_chunks: number | null
           updated_at: string
           upload_date: string
           user_id: string
@@ -221,14 +228,21 @@ export type Database = {
         Insert: {
           category?: string | null
           client_id: string
+          content_extracted_at?: string | null
+          content_keywords?: string[] | null
+          content_summary?: string | null
           created_at?: string
           current_version?: number
+          embedding_processed_at?: string | null
+          embedding_status?: string | null
+          file_content_text?: string | null
           file_name: string
           file_path: string
           file_size: number
           file_type: string
           has_versions?: boolean
           id?: string
+          total_chunks?: number | null
           updated_at?: string
           upload_date?: string
           user_id: string
@@ -237,14 +251,21 @@ export type Database = {
         Update: {
           category?: string | null
           client_id?: string
+          content_extracted_at?: string | null
+          content_keywords?: string[] | null
+          content_summary?: string | null
           created_at?: string
           current_version?: number
+          embedding_processed_at?: string | null
+          embedding_status?: string | null
+          file_content_text?: string | null
           file_name?: string
           file_path?: string
           file_size?: number
           file_type?: string
           has_versions?: boolean
           id?: string
+          total_chunks?: number | null
           updated_at?: string
           upload_date?: string
           user_id?: string
@@ -655,6 +676,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      binary_quantize: {
+        Args: { "": string } | { "": unknown }
+        Returns: unknown
+      }
       create_report_share: {
         Args: {
           p_report_id: string
@@ -667,6 +692,10 @@ export type Database = {
           share_token: string
           share_url: string
         }[]
+      }
+      generate_question_hash: {
+        Args: { question_text: string; file_id?: string }
+        Returns: string
       }
       get_shared_report: {
         Args: { p_share_token: string }
@@ -684,6 +713,117 @@ export type Database = {
           access_level: string
           expires_at: string
         }[]
+      }
+      halfvec_avg: {
+        Args: { "": number[] }
+        Returns: unknown
+      }
+      halfvec_out: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      halfvec_send: {
+        Args: { "": unknown }
+        Returns: string
+      }
+      halfvec_typmod_in: {
+        Args: { "": unknown[] }
+        Returns: number
+      }
+      hnsw_bit_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      hnsw_halfvec_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      hnsw_sparsevec_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      hnswhandler: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      ivfflat_bit_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      ivfflat_halfvec_support: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      ivfflathandler: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      l2_norm: {
+        Args: { "": unknown } | { "": unknown }
+        Returns: number
+      }
+      l2_normalize: {
+        Args: { "": string } | { "": unknown } | { "": unknown }
+        Returns: unknown
+      }
+      normalize_question: {
+        Args: { question_text: string }
+        Returns: string
+      }
+      search_file_embeddings: {
+        Args: {
+          query_embedding: string
+          client_id: string
+          user_id: string
+          match_threshold?: number
+          match_count?: number
+        }
+        Returns: {
+          file_id: string
+          file_name: string
+          file_type: string
+          file_path: string
+          file_size: number
+          upload_date: string
+          chunk_text: string
+          similarity: number
+        }[]
+      }
+      sparsevec_out: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      sparsevec_send: {
+        Args: { "": unknown }
+        Returns: string
+      }
+      sparsevec_typmod_in: {
+        Args: { "": unknown[] }
+        Returns: number
+      }
+      vector_avg: {
+        Args: { "": number[] }
+        Returns: string
+      }
+      vector_dims: {
+        Args: { "": string } | { "": unknown }
+        Returns: number
+      }
+      vector_norm: {
+        Args: { "": string }
+        Returns: number
+      }
+      vector_out: {
+        Args: { "": string }
+        Returns: unknown
+      }
+      vector_send: {
+        Args: { "": string }
+        Returns: string
+      }
+      vector_typmod_in: {
+        Args: { "": unknown[] }
+        Returns: number
       }
       verify_user: {
         Args: { jwt_token: string } | { user_id: string }
