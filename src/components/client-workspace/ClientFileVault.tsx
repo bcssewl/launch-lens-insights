@@ -2,12 +2,10 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { FileText, Image, Presentation, File, Download, Eye, Trash2, Upload } from 'lucide-react';
-import { useClientFiles, FileFilters as FileFiltersType } from '@/hooks/useClientFiles';
+import { useClientFiles, FileFilters as FileFiltersType, ViewMode } from '@/hooks/useClientFiles';
 import FileUploadArea from './FileUploadArea';
-import FileFiltersComponent from './FileFilters';
-import FileViewToggle, { ViewMode } from './FileViewToggle';
+import FileVaultHeader from './FileVaultHeader';
 import FileGridView from './FileGridView';
 import EnhancedFilePreview from './EnhancedFilePreview';
 import { useToast } from '@/hooks/use-toast';
@@ -19,23 +17,13 @@ interface ClientFileVaultProps {
   };
 }
 
-const getFileIcon = (type: string) => {
-  switch (type) {
-    case 'pdf':
-      return <FileText className="h-5 w-5 text-red-500" />;
-    case 'presentation':
-      return <Presentation className="h-5 w-5 text-orange-500" />;
-    case 'document':
-      return <File className="h-5 w-5 text-blue-500" />;
-    case 'image':
-      return <Image className="h-5 w-5 text-green-500" />;
-    default:
-      return <File className="h-5 w-5 text-gray-500" />;
-  }
-};
-
 const ClientFileVault: React.FC<ClientFileVaultProps> = ({ client }) => {
-  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  // Initialize view mode from localStorage or default to 'list'
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    const saved = localStorage.getItem('fileVaultViewMode');
+    return (saved === 'list' || saved === 'grid') ? saved : 'list';
+  });
+  
   const [showUploadArea, setShowUploadArea] = useState(false);
   const [filters, setFilters] = useState<FileFiltersType>({
     fileType: 'all',
@@ -46,7 +34,6 @@ const ClientFileVault: React.FC<ClientFileVaultProps> = ({ client }) => {
 
   const { toast } = useToast();
   
-  // Use the actual client ID from props instead of hardcoded value
   const { 
     files, 
     loading, 
@@ -130,27 +117,24 @@ const ClientFileVault: React.FC<ClientFileVaultProps> = ({ client }) => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-semibold">File Vault</h2>
-          <p className="text-muted-foreground">{files.length} files stored</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <FileViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
-          <Button onClick={() => setShowUploadArea(!showUploadArea)}>
-            <Upload className="h-4 w-4 mr-2" />
-            Upload Files
-          </Button>
-        </div>
-      </div>
-
-      {/* File Filters */}
-      <FileFiltersComponent
+      {/* New File Vault Header */}
+      <FileVaultHeader
         filters={filters}
         onFiltersChange={setFilters}
         onClearFilters={clearFilters}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        fileCount={filteredFiles.length}
+        totalFiles={files.length}
       />
+
+      {/* Upload Files Button */}
+      <div className="flex justify-end">
+        <Button onClick={() => setShowUploadArea(!showUploadArea)}>
+          <Upload className="h-4 w-4 mr-2" />
+          Upload Files
+        </Button>
+      </div>
 
       {/* Upload Area */}
       {showUploadArea && (

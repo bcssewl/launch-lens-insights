@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -23,6 +22,8 @@ export interface FileFilters {
   category: string;
   search: string;
 }
+
+export type ViewMode = 'list' | 'grid';
 
 export const useClientFiles = (clientId: string) => {
   const [files, setFiles] = useState<ClientFile[]>([]);

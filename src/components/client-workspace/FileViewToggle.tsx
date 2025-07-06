@@ -1,9 +1,8 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Grid3X3, List, LayoutGrid } from 'lucide-react';
-
-export type ViewMode = 'list' | 'grid';
+import { List, LayoutGrid } from 'lucide-react';
+import { ViewMode } from '@/hooks/useClientFiles';
 
 interface FileViewToggleProps {
   viewMode: ViewMode;
