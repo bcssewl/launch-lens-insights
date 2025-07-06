@@ -1,4 +1,3 @@
-
 import mammoth from 'mammoth';
 import * as XLSX from 'xlsx';
 import { generatePDFThumbnail } from '@/components/client-workspace/PDFViewer';
@@ -11,6 +10,8 @@ export interface PreviewResult {
 
 export const generatePDFPreview = async (file: File): Promise<PreviewResult> => {
   try {
+    console.log('Generating PDF preview for:', file.name, 'type:', file.type, 'size:', file.size);
+    
     const thumbnailDataUrl = await generatePDFThumbnail(file);
     
     return {
@@ -19,10 +20,17 @@ export const generatePDFPreview = async (file: File): Promise<PreviewResult> => 
     };
   } catch (error) {
     console.error('PDF preview generation failed:', error);
+    
+    // Return more specific error information
+    let errorMessage = 'Failed to generate PDF preview';
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    
     return {
       type: 'error',
       content: '',
-      error: `Failed to generate PDF preview: ${error instanceof Error ? error.message : 'Unknown error'}`
+      error: errorMessage
     };
   }
 };
