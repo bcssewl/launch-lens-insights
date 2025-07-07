@@ -1,4 +1,3 @@
-
 import { marked } from 'marked';
 
 interface ProcessedContent {
@@ -13,67 +12,70 @@ const createChatGptPdfRenderer = () => {
   const renderer = new marked.Renderer();
   
   // H1 always starts new page, H2 smart breaks
-  renderer.heading = (text: string, level: number) => {
+  renderer.heading = ({ tokens, depth }) => {
+    const text = renderer.parser.parseInline(tokens);
     const id = text.toLowerCase().replace(/[^\w]+/g, '-');
     
     let classes = '';
-    if (level === 1) {
+    if (depth === 1) {
       classes = ' class="page-break-before"';
-    } else if (level === 2) {
+    } else if (depth === 2) {
       classes = ' class="smart-page-break"';
     }
     
-    return `<h${level}${classes} id="${id}">${text}</h${level}>`;
+    return `<h${depth}${classes} id="${id}">${text}</h${depth}>`;
   };
   
   // Tables wrapped to avoid page breaks
-  renderer.table = (header: string, body: string) => {
+  renderer.table = ({ header, rows }) => {
+    const headerHtml = header.map(cell => {
+      const cellText = renderer.parser.parseInline(cell.tokens);
+      const align = cell.align ? ` style="text-align: ${cell.align}"` : '';
+      return `<th${align}>${cellText}</th>`;
+    }).join('');
+    
+    const bodyHtml = rows.map(row => 
+      `<tr>${row.map(cell => {
+        const cellText = renderer.parser.parseInline(cell.tokens);
+        const align = cell.align ? ` style="text-align: ${cell.align}"` : '';
+        return `<td${align}>${cellText}</td>`;
+      }).join('')}</tr>`
+    ).join('');
+    
     return `<div class="table-container page-break-avoid">
       <table>
-        <thead>${header}</thead>
-        <tbody>${body}</tbody>
+        <thead><tr>${headerHtml}</tr></thead>
+        <tbody>${bodyHtml}</tbody>
       </table>
     </div>`;
   };
   
-  // Table rows
-  renderer.tablerow = (content: string) => {
-    return `<tr>${content}</tr>`;
-  };
-  
-  // Table cells
-  renderer.tablecell = (content: string, flags: { header?: boolean; align?: string | null }) => {
-    const tag = flags.header ? 'th' : 'td';
-    const align = flags.align ? ` style="text-align: ${flags.align}"` : '';
-    return `<${tag}${align}>${content}</${tag}>`;
-  };
-  
   // Code blocks wrapped to avoid page breaks
-  renderer.code = (code: string, language?: string) => {
-    const lang = language || '';
+  renderer.code = ({ text, lang }) => {
+    const language = lang || '';
     return `<div class="code-container page-break-avoid">
-      <pre><code class="language-${lang}">${code}</code></pre>
+      <pre><code class="language-${language}">${text}</code></pre>
     </div>`;
   };
   
   // Paragraphs with proper spacing and widow/orphan control
-  renderer.paragraph = (text: string) => {
+  renderer.paragraph = ({ tokens }) => {
+    const text = renderer.parser.parseInline(tokens);
     return `<p class="content-paragraph">${text}</p>`;
   };
   
   // Lists with proper spacing and page break avoidance
-  renderer.list = (body: string, ordered?: boolean) => {
+  renderer.list = ({ items, ordered }) => {
     const tag = ordered ? 'ol' : 'ul';
-    return `<${tag} class="content-list page-break-avoid">${body}</${tag}>`;
-  };
-  
-  // List items
-  renderer.listitem = (text: string) => {
-    return `<li>${text}</li>`;
+    const itemsHtml = items.map(item => {
+      const itemText = renderer.parser.parseInline(item.tokens);
+      return `<li>${itemText}</li>`;
+    }).join('');
+    return `<${tag} class="content-list page-break-avoid">${itemsHtml}</${tag}>`;
   };
   
   // Handle images with page break avoidance
-  renderer.image = (href: string, title: string | null, text: string) => {
+  renderer.image = ({ href, title, text }) => {
     const titleAttr = title ? ` title="${title}"` : '';
     return `<div class="image-container page-break-avoid">
       <img src="${href}" alt="${text}"${titleAttr} />
@@ -81,8 +83,9 @@ const createChatGptPdfRenderer = () => {
   };
   
   // Handle blockquotes
-  renderer.blockquote = (quote: string) => {
-    return `<blockquote class="content-blockquote page-break-avoid">${quote}</blockquote>`;
+  renderer.blockquote = ({ tokens }) => {
+    const text = renderer.parser.parse(tokens);
+    return `<blockquote class="content-blockquote page-break-avoid">${text}</blockquote>`;
   };
   
   return renderer;
