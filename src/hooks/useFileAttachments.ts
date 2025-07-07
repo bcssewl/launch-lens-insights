@@ -8,20 +8,28 @@ export interface AttachedFile {
   size?: number;
   file?: File;
   projectId?: string;
+  fileId?: string; // For individual file attachments
+  displayName?: string; // For better display in chips
 }
 
 export const useFileAttachments = () => {
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
 
-  const addDatabaseFile = (projectId: string, projectName: string) => {
+  const addDatabaseFile = (projectId: string, projectName: string, fileId?: string, fileName?: string) => {
     const newFile: AttachedFile = {
-      id: `db-${projectId}`,
-      name: projectName,
+      id: fileId ? `db-file-${fileId}` : `db-project-${projectId}`,
+      name: fileName || projectName,
       type: 'database',
       projectId,
+      fileId,
+      displayName: fileId ? `${fileName} (${projectName})` : projectName,
     };
     
-    setAttachedFiles(prev => [...prev.filter(f => f.id !== newFile.id), newFile]);
+    // Remove existing attachment if it's the same file or project
+    setAttachedFiles(prev => [
+      ...prev.filter(f => f.id !== newFile.id),
+      newFile
+    ]);
   };
 
   const addLocalFile = (file: File) => {
@@ -31,6 +39,7 @@ export const useFileAttachments = () => {
       type: 'local',
       size: file.size,
       file,
+      displayName: file.name,
     };
     
     setAttachedFiles(prev => [...prev, newFile]);

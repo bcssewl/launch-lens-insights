@@ -8,7 +8,7 @@ interface ChatInputModalsProps {
   showFileUploader: boolean;
   onCloseProjectModal: () => void;
   onCloseFileUploader: () => void;
-  onAttachProject: (projectId: string, projectName: string) => void;
+  onAttachProject: (projectId: string, projectName: string, fileId?: string, fileName?: string) => void;
   onAttachFile: (file: File) => void;
 }
 

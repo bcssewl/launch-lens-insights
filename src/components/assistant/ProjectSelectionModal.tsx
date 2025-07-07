@@ -5,14 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useClientFiles } from '@/hooks/useClientFiles';
-import { Loader2, FileText, ChevronDown, Building2 } from 'lucide-react';
+import { Loader2, FileText, ChevronDown, Building2, ChevronRight, File } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 interface ProjectSelectionModalProps {
   open: boolean;
   onClose: () => void;
-  onAttach: (projectId: string, projectName: string) => void;
+  onAttach: (projectId: string, projectName: string, fileId?: string, fileName?: string) => void;
 }
 
 interface ClientData {
@@ -23,6 +23,13 @@ interface ClientData {
   file_count: number;
 }
 
+interface SelectedFile {
+  fileId: string;
+  fileName: string;
+  clientId: string;
+  clientName: string;
+}
+
 const ProjectSelectionModal: React.FC<ProjectSelectionModalProps> = ({
   open,
   onClose,
@@ -30,6 +37,8 @@ const ProjectSelectionModal: React.FC<ProjectSelectionModalProps> = ({
 }) => {
   const [clients, setClients] = useState<ClientData[]>([]);
   const [loading, setLoading] = useState(false);
+  const [expandedClients, setExpandedClients] = useState<Set<string>>(new Set());
+  const [selectedFiles, setSelectedFiles] = useState<Map<string, SelectedFile>>(new Map());
   const [selectedProjects, setSelectedProjects] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
@@ -76,11 +85,47 @@ const ProjectSelectionModal: React.FC<ProjectSelectionModalProps> = ({
     }
   };
 
+  const toggleClientExpanded = (clientId: string) => {
+    setExpandedClients(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(clientId)) {
+        newSet.delete(clientId);
+      } else {
+        newSet.add(clientId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleFileToggle = (fileId: string, fileName: string, clientId: string, clientName: string) => {
+    setSelectedFiles(prev => {
+      const newMap = new Map(prev);
+      const key = `${clientId}-${fileId}`;
+      
+      if (newMap.has(key)) {
+        newMap.delete(key);
+      } else {
+        newMap.set(key, { fileId, fileName, clientId, clientName });
+      }
+      return newMap;
+    });
+  };
+
   const handleProjectToggle = (projectId: string) => {
     setSelectedProjects(prev => {
       const newSet = new Set(prev);
       if (newSet.has(projectId)) {
         newSet.delete(projectId);
+        // Also remove any individual files from this client
+        setSelectedFiles(prevFiles => {
+          const newFileMap = new Map(prevFiles);
+          for (const [key, file] of newFileMap) {
+            if (file.clientId === projectId) {
+              newFileMap.delete(key);
+            }
+          }
+          return newFileMap;
+        });
       } else {
         newSet.add(projectId);
       }
@@ -88,36 +133,45 @@ const ProjectSelectionModal: React.FC<ProjectSelectionModalProps> = ({
     });
   };
 
-  const handleFileTypeSelect = (projectId: string) => {
-    // Select the project when a file type is chosen
-    setSelectedProjects(prev => {
-      const newSet = new Set(prev);
-      newSet.add(projectId);
-      return newSet;
-    });
-  };
-
   const handleAttachSelected = () => {
+    // Attach selected individual files
+    selectedFiles.forEach(file => {
+      onAttach(file.clientId, file.clientName, file.fileId, file.fileName);
+    });
+
+    // Attach selected entire projects (only if no individual files from that project are selected)
     selectedProjects.forEach(projectId => {
-      const client = clients.find(c => c.id === projectId);
-      if (client) {
-        onAttach(projectId, client.name);
+      const hasIndividualFiles = Array.from(selectedFiles.values()).some(file => file.clientId === projectId);
+      if (!hasIndividualFiles) {
+        const client = clients.find(c => c.id === projectId);
+        if (client) {
+          onAttach(projectId, client.name);
+        }
       }
     });
+
+    setSelectedFiles(new Map());
     setSelectedProjects(new Set());
+    setExpandedClients(new Set());
     onClose();
   };
 
   const handleClose = () => {
+    setSelectedFiles(new Map());
     setSelectedProjects(new Set());
+    setExpandedClients(new Set());
     onClose();
   };
+
+  const totalSelections = selectedFiles.size + Array.from(selectedProjects).filter(projectId => 
+    !Array.from(selectedFiles.values()).some(file => file.clientId === projectId)
+  ).length;
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Select Projects from Database</DialogTitle>
+          <DialogTitle>Select Projects and Files from Database</DialogTitle>
         </DialogHeader>
         
         <div className="space-y-4">
@@ -136,43 +190,16 @@ const ProjectSelectionModal: React.FC<ProjectSelectionModalProps> = ({
             <>
               <div className="max-h-64 overflow-y-auto space-y-2">
                 {clients.map(client => (
-                  <div
+                  <ClientItem
                     key={client.id}
-                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50"
-                  >
-                    <div className="flex items-center space-x-3 flex-1 min-w-0">
-                      <Checkbox
-                        checked={selectedProjects.has(client.id)}
-                        onChange={() => handleProjectToggle(client.id)}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-sm truncate">
-                          {client.name}
-                        </h4>
-                        <p className="text-xs text-muted-foreground">
-                          {client.industry && `${client.industry} • `}
-                          {client.file_count} files
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <ChevronDown className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48">
-                        <DropdownMenuItem 
-                          onClick={() => handleFileTypeSelect(client.id)}
-                          className="cursor-pointer"
-                        >
-                          <FileText className="mr-2 h-4 w-4" />
-                          Client Files
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
+                    client={client}
+                    isExpanded={expandedClients.has(client.id)}
+                    isSelected={selectedProjects.has(client.id)}
+                    selectedFiles={selectedFiles}
+                    onToggleExpanded={() => toggleClientExpanded(client.id)}
+                    onToggleProject={() => handleProjectToggle(client.id)}
+                    onToggleFile={handleFileToggle}
+                  />
                 ))}
               </div>
               
@@ -182,9 +209,9 @@ const ProjectSelectionModal: React.FC<ProjectSelectionModalProps> = ({
                 </Button>
                 <Button 
                   onClick={handleAttachSelected}
-                  disabled={selectedProjects.size === 0}
+                  disabled={totalSelections === 0}
                 >
-                  Attach Selected ({selectedProjects.size})
+                  Attach Selected ({totalSelections})
                 </Button>
               </div>
             </>
@@ -192,6 +219,109 @@ const ProjectSelectionModal: React.FC<ProjectSelectionModalProps> = ({
         </div>
       </DialogContent>
     </Dialog>
+  );
+};
+
+interface ClientItemProps {
+  client: ClientData;
+  isExpanded: boolean;
+  isSelected: boolean;
+  selectedFiles: Map<string, SelectedFile>;
+  onToggleExpanded: () => void;
+  onToggleProject: () => void;
+  onToggleFile: (fileId: string, fileName: string, clientId: string, clientName: string) => void;
+}
+
+const ClientItem: React.FC<ClientItemProps> = ({
+  client,
+  isExpanded,
+  isSelected,
+  selectedFiles,
+  onToggleExpanded,
+  onToggleProject,
+  onToggleFile,
+}) => {
+  const { files, loading: filesLoading } = useClientFiles(isExpanded ? client.id : '');
+  
+  const clientFiles = Array.from(selectedFiles.values()).filter(file => file.clientId === client.id);
+  const hasSelectedFiles = clientFiles.length > 0;
+
+  return (
+    <div className="border rounded-lg">
+      <div className="flex items-center justify-between p-3 hover:bg-muted/50">
+        <div className="flex items-center space-x-3 flex-1 min-w-0">
+          <Checkbox
+            checked={isSelected}
+            onChange={onToggleProject}
+          />
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 w-6 p-0"
+            onClick={onToggleExpanded}
+          >
+            {isExpanded ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
+          </Button>
+          <div className="flex-1 min-w-0">
+            <h4 className="font-medium text-sm truncate">
+              {client.name}
+              {hasSelectedFiles && (
+                <span className="ml-2 text-xs text-primary">
+                  ({clientFiles.length} files selected)
+                </span>
+              )}
+            </h4>
+            <p className="text-xs text-muted-foreground">
+              {client.industry && `${client.industry} • `}
+              {client.file_count} files
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {isExpanded && (
+        <div className="border-t bg-muted/20">
+          {filesLoading ? (
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              <span className="text-sm text-muted-foreground">Loading files...</span>
+            </div>
+          ) : files.length === 0 ? (
+            <div className="py-4 px-6 text-center text-sm text-muted-foreground">
+              No files found in this project
+            </div>
+          ) : (
+            <div className="p-2 space-y-1 max-h-40 overflow-y-auto">
+              {files.map(file => {
+                const isFileSelected = selectedFiles.has(`${client.id}-${file.id}`);
+                return (
+                  <div
+                    key={file.id}
+                    className="flex items-center space-x-3 p-2 rounded hover:bg-background/50"
+                  >
+                    <Checkbox
+                      checked={isFileSelected}
+                      onChange={() => onToggleFile(file.id, file.file_name, client.id, client.name)}
+                    />
+                    <File className="h-4 w-4 text-muted-foreground" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm truncate">{file.file_name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {file.category} • {Math.round(file.file_size / 1024)} KB
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 };
 

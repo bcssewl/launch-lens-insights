@@ -2,7 +2,7 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { X, Database, File } from 'lucide-react';
+import { X, Database, File, Building2 } from 'lucide-react';
 import { AttachedFile } from '@/hooks/useFileAttachments';
 
 interface AttachedFileChipProps {
@@ -17,15 +17,25 @@ const AttachedFileChip: React.FC<AttachedFileChipProps> = ({ file, onRemove }) =
     return `${Math.round(bytes / (1024 * 1024))} MB`;
   };
 
+  const getIcon = () => {
+    if (file.type === 'local') {
+      return <File className="h-3 w-3" />;
+    }
+    return file.fileId ? <File className="h-3 w-3" /> : <Building2 className="h-3 w-3" />;
+  };
+
+  const getDisplayText = () => {
+    if (file.displayName) {
+      return file.displayName;
+    }
+    return file.name;
+  };
+
   return (
     <Badge variant="secondary" className="flex items-center space-x-2 pr-1 max-w-xs">
-      {file.type === 'database' ? (
-        <Database className="h-3 w-3" />
-      ) : (
-        <File className="h-3 w-3" />
-      )}
+      {getIcon()}
       <span className="truncate text-xs">
-        {file.name}
+        {getDisplayText()}
         {file.size && (
           <span className="text-muted-foreground ml-1">
             ({formatFileSize(file.size)})
