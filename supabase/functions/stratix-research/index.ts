@@ -1,3 +1,4 @@
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
@@ -17,14 +18,18 @@ serve(async (req) => {
     const { stepType, query, stepName, previousResult } = await req.json();
     
     console.log(`Stratix Research Step: ${stepName} for query: ${query}`);
+    console.log('Available OPENAI_KEY:', OPENAI_API_KEY ? 'Set' : 'Not Set');
 
     if (!OPENAI_API_KEY) {
+      console.error('OPENAI_KEY environment variable is not set');
       throw new Error('OPENAI_KEY not configured in Supabase secrets');
     }
 
     // Create specialized prompt for each research step
     let systemPrompt = getSystemPromptForStep(stepType);
     let userPrompt = buildUserPrompt(query, stepName, previousResult);
+
+    console.log(`Making OpenAI API call for step: ${stepName}`);
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -43,8 +48,16 @@ serve(async (req) => {
       }),
     });
 
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('OpenAI API error:', response.status, errorText);
+      throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
+    }
+
     const data = await response.json();
     const result = data.choices[0].message.content;
+
+    console.log(`Stratix Research Step ${stepName} completed successfully`);
 
     return new Response(JSON.stringify({ 
       result,
