@@ -136,6 +136,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          search_body: unknown | null
           title: string
           updated_at: string
           user_id: string
@@ -143,6 +144,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          search_body?: unknown | null
           title?: string
           updated_at?: string
           user_id: string
@@ -150,6 +152,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          search_body?: unknown | null
           title?: string
           updated_at?: string
           user_id?: string
@@ -455,18 +458,21 @@ export type Database = {
           created_at: string
           id: string
           message: string
+          search_body: unknown | null
           session_id: string
         }
         Insert: {
           created_at?: string
           id?: string
           message: string
+          search_body?: unknown | null
           session_id: string
         }
         Update: {
           created_at?: string
           id?: string
           message?: string
+          search_body?: unknown | null
           session_id?: string
         }
         Relationships: [
@@ -792,6 +798,16 @@ export type Database = {
           upload_date: string
           chunk_text: string
           similarity: number
+        }[]
+      }
+      search_user_chats: {
+        Args: { user_id: string; search_query: string; match_limit?: number }
+        Returns: {
+          session_id: string
+          session_title: string
+          session_created_at: string
+          message_snippet: string
+          rank: number
         }[]
       }
       sparsevec_out: {
