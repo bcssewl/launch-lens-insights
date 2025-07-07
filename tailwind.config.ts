@@ -147,5 +147,11 @@ export default {
       },
     },
   },
-  plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],
+  plugins: [
+    require("tailwindcss-animate"), 
+    require("@tailwindcss/typography")({
+      className: 'prose',
+      target: 'legacy', // Only target elements with .prose class
+    })
+  ],
 } satisfies Config;

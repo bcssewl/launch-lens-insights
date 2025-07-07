@@ -4,6 +4,18 @@
 @tailwind utilities;
 
 @layer base {
+  /* Reset global typography to prevent unwanted bold text inheritance */
+  * {
+    font-weight: inherit;
+  }
+  
+  body {
+    font-weight: 400; /* Ensure normal font weight by default */
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 600; /* Only headings should be semi-bold */
+  }
   :root {
     /* Light Mode - Premium Gray Scale with WCAG AA Compliance */
     --background: 0 0% 98%;           /* #FAFAFA - Surface */
