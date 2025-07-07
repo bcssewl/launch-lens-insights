@@ -4,6 +4,7 @@ import { ResizablePanelGroup, ResizableHandle } from '@/components/ui/resizable'
 import CanvasHeader from './CanvasHeader';
 import CanvasChatPanel from './CanvasChatPanel';
 import CanvasReportPanel from './CanvasReportPanel';
+import CanvasPrintView from './CanvasPrintView';
 import { useCanvasKeyboardShortcuts } from './useCanvasKeyboardShortcuts';
 import { FloatingElements } from '@/components/landing/FloatingElements';
 import { Message } from '@/constants/aiAssistant';
@@ -48,6 +49,7 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
   onContentUpdate
 }) => {
   const [currentContent, setCurrentContent] = useState(content);
+  const [showPrintView, setShowPrintView] = useState(false);
 
   console.log('CanvasView: Rendering with isOpen:', isOpen);
 
@@ -56,10 +58,15 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
     setCurrentContent(content);
   }, [content]);
 
-  // PDF download handler
+  // PDF download handler - now opens print view instead of direct print
   const handlePdfDownload = useCallback(() => {
-    console.log('CanvasView: PDF download initiated');
-    window.print();
+    console.log('CanvasView: PDF download initiated - opening print view');
+    setShowPrintView(true);
+  }, []);
+
+  const handleClosePrintView = useCallback(() => {
+    console.log('CanvasView: Closing print view');
+    setShowPrintView(false);
   }, []);
 
   // Use keyboard shortcuts hook with PDF download
@@ -111,6 +118,18 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
   if (!isOpen) {
     console.log('CanvasView: Not open, returning null');
     return null;
+  }
+
+  // Show print view if requested
+  if (showPrintView) {
+    return (
+      <CanvasPrintView
+        isOpen={showPrintView}
+        onClose={handleClosePrintView}
+        content={currentContent}
+        title={title}
+      />
+    );
   }
 
   console.log('CanvasView: Rendering full canvas view with seamless editing');
