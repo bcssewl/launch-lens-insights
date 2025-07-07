@@ -205,44 +205,46 @@ export const AppSidebar: React.FC = () => {
                       </SidebarMenuItem>
                     ))}
                   </SidebarMenu>
-                  
-                  {/* Chats Section */}
-                  <div className="mt-4 group-data-[collapsible=icon]:hidden">
-                    <SidebarGroupLabel className="px-2 text-xs font-medium text-text-secondary/70 mb-2">
-                      Chats
-                    </SidebarGroupLabel>
-                    <SidebarMenu>
-                      {chatSessions.length === 0 ? (
-                        <SidebarMenuItem>
-                          <div className="px-3 py-2 text-xs text-text-secondary/50">
-                            No chats yet
-                          </div>
-                        </SidebarMenuItem>
-                      ) : (
-                        chatSessions.map((session) => (
-                          <SidebarMenuItem key={session.id}>
-                            <SidebarMenuButton
-                              asChild
-                              isActive={location.pathname === `/dashboard/assistant?session=${session.id}`}
-                              tooltip={session.title}
-                              className="group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 text-text-secondary hover:text-text-primary hover:bg-surface-elevated data-[active=true]:text-primary data-[active=true]:bg-surface-elevated transition-colors"
-                            >
-                              <Link to={`/dashboard/assistant?session=${session.id}`} className="flex items-center gap-3 px-3 py-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 group-data-[collapsible=icon]:gap-0">
-                                <MessageCircle className="h-4 w-4 flex-shrink-0" />
-                                <span className="group-data-[collapsible=icon]:sr-only text-sm truncate">
-                                  {session.title || 'New Chat'}
-                                </span>
-                              </Link>
-                            </SidebarMenuButton>
-                          </SidebarMenuItem>
-                        ))
-                      )}
-                    </SidebarMenu>
-                  </div>
                 </SidebarGroupContent>
               </CollapsibleContent>
             </SidebarGroup>
           </Collapsible>
+
+          {/* Chats Section - Always visible */}
+          <SidebarGroup>
+            <SidebarGroupLabel className="group-data-[collapsible=icon]:sr-only px-2 text-xs font-medium text-text-secondary/70">
+              Chats
+            </SidebarGroupLabel>
+            <SidebarGroupContent className="px-2 group-data-[collapsible=icon]:px-1">
+              <SidebarMenu>
+                {chatSessions.length === 0 ? (
+                  <SidebarMenuItem>
+                    <div className="px-3 py-2 text-xs text-text-secondary/50 group-data-[collapsible=icon]:hidden">
+                      No chats yet
+                    </div>
+                  </SidebarMenuItem>
+                ) : (
+                  chatSessions.map((session) => (
+                    <SidebarMenuItem key={session.id}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={location.pathname === `/dashboard/assistant?session=${session.id}`}
+                        tooltip={session.title}
+                        className="group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 text-text-secondary hover:text-text-primary hover:bg-surface-elevated data-[active=true]:text-primary data-[active=true]:bg-surface-elevated transition-colors"
+                      >
+                        <Link to={`/dashboard/assistant?session=${session.id}`} className="flex items-center gap-3 px-3 py-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 group-data-[collapsible=icon]:gap-0">
+                          <MessageCircle className="h-4 w-4 flex-shrink-0" />
+                          <span className="group-data-[collapsible=icon]:sr-only text-sm truncate">
+                            {session.title || 'New Chat'}
+                          </span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))
+                )}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
         </SidebarContent>
         
         <SidebarFooter className="p-4 border-t border-border-subtle bg-surface">
