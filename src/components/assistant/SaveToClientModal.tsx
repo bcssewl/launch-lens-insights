@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
+import { useSaveReportAsPdf } from '@/hooks/useSaveReportAsPdf';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, FolderOpen } from 'lucide-react';
 
@@ -32,8 +33,8 @@ const SaveToClientModal: React.FC<SaveToClientModalProps> = ({
   const [clients, setClients] = useState<Client[]>([]);
   const [selectedClientId, setSelectedClientId] = useState<string>('');
   const [fileName, setFileName] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [isLoadingClients, setIsLoadingClients] = useState(false);
+  const { saveReportAsPdf, isLoading } = useSaveReportAsPdf();
   const { toast } = useToast();
 
   // Set default filename when modal opens
@@ -41,7 +42,7 @@ const SaveToClientModal: React.FC<SaveToClientModalProps> = ({
     if (open && canvasTitle) {
       const cleanTitle = canvasTitle.replace(/[^a-zA-Z0-9\s]/g, '').trim();
       const defaultName = cleanTitle || 'Canvas Report';
-      setFileName(`${defaultName}.html`);
+      setFileName(`${defaultName}.pdf`);
     }
   }, [open, canvasTitle]);
 
@@ -93,140 +94,19 @@ const SaveToClientModal: React.FC<SaveToClientModalProps> = ({
       return;
     }
 
-    setIsLoading(true);
-    try {
-      // Get current user
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      
-      if (userError || !user) {
-        toast({
-          title: "Authentication Error",
-          description: "You must be logged in to save files.",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // Convert canvas content to HTML and upload to storage
-      const { blob, contentType } = await generateHtmlBlob();
-      const filePath = `${selectedClientId}/${Date.now()}_${fileName}`;
-      
-      // Upload to Supabase storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('client-files')
-        .upload(filePath, blob, {
-          contentType: contentType,
-          upsert: false
-        });
-
-      if (uploadError) {
-        console.error('Upload error:', uploadError);
-        toast({
-          title: "Upload Failed",
-          description: "Failed to upload file. Please try again.",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // Save file record to database
-      const { error: dbError } = await supabase
-        .from('client_files')
-        .insert({
-          client_id: selectedClientId,
-          file_name: fileName,
-          file_path: filePath,
-          file_size: blob.size,
-          file_type: contentType,
-          category: 'Report',
-          user_id: user.id
-        });
-
-      if (dbError) {
-        console.error('Database error:', dbError);
-        // Clean up uploaded file if database insert fails
-        await supabase.storage.from('client-files').remove([filePath]);
-        toast({
-          title: "Save Failed",
-          description: "Failed to save file record. Please try again.",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      const clientName = clients.find(c => c.id === selectedClientId)?.name || 'Unknown Client';
-      toast({
-        title: "Success",
-        description: `Canvas report saved to ${clientName}'s workspace.`,
-      });
-
-      onSaveSuccess(clientName);
-      onClose();
-    } catch (error) {
-      console.error('Error saving to client:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save canvas report. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const preprocessCanvasContent = (rawContent: string): string => {
-    // Try to parse as JSON first to extract actual content
-    try {
-      const parsed = JSON.parse(rawContent);
-      
-      // Look for common content fields in the JSON
-      const contentFields = ['content', 'markdown', 'text', 'report', 'response', 'message'];
-      
-      for (const field of contentFields) {
-        if (parsed[field] && typeof parsed[field] === 'string' && parsed[field].trim()) {
-          console.log(`SaveToClientModal: Extracted content from JSON field: ${field}`);
-          return parsed[field].trim();
-        }
-      }
-      
-      // If it's a valid JSON but no content field found, convert to readable string
-      console.log('SaveToClientModal: JSON parsed but no content field found, using stringified version');
-      return JSON.stringify(parsed, null, 2);
-      
-    } catch (error) {
-      // Not valid JSON, treat as plain markdown/text
-      console.log('SaveToClientModal: Content is not JSON, treating as markdown');
-      return rawContent.trim();
-    }
-  };
-
-  const generateHtmlBlob = async (): Promise<{ blob: Blob; fileExtension: string; contentType: string }> => {
-    // Import PDF generation utilities
-    const { processMarkdownForPdf, createChatGptPdfHtml } = await import('@/utils/canvasPdfProcessor');
-    const { format } = await import('date-fns');
-    
-    // Preprocess the canvas content to extract meaningful text from JSON if needed
-    const processedContent = preprocessCanvasContent(canvasContent);
-    
-    // Validate content length
-    if (!processedContent || processedContent.length < 10) {
-      throw new Error('Content is too short or empty to generate a meaningful report');
-    }
-    
-    // Process markdown to HTML
-    const processed = await processMarkdownForPdf(processedContent);
-    const html = createChatGptPdfHtml(processed, {
-      generatedDate: format(new Date(), 'd MMM yyyy'),
-      author: 'AI Assistant'
+    const result = await saveReportAsPdf({
+      clientId: selectedClientId,
+      fileName,
+      canvasContent,
+      canvasTitle
     });
-    
-    // Return HTML blob with correct content type
-    return {
-      blob: new Blob([html], { type: 'text/html' }),
-      fileExtension: '.html',
-      contentType: 'text/html'
-    };
+
+    if (result.success && result.clientName) {
+      onSaveSuccess(result.clientName);
+      onClose();
+    }
   };
+
 
   const handleClose = () => {
     setSelectedClientId('');
