@@ -41,7 +41,7 @@ const SaveToClientModal: React.FC<SaveToClientModalProps> = ({
     if (open && canvasTitle) {
       const cleanTitle = canvasTitle.replace(/[^a-zA-Z0-9\s]/g, '').trim();
       const defaultName = cleanTitle || 'Canvas Report';
-      setFileName(`${defaultName}.pdf`);
+      setFileName(`${defaultName}.html`);
     }
   }, [open, canvasTitle]);
 
@@ -107,15 +107,15 @@ const SaveToClientModal: React.FC<SaveToClientModalProps> = ({
         return;
       }
 
-      // Convert canvas content to PDF and upload to storage
-      const blob = await generatePdfBlob();
+      // Convert canvas content to HTML and upload to storage
+      const { blob, contentType } = await generateHtmlBlob();
       const filePath = `${selectedClientId}/${Date.now()}_${fileName}`;
       
       // Upload to Supabase storage
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('client-files')
         .upload(filePath, blob, {
-          contentType: 'application/pdf',
+          contentType: contentType,
           upsert: false
         });
 
@@ -137,7 +137,7 @@ const SaveToClientModal: React.FC<SaveToClientModalProps> = ({
           file_name: fileName,
           file_path: filePath,
           file_size: blob.size,
-          file_type: 'application/pdf',
+          file_type: contentType,
           category: 'Report',
           user_id: user.id
         });
@@ -174,7 +174,7 @@ const SaveToClientModal: React.FC<SaveToClientModalProps> = ({
     }
   };
 
-  const generatePdfBlob = async (): Promise<Blob> => {
+  const generateHtmlBlob = async (): Promise<{ blob: Blob; fileExtension: string; contentType: string }> => {
     // Import PDF generation utilities
     const { processMarkdownForPdf, createChatGptPdfHtml } = await import('@/utils/canvasPdfProcessor');
     const { format } = await import('date-fns');
@@ -186,8 +186,12 @@ const SaveToClientModal: React.FC<SaveToClientModalProps> = ({
       author: 'AI Assistant'
     });
     
-    // Return HTML blob that can be converted to PDF
-    return new Blob([html], { type: 'text/html' });
+    // Return HTML blob with correct content type
+    return {
+      blob: new Blob([html], { type: 'text/html' }),
+      fileExtension: '.html',
+      contentType: 'text/html'
+    };
   };
 
   const handleClose = () => {
