@@ -345,15 +345,15 @@ const SeamlessMarkdownEditor: React.FC<SeamlessMarkdownEditorProps> = ({
           </div>
         )}
 
-        {/* Main editable content */}
+        {/* Main editable content with custom prose-report styling */}
         <div
           ref={editorRef}
           contentEditable
           suppressContentEditableWarning
-          className="min-h-96 focus:outline-none prose prose-gray dark:prose-invert max-w-none"
+          className="min-h-96 focus:outline-none prose-report prose dark:prose-invert max-w-none"
           style={{
             fontSize: '16px',
-            lineHeight: '1.7',
+            lineHeight: '1.75',
           }}
         />
 
