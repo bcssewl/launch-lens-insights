@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -13,12 +14,24 @@ export interface ChatSession {
 }
 
 export const useChatSessions = () => {
+  const [searchParams] = useSearchParams();
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
+
+  // Initialize session from URL parameter
+  useEffect(() => {
+    const sessionParam = searchParams.get('session');
+    console.log('URL session parameter:', sessionParam);
+    console.log('Current session ID:', currentSessionId);
+    if (sessionParam && sessionParam !== currentSessionId) {
+      console.log('Setting session from URL:', sessionParam);
+      setCurrentSessionId(sessionParam);
+    }
+  }, [searchParams, currentSessionId]);
 
   useEffect(() => {
     if (user) {
