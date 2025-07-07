@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { AppSidebar } from '@/components/AppSidebar';
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
@@ -143,7 +144,7 @@ const AIAssistantPage: React.FC = () => {
     // TODO: You might want to save this to the backend or update the original message
   };
 
-  const handleCanvasPdfDownload = useCallback(async () => {
+  const handleEnhancedCanvasPdfDownload = useCallback(async () => {
     console.log('AIAssistantPage: Enhanced PDF download initiated');
     
     try {
@@ -257,7 +258,7 @@ const AIAssistantPage: React.FC = () => {
         content={editedCanvasContent} 
         title="AI Report" 
         onDownload={handleCanvasDownload} 
-        onPrint={handleCanvasPdfDownload} 
+        onPrint={handleEnhancedCanvasPdfDownload} 
         messages={messages} 
         isTyping={isTyping} 
         viewportRef={viewportRef} 
@@ -266,7 +267,7 @@ const AIAssistantPage: React.FC = () => {
         onOpenCanvas={handleOpenCanvas} 
         onCloseCanvas={handleCloseCanvas} 
         onCanvasDownload={handleCanvasDownload} 
-        onCanvasPrint={handleCanvasPdfDownload} 
+        onCanvasPrint={handleEnhancedCanvasPdfDownload} 
         onContentUpdate={handleCanvasContentUpdate} 
       />
     </div>
