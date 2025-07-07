@@ -192,7 +192,7 @@ const AIAssistantPage: React.FC = () => {
           {isMobile ? (
             <MobileDashboardHeader title="AI Assistant" />
           ) : (
-            <div className="flex-shrink-0 border-b bg-background/10 backdrop-blur-sm">
+            <div className="flex-shrink-0 bg-transparent">
               <div className="px-6 flex items-center justify-between py-[10px]">
                 <h1 className="text-lg font-semibold text-foreground">AI Assistant</h1>
                 <div className="flex items-center">
