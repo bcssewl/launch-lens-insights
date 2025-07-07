@@ -13,51 +13,58 @@ const createPdfRenderer = () => {
   const renderer = new marked.Renderer();
   
   // Add page breaks before major headings
-  renderer.heading = (text: string, level: number) => {
+  renderer.heading = ({ tokens, depth }) => {
+    const text = tokens.map(token => typeof token === 'string' ? token : token.raw || '').join('');
     const id = text.toLowerCase().replace(/[^\w]+/g, '-');
-    const pageBreakClass = level <= 2 ? ' class="page-break-before"' : '';
-    return `<h${level}${pageBreakClass} id="${id}">${text}</h${level}>`;
+    const pageBreakClass = depth <= 2 ? ' class="page-break-before"' : '';
+    return `<h${depth}${pageBreakClass} id="${id}">${text}</h${depth}>`;
   };
   
   // Wrap tables to avoid page breaks
-  renderer.table = (header: string, body: string) => {
+  renderer.table = ({ header, rows }) => {
+    const headerHtml = header.map(cell => `<th>${cell.text}</th>`).join('');
+    const bodyHtml = rows.map(row => 
+      `<tr>${row.map(cell => `<td>${cell.text}</td>`).join('')}</tr>`
+    ).join('');
+    
     return `<div class="table-container page-break-avoid">
       <table>
-        <thead>${header}</thead>
-        <tbody>${body}</tbody>
+        <thead><tr>${headerHtml}</tr></thead>
+        <tbody>${bodyHtml}</tbody>
       </table>
     </div>`;
   };
   
   // Wrap code blocks to avoid page breaks
-  renderer.code = (code: string, language?: string) => {
-    const lang = language || '';
+  renderer.code = ({ text, lang }) => {
+    const language = lang || '';
     return `<div class="code-container page-break-avoid">
-      <pre><code class="language-${lang}">${code}</code></pre>
+      <pre><code class="language-${language}">${text}</code></pre>
     </div>`;
   };
   
   // Add proper paragraph spacing
-  renderer.paragraph = (text: string) => {
+  renderer.paragraph = ({ tokens }) => {
+    const text = tokens.map(token => typeof token === 'string' ? token : token.raw || '').join('');
     return `<p class="content-paragraph">${text}</p>`;
   };
   
   // Handle lists with proper spacing
-  renderer.list = (body: string, ordered: boolean) => {
+  renderer.list = ({ items, ordered }) => {
     const tag = ordered ? 'ol' : 'ul';
-    return `<${tag} class="content-list page-break-avoid">${body}</${tag}>`;
+    const itemsHtml = items.map(item => `<li>${item.text}</li>`).join('');
+    return `<${tag} class="content-list page-break-avoid">${itemsHtml}</${tag}>`;
   };
   
   return renderer;
 };
 
-export const processMarkdownForPdf = (markdown: string): ProcessedContent => {
+export const processMarkdownForPdf = async (markdown: string): Promise<ProcessedContent> => {
   // Configure marked with custom renderer
   marked.setOptions({
     renderer: createPdfRenderer(),
     gfm: true,
-    breaks: true,
-    sanitize: false
+    breaks: true
   });
   
   // Extract title from first heading
@@ -65,7 +72,7 @@ export const processMarkdownForPdf = (markdown: string): ProcessedContent => {
   const title = titleMatch ? titleMatch[1] : 'AI Report';
   
   // Convert markdown to HTML
-  const html = marked(markdown);
+  const html = await marked(markdown);
   
   // Calculate estimated metrics
   const wordCount = markdown.split(/\s+/).length;

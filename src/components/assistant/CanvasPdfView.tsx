@@ -21,16 +21,24 @@ const CanvasPdfView: React.FC<CanvasPdfViewProps> = ({
   const [isPreviewMode, setIsPreviewMode] = useState(false);
 
   useEffect(() => {
-    // Process the markdown content
-    const processed = processMarkdownForPdf(content);
-    setProcessedContent(processed);
+    const processContent = async () => {
+      try {
+        // Process the markdown content
+        const processed = await processMarkdownForPdf(content);
+        setProcessedContent(processed);
 
-    // Create the HTML for PDF generation
-    const html = createPdfHtml(processed, {
-      generatedDate: format(new Date(), 'MMM d, yyyy'),
-      author: 'AI Assistant'
-    });
-    setPdfHtml(html);
+        // Create the HTML for PDF generation
+        const html = createPdfHtml(processed, {
+          generatedDate: format(new Date(), 'MMM d, yyyy'),
+          author: 'AI Assistant'
+        });
+        setPdfHtml(html);
+      } catch (error) {
+        console.error('Failed to process markdown content:', error);
+      }
+    };
+
+    processContent();
   }, [content]);
 
   const handlePrint = () => {
