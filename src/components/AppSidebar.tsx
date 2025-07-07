@@ -193,12 +193,10 @@ export const AppSidebar: React.FC = () => {
                   <SidebarMenuButton
                     onClick={() => setIsSearchOpen(true)}
                     tooltip="Search Chats (Ctrl+K)"
-                    className="group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 text-text-secondary hover:text-text-primary hover:bg-surface-elevated transition-colors cursor-pointer"
+                    className="group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 text-text-secondary hover:text-text-primary hover:bg-surface-elevated transition-colors cursor-pointer flex items-center gap-3 px-3 py-2 group-data-[collapsible=icon]:gap-0"
                   >
-                    <div className="flex items-center gap-3 px-3 py-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 group-data-[collapsible=icon]:gap-0">
-                      <Search className="h-5 w-5 flex-shrink-0" />
-                      <span className="group-data-[collapsible=icon]:sr-only">Search Chats</span>
-                    </div>
+                    <Search className="h-5 w-5 flex-shrink-0" />
+                    <span className="group-data-[collapsible=icon]:sr-only">Search Chats</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </SidebarMenu>
