@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppSidebar } from '@/components/AppSidebar';
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { FloatingElements } from '@/components/landing/FloatingElements';
@@ -9,19 +8,16 @@ import ChatArea from '@/components/assistant/ChatArea';
 import CanvasView from '@/components/assistant/CanvasView';
 import FullscreenChatLayout from '@/components/assistant/FullscreenChatLayout';
 import ChatSubheader from '@/components/assistant/ChatSubheader';
-import { AIModel } from '@/components/assistant/ModelSelectionDropdown';
 import { useChatSessions } from '@/hooks/useChatSessions';
 import { useChatHistory } from '@/hooks/useChatHistory';
 import { useMessages } from '@/hooks/useMessages';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTheme } from 'next-themes';
 import { Loader2 } from 'lucide-react';
-import { generatePDFFromCanvas } from '@/utils/pdfGenerator';
 
 const AIAssistantPage: React.FC = () => {
   const isMobile = useIsMobile();
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [selectedModel, setSelectedModel] = useState<string>('best');
   const { theme } = useTheme();
 
   const {
@@ -88,13 +84,8 @@ const AIAssistantPage: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isFullscreen]);
 
-  const handleModelSelect = (model: AIModel) => {
-    setSelectedModel(model.id);
-    console.log('Selected AI model:', model.name);
-  };
-
-  const handleSendMessageWithSession = async (text: string, selectedModel?: string) => {
-    console.log('AIAssistantPage: Sending message with session:', currentSessionId, 'and model:', selectedModel);
+  const handleSendMessageWithSession = async (text: string) => {
+    console.log('AIAssistantPage: Sending message with session:', currentSessionId);
 
     // Create session if none exists
     if (!currentSessionId) {
@@ -109,10 +100,10 @@ const AIAssistantPage: React.FC = () => {
 
       // Wait a bit for the session to be set before sending the message
       setTimeout(() => {
-        handleSendMessage(text, undefined, selectedModel);
+        handleSendMessage(text);
       }, 100);
     } else {
-      handleSendMessage(text, undefined, selectedModel);
+      handleSendMessage(text);
     }
   };
 
@@ -143,19 +134,6 @@ const AIAssistantPage: React.FC = () => {
     setEditedCanvasContent(newContent);
     // TODO: You might want to save this to the backend or update the original message
   };
-
-  const handleEnhancedCanvasPdfDownload = useCallback(async () => {
-    console.log('AIAssistantPage: Enhanced PDF download initiated');
-    
-    try {
-      const title = editedCanvasContent.split('\n')[0].replace(/^#\s*/, '') || 'AI Report';
-      await generatePDFFromCanvas(editedCanvasContent, title);
-    } catch (error) {
-      console.error('AIAssistantPage: PDF generation failed:', error);
-      // Fallback to browser print
-      window.print();
-    }
-  }, [editedCanvasContent]);
 
   // Show loading state while history is being loaded
   if (isLoadingHistory) {
@@ -225,8 +203,7 @@ const AIAssistantPage: React.FC = () => {
                     onToggleFullscreen={toggleFullscreen} 
                     onDownloadChat={handleDownloadChat} 
                     onClearConversation={handleClearConversationWithHistory} 
-                    onSessionSelect={handleSessionSelect}
-                    selectedModel={selectedModel}
+                    onSessionSelect={handleSessionSelect} 
                   />
                 </div>
               </div>
@@ -243,22 +220,20 @@ const AIAssistantPage: React.FC = () => {
               onOpenCanvas={handleOpenCanvas} 
               onCloseCanvas={handleCloseCanvas} 
               onCanvasDownload={handleCanvasDownload} 
-              onCanvasPrint={handleCanvasPrint}
-              selectedModel={selectedModel}
-              onModelSelect={handleModelSelect}
+              onCanvasPrint={handleCanvasPrint} 
             />
           </div>
         </SidebarInset>
       </SidebarProvider>
 
-      {/* Enhanced Canvas View with PDF Generation */}
+      {/* SINGLE Canvas View - Only rendered here */}
       <CanvasView 
         isOpen={canvasState.isOpen} 
         onClose={handleCloseCanvas} 
         content={editedCanvasContent} 
         title="AI Report" 
         onDownload={handleCanvasDownload} 
-        onPrint={handleEnhancedCanvasPdfDownload} 
+        onPrint={handleCanvasPdfDownload} 
         messages={messages} 
         isTyping={isTyping} 
         viewportRef={viewportRef} 
@@ -267,7 +242,7 @@ const AIAssistantPage: React.FC = () => {
         onOpenCanvas={handleOpenCanvas} 
         onCloseCanvas={handleCloseCanvas} 
         onCanvasDownload={handleCanvasDownload} 
-        onCanvasPrint={handleEnhancedCanvasPdfDownload} 
+        onCanvasPrint={handleCanvasPdfDownload} 
         onContentUpdate={handleCanvasContentUpdate} 
       />
     </div>

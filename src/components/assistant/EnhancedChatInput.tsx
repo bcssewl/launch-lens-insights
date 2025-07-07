@@ -8,22 +8,16 @@ import ChatInputControls from './ChatInputControls';
 import ChatInputStatus from './ChatInputStatus';
 import ChatInputModals from './ChatInputModals';
 
-import { AIModel } from './ModelSelectionDropdown';
-
 interface EnhancedChatInputProps {
-  onSendMessage: (message: string, selectedModel?: string) => void;
+  onSendMessage: (message: string) => void;
   isTyping: boolean;
   isCompact?: boolean;
-  selectedModel?: string;
-  onModelSelect?: (model: AIModel) => void;
 }
 
 const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({ 
   onSendMessage, 
   isTyping, 
-  isCompact = false,
-  selectedModel,
-  onModelSelect
+  isCompact = false 
 }) => {
   const [inputValue, setInputValue] = useState('');
   const [showProjectModal, setShowProjectModal] = useState(false);
@@ -41,7 +35,7 @@ const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
 
   const handleSendMessage = () => {
     if (inputValue.trim() === '') return;
-    onSendMessage(inputValue, selectedModel);
+    onSendMessage(inputValue);
     setInputValue('');
     clearFiles();
   };
@@ -118,8 +112,6 @@ const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
                   onSendMessage={handleSendMessage}
                   onDatabaseSelect={handleDatabaseSelect}
                   onLocalFileSelect={handleLocalFileSelect}
-                  selectedModel={selectedModel}
-                  onModelSelect={onModelSelect}
                 />
               </ChatInputCore>
             </div>
@@ -149,8 +141,6 @@ const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
               onSendMessage={handleSendMessage}
               onDatabaseSelect={handleDatabaseSelect}
               onLocalFileSelect={handleLocalFileSelect}
-              selectedModel={selectedModel}
-              onModelSelect={onModelSelect}
             />
           </ChatInputCore>
         )}

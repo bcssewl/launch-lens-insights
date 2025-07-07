@@ -158,7 +158,7 @@ const ClientFileVault: React.FC<ClientFileVaultProps> = ({ client }) => {
 
   return (
     <div className="space-y-6">
-      {/* File Vault Header with Ask Vault Search */}
+      {/* File Vault Header */}
       <FileVaultHeader
         filters={filters}
         onFiltersChange={setFilters}
@@ -169,7 +169,6 @@ const ClientFileVault: React.FC<ClientFileVaultProps> = ({ client }) => {
         totalFiles={files.length}
         clientId={client.id}
         onUploadComplete={handleUploadComplete}
-        onPreviewFile={handlePreview}
       />
 
       {/* Upload Area - keeping this for backward compatibility if needed */}

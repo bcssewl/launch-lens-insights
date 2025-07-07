@@ -1,17 +1,16 @@
 
 import React from 'react';
+import { X, Download, Printer, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { X, Download, Printer, FileText, Edit3, Loader2 } from 'lucide-react';
 
 interface CanvasHeaderProps {
   title: string;
   isEditing: boolean;
   onDownload?: () => void;
   onPrint?: () => void;
-  onPdfDownload?: () => void;
   onEdit: () => void;
   onClose: () => void;
-  isGeneratingPDF?: boolean;
+  onPdfDownload?: () => void;
 }
 
 const CanvasHeader: React.FC<CanvasHeaderProps> = ({
@@ -19,91 +18,81 @@ const CanvasHeader: React.FC<CanvasHeaderProps> = ({
   isEditing,
   onDownload,
   onPrint,
-  onPdfDownload,
-  onEdit,
   onClose,
-  isGeneratingPDF = false
+  onPdfDownload
 }) => {
+  const handleDownloadClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    console.log('CanvasHeader: Download clicked');
+    onDownload?.();
+  };
+
+  const handlePrintClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    console.log('CanvasHeader: Print clicked');
+    onPrint?.();
+  };
+
+  const handlePdfDownloadClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    console.log('CanvasHeader: PDF Download clicked');
+    onPdfDownload?.();
+  };
+
+  const handleCloseClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    console.log('CanvasHeader: Close button clicked');
+    onClose();
+  };
+
   return (
-    <div className="bg-background/20 backdrop-blur-sm border-b border-border/20">
-      <div className="flex items-center justify-between px-6 py-4">
-        <div className="flex items-center gap-3">
-          <h1 className="text-xl font-semibold text-foreground" id="canvas-title">
-            {title}
-          </h1>
-          {isEditing && (
-            <span className="text-sm text-muted-foreground bg-muted/50 px-2 py-1 rounded">
-              Editing
-            </span>
-          )}
-        </div>
-        
-        <div className="flex items-center gap-2">
-          {/* Download Markdown */}
-          {onDownload && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onDownload}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Download
-            </Button>
-          )}
-
-          {/* Enhanced PDF Download */}
-          {onPdfDownload && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onPdfDownload}
-              disabled={isGeneratingPDF}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              {isGeneratingPDF ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <FileText className="h-4 w-4 mr-2" />
-              )}
-              {isGeneratingPDF ? 'Generating...' : 'PDF'}
-            </Button>
-          )}
-
-          {/* Browser Print (fallback) */}
-          {onPrint && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onPrint}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <Printer className="h-4 w-4 mr-2" />
-              Print
-            </Button>
-          )}
-
-          {/* Edit Button */}
+    <div className="flex items-center justify-between p-4 bg-background/95 backdrop-blur-sm border-b border-border/50">
+      <h2 id="canvas-title" className="text-lg font-semibold text-foreground truncate max-w-md">
+        {title} {isEditing && <span className="text-sm text-orange-500">(Editing)</span>}
+      </h2>
+      <div className="flex items-center gap-2">
+        {onPdfDownload && (
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
-            onClick={onEdit}
-            className="text-muted-foreground hover:text-foreground"
+            onClick={handlePdfDownloadClick}
+            className="flex items-center gap-2"
           >
-            <Edit3 className="h-4 w-4 mr-2" />
-            {isEditing ? 'View' : 'Edit'}
+            <FileText className="h-4 w-4" />
+            Download PDF
           </Button>
-
-          {/* Close Button */}
+        )}
+        {onDownload && (
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
-            onClick={onClose}
-            className="text-muted-foreground hover:text-foreground"
+            onClick={handleDownloadClick}
+            className="flex items-center gap-2"
           >
-            <X className="h-4 w-4" />
+            <Download className="h-4 w-4" />
+            Download
           </Button>
-        </div>
+        )}
+        {onPrint && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handlePrintClick}
+            className="flex items-center gap-2"
+          >
+            <Printer className="h-4 w-4" />
+            Print
+          </Button>
+        )}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleCloseClick}
+          className="flex items-center gap-2"
+        >
+          <X className="h-4 w-4" />
+          Close
+        </Button>
       </div>
     </div>
   );

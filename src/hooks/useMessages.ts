@@ -3,8 +3,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { Message, initialMessages, formatTimestamp } from '@/constants/aiAssistant';
 import { useN8nWebhook } from '@/hooks/useN8nWebhook';
 import { useChatHistory } from '@/hooks/useChatHistory';
-import { executeStratixResearchWorkflow } from '@/utils/stratixResearchAgent';
-import { supabase } from '@/integrations/supabase/client';
 
 export const useMessages = (currentSessionId: string | null) => {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
@@ -75,11 +73,11 @@ export const useMessages = (currentSessionId: string | null) => {
     setIsLoadingHistory(false);
   }, [currentSessionId, history]);
 
-  const handleSendMessage = useCallback(async (text?: string, messageText?: string, selectedModel?: string) => {
+  const handleSendMessage = useCallback(async (text?: string, messageText?: string) => {
     const finalMessageText = text || messageText;
     if (!finalMessageText || finalMessageText.trim() === '') return;
 
-    console.log('useMessages: Sending message in session:', currentSessionId, 'with model:', selectedModel);
+    console.log('useMessages: Sending message in session:', currentSessionId);
 
     const newUserMessage: Message = {
       id: uuidv4(),
@@ -115,37 +113,7 @@ export const useMessages = (currentSessionId: string | null) => {
         contextMessage = `Current document content:\n\n${canvasState.content}\n\n---\n\nUser message: ${finalMessageText}`;
       }
       
-      // Apply specialized model workflows
-      let aiResponseText: string;
-      console.log('useMessages: Selected model:', selectedModel);
-      
-      if (selectedModel === 'stratix') {
-        console.log('🔬 useMessages: Activating Stratix Research Agent for query:', finalMessageText);
-        aiResponseText = await executeStratixResearchWorkflow(contextMessage, currentSessionId);
-      } else if (selectedModel === 'perplexity') {
-        console.log('🔍 useMessages: Using Perplexity for real-time search:', finalMessageText);
-        const { data, error } = await supabase.functions.invoke('perplexity-search', {
-          body: { query: contextMessage, sessionId: currentSessionId }
-        });
-        if (error) {
-          console.error('Perplexity error:', error);
-          throw error;
-        }
-        aiResponseText = data?.result || 'Unable to get response from Perplexity';
-      } else if (selectedModel === 'gemini') {
-        console.log('💎 useMessages: Using Gemini AI model:', finalMessageText);
-        const { data, error } = await supabase.functions.invoke('gemini-chat', {
-          body: { query: contextMessage, sessionId: currentSessionId }
-        });
-        if (error) {
-          console.error('Gemini error:', error);
-          throw error;
-        }
-        aiResponseText = data?.result || 'Unable to get response from Gemini';
-      } else {
-        console.log('🤖 useMessages: Using default N8N workflow:', selectedModel);
-        aiResponseText = await sendMessageToN8n(contextMessage, currentSessionId);
-      }
+      const aiResponseText = await sendMessageToN8n(contextMessage, currentSessionId);
       
       const aiResponse: Message = {
         id: uuidv4(),

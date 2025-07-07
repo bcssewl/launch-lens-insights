@@ -1,3 +1,4 @@
+
 import React, { useEffect, useCallback, useState } from 'react';
 import { ResizablePanelGroup, ResizableHandle } from '@/components/ui/resizable';
 import CanvasHeader from './CanvasHeader';
@@ -6,8 +7,6 @@ import CanvasReportPanel from './CanvasReportPanel';
 import { useCanvasKeyboardShortcuts } from './useCanvasKeyboardShortcuts';
 import { FloatingElements } from '@/components/landing/FloatingElements';
 import { Message } from '@/constants/aiAssistant';
-import { generatePDFFromCanvas } from '@/utils/pdfGenerator';
-import { useToast } from '@/hooks/use-toast';
 
 interface CanvasViewProps {
   isOpen: boolean;
@@ -49,8 +48,6 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
   onContentUpdate
 }) => {
   const [currentContent, setCurrentContent] = useState(content);
-  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
-  const { toast } = useToast();
 
   console.log('CanvasView: Rendering with isOpen:', isOpen);
 
@@ -59,44 +56,19 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
     setCurrentContent(content);
   }, [content]);
 
-  // Enhanced PDF download handler
-  const handlePdfDownload = useCallback(async () => {
-    console.log('CanvasView: Enhanced PDF download initiated');
-    setIsGeneratingPDF(true);
-    
-    try {
-      toast({
-        title: "Generating PDF",
-        description: "Please wait while we create your PDF report..."
-      });
+  // PDF download handler
+  const handlePdfDownload = useCallback(() => {
+    console.log('CanvasView: PDF download initiated');
+    window.print();
+  }, []);
 
-      await generatePDFFromCanvas(currentContent, title);
-      
-      toast({
-        title: "PDF Generated",
-        description: "Your report has been downloaded successfully"
-      });
-    } catch (error) {
-      console.error('CanvasView: PDF generation failed:', error);
-      toast({
-        title: "PDF Generation Failed", 
-        description: "There was an error generating the PDF. Falling back to browser print.",
-        variant: "destructive"
-      });
-      // Fallback to browser print
-      window.print();
-    } finally {
-      setIsGeneratingPDF(false);
-    }
-  }, [currentContent, title, toast]);
-
-  // Use keyboard shortcuts hook with enhanced PDF download
+  // Use keyboard shortcuts hook with PDF download
   useCanvasKeyboardShortcuts({
     isOpen,
-    isEditing: false,
+    isEditing: false, // Always false since we have seamless editing
     onClose,
-    onPrint: handlePdfDownload,
-    onToggleEdit: () => {}
+    onPrint: handlePdfDownload, // Use PDF download for Ctrl+P
+    onToggleEdit: () => {} // No-op since we don't have edit mode
   });
 
   const handleBackdropClick = useCallback((event: React.MouseEvent) => {
@@ -141,7 +113,7 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
     return null;
   }
 
-  console.log('CanvasView: Rendering full canvas view with enhanced PDF generation');
+  console.log('CanvasView: Rendering full canvas view with seamless editing');
 
   const hasChat = Boolean(onSendMessage);
 
@@ -160,13 +132,12 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
         {/* Header */}
         <CanvasHeader
           title={title}
-          isEditing={false}
+          isEditing={false} // Always false since we have seamless editing
           onDownload={onDownload}
           onPrint={onPrint}
           onPdfDownload={handlePdfDownload}
-          onEdit={() => {}}
+          onEdit={() => {}} // No-op since we don't need edit mode
           onClose={onClose}
-          isGeneratingPDF={isGeneratingPDF}
         />
 
         {/* Resizable Content Area */}
@@ -191,10 +162,10 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
 
             {/* Report Panel with Seamless Editing */}
             <CanvasReportPanel
-              isEditing={false}
+              isEditing={false} // Not used anymore
               content={currentContent}
               onSave={handleContentUpdate}
-              onCancel={() => {}}
+              onCancel={() => {}} // Not used anymore
               hasChat={hasChat}
               onSendMessage={onSendMessage}
               messageId={canvasState?.messageId}
