@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { AppSidebar } from '@/components/AppSidebar';
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { FloatingElements } from '@/components/landing/FloatingElements';
@@ -16,6 +15,7 @@ import { useMessages } from '@/hooks/useMessages';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTheme } from 'next-themes';
 import { Loader2 } from 'lucide-react';
+import { generatePDFFromCanvas } from '@/utils/pdfGenerator';
 
 const AIAssistantPage: React.FC = () => {
   const isMobile = useIsMobile();
@@ -143,6 +143,19 @@ const AIAssistantPage: React.FC = () => {
     // TODO: You might want to save this to the backend or update the original message
   };
 
+  const handleCanvasPdfDownload = useCallback(async () => {
+    console.log('AIAssistantPage: Enhanced PDF download initiated');
+    
+    try {
+      const title = editedCanvasContent.split('\n')[0].replace(/^#\s*/, '') || 'AI Report';
+      await generatePDFFromCanvas(editedCanvasContent, title);
+    } catch (error) {
+      console.error('AIAssistantPage: PDF generation failed:', error);
+      // Fallback to browser print
+      window.print();
+    }
+  }, [editedCanvasContent]);
+
   // Show loading state while history is being loaded
   if (isLoadingHistory) {
     return (
@@ -237,7 +250,7 @@ const AIAssistantPage: React.FC = () => {
         </SidebarInset>
       </SidebarProvider>
 
-      {/* SINGLE Canvas View - Only rendered here */}
+      {/* Enhanced Canvas View with PDF Generation */}
       <CanvasView 
         isOpen={canvasState.isOpen} 
         onClose={handleCloseCanvas} 
