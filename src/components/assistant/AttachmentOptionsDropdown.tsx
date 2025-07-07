@@ -23,7 +23,7 @@ const AttachmentOptionsDropdown: React.FC<AttachmentOptionsDropdownProps> = ({
       <DropdownMenuContent align="end" className="w-56 bg-background border border-border shadow-lg">
         <DropdownMenuItem onClick={onDatabaseSelect} className="cursor-pointer">
           <Database className="mr-2 h-4 w-4" />
-          Files from: Optivise Database
+          Files from: Projects (Mock)
         </DropdownMenuItem>
         <DropdownMenuItem onClick={onLocalFileSelect} className="cursor-pointer">
           <Upload className="mr-2 h-4 w-4" />

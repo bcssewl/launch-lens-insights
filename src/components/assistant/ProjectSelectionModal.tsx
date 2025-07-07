@@ -4,8 +4,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { useValidationReports } from '@/hooks/useValidationReports';
-import { Loader2, FileText, ChevronDown } from 'lucide-react';
+import { useClientFiles } from '@/hooks/useClientFiles';
+import { Loader2, FileText, ChevronDown, Building2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface ProjectSelectionModalProps {
   open: boolean;
@@ -13,15 +15,66 @@ interface ProjectSelectionModalProps {
   onAttach: (projectId: string, projectName: string) => void;
 }
 
+interface ClientData {
+  id: string;
+  name: string;
+  description: string | null;
+  industry: string | null;
+  file_count: number;
+}
+
 const ProjectSelectionModal: React.FC<ProjectSelectionModalProps> = ({
   open,
   onClose,
   onAttach,
 }) => {
-  const { reports, loading } = useValidationReports();
+  const [clients, setClients] = useState<ClientData[]>([]);
+  const [loading, setLoading] = useState(false);
   const [selectedProjects, setSelectedProjects] = useState<Set<string>>(new Set());
+  const { toast } = useToast();
 
-  const completedReports = reports.filter(report => report.status === 'completed');
+  React.useEffect(() => {
+    if (open) {
+      fetchClients();
+    }
+  }, [open]);
+
+  const fetchClients = async () => {
+    setLoading(true);
+    try {
+      const { data: clientsData, error } = await supabase
+        .from('clients')
+        .select(`
+          id,
+          name,
+          description,
+          industry,
+          client_files(count)
+        `)
+        .order('updated_at', { ascending: false });
+
+      if (error) throw error;
+
+      const transformedClients: ClientData[] = (clientsData || []).map((client: any) => ({
+        id: client.id,
+        name: client.name,
+        description: client.description,
+        industry: client.industry,
+        file_count: client.client_files?.[0]?.count || 0,
+      }));
+
+      setClients(transformedClients);
+    } catch (error) {
+      console.error('Error fetching clients:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch client projects",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleProjectToggle = (projectId: string) => {
     setSelectedProjects(prev => {
@@ -46,9 +99,9 @@ const ProjectSelectionModal: React.FC<ProjectSelectionModalProps> = ({
 
   const handleAttachSelected = () => {
     selectedProjects.forEach(projectId => {
-      const report = completedReports.find(r => r.validation_id === projectId);
-      if (report) {
-        onAttach(projectId, report.idea_name || 'Untitled Project');
+      const client = clients.find(c => c.id === projectId);
+      if (client) {
+        onAttach(projectId, client.name);
       }
     });
     setSelectedProjects(new Set());
@@ -73,28 +126,34 @@ const ProjectSelectionModal: React.FC<ProjectSelectionModalProps> = ({
               <Loader2 className="h-6 w-6 animate-spin" />
               <span className="ml-2">Loading projects...</span>
             </div>
-          ) : completedReports.length === 0 ? (
+          ) : clients.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No completed projects found</p>
-              <p className="text-sm">Visit the Business Ideas page to create your first project.</p>
+              <Building2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>No client projects found</p>
+              <p className="text-sm">Visit the Projects page to create your first client project.</p>
             </div>
           ) : (
             <>
               <div className="max-h-64 overflow-y-auto space-y-2">
-                {completedReports.map(report => (
+                {clients.map(client => (
                   <div
-                    key={report.validation_id}
+                    key={client.id}
                     className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50"
                   >
                     <div className="flex items-center space-x-3 flex-1 min-w-0">
                       <Checkbox
-                        checked={selectedProjects.has(report.validation_id)}
-                        onChange={() => handleProjectToggle(report.validation_id)}
+                        checked={selectedProjects.has(client.id)}
+                        onChange={() => handleProjectToggle(client.id)}
                       />
-                      <h4 className="font-medium text-sm truncate">
-                        {report.idea_name || 'Untitled Project'}
-                      </h4>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-sm truncate">
+                          {client.name}
+                        </h4>
+                        <p className="text-xs text-muted-foreground">
+                          {client.industry && `${client.industry} • `}
+                          {client.file_count} files
+                        </p>
+                      </div>
                     </div>
                     
                     <DropdownMenu>
@@ -105,11 +164,11 @@ const ProjectSelectionModal: React.FC<ProjectSelectionModalProps> = ({
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-48">
                         <DropdownMenuItem 
-                          onClick={() => handleFileTypeSelect(report.validation_id)}
+                          onClick={() => handleFileTypeSelect(client.id)}
                           className="cursor-pointer"
                         >
                           <FileText className="mr-2 h-4 w-4" />
-                          Research Report
+                          Client Files
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
