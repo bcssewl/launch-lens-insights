@@ -1,10 +1,10 @@
+
 import React, { useEffect, useCallback, useState } from 'react';
 import { ResizablePanelGroup, ResizableHandle } from '@/components/ui/resizable';
 import CanvasHeader from './CanvasHeader';
 import CanvasChatPanel from './CanvasChatPanel';
 import CanvasReportPanel from './CanvasReportPanel';
 import CanvasPrintView from './CanvasPrintView';
-import CanvasPdfView from './CanvasPdfView';
 import { useCanvasKeyboardShortcuts } from './useCanvasKeyboardShortcuts';
 import { FloatingElements } from '@/components/landing/FloatingElements';
 import { Message } from '@/constants/aiAssistant';
@@ -49,7 +49,6 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
   onContentUpdate
 }) => {
   const [currentContent, setCurrentContent] = useState(content);
-  const [showPdfView, setShowPdfView] = useState(false);
 
   console.log('CanvasView: Rendering with isOpen:', isOpen);
 
@@ -58,18 +57,12 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
     setCurrentContent(content);
   }, [content]);
 
-  // Enhanced PDF download handler - now uses ChatGPT-style PDF system
-  const handlePdfDownload = useCallback(() => {
-    console.log('CanvasView: Enhanced ChatGPT-style PDF download initiated');
-    setShowPdfView(true);
-  }, []);
-
-  // Use keyboard shortcuts hook with enhanced PDF download
+  // Use keyboard shortcuts hook - Ctrl+P now triggers instant print
   useCanvasKeyboardShortcuts({
     isOpen,
     isEditing: false,
     onClose,
-    onPrint: handlePdfDownload, // Use enhanced PDF download for Ctrl+P
+    onPrint: () => {}, // Print handled directly in header now
     onToggleEdit: () => {}
   });
 
@@ -85,11 +78,6 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
     setCurrentContent(newContent);
     onContentUpdate?.(newContent);
   }, [onContentUpdate]);
-
-  const handleClosePdfView = useCallback(() => {
-    console.log('CanvasView: Closing PDF view');
-    setShowPdfView(false);
-  }, []);
 
   // Format timestamp helper
   const formatTimestamp = useCallback((timestamp: Date): string => {
@@ -114,24 +102,13 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
     });
   }, [messages]);
 
-  // Show PDF view if requested
-  if (showPdfView) {
-    return (
-      <CanvasPdfView
-        content={currentContent}
-        title={title}
-        onClose={handleClosePdfView}
-      />
-    );
-  }
-
   // Early return if not open
   if (!isOpen) {
     console.log('CanvasView: Not open, returning null');
     return null;
   }
 
-  console.log('CanvasView: Rendering full canvas view with seamless editing');
+  console.log('CanvasView: Rendering full canvas view with instant print');
 
   const hasChat = Boolean(onSendMessage);
 
@@ -147,13 +124,13 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
         {/* Floating Elements for consistent background */}
         <FloatingElements />
         
-        {/* Header */}
+        {/* Header with instant print capability */}
         <CanvasHeader
           title={title}
+          content={currentContent}
           isEditing={false}
           onDownload={onDownload}
           onPrint={onPrint}
-          onPdfDownload={handlePdfDownload} // Enhanced ChatGPT-style PDF download
           onEdit={() => {}}
           onClose={onClose}
         />
