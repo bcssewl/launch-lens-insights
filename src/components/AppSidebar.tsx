@@ -26,9 +26,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Logo } from '@/components/icons';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Home, Lightbulb, FolderOpen, Bot, Settings as SettingsIcon, UserCircle, LogOut, ChevronLeft, ChevronRight, Folder, ChevronDown } from 'lucide-react';
+import { Home, Lightbulb, FolderOpen, Bot, Settings as SettingsIcon, UserCircle, LogOut, ChevronLeft, ChevronRight, Folder, ChevronDown, Search } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { ChatSearchModal } from '@/components/search/ChatSearchModal';
+import { useHotkeys } from 'react-hotkeys-hook';
 
 const priorityNavItems = [
   { href: "/dashboard/assistant", label: "Advisor", icon: Bot },
@@ -48,7 +50,14 @@ export const AppSidebar: React.FC = () => {
   const [profile, setProfile] = useState<any>(null);
   const [chatSessions, setChatSessions] = useState<any[]>([]);
   const [isMoreOpen, setIsMoreOpen] = useState(true);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const { setOpen, isMobile, state, toggleSidebar } = useSidebar();
+
+  // Global search hotkey
+  useHotkeys('ctrl+k,cmd+k', (e) => {
+    e.preventDefault();
+    setIsSearchOpen(true);
+  }, { enableOnFormTags: true });
 
   useEffect(() => {
     if (user) {
@@ -178,9 +187,29 @@ export const AppSidebar: React.FC = () => {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
+                
+                {/* Search Button */}
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={() => setIsSearchOpen(true)}
+                    tooltip="Search Chats (Ctrl+K)"
+                    className="group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 text-text-secondary hover:text-text-primary hover:bg-surface-elevated transition-colors cursor-pointer"
+                  >
+                    <div className="flex items-center gap-3 px-3 py-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 group-data-[collapsible=icon]:gap-0">
+                      <Search className="h-5 w-5 flex-shrink-0" />
+                      <span className="group-data-[collapsible=icon]:sr-only">Search Chats</span>
+                    </div>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
+
+          {/* Chat Search Modal */}
+          <ChatSearchModal 
+            isOpen={isSearchOpen}
+            onClose={() => setIsSearchOpen(false)}
+          />
 
           {/* Chats Section - Always visible and separate from More section */}
           <SidebarGroup>
