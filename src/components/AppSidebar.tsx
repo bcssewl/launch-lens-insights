@@ -51,7 +51,8 @@ export const AppSidebar: React.FC = () => {
   const [chatSessions, setChatSessions] = useState<any[]>([]);
   const [isMoreOpen, setIsMoreOpen] = useState(true);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const { setOpen, isMobile, state, toggleSidebar } = useSidebar();
+  const { setOpen, isMobile, state } = useSidebar();
+  const [collapseTimer, setCollapseTimer] = useState<NodeJS.Timeout | null>(null);
 
   // Global search hotkey
   useHotkeys('ctrl+k,cmd+k', (e) => {
@@ -148,9 +149,30 @@ export const AppSidebar: React.FC = () => {
     await signOut();
   };
 
-  const handleToggleSidebar = () => {
-    toggleSidebar();
+  // Handle hover expand/collapse functionality
+  const handleMouseEnter = () => {
+    if (collapseTimer) {
+      clearTimeout(collapseTimer);
+      setCollapseTimer(null);
+    }
+    setOpen(true);
   };
+
+  const handleMouseLeave = () => {
+    const timer = setTimeout(() => {
+      setOpen(false);
+    }, 2000);
+    setCollapseTimer(timer);
+  };
+
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (collapseTimer) {
+        clearTimeout(collapseTimer);
+      }
+    };
+  }, [collapseTimer]);
 
   // Helper function to check if a chat session is currently active
   const isActiveChatSession = (sessionId: string) => {
@@ -160,7 +182,12 @@ export const AppSidebar: React.FC = () => {
 
   return (
     <div className="relative">
-      <Sidebar collapsible="icon" className="border-r border-border-subtle bg-surface">
+      <Sidebar 
+        collapsible="icon" 
+        className="border-r border-border-subtle bg-surface"
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
         <SidebarHeader className="p-4 bg-surface border-b border-border-subtle">
           <div className="flex items-center justify-center group-data-[collapsible=icon]:justify-center px-3">
             <Logo />
@@ -333,25 +360,6 @@ export const AppSidebar: React.FC = () => {
         <SidebarRail />
       </Sidebar>
       
-      {/* Toggle button positioned fixed on the right edge, vertically centered - only visible on desktop */}
-      {!isMobile && (
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleToggleSidebar}
-          className="fixed top-1/2 left-[var(--sidebar-width)] transform -translate-y-1/2 -translate-x-4 h-8 w-8 rounded-full bg-surface-elevated border border-border-subtle shadow-sm hover:bg-surface-elevated-2 z-50 transition-all duration-200"
-          style={{
-            left: state === "expanded" ? "var(--sidebar-width)" : "var(--sidebar-width-icon)",
-          }}
-          aria-label="Toggle sidebar"
-        >
-          {state === "expanded" ? (
-            <ChevronLeft className="h-4 w-4 text-text-secondary" />
-          ) : (
-            <ChevronRight className="h-4 w-4 text-text-secondary" />
-          )}
-        </Button>
-      )}
     </div>
   );
 };
