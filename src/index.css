@@ -1,14 +1,8 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-  /* Reset global typography to prevent unwanted bold text inheritance */
-  * {
-    font-weight: inherit;
-  }
-  
   body {
     font-weight: 400; /* Ensure normal font weight by default */
   }
@@ -16,6 +10,7 @@
   h1, h2, h3, h4, h5, h6 {
     font-weight: 600; /* Only headings should be semi-bold */
   }
+  
   :root {
     /* Light Mode - Premium Gray Scale with WCAG AA Compliance */
     --background: 0 0% 98%;           /* #FAFAFA - Surface */
@@ -166,136 +161,142 @@
 }
 
 @layer components {
-  /* Custom prose styles for markdown content */
-  .prose {
+  /* Custom prose styles for markdown content - Only for canvas reports */
+  #canvas-report .prose {
     @apply text-foreground max-w-none;
     line-height: 1.7;
-    font-weight: 400; /* Explicitly normal weight */
+    font-weight: 400;
   }
   
-  .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+  #canvas-report .prose h1, 
+  #canvas-report .prose h2, 
+  #canvas-report .prose h3, 
+  #canvas-report .prose h4, 
+  #canvas-report .prose h5, 
+  #canvas-report .prose h6 {
     @apply text-foreground font-semibold mt-6 mb-4;
-    font-weight: 600; /* Only headings should be semi-bold */
+    font-weight: 600;
   }
   
-  .prose h1 { @apply text-2xl; }
-  .prose h2 { @apply text-xl; }
-  .prose h3 { @apply text-lg; }
+  #canvas-report .prose h1 { @apply text-2xl; }
+  #canvas-report .prose h2 { @apply text-xl; }
+  #canvas-report .prose h3 { @apply text-lg; }
   
-  .prose p {
+  #canvas-report .prose p {
     @apply text-foreground mb-4;
-    font-weight: 400; /* Explicitly normal weight */
+    font-weight: 400;
   }
   
-  .prose ul, .prose ol {
+  #canvas-report .prose ul, 
+  #canvas-report .prose ol {
     @apply mb-4 pl-6;
   }
   
-  .prose li {
+  #canvas-report .prose li {
     @apply mb-2 text-foreground;
-    font-weight: 400; /* Explicitly normal weight */
+    font-weight: 400;
   }
   
-  .prose blockquote {
+  #canvas-report .prose blockquote {
     @apply border-l-4 border-border pl-4 italic text-muted-foreground my-6;
   }
   
-  .prose code {
+  #canvas-report .prose code {
     @apply bg-muted px-1 py-0.5 rounded text-sm;
   }
   
-  .prose pre {
+  #canvas-report .prose pre {
     @apply bg-muted p-4 rounded-lg overflow-x-auto my-4;
   }
   
-  .prose pre code {
+  #canvas-report .prose pre code {
     @apply bg-transparent p-0;
   }
   
-  .prose-sm {
+  #canvas-report .prose-sm {
     @apply text-sm;
     line-height: 1.6;
   }
 
-  /* Custom prose preset for Canvas reports with consulting slide deck spacing */
-  .prose-report {
+  /* Custom prose preset for Canvas reports with consulting slide deck spacing - Only for canvas reports */
+  #canvas-report .prose-report {
     @apply text-foreground;
     line-height: 1.75;
-    font-weight: 400; /* Explicitly normal weight */
+    font-weight: 400;
   }
   
-  .prose-report h1 {
+  #canvas-report .prose-report h1 {
     @apply mt-10 mb-6 text-2xl font-semibold text-foreground;
   }
   
-  .prose-report h2 {
+  #canvas-report .prose-report h2 {
     @apply mt-8 mb-4 text-xl font-semibold border-b border-border/30 pb-1 text-foreground;
   }
   
-  .prose-report h3 {
+  #canvas-report .prose-report h3 {
     @apply mt-6 mb-3 text-lg font-medium text-foreground;
   }
   
-  .prose-report h4,
-  .prose-report h5,
-  .prose-report h6 {
+  #canvas-report .prose-report h4,
+  #canvas-report .prose-report h5,
+  #canvas-report .prose-report h6 {
     @apply mt-4 mb-2 font-medium text-foreground;
   }
   
-  .prose-report p {
+  #canvas-report .prose-report p {
     @apply mb-4 text-foreground;
     line-height: 1.7;
   }
   
-  .prose-report ul,
-  .prose-report ol {
+  #canvas-report .prose-report ul,
+  #canvas-report .prose-report ol {
     @apply mb-4 space-y-2;
   }
   
-  .prose-report li {
+  #canvas-report .prose-report li {
     @apply mb-2 text-foreground;
   }
   
-  .prose-report blockquote {
+  #canvas-report .prose-report blockquote {
     @apply mt-6 mb-6 pl-4 border-l-4 border-border/50 italic text-muted-foreground;
   }
   
-  .prose-report table {
+  #canvas-report .prose-report table {
     @apply mt-6 mb-6 w-full border-collapse;
   }
   
-  .prose-report th,
-  .prose-report td {
+  #canvas-report .prose-report th,
+  #canvas-report .prose-report td {
     @apply border border-border/30 px-3 py-2 text-foreground;
   }
   
-  .prose-report th {
+  #canvas-report .prose-report th {
     @apply bg-surface-elevated font-semibold text-foreground;
   }
   
-  .prose-report code {
+  #canvas-report .prose-report code {
     @apply bg-surface-elevated px-1 py-0.5 rounded text-sm text-foreground;
   }
   
-  .prose-report pre {
+  #canvas-report .prose-report pre {
     @apply mt-4 mb-4 p-4 bg-surface-elevated rounded-lg overflow-x-auto;
   }
   
-  .prose-report pre code {
+  #canvas-report .prose-report pre code {
     @apply bg-transparent p-0;
   }
 
-  /* Responsive adjustments */
+  /* Responsive adjustments - Only for canvas reports */
   @media (max-width: 640px) {
-    .prose-report h1 {
+    #canvas-report .prose-report h1 {
       @apply mt-8 mb-4 text-xl;
     }
     
-    .prose-report h2 {
+    #canvas-report .prose-report h2 {
       @apply mt-6 mb-3 text-lg;
     }
     
-    .prose-report h3 {
+    #canvas-report .prose-report h3 {
       @apply mt-4 mb-2 text-base;
     }
   }
@@ -496,7 +497,7 @@
   }
 
   .apple-heading {
-    @apply text-3xl md:text-4xl lg:text-6xl font-medium mb-6 text-foreground tracking-tight;
+    @apply text-3xl md:text-4xl lg:text-6xl font-normal mb-6 text-foreground tracking-tight;
     line-height: 1.1;
   }
 
@@ -937,7 +938,7 @@
   }
 }
 
-/* PDF Download Print Styles - ChatGPT Style */
+/* PDF Download Print Styles - ChatGPT Style - Only for canvas reports */
 @media print {
   /* Hide everything except the canvas report */
   body * {
