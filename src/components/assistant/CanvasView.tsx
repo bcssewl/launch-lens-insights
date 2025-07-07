@@ -5,6 +5,7 @@ import CanvasHeader from './CanvasHeader';
 import CanvasChatPanel from './CanvasChatPanel';
 import CanvasReportPanel from './CanvasReportPanel';
 import CanvasPrintView from './CanvasPrintView';
+import SaveToClientModal from './SaveToClientModal';
 import { useCanvasKeyboardShortcuts } from './useCanvasKeyboardShortcuts';
 import { FloatingElements } from '@/components/landing/FloatingElements';
 import { Message } from '@/constants/aiAssistant';
@@ -49,6 +50,7 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
   onContentUpdate
 }) => {
   const [currentContent, setCurrentContent] = useState(content);
+  const [showSaveToClientModal, setShowSaveToClientModal] = useState(false);
 
   console.log('CanvasView: Rendering with isOpen:', isOpen);
 
@@ -78,6 +80,16 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
     setCurrentContent(newContent);
     onContentUpdate?.(newContent);
   }, [onContentUpdate]);
+
+  const handleSaveToClient = useCallback(() => {
+    console.log('CanvasView: Save to client clicked');
+    setShowSaveToClientModal(true);
+  }, []);
+
+  const handleSaveToClientSuccess = useCallback((clientName: string) => {
+    console.log('CanvasView: Successfully saved to client:', clientName);
+    setShowSaveToClientModal(false);
+  }, []);
 
   // Format timestamp helper
   const formatTimestamp = useCallback((timestamp: Date): string => {
@@ -131,6 +143,7 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
           onPrint={onPrint}
           onEdit={() => {}}
           onClose={onClose}
+          onSaveToClient={handleSaveToClient}
         />
 
         {/* Resizable Content Area */}
@@ -166,6 +179,15 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
           </ResizablePanelGroup>
         </div>
       </div>
+
+      {/* Save to Client Modal */}
+      <SaveToClientModal
+        open={showSaveToClientModal}
+        onClose={() => setShowSaveToClientModal(false)}
+        canvasTitle={title}
+        canvasContent={currentContent}
+        onSaveSuccess={handleSaveToClientSuccess}
+      />
     </div>
   );
 });

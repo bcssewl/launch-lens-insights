@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { X, Download, Printer, FileText } from 'lucide-react';
+import { X, Download, Printer, FileText, FolderOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { processMarkdownForPdf, createChatGptPdfHtml } from '@/utils/canvasPdfProcessor';
 import { format } from 'date-fns';
@@ -14,6 +14,7 @@ interface CanvasHeaderProps {
   onPrint?: () => void;
   onEdit: () => void;
   onClose: () => void;
+  onSaveToClient?: () => void;
 }
 
 const CanvasHeader: React.FC<CanvasHeaderProps> = ({
@@ -22,7 +23,8 @@ const CanvasHeader: React.FC<CanvasHeaderProps> = ({
   isEditing,
   onDownload,
   onPrint,
-  onClose
+  onClose,
+  onSaveToClient
 }) => {
   const { toast } = useToast();
 
@@ -105,6 +107,12 @@ const CanvasHeader: React.FC<CanvasHeaderProps> = ({
     onClose();
   };
 
+  const handleSaveToClientClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    console.log('CanvasHeader: Save to Client clicked');
+    onSaveToClient?.();
+  };
+
   return (
     <div className="flex items-center justify-between p-4 bg-background/95 backdrop-blur-sm border-b border-border/50">
       <h2 id="canvas-title" className="text-lg font-semibold text-foreground truncate max-w-md">
@@ -140,6 +148,17 @@ const CanvasHeader: React.FC<CanvasHeaderProps> = ({
           >
             <Printer className="h-4 w-4" />
             Print
+          </Button>
+        )}
+        {onSaveToClient && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleSaveToClientClick}
+            className="flex items-center gap-2"
+          >
+            <FolderOpen className="h-4 w-4" />
+            Save to Client
           </Button>
         )}
         <Button
