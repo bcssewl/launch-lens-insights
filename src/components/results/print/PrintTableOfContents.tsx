@@ -3,38 +3,66 @@ import React from 'react';
 
 const PrintTableOfContents: React.FC = () => {
   const sections = [
-    { title: 'Executive Summary', page: 3 },
-    { title: 'Key Insights & Metrics', page: 4 },
-    { title: 'Market Analysis', page: 5 },
-    { title: 'Competition Analysis', page: 7 },
-    { title: 'Financial Analysis', page: 9 },
-    { title: 'SWOT Analysis', page: 11 },
-    { title: 'Detailed Score Breakdown', page: 12 },
-    { title: 'Recommended Actions', page: 13 },
+    { title: 'Executive Summary', description: 'Overall assessment and recommendations', page: 3 },
+    { title: 'Key Insights & Metrics', description: 'Critical performance indicators', page: 4 },
+    { title: 'Market Analysis', description: 'Market size, trends, and opportunities', page: 5 },
+    { title: 'Competition Analysis', description: 'Competitive landscape assessment', page: 6 },
+    { title: 'Financial Analysis', description: 'Revenue projections and cost structure', page: 7 },
+    { title: 'SWOT Analysis', description: 'Strengths, weaknesses, opportunities, threats', page: 8 },
+    { title: 'Detailed Score Breakdown', description: 'Comprehensive scoring methodology', page: 9 },
+    { title: 'Recommended Actions', description: 'Next steps and implementation roadmap', page: 10 },
   ];
 
   return (
-    <div className="print-page-break print-section">
-      <h2 className="print-title-2">Table of Contents</h2>
+    <div className="print-section enhanced-toc-page">
+      <div className="toc-header">
+        <h1 className="toc-title">Table of Contents</h1>
+        <p className="toc-subtitle">Comprehensive Idea Validation Report</p>
+      </div>
       
-      <div className="space-y-3 mt-8">
+      <div className="toc-content">
         {sections.map((section, index) => (
-          <div key={index} className="flex justify-between items-center border-b border-gray-200 pb-2">
-            <span className="font-medium text-gray-700">{section.title}</span>
-            <span className="text-gray-500">Page {section.page}</span>
+          <div key={index} className="toc-item page-break-inside-avoid">
+            <div className="toc-item-main">
+              <div className="toc-number">{index + 1}</div>
+              <div className="toc-details">
+                <h3 className="toc-section-title">{section.title}</h3>
+                <p className="toc-description">{section.description}</p>
+              </div>
+            </div>
+            <div className="toc-page">{section.page}</div>
           </div>
         ))}
       </div>
       
-      <div className="mt-12 p-4 bg-blue-50 rounded-lg border border-blue-200">
-        <h3 className="font-semibold text-blue-800 mb-2">How to Read This Report</h3>
-        <ul className="text-sm text-blue-700 space-y-1">
-          <li>• Scores are rated on a scale of 1-10 (10 being the highest)</li>
-          <li>• Green indicators suggest positive factors</li>
-          <li>• Yellow indicators suggest areas requiring attention</li>
-          <li>• Red indicators suggest high-risk factors</li>
-          <li>• Action items are prioritized by impact and feasibility</li>
-        </ul>
+      <div className="reading-guide page-break-inside-avoid">
+        <h3 className="guide-title">How to Read This Report</h3>
+        <div className="guide-grid">
+          <div className="guide-item">
+            <span className="guide-icon">📊</span>
+            <span className="guide-text">Scores are rated on a scale of 1-10 (10 being the highest)</span>
+          </div>
+          <div className="guide-item">
+            <span className="guide-icon">🟢</span>
+            <span className="guide-text">Green indicators suggest positive factors</span>
+          </div>
+          <div className="guide-item">
+            <span className="guide-icon">🟡</span>
+            <span className="guide-text">Yellow indicators suggest areas requiring attention</span>
+          </div>
+          <div className="guide-item">
+            <span className="guide-icon">🔴</span>
+            <span className="guide-text">Red indicators suggest high-risk factors</span>
+          </div>
+          <div className="guide-item">
+            <span className="guide-icon">⭐</span>
+            <span className="guide-text">Action items are prioritized by impact and feasibility</span>
+          </div>
+          <div className="guide-item">
+            <span className="guide-icon">📈</span>
+            <span className="guide-text">Charts and graphs support key findings</span>
+          </div>
+        </div>
       </div>
     </div>
   );
