@@ -95,6 +95,18 @@ const SaveToClientModal: React.FC<SaveToClientModalProps> = ({
 
     setIsLoading(true);
     try {
+      // Get current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !user) {
+        toast({
+          title: "Authentication Error",
+          description: "You must be logged in to save files.",
+          variant: "destructive"
+        });
+        return;
+      }
+
       // Convert canvas content to PDF and upload to storage
       const blob = await generatePdfBlob();
       const filePath = `${selectedClientId}/${Date.now()}_${fileName}`;
@@ -127,7 +139,7 @@ const SaveToClientModal: React.FC<SaveToClientModalProps> = ({
           file_size: blob.size,
           file_type: 'application/pdf',
           category: 'Report',
-          user_id: (await supabase.auth.getUser()).data.user?.id
+          user_id: user.id
         });
 
       if (dbError) {
