@@ -34,7 +34,7 @@ const useChatSearch = (query: string, enabled: boolean = true) => {
       throw new Error('Authentication required');
     }
 
-    const response = await fetch(`${supabase.supabaseUrl}/functions/v1/search-chats`, {
+    const response = await fetch('https://jtnedstugyvkfthtsumh.supabase.co/functions/v1/search-chats', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
