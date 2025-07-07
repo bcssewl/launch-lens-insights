@@ -51,14 +51,14 @@ const PrintSWOTAnalysis: React.FC<PrintSWOTAnalysisProps> = ({ data }) => {
   ];
 
   return (
-    <div className="print-section page-break-inside-avoid">
+    <div className="print-section">
       <h2 className="print-title-2">SWOT Analysis</h2>
       
       <div className="print-grid-2">
         {swotSections.map((section, index) => (
           <div 
             key={index} 
-            className="print-card page-break-inside-avoid"
+            className="print-card"
             style={{ 
               backgroundColor: section.bgColor,
               borderColor: section.color + '50'
@@ -73,10 +73,10 @@ const PrintSWOTAnalysis: React.FC<PrintSWOTAnalysisProps> = ({ data }) => {
                 {section.title}
               </h3>
             </div>
-            <ul className="print-space-y-2">
+            <ul className="space-y-2">
               {section.items && section.items.length > 0 ? (
                 section.items.map((item, itemIndex) => (
-                  <li key={itemIndex} className="text-sm flex items-start print-list-item">
+                  <li key={itemIndex} className="text-sm flex items-start">
                     <span className="mr-2 mt-1">•</span>
                     <span>{item}</span>
                   </li>

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Printer, X } from 'lucide-react';
@@ -61,138 +62,97 @@ const EnhancedPrintView: React.FC<EnhancedPrintViewProps> = ({
         </Button>
       </div>
 
-      {/* Professional Report Container with Pagination */}
-      <div 
-        className="professional-report-container light"
-        data-report-title={ideaName}
-        data-generated-date={new Date().toLocaleDateString()}
-        data-confidentiality="CONFIDENTIAL"
-      >
-        {/* Cover Page - Page 1 */}
-        <div className="professional-cover-page">
+      {/* Force light theme for print content */}
+      <div className="light">
+        {/* Print content container with explicit light theme styling */}
+        <div className="bg-white text-gray-900 min-h-screen">
           <PrintCoverPage 
             ideaName={ideaName}
             score={score}
             analysisDate={analysisDate}
           />
-        </div>
 
-        {/* Table of Contents - Page 2 */}
-        <div className="page-break-before enhanced-toc-page">
           <PrintTableOfContents />
-        </div>
 
-        {/* Executive Summary - Page 3 */}
-        <div className="page-break-before print-section">
           <PrintExecutiveSummary 
             summary={executiveSummary}
             recommendation={recommendation}
             score={score}
           />
-        </div>
 
-        {/* Key Insights - New Page if needed */}
-        <div className="print-section">
           <PrintKeyInsights metrics={keyMetrics} />
-        </div>
 
-        {/* Market Analysis - New Page */}
-        <div className="page-break-before print-section">
           <PrintMarketAnalysis data={marketAnalysis} />
-        </div>
 
-        {/* Competition Analysis - New Page */}
-        <div className="page-break-before print-section">
           <PrintCompetitionAnalysis data={competition} />
-        </div>
 
-        {/* Financial Analysis - New Page */}
-        <div className="page-break-before print-section">
           <PrintFinancialAnalysis data={financialAnalysis} />
-        </div>
 
-        {/* SWOT Analysis - New Page if space allows */}
-        <div className="print-section">
           <PrintSWOTAnalysis data={swot} />
-        </div>
 
-        {/* Detailed Scores - New Page */}        
-        <div className="page-break-before print-section">
           <PrintDetailedScores scores={detailedScores} />
-        </div>
 
-        {/* Action Items - Final section */}
-        <div className="print-section">
           <PrintActionItems items={actionItems} />
         </div>
       </div>
 
-      {/* Enhanced Print Styles with Pagination Support */}
+      {/* Enhanced Print Styles - Force Light Mode */}
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        /* Force light theme for entire print view */
+        .light {
+          color-scheme: light !important;
+        }
+        
+        /* Override any dark mode classes that might be inherited */
+        .light *,
+        .light .dark\\:* {
+          color-scheme: light !important;
+        }
+        
         @media print {
-          /* Override any conflicting styles */
-          .print\\:hidden {
-            display: none !important;
-          }
-          
-          /* Ensure proper page setup */
           @page {
             size: A4;
-            margin: 2cm 2.5cm 3cm 2.5cm;
-            
-            @top-left {
+            margin: 1.5cm 2cm 2cm 2cm;
+            @bottom-center {
+              content: counter(page);
+              font-family: 'Inter', sans-serif;
+              font-size: 10pt;
+              color: #6b7280;
+            }
+            @bottom-left {
               content: "Idea Validation Report";
               font-family: 'Inter', sans-serif;
               font-size: 10pt;
               color: #6b7280;
             }
-            
-            @top-right {
-              content: attr(data-report-title);
-              font-family: 'Inter', sans-serif;
-              font-size: 10pt;
-              color: #6b7280;
-              text-align: right;
-            }
-            
-            @bottom-center {
-              content: "Page " counter(page);
-              font-family: 'Inter', sans-serif;
-              font-size: 10pt;
-              color: #6b7280;
-            }
-            
-            @bottom-left {
-              content: "Generated " attr(data-generated-date);
-              font-family: 'Inter', sans-serif;
-              font-size: 9pt;
-              color: #9ca3af;
-            }
-            
             @bottom-right {
-              content: attr(data-confidentiality);
+              content: "Generated " attr(data-date);
               font-family: 'Inter', sans-serif;
-              font-size: 9pt;
-              color: #dc2626;
-              font-weight: 600;
+              font-size: 10pt;
+              color: #6b7280;
             }
           }
           
-          /* Cover page without headers/footers */
-          @page :first {
-            @top-left { content: none; }
-            @top-right { content: none; }
-            @bottom-center { content: none; }
-            @bottom-left { content: none; }
-            @bottom-right { content: none; }
-          }
-          
-          /* Force light theme colors for print */
+          /* Force light mode colors for print */
           * {
             -webkit-print-color-adjust: exact;
             color-adjust: exact;
+            box-sizing: border-box;
             background-color: white !important;
             color: #1f2937 !important;
+          }
+          
+          /* Override any dark mode styles for print */
+          .dark *,
+          [data-theme="dark"] *,
+          .dark\\:bg-gray-800,
+          .dark\\:text-white,
+          .dark\\:border-gray-700 {
+            background-color: white !important;
+            color: #1f2937 !important;
+            border-color: #e5e7eb !important;
           }
           
           body {
@@ -205,90 +165,236 @@ const EnhancedPrintView: React.FC<EnhancedPrintViewProps> = ({
             padding: 0;
           }
           
-          /* Page break controls */
-          .page-break-before {
+          /* Hide non-print elements */
+          .print\\:hidden {
+            display: none !important;
+          }
+          
+          /* Cover page styling - no page break before, should be page 1 */
+          .print-cover-page {
+            min-height: 100vh;
+            break-after: page;
+            background: white !important;
+            color: #1f2937 !important;
+          }
+          
+          /* Page breaks */
+          .print-page-break {
             break-before: page;
           }
           
-          .page-break-after {
-            break-after: page;
-          }
-          
-          .page-break-inside-avoid {
+          .print-avoid-break {
             break-inside: avoid;
           }
           
-          .print-section {
+          .print-keep-together {
             break-inside: avoid;
             orphans: 3;
             widows: 3;
+          }
+          
+          /* Typography hierarchy - Force light colors */
+          .print-title-1 {
+            font-size: 24pt;
+            font-weight: 700;
+            line-height: 1.2;
+            color: #111827 !important;
             margin-bottom: 24pt;
           }
           
-          /* Typography with proper breaks */
-          h1, h2, h3, h4, h5, h6 {
-            break-after: avoid;
-            orphans: 4;
-            widows: 4;
+          .print-title-2 {
+            font-size: 18pt;
+            font-weight: 600;
+            line-height: 1.3;
+            color: #1f2937 !important;
+            margin-top: 20pt;
+            margin-bottom: 12pt;
+            border-bottom: 2pt solid #e5e7eb;
+            padding-bottom: 6pt;
           }
           
-          p {
-            orphans: 2;
-            widows: 2;
+          .print-title-3 {
+            font-size: 14pt;
+            font-weight: 600;
+            line-height: 1.4;
+            color: #374151 !important;
+            margin-top: 16pt;
+            margin-bottom: 8pt;
           }
           
-          /* Tables and charts */
-          .recharts-wrapper,
-          .print-chart-container {
+          .print-body {
+            font-size: 11pt;
+            line-height: 1.6;
+            color: #4b5563 !important;
+            margin-bottom: 12pt;
+          }
+          
+          .print-caption {
+            font-size: 9pt;
+            color: #6b7280 !important;
+            font-style: italic;
+            margin-top: 4pt;
+          }
+          
+          /* Layout components - Force light backgrounds */
+          .print-section {
+            margin-bottom: 24pt;
+            break-inside: avoid;
+            background: white !important;
+          }
+          
+          .print-grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16pt;
+            break-inside: avoid;
+          }
+          
+          .print-grid-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12pt;
+            break-inside: avoid;
+          }
+          
+          .print-card {
+            border: 1pt solid #e5e7eb;
+            border-radius: 6pt;
+            padding: 12pt;
+            background: #fafafa !important;
+            break-inside: avoid;
+            margin-bottom: 12pt;
+            color: #1f2937 !important;
+          }
+          
+          .print-metric-card {
+            text-align: center;
+            padding: 16pt 12pt;
+            border: 1pt solid #d1d5db;
+            border-radius: 8pt;
+            background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%) !important;
+            break-inside: avoid;
+            color: #1f2937 !important;
+          }
+          
+          .print-metric-value {
+            font-size: 20pt;
+            font-weight: 700;
+            color: #059669 !important;
+            display: block;
+            margin-bottom: 4pt;
+          }
+          
+          .print-metric-label {
+            font-size: 9pt;
+            color: #6b7280 !important;
+            font-weight: 500;
+          }
+          
+          /* Charts and visual elements */
+          .recharts-wrapper {
             break-inside: avoid;
             margin: 12pt 0;
             background: white !important;
           }
           
+          .print-chart-container {
+            background: white !important;
+            border: 1pt solid #e5e7eb;
+            border-radius: 6pt;
+            padding: 12pt;
+            break-inside: avoid;
+          }
+          
+          /* Tables - Force light styling */
           .print-table {
-            break-inside: auto;
-          }
-          
-          .print-table thead {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12pt 0;
             break-inside: avoid;
-            break-after: auto;
+            background: white !important;
           }
           
-          .print-table tbody tr {
-            break-inside: avoid;
+          .print-table th {
+            background: #f3f4f6 !important;
+            font-weight: 600;
+            padding: 8pt 12pt;
+            border: 1pt solid #d1d5db;
+            text-align: left;
+            color: #1f2937 !important;
           }
           
-          /* Cards and containers */
-          .print-card,
-          .print-metric-card {
-            break-inside: avoid;
-            background: #f8fafc !important;
-            border: 1pt solid #e2e8f0 !important;
+          .print-table td {
+            padding: 8pt 12pt;
+            border: 1pt solid #d1d5db;
+            background: white !important;
+            color: #1f2937 !important;
           }
           
-          /* Grid layouts */
-          .print-grid-2,
-          .print-grid-3 {
-            break-inside: avoid;
-          }
-          
-          /* Status indicators */
+          /* Status indicators - Force light theme colors */
           .print-status-high {
             background: #dcfce7 !important;
             color: #166534 !important;
+            padding: 2pt 6pt;
+            border-radius: 4pt;
+            font-size: 9pt;
+            font-weight: 500;
           }
           
           .print-status-medium {
             background: #fef3c7 !important;
             color: #92400e !important;
+            padding: 2pt 6pt;
+            border-radius: 4pt;
+            font-size: 9pt;
+            font-weight: 500;
           }
           
           .print-status-low {
             background: #fee2e2 !important;
             color: #991b1b !important;
+            padding: 2pt 6pt;
+            border-radius: 4pt;
+            font-size: 9pt;
+            font-weight: 500;
+          }
+          
+          /* Branding elements */
+          .print-watermark {
+            position: fixed;
+            bottom: 20pt;
+            right: 20pt;
+            opacity: 0.1;
+            font-size: 48pt;
+            font-weight: 700;
+            color: #6b7280 !important;
+            transform: rotate(-45deg);
+            pointer-events: none;
+            z-index: -1;
+          }
+          
+          .print-header {
+            border-bottom: 2pt solid #e5e7eb;
+            padding-bottom: 12pt;
+            margin-bottom: 24pt;
+            background: white !important;
+            color: #1f2937 !important;
+          }
+          
+          .print-footer {
+            border-top: 1pt solid #e5e7eb;
+            padding-top: 12pt;
+            margin-top: 24pt;
+            font-size: 9pt;
+            color: #6b7280 !important;
+            text-align: center;
+            background: white !important;
           }
         }
       `}</style>
+      
+      {/* Watermark */}
+      <div className="print-watermark">CONFIDENTIAL</div>
     </div>
   );
 };

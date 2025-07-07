@@ -30,75 +30,6 @@ export const createProfessionalStyles = (): string => `
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
 }
 
-/* Page Setup for Print */
-@page {
-  size: A4;
-  margin: 2cm 2.5cm 3cm 2.5cm;
-  orphans: 3;
-  widows: 3;
-  
-  @top-left {
-    content: "Idea Validation Report";
-    font-family: 'Inter', sans-serif;
-    font-size: 10pt;
-    color: var(--gray-500);
-    margin-top: 0.5cm;
-  }
-  
-  @top-right {
-    content: attr(data-report-title);
-    font-family: 'Inter', sans-serif;
-    font-size: 10pt;
-    color: var(--gray-500);
-    margin-top: 0.5cm;
-    text-align: right;
-  }
-  
-  @bottom-center {
-    content: "Page " counter(page) " of " counter(pages);
-    font-family: 'Inter', sans-serif;
-    font-size: 10pt;
-    color: var(--gray-500);
-    margin-bottom: 0.5cm;
-  }
-  
-  @bottom-left {
-    content: "Generated " attr(data-generated-date);
-    font-family: 'Inter', sans-serif;
-    font-size: 9pt;
-    color: var(--gray-400);
-    margin-bottom: 0.5cm;
-  }
-  
-  @bottom-right {
-    content: attr(data-confidentiality);
-    font-family: 'Inter', sans-serif;
-    font-size: 9pt;
-    color: var(--danger-color);
-    font-weight: 600;
-    margin-bottom: 0.5cm;
-  }
-}
-
-/* Cover page - no headers/footers */
-@page :first {
-  @top-left { content: none; }
-  @top-right { content: none; }
-  @bottom-center { content: none; }
-  @bottom-left { content: none; }
-  @bottom-right { content: none; }
-}
-
-/* Table of contents page */
-@page toc {
-  @top-left { content: "Table of Contents"; }
-}
-
-/* Section pages */
-@page section {
-  @top-left { content: "Idea Validation Report"; }
-}
-
 /* Base Document Styles */
 .professional-report-container {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -110,41 +41,6 @@ export const createProfessionalStyles = (): string => `
   padding: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  counter-reset: page-counter;
-}
-
-/* Page Break Controls */
-.page-break-before {
-  break-before: page;
-  page: section;
-}
-
-.page-break-after {
-  break-after: page;
-}
-
-.page-break-inside-avoid {
-  break-inside: avoid;
-  orphans: 3;
-  widows: 3;
-}
-
-.page-break-keep-together {
-  break-inside: avoid;
-  orphans: 4;
-  widows: 4;
-}
-
-/* Section-specific page breaks */
-.print-section {
-  break-inside: avoid;
-  margin-bottom: 24pt;
-  min-height: 100pt; /* Minimum height to justify a section */
-}
-
-.print-section + .print-section {
-  break-before: page;
-  page: section;
 }
 
 /* Cover Page Styles */
@@ -157,8 +53,6 @@ export const createProfessionalStyles = (): string => `
   background: linear-gradient(135deg, var(--white) 0%, var(--gray-50) 100%);
   position: relative;
   overflow: hidden;
-  break-after: page;
-  page: first;
 }
 
 .professional-cover-page::before {
@@ -173,8 +67,6 @@ export const createProfessionalStyles = (): string => `
   opacity: 0.1;
   transform: translate(50%, -50%);
 }
-
-/* ... keep existing code (cover page styles) */
 
 .cover-header {
   display: flex;
@@ -238,14 +130,181 @@ export const createProfessionalStyles = (): string => `
   border-left: 4pt solid var(--primary-color);
 }
 
-/* ... keep existing code (cover main section styles) */
+.cover-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+  gap: 40pt;
+}
+
+.idea-title-section {
+  margin-bottom: 32pt;
+}
+
+.idea-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 36pt;
+  font-weight: 700;
+  color: var(--gray-900);
+  margin: 0 0 16pt 0;
+  line-height: 1.2;
+  max-width: 80%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.idea-subtitle {
+  font-size: 16pt;
+  color: var(--gray-600);
+  margin: 0;
+  font-weight: 400;
+}
+
+.score-showcase {
+  background: var(--white);
+  border-radius: 16pt;
+  padding: 32pt;
+  box-shadow: var(--shadow-lg);
+  border: 1pt solid var(--gray-200);
+  max-width: 400pt;
+  margin: 0 auto;
+}
+
+.score-container {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8pt;
+  margin-bottom: 16pt;
+}
+
+.score-value {
+  font-size: 64pt;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--primary-color);
+}
+
+.score-max {
+  font-size: 24pt;
+  color: var(--gray-500);
+  font-weight: 600;
+}
+
+.score-label {
+  font-size: 16pt;
+  font-weight: 600;
+  color: var(--gray-700);
+  margin-bottom: 20pt;
+}
+
+.confidence-indicator {
+  display: flex;
+  flex-direction: column;
+  gap: 8pt;
+  align-items: center;
+}
+
+.confidence-bar {
+  width: 200pt;
+  height: 8pt;
+  background: var(--gray-200);
+  border-radius: 4pt;
+  overflow: hidden;
+}
+
+.confidence-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
+  border-radius: 4pt;
+  transition: width 0.3s ease;
+}
+
+.confidence-text {
+  font-size: 12pt;
+  color: var(--gray-600);
+  font-weight: 500;
+}
+
+.report-metadata {
+  background: var(--gray-50);
+  border-radius: 12pt;
+  padding: 24pt;
+  border: 1pt solid var(--gray-200);
+}
+
+.metadata-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16pt;
+}
+
+.metadata-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4pt;
+}
+
+.metadata-label {
+  font-size: 10pt;
+  color: var(--gray-500);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.metadata-value {
+  font-size: 13pt;
+  color: var(--gray-800);
+  font-weight: 600;
+}
+
+.cover-footer {
+  margin-top: 60pt;
+}
+
+.confidentiality-notice {
+  text-align: center;
+  margin-bottom: 24pt;
+}
+
+.confidential-badge {
+  display: inline-block;
+  background: var(--danger-color);
+  color: var(--white);
+  padding: 6pt 12pt;
+  border-radius: var(--border-radius);
+  font-size: 10pt;
+  font-weight: 700;
+  letter-spacing: 1px;
+  margin-bottom: 12pt;
+}
+
+.confidentiality-notice p {
+  font-size: 10pt;
+  color: var(--gray-600);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.footer-branding {
+  text-align: center;
+  padding-top: 16pt;
+  border-top: 1pt solid var(--gray-200);
+}
+
+.footer-branding p {
+  font-size: 10pt;
+  color: var(--gray-500);
+  margin: 0;
+}
 
 /* Enhanced Table of Contents */
 .enhanced-toc-page {
   padding: 40pt;
   background: var(--white);
-  break-before: page;
-  page: toc;
 }
 
 .toc-header {
@@ -277,7 +336,11 @@ export const createProfessionalStyles = (): string => `
   align-items: center;
   padding: 16pt;
   border-bottom: 1pt solid var(--gray-200);
-  break-inside: avoid;
+  transition: background-color 0.2s ease;
+}
+
+.toc-item:hover {
+  background: var(--gray-50);
 }
 
 .toc-item-main {
@@ -323,13 +386,49 @@ export const createProfessionalStyles = (): string => `
   font-weight: 500;
 }
 
-/* Section Headers with Smart Page Breaks */
+.reading-guide {
+  background: var(--gray-50);
+  border-radius: 12pt;
+  padding: 24pt;
+  border: 1pt solid var(--gray-200);
+}
+
+.guide-title {
+  font-size: 16pt;
+  font-weight: 600;
+  color: var(--gray-800);
+  margin: 0 0 16pt 0;
+}
+
+.guide-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12pt;
+}
+
+.guide-item {
+  display: flex;
+  align-items: center;
+  gap: 8pt;
+}
+
+.guide-icon {
+  font-size: 16pt;
+}
+
+.guide-text {
+  font-size: 11pt;
+  color: var(--gray-700);
+}
+
+/* Executive Summary Page */
+.executive-summary-page {
+  padding: 40pt;
+}
+
 .section-header {
   margin-bottom: 32pt;
   text-align: center;
-  break-after: avoid;
-  orphans: 4;
-  widows: 4;
 }
 
 .section-title {
@@ -338,236 +437,203 @@ export const createProfessionalStyles = (): string => `
   font-weight: 700;
   color: var(--gray-900);
   margin: 0 0 8pt 0;
-  break-after: avoid;
 }
 
 .section-subtitle {
   font-size: 14pt;
   color: var(--gray-600);
   margin: 0;
-  break-after: avoid;
 }
 
-/* Content Sections with Optimal Breaks */
-.content-section {
-  margin-bottom: 24pt;
-  break-inside: avoid;
-  orphans: 3;
-  widows: 3;
-}
-
-.content-section h3 {
-  font-size: 16pt;
-  font-weight: 600;
-  color: var(--gray-800);
-  margin: 20pt 0 12pt 0;
-  break-after: avoid;
-  orphans: 4;
-  widows: 4;
-}
-
-.content-section p {
-  margin-bottom: 12pt;
-  orphans: 2;
-  widows: 2;
-}
-
-/* Cards and Containers */
-.print-card {
-  border: 1pt solid var(--gray-200);
-  border-radius: 6pt;
-  padding: 16pt;
-  background: var(--gray-50);
-  break-inside: avoid;
-  margin-bottom: 16pt;
-  color: var(--gray-800);
-  orphans: 3;
-  widows: 3;
-}
-
-.print-metric-card {
-  text-align: center;
-  padding: 20pt 16pt;
-  border: 1pt solid var(--gray-300);
-  border-radius: 8pt;
-  background: linear-gradient(135deg, var(--gray-50) 0%, var(--white) 100%);
-  break-inside: avoid;
-  color: var(--gray-800);
-  margin-bottom: 16pt;
-}
-
-.print-metric-value {
-  font-size: 24pt;
-  font-weight: 700;
-  color: var(--primary-color);
-  display: block;
-  margin-bottom: 6pt;
-}
-
-.print-metric-label {
-  font-size: 11pt;
-  color: var(--gray-600);
-  font-weight: 500;
-}
-
-/* Grid Layouts with Break Controls */
-.print-grid-2 {
+.executive-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 20pt;
-  break-inside: avoid;
-  margin-bottom: 20pt;
+  gap: 24pt;
+  margin-bottom: 32pt;
 }
 
-.print-grid-3 {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 16pt;
-  break-inside: avoid;
-  margin-bottom: 20pt;
-}
-
-/* Tables with Smart Breaks */
-.print-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 16pt 0;
-  break-inside: auto;
+.recommendation-card {
   background: var(--white);
-}
-
-.print-table thead {
-  break-inside: avoid;
-  break-after: auto;
-}
-
-.print-table thead th {
-  background: var(--gray-100);
-  font-weight: 600;
-  padding: 12pt 16pt;
-  border: 1pt solid var(--gray-300);
-  text-align: left;
-  color: var(--gray-800);
-  break-inside: avoid;
-}
-
-.print-table tbody tr {
-  break-inside: avoid;
-  orphans: 2;
-  widows: 2;
-}
-
-.print-table td {
-  padding: 10pt 16pt;
-  border: 1pt solid var(--gray-300);
-  background: var(--white);
-  color: var(--gray-800);
-}
-
-/* Charts and Visual Elements */
-.recharts-wrapper,
-.print-chart-container {
-  background: var(--white);
+  border-radius: 12pt;
+  padding: 24pt;
+  box-shadow: var(--shadow-md);
   border: 1pt solid var(--gray-200);
-  border-radius: 6pt;
-  padding: 16pt;
-  break-inside: avoid;
-  margin: 16pt 0;
-  min-height: 200pt;
 }
 
-/* Lists with Proper Breaks */
-.print-list {
-  margin: 12pt 0;
-  break-inside: auto;
-}
-
-.print-list-item {
-  margin-bottom: 8pt;
-  break-inside: avoid;
-  orphans: 2;
-  widows: 2;
-}
-
-/* Status Indicators */
-.print-status-high {
-  background: var(--success-color)20;
-  color: var(--success-color);
-  padding: 4pt 8pt;
-  border-radius: 4pt;
-  font-size: 10pt;
-  font-weight: 600;
-}
-
-.print-status-medium {
-  background: var(--warning-color)20;
-  color: var(--warning-color);
-  padding: 4pt 8pt;
-  border-radius: 4pt;
-  font-size: 10pt;
-  font-weight: 600;
-}
-
-.print-status-low {
-  background: var(--danger-color)20;
-  color: var(--danger-color);
-  padding: 4pt 8pt;
-  border-radius: 4pt;
-  font-size: 10pt;
-  font-weight: 600;
-}
-
-/* Typography Hierarchy */
-.print-title-1 {
-  font-family: 'Playfair Display', serif;
-  font-size: 24pt;
-  font-weight: 700;
-  line-height: 1.2;
-  color: var(--gray-900);
+.rec-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 20pt;
-  break-after: avoid;
-  orphans: 4;
-  widows: 4;
 }
 
-.print-title-2 {
-  font-size: 20pt;
-  font-weight: 600;
-  line-height: 1.3;
-  color: var(--gray-800);
-  margin: 24pt 0 16pt 0;
-  border-bottom: 2pt solid var(--gray-200);
-  padding-bottom: 8pt;
-  break-after: avoid;
-  orphans: 4;
-  widows: 4;
-}
-
-.print-title-3 {
-  font-size: 16pt;
-  font-weight: 600;
-  line-height: 1.4;
-  color: var(--gray-700);
-  margin: 20pt 0 12pt 0;
-  break-after: avoid;
-  orphans: 3;
-  widows: 3;
-}
-
-.print-body {
+.rec-status-badge {
+  padding: 8pt 16pt;
+  border-radius: var(--border-radius);
   font-size: 11pt;
-  line-height: 1.6;
-  color: var(--gray-700);
-  margin-bottom: 12pt;
-  orphans: 2;
-  widows: 2;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.print-caption {
+.rec-score {
+  display: flex;
+  align-items: baseline;
+  gap: 4pt;
+}
+
+.score-number {
+  font-size: 32pt;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.rec-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16pt;
+}
+
+.metric {
+  display: flex;
+  flex-direction: column;
+  gap: 4pt;
+}
+
+.metric-label {
   font-size: 10pt;
   color: var(--gray-500);
-  font-style: italic;
-  margin-top: 6pt;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.metric-value {
+  font-size: 14pt;
+  font-weight: 600;
+}
+
+.key-insights {
+  background: var(--gray-50);
+  border-radius: 12pt;
+  padding: 24pt;
+  border: 1pt solid var(--gray-200);
+}
+
+.insights-title {
+  font-size: 16pt;
+  font-weight: 600;
+  color: var(--gray-800);
+  margin: 0 0 16pt 0;
+}
+
+.insights-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12pt;
+}
+
+.insight-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12pt;
+}
+
+.insight-icon {
+  font-size: 16pt;
+  line-height: 1;
+}
+
+.insight-content {
+  font-size: 11pt;
+  color: var(--gray-700);
+  line-height: 1.5;
+}
+
+.summary-content,
+.recommendation-content {
+  margin-bottom: 24pt;
+}
+
+.content-title {
+  font-size: 18pt;
+  font-weight: 600;
+  color: var(--gray-800);
+  margin: 0 0 12pt 0;
+}
+
+.summary-text,
+.recommendation-text {
+  font-size: 12pt;
+  color: var(--gray-700);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.next-steps-preview {
+  background: var(--white);
+  border-radius: 12pt;
+  padding: 24pt;
+  border: 1pt solid var(--gray-200);
+  box-shadow: var(--shadow-sm);
+}
+
+.steps-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12pt;
+}
+
+.step-item {
+  display: flex;
+  align-items: center;
+  gap: 16pt;
+  padding: 12pt;
+  border-radius: var(--border-radius);
+  border-left: 4pt solid transparent;
+}
+
+.step-item.priority-high {
+  background: #fef2f2;
+  border-left-color: var(--danger-color);
+}
+
+.step-item.priority-medium {
+  background: #fefbf2;
+  border-left-color: var(--warning-color);
+}
+
+.step-number {
+  width: 24pt;
+  height: 24pt;
+  background: var(--primary-color);
+  color: var(--white);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 11pt;
+}
+
+.step-content {
+  font-size: 11pt;
+  color: var(--gray-700);
+  line-height: 1.5;
+}
+
+/* Page Break Controls */
+.page-break {
+  break-before: page;
+}
+
+.avoid-break {
+  break-inside: avoid;
+}
+
+.keep-together {
+  break-inside: avoid;
+  orphans: 3;
+  widows: 3;
 }
 
 /* Utility Classes */
@@ -583,8 +649,6 @@ export const createProfessionalStyles = (): string => `
 .text-xl { font-size: 14pt; }
 .text-2xl { font-size: 18pt; }
 .text-3xl { font-size: 24pt; }
-
-/* Spacing utilities with break awareness */
 .mb-0 { margin-bottom: 0; }
 .mb-1 { margin-bottom: 4pt; }
 .mb-2 { margin-bottom: 8pt; }
@@ -599,45 +663,11 @@ export const createProfessionalStyles = (): string => `
 .mt-4 { margin-top: 16pt; }
 .mt-6 { margin-top: 24pt; }
 .mt-8 { margin-top: 32pt; }
-
-/* Print-specific spacing */
-.print-space-y-2 > * + * { margin-top: 8pt; }
-.print-space-y-3 > * + * { margin-top: 12pt; }
-.print-space-y-4 > * + * { margin-top: 16pt; }
-.print-space-y-6 > * + * { margin-top: 24pt; }
-
-/* Force page breaks for major sections */
-.force-page-break {
-  break-before: page;
-  page: section;
-}
-
-/* Prevent page breaks within these elements */
-.no-page-break {
-  break-inside: avoid;
-  orphans: 4;
-  widows: 4;
-}
-
-/* Widow and orphan control for all elements */
-* {
-  orphans: 2;
-  widows: 2;
-}
-
-h1, h2, h3, h4, h5, h6 {
-  orphans: 4;
-  widows: 4;
-  break-after: avoid;
-}
-
-p, li {
-  orphans: 2;
-  widows: 2;
-}
-
-/* Final page break cleanup */
-.print-section:last-child {
-  break-after: auto;
-}
+.p-0 { padding: 0; }
+.p-1 { padding: 4pt; }
+.p-2 { padding: 8pt; }
+.p-3 { padding: 12pt; }
+.p-4 { padding: 16pt; }
+.p-6 { padding: 24pt; }
+.p-8 { padding: 32pt; }
 `;

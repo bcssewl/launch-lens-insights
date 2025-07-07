@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Printer, X, FileText } from 'lucide-react';
@@ -86,10 +87,10 @@ const PrintView: React.FC<PrintViewProps> = ({
         </Button>
       </div>
 
-      {/* Print content with proper pagination */}
+      {/* Print content */}
       <div className="max-w-4xl mx-auto p-8 space-y-8 print:space-y-6">
         {/* Header - Keep together */}
-        <div className="page-break-inside-avoid">
+        <div className="space-y-6 print:break-inside-avoid">
           <ResultsHeader 
             ideaName={ideaName}
             score={score}
@@ -99,11 +100,11 @@ const PrintView: React.FC<PrintViewProps> = ({
         </div>
 
         {/* Overview Section */}
-        <div className="page-break-before print-section">
-          <h2 className="print-title-2">
+        <div className="space-y-4 print:break-before-page print:break-inside-avoid">
+          <h2 className="text-2xl font-bold text-gray-900 border-b border-gray-200 pb-2 print:break-after-avoid">
             Executive Overview
           </h2>
-          <div className="page-break-inside-avoid">
+          <div className="print:break-inside-avoid">
             <OverviewTabContent 
               summary={executiveSummary}
               metrics={keyMetrics}
@@ -112,93 +113,72 @@ const PrintView: React.FC<PrintViewProps> = ({
         </div>
 
         {/* Market Analysis Section */}
-        <div className="page-break-before print-section">
-          <h2 className="print-title-2">
+        <div className="space-y-4 print:break-before-page print:break-inside-avoid">
+          <h2 className="text-2xl font-bold text-gray-900 border-b border-gray-200 pb-2 print:break-after-avoid">
             Market Analysis
           </h2>
-          <div className="page-break-inside-avoid">
+          <div className="print:break-inside-avoid">
             <MarketAnalysisTabContent data={marketAnalysis} />
           </div>
         </div>
 
         {/* Competition Section */}
-        <div className="page-break-before print-section">
-          <h2 className="print-title-2">
+        <div className="space-y-4 print:break-before-page print:break-inside-avoid">
+          <h2 className="text-2xl font-bold text-gray-900 border-b border-gray-200 pb-2 print:break-after-avoid">
             Competition Analysis
           </h2>
-          <div className="page-break-inside-avoid">
+          <div className="print:break-inside-avoid">
             <CompetitionTabContent data={competition} />
           </div>
         </div>
 
         {/* Financial Analysis Section */}
-        <div className="page-break-before print-section">
-          <h2 className="print-title-2">
+        <div className="space-y-4 print:break-before-page print:break-inside-avoid">
+          <h2 className="text-2xl font-bold text-gray-900 border-b border-gray-200 pb-2 print:break-after-avoid">
             Financial Analysis
           </h2>
-          <div className="page-break-inside-avoid">
+          <div className="print:break-inside-avoid">
             <FinancialAnalysisTabContent data={financialAnalysis} />
           </div>
         </div>
 
         {/* SWOT Analysis Section */}
-        <div className="page-break-before print-section">
-          <h2 className="print-title-2">
+        <div className="space-y-4 print:break-before-page print:break-inside-avoid">
+          <h2 className="text-2xl font-bold text-gray-900 border-b border-gray-200 pb-2 print:break-after-avoid">
             SWOT Analysis
           </h2>
-          <div className="page-break-inside-avoid">
+          <div className="print:break-inside-avoid">
             <SWOTAnalysisTabContent data={swot} />
           </div>
         </div>
 
         {/* Detailed Scores Section */}
-        <div className="page-break-before print-section">
-          <h2 className="print-title-2">
+        <div className="space-y-4 print:break-before-page print:break-inside-avoid">
+          <h2 className="text-2xl font-bold text-gray-900 border-b border-gray-200 pb-2 print:break-after-avoid">
             Detailed Scores
           </h2>
-          <div className="page-break-inside-avoid">
+          <div className="print:break-inside-avoid">
             <DetailedScoresTabContent scores={detailedScores} />
           </div>
         </div>
 
         {/* Action Items Section */}
-        <div className="print-section">
-          <h2 className="print-title-2">
+        <div className="space-y-4 print:break-before-page print:break-inside-avoid">
+          <h2 className="text-2xl font-bold text-gray-900 border-b border-gray-200 pb-2 print:break-after-avoid">
             Recommended Actions
           </h2>
-          <div className="page-break-inside-avoid">
+          <div className="print:break-inside-avoid">
             <ActionItemsTabContent items={actionItems} />
           </div>
         </div>
       </div>
 
-      {/* Enhanced Print styles for A4 optimization with pagination */}
+      {/* Enhanced Print styles for A4 optimization */}
       <style>{`
         @media print {
           @page {
             size: A4;
-            margin: 2cm 2.5cm 3cm 2.5cm;
-            
-            @bottom-center {
-              content: "Page " counter(page);
-              font-family: 'Inter', sans-serif;
-              font-size: 10pt;
-              color: #6b7280;
-            }
-            
-            @bottom-left {
-              content: "Idea Validation Report";
-              font-family: 'Inter', sans-serif;
-              font-size: 10pt;
-              color: #6b7280;
-            }
-            
-            @bottom-right {
-              content: "Generated " attr(data-date);
-              font-family: 'Inter', sans-serif;
-              font-size: 10pt;
-              color: #6b7280;
-            }
+            margin: 1.5cm 2cm;
           }
           
           body {
@@ -209,22 +189,20 @@ const PrintView: React.FC<PrintViewProps> = ({
           }
           
           /* Page break controls */
-          .page-break-before {
+          .print\\:break-before-page {
             break-before: page;
           }
           
-          .page-break-after {
+          .print\\:break-after-page {
             break-after: page;
           }
           
-          .page-break-inside-avoid {
-            break-inside: avoid;
+          .print\\:break-after-avoid {
+            break-after: avoid;
           }
           
-          .print-section {
+          .print\\:break-inside-avoid {
             break-inside: avoid;
-            orphans: 3;
-            widows: 3;
           }
           
           /* Widow and orphan control */
@@ -283,6 +261,19 @@ const PrintView: React.FC<PrintViewProps> = ({
           .metric-card,
           .score-item,
           .swot-item {
+            break-inside: avoid;
+          }
+          
+          /* Large content blocks that might need page breaks */
+          .large-content > * {
+            break-inside: avoid;
+          }
+          
+          /* Force page break for elements that would be cut */
+          .chart-container,
+          .large-table,
+          .financial-chart {
+            break-before: page;
             break-inside: avoid;
           }
         }
