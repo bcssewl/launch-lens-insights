@@ -13,6 +13,7 @@ export interface ChatHistoryItem {
 export const useChatHistory = (sessionId: string | null) => {
   const [history, setHistory] = useState<ChatHistoryItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -20,13 +21,17 @@ export const useChatHistory = (sessionId: string | null) => {
       fetchHistory();
     } else {
       setHistory([]);
+      setIsInitialLoad(false);
     }
   }, [sessionId]);
 
   const fetchHistory = async () => {
     if (!sessionId) return;
 
+    console.log('useChatHistory: Fetching history for session:', sessionId);
     setLoading(true);
+    setIsInitialLoad(true);
+    
     try {
       const { data, error } = await supabase
         .from('n8n_chat_history')
@@ -35,6 +40,8 @@ export const useChatHistory = (sessionId: string | null) => {
         .order('created_at', { ascending: true });
 
       if (error) throw error;
+      
+      console.log('useChatHistory: Fetched history:', data?.length, 'messages');
       setHistory(data || []);
     } catch (error) {
       console.error('Error fetching chat history:', error);
@@ -45,6 +52,7 @@ export const useChatHistory = (sessionId: string | null) => {
       });
     } finally {
       setLoading(false);
+      setIsInitialLoad(false);
     }
   };
 
@@ -102,6 +110,7 @@ export const useChatHistory = (sessionId: string | null) => {
   return {
     history,
     loading,
+    isInitialLoad,
     addMessage,
     clearHistory,
     refreshHistory: fetchHistory,

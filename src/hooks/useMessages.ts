@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Message, initialMessages, formatTimestamp } from '@/constants/aiAssistant';
@@ -7,7 +8,6 @@ import { useChatHistory } from '@/hooks/useChatHistory';
 export const useMessages = (currentSessionId: string | null) => {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [isTyping, setIsTyping] = useState(false);
-  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [canvasState, setCanvasState] = useState<{
     isOpen: boolean;
     messageId: string | null;
@@ -19,7 +19,7 @@ export const useMessages = (currentSessionId: string | null) => {
   });
   const viewportRef = useRef<HTMLDivElement>(null);
   const { sendMessageToN8n, isConfigured } = useN8nWebhook();
-  const { history, addMessage } = useChatHistory(currentSessionId);
+  const { history, addMessage, isInitialLoad } = useChatHistory(currentSessionId);
 
   const scrollToBottom = useCallback(() => {
     if (viewportRef.current) {
@@ -31,12 +31,15 @@ export const useMessages = (currentSessionId: string | null) => {
     scrollToBottom();
   }, [messages, isTyping, scrollToBottom]);
 
-  // Load messages from history when session changes
+  // Load messages from history when session changes - but wait for initial load to complete
   useEffect(() => {
-    console.log('useMessages: Session changed to:', currentSessionId);
-    console.log('useMessages: History length:', history.length);
+    console.log('useMessages: Session/History changed - Session:', currentSessionId, 'History length:', history.length, 'Is initial load:', isInitialLoad);
     
-    setIsLoadingHistory(true);
+    // Don't process until initial load is complete
+    if (isInitialLoad) {
+      console.log('useMessages: Still loading initial history, waiting...');
+      return;
+    }
     
     if (currentSessionId && history.length > 0) {
       console.log('useMessages: Loading history for session:', currentSessionId);
@@ -64,14 +67,12 @@ export const useMessages = (currentSessionId: string | null) => {
       
       console.log('useMessages: Setting messages with history:', historyMessages.length, 'messages');
       setMessages([...initialMessages, ...historyMessages]);
-    } else {
+    } else if (!currentSessionId || history.length === 0) {
       console.log('useMessages: No session or empty history, showing initial messages only');
       // Reset to initial messages for new sessions or when no session is selected
       setMessages([...initialMessages]);
     }
-    
-    setIsLoadingHistory(false);
-  }, [currentSessionId, history]);
+  }, [currentSessionId, history, isInitialLoad]);
 
   const handleSendMessage = useCallback(async (text?: string, messageText?: string) => {
     const finalMessageText = text || messageText;
@@ -209,7 +210,7 @@ export const useMessages = (currentSessionId: string | null) => {
   return {
     messages,
     isTyping,
-    isLoadingHistory,
+    isLoadingHistory: isInitialLoad,
     viewportRef,
     handleSendMessage,
     handleClearConversation,
