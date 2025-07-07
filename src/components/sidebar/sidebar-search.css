@@ -1,0 +1,54 @@
+
+/* Scoped styles for sidebar search component */
+.sidebar-search {
+  /* Base search container styles */
+}
+
+.sidebar-search__input {
+  /* Ensure input has proper focus states */
+  transition: border-color 0.2s ease-in-out;
+}
+
+.sidebar-search__input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(var(--color-primary-rgb), 0.1);
+}
+
+.sidebar-search__results {
+  /* Results dropdown styles */
+  border: none;
+  background: var(--color-surface-elevated);
+}
+
+.sidebar-search__result {
+  /* Individual result item styles */
+  border-radius: 4px;
+  margin: 2px 4px;
+}
+
+.sidebar-search__result:hover,
+.sidebar-search__result[aria-selected="true"] {
+  background-color: var(--color-surface-elevated-2);
+}
+
+.sidebar-search__empty {
+  /* Empty state styles */
+  font-style: italic;
+}
+
+/* Highlighted search terms in snippets */
+.sidebar-search__result b {
+  background-color: rgba(var(--color-primary-rgb), 0.2);
+  color: var(--color-primary);
+  padding: 1px 2px;
+  border-radius: 2px;
+  font-weight: 600;
+}
+
+/* Line clamp for snippet text */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
