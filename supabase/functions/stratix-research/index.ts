@@ -84,6 +84,18 @@ function getSystemPromptForStep(stepType: string): string {
   const basePrompt = "You are Stratix, an elite research agent specializing in deep consulting-level analysis. You excel at multi-dimensional strategic research and provide actionable business insights.";
   
   switch (stepType) {
+    case 'intent-analysis':
+      return `${basePrompt} Your task is to analyze the user's input to determine their intent and whether it requires comprehensive research or can be handled conversationally.
+
+CRITICAL INSTRUCTIONS:
+- If the input is a simple greeting, casual conversation, or basic question that doesn't require deep analysis, provide a helpful conversational response
+- If the input involves complex business topics, strategic analysis, market research, competitive analysis, or similar topics that would benefit from multi-step investigation, respond with "RESEARCH_REQUIRED" at the beginning of your response
+- For research-worthy queries, briefly explain why research is needed but do NOT conduct the research yet
+- For conversational queries, provide a helpful, engaging response as Stratix the strategic research agent
+
+Examples of conversational inputs: "hello", "thanks", "what can you do", "how are you"
+Examples of research inputs: "analyze the EV market", "competitive landscape for SaaS", "market opportunity for fintech"`;
+    
     case 'analyze-and-plan':
       return `${basePrompt} Your task is to analyze the research query and create a strategic research plan. Break down complex queries into research vectors, identify key stakeholders, and outline methodology.`;
     
