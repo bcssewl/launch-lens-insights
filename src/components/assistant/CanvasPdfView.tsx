@@ -1,9 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Printer, X, Download, Eye } from 'lucide-react';
-import { processMarkdownForPdf, createPdfHtml } from '@/utils/canvasPdfProcessor';
+import { Printer, X, Download, Eye, Loader2 } from 'lucide-react';
+import { processMarkdownForPdf, createChatGptPdfHtml } from '@/utils/canvasPdfProcessor';
 import { format } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
 
 interface CanvasPdfViewProps {
   content: string;
@@ -19,6 +20,7 @@ const CanvasPdfView: React.FC<CanvasPdfViewProps> = ({
   const [processedContent, setProcessedContent] = useState<any>(null);
   const [pdfHtml, setPdfHtml] = useState<string>('');
   const [isPreviewMode, setIsPreviewMode] = useState(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   useEffect(() => {
     const processContent = async () => {
@@ -27,9 +29,9 @@ const CanvasPdfView: React.FC<CanvasPdfViewProps> = ({
         const processed = await processMarkdownForPdf(content);
         setProcessedContent(processed);
 
-        // Create the HTML for PDF generation
-        const html = createPdfHtml(processed, {
-          generatedDate: format(new Date(), 'MMM d, yyyy'),
+        // Create the HTML for PDF generation using ChatGPT styling
+        const html = createChatGptPdfHtml(processed, {
+          generatedDate: format(new Date(), 'd MMM yyyy'),
           author: 'AI Assistant'
         });
         setPdfHtml(html);
@@ -42,7 +44,7 @@ const CanvasPdfView: React.FC<CanvasPdfViewProps> = ({
   }, [content]);
 
   const handlePrint = () => {
-    // Create a new window with the PDF HTML
+    // Create a new window with the PDF HTML for browser printing
     const printWindow = window.open('', '_blank');
     if (printWindow) {
       printWindow.document.write(pdfHtml);
@@ -58,22 +60,68 @@ const CanvasPdfView: React.FC<CanvasPdfViewProps> = ({
   };
 
   const handleDownloadPdf = async () => {
+    if (!processedContent) return;
+    
+    setIsGeneratingPdf(true);
+    
     try {
-      // Create a blob with the HTML content
-      const blob = new Blob([pdfHtml], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
+      console.log('Generating ChatGPT-style PDF via server...');
       
-      // For now, open in new window so user can manually save as PDF
-      // In production, you'd send this to a server-side PDF generator
-      const pdfWindow = window.open(url, '_blank');
-      if (pdfWindow) {
-        pdfWindow.onload = () => {
-          // Clean up the blob URL
-          URL.revokeObjectURL(url);
-        };
+      // Call the server-side PDF generation function
+      const { data, error } = await supabase.functions.invoke('generate-canvas-pdf', {
+        body: {
+          content,
+          title: processedContent.title,
+          metadata: {
+            generatedDate: format(new Date(), 'd MMM yyyy'),
+            author: 'AI Assistant'
+          }
+        },
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (error) {
+        console.error('PDF generation error:', error);
+        throw new Error(error.message || 'Failed to generate PDF');
+      }
+
+      // Handle the PDF blob response
+      if (data) {
+        // Create blob from the response
+        const blob = new Blob([data], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        
+        // Create download link
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${processedContent.title.replace(/[^a-zA-Z0-9-_]/g, '_')}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Clean up the blob URL
+        URL.revokeObjectURL(url);
+        
+        console.log('PDF downloaded successfully');
       }
     } catch (error) {
       console.error('Failed to generate PDF:', error);
+      
+      // Fallback to browser-based generation
+      console.log('Falling back to browser-based PDF generation...');
+      const blob = new Blob([pdfHtml], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      
+      const pdfWindow = window.open(url, '_blank');
+      if (pdfWindow) {
+        pdfWindow.onload = () => {
+          URL.revokeObjectURL(url);
+        };
+      }
+    } finally {
+      setIsGeneratingPdf(false);
     }
   };
 
@@ -100,9 +148,22 @@ const CanvasPdfView: React.FC<CanvasPdfViewProps> = ({
           <Eye className="h-4 w-4" />
           {isPreviewMode ? 'Edit View' : 'Print Preview'}
         </Button>
-        <Button onClick={handleDownloadPdf} className="flex items-center gap-2">
-          <Download className="h-4 w-4" />
-          Download PDF
+        <Button 
+          onClick={handleDownloadPdf} 
+          disabled={isGeneratingPdf}
+          className="flex items-center gap-2"
+        >
+          {isGeneratingPdf ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Generating...
+            </>
+          ) : (
+            <>
+              <Download className="h-4 w-4" />
+              Download PDF
+            </>
+          )}
         </Button>
         <Button onClick={handlePrint} className="flex items-center gap-2">
           <Printer className="h-4 w-4" />
@@ -146,8 +207,14 @@ const CanvasPdfView: React.FC<CanvasPdfViewProps> = ({
                 </div>
                 <div>
                   <span className="font-medium">Generated:</span>
-                  <span className="ml-2 text-gray-600">{format(new Date(), 'MMM d, yyyy')}</span>
+                  <span className="ml-2 text-gray-600">{format(new Date(), 'd MMM yyyy')}</span>
                 </div>
+              </div>
+              <div className="mt-4 p-4 bg-blue-50 rounded border border-blue-200">
+                <p className="text-sm text-blue-800">
+                  <strong>ChatGPT-Style PDF Generation:</strong> This PDF will be generated with exact ChatGPT styling, 
+                  including Inter font, proper pagination, widow/orphan control, and professional formatting.
+                </p>
               </div>
             </div>
 

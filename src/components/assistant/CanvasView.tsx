@@ -58,19 +58,19 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
     setCurrentContent(content);
   }, [content]);
 
-  // Enhanced PDF download handler - now uses the new PDF system
+  // Enhanced PDF download handler - now uses ChatGPT-style PDF system
   const handlePdfDownload = useCallback(() => {
-    console.log('CanvasView: Enhanced PDF download initiated');
+    console.log('CanvasView: Enhanced ChatGPT-style PDF download initiated');
     setShowPdfView(true);
   }, []);
 
   // Use keyboard shortcuts hook with enhanced PDF download
   useCanvasKeyboardShortcuts({
     isOpen,
-    isEditing: false, // Always false since we have seamless editing
+    isEditing: false,
     onClose,
     onPrint: handlePdfDownload, // Use enhanced PDF download for Ctrl+P
-    onToggleEdit: () => {} // No-op since we don't have edit mode
+    onToggleEdit: () => {}
   });
 
   const handleBackdropClick = useCallback((event: React.MouseEvent) => {
@@ -150,11 +150,11 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
         {/* Header */}
         <CanvasHeader
           title={title}
-          isEditing={false} // Always false since we have seamless editing
+          isEditing={false}
           onDownload={onDownload}
           onPrint={onPrint}
-          onPdfDownload={handlePdfDownload}
-          onEdit={() => {}} // No-op since we don't need edit mode
+          onPdfDownload={handlePdfDownload} // Enhanced ChatGPT-style PDF download
+          onEdit={() => {}}
           onClose={onClose}
         />
 
@@ -180,10 +180,10 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
 
             {/* Report Panel with Seamless Editing */}
             <CanvasReportPanel
-              isEditing={false} // Not used anymore
+              isEditing={false}
               content={currentContent}
               onSave={handleContentUpdate}
-              onCancel={() => {}} // Not used anymore
+              onCancel={() => {}}
               hasChat={hasChat}
               onSendMessage={onSendMessage}
               messageId={canvasState?.messageId}

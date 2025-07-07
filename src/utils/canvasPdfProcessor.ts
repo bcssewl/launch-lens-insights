@@ -8,23 +8,37 @@ interface ProcessedContent {
   estimatedPages: number;
 }
 
-// Custom renderer for better PDF formatting
-const createPdfRenderer = () => {
+// Custom renderer for ChatGPT-style PDF formatting
+const createChatGptPdfRenderer = () => {
   const renderer = new marked.Renderer();
   
-  // Add page breaks before major headings
+  // H1 always starts new page, H2 smart breaks
   renderer.heading = ({ tokens, depth }) => {
-    const text = tokens.map(token => typeof token === 'string' ? token : token.raw || '').join('');
+    const text = this.parser.parseInline(tokens);
     const id = text.toLowerCase().replace(/[^\w]+/g, '-');
-    const pageBreakClass = depth <= 2 ? ' class="page-break-before"' : '';
-    return `<h${depth}${pageBreakClass} id="${id}">${text}</h${depth}>`;
+    
+    let classes = '';
+    if (depth === 1) {
+      classes = ' class="page-break-before"';
+    } else if (depth === 2) {
+      classes = ' class="smart-page-break"';
+    }
+    
+    return `<h${depth}${classes} id="${id}">${text}</h${depth}>`;
   };
   
-  // Wrap tables to avoid page breaks
+  // Tables wrapped to avoid page breaks
   renderer.table = ({ header, rows }) => {
-    const headerHtml = header.map(cell => `<th>${cell.text}</th>`).join('');
+    const headerHtml = header.map(cell => {
+      const cellText = this.parser.parseInline(cell.tokens);
+      return `<th>${cellText}</th>`;
+    }).join('');
+    
     const bodyHtml = rows.map(row => 
-      `<tr>${row.map(cell => `<td>${cell.text}</td>`).join('')}</tr>`
+      `<tr>${row.map(cell => {
+        const cellText = this.parser.parseInline(cell.tokens);
+        return `<td>${cellText}</td>`;
+      }).join('')}</tr>`
     ).join('');
     
     return `<div class="table-container page-break-avoid">
@@ -35,7 +49,7 @@ const createPdfRenderer = () => {
     </div>`;
   };
   
-  // Wrap code blocks to avoid page breaks
+  // Code blocks wrapped to avoid page breaks
   renderer.code = ({ text, lang }) => {
     const language = lang || '';
     return `<div class="code-container page-break-avoid">
@@ -43,17 +57,34 @@ const createPdfRenderer = () => {
     </div>`;
   };
   
-  // Add proper paragraph spacing
+  // Paragraphs with proper spacing and widow/orphan control
   renderer.paragraph = ({ tokens }) => {
-    const text = tokens.map(token => typeof token === 'string' ? token : token.raw || '').join('');
+    const text = this.parser.parseInline(tokens);
     return `<p class="content-paragraph">${text}</p>`;
   };
   
-  // Handle lists with proper spacing
+  // Lists with proper spacing and page break avoidance
   renderer.list = ({ items, ordered }) => {
     const tag = ordered ? 'ol' : 'ul';
-    const itemsHtml = items.map(item => `<li>${item.text}</li>`).join('');
+    const itemsHtml = items.map(item => {
+      const itemText = this.parser.parseInline(item.tokens);
+      return `<li>${itemText}</li>`;
+    }).join('');
     return `<${tag} class="content-list page-break-avoid">${itemsHtml}</${tag}>`;
+  };
+  
+  // Handle images with page break avoidance
+  renderer.image = ({ href, title, text }) => {
+    const titleAttr = title ? ` title="${title}"` : '';
+    return `<div class="image-container page-break-avoid">
+      <img src="${href}" alt="${text}"${titleAttr} />
+    </div>`;
+  };
+  
+  // Handle blockquotes
+  renderer.blockquote = ({ tokens }) => {
+    const text = this.parser.parse(tokens);
+    return `<blockquote class="content-blockquote page-break-avoid">${text}</blockquote>`;
   };
   
   return renderer;
@@ -62,7 +93,7 @@ const createPdfRenderer = () => {
 export const processMarkdownForPdf = async (markdown: string): Promise<ProcessedContent> => {
   // Configure marked with custom renderer
   marked.setOptions({
-    renderer: createPdfRenderer(),
+    renderer: createChatGptPdfRenderer(),
     gfm: true,
     breaks: true
   });
@@ -76,7 +107,7 @@ export const processMarkdownForPdf = async (markdown: string): Promise<Processed
   
   // Calculate estimated metrics
   const wordCount = markdown.split(/\s+/).length;
-  const estimatedPages = Math.max(1, Math.ceil(wordCount / 400)); // ~400 words per page
+  const estimatedPages = Math.max(1, Math.ceil(wordCount / 350)); // Adjusted for ChatGPT density
   
   return {
     html,
@@ -86,7 +117,7 @@ export const processMarkdownForPdf = async (markdown: string): Promise<Processed
   };
 };
 
-export const createPdfHtml = (content: ProcessedContent, metadata: {
+export const createChatGptPdfHtml = (content: ProcessedContent, metadata: {
   generatedDate: string;
   author?: string;
 }) => {
@@ -97,10 +128,10 @@ export const createPdfHtml = (content: ProcessedContent, metadata: {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${content.title}</title>
     <style>
-        /* Import fonts */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        /* Import Inter font */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
         
-        /* Global styles */
+        /* Global reset and base styles */
         * {
             margin: 0;
             padding: 0;
@@ -109,38 +140,33 @@ export const createPdfHtml = (content: ProcessedContent, metadata: {
         
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            line-height: 1.6;
+            font-size: 11pt;
+            line-height: 1.5;
             color: #1f2937;
             background: white;
         }
         
-        /* Screen styles */
-        @media screen {
-            body {
-                max-width: 800px;
-                margin: 0 auto;
-                padding: 2rem;
-            }
-        }
-        
-        /* Print styles - This is where the magic happens */
+        /* Print-specific page setup */
         @media print {
             @page {
                 size: A4;
                 margin: 20mm;
-                @bottom-center {
-                    content: counter(page) " / " counter(pages);
-                    font-size: 10pt;
-                    color: #6b7280;
-                }
                 @bottom-left {
                     content: "${content.title}";
-                    font-size: 10pt;
+                    font-family: 'Inter', sans-serif;
+                    font-size: 9pt;
+                    color: #6b7280;
+                }
+                @bottom-center {
+                    content: counter(page) " / " counter(pages);
+                    font-family: 'Inter', sans-serif;
+                    font-size: 9pt;
                     color: #6b7280;
                 }
                 @bottom-right {
                     content: "${metadata.generatedDate}";
-                    font-size: 10pt;
+                    font-family: 'Inter', sans-serif;
+                    font-size: 9pt;
                     color: #6b7280;
                 }
             }
@@ -153,25 +179,14 @@ export const createPdfHtml = (content: ProcessedContent, metadata: {
                 line-height: 1.5;
             }
             
-            /* Page break controls */
-            .page-break-before {
-                page-break-before: always;
-            }
-            
-            .page-break-after {
-                page-break-after: always;
-            }
-            
-            .page-break-avoid {
-                page-break-inside: avoid;
-            }
-            
-            /* Heading styles */
+            /* ChatGPT-exact heading styles */
             h1 {
                 font-size: 24pt;
                 font-weight: 700;
                 margin-bottom: 16pt;
                 page-break-after: avoid;
+                orphans: 4;
+                widows: 4;
             }
             
             h2 {
@@ -182,6 +197,8 @@ export const createPdfHtml = (content: ProcessedContent, metadata: {
                 page-break-after: avoid;
                 border-bottom: 1pt solid #e5e7eb;
                 padding-bottom: 6pt;
+                orphans: 4;
+                widows: 4;
             }
             
             h3 {
@@ -190,6 +207,8 @@ export const createPdfHtml = (content: ProcessedContent, metadata: {
                 margin-top: 16pt;
                 margin-bottom: 8pt;
                 page-break-after: avoid;
+                orphans: 3;
+                widows: 3;
             }
             
             h4, h5, h6 {
@@ -198,31 +217,50 @@ export const createPdfHtml = (content: ProcessedContent, metadata: {
                 margin-top: 12pt;
                 margin-bottom: 6pt;
                 page-break-after: avoid;
+                orphans: 3;
+                widows: 3;
             }
             
-            /* Paragraph and text styles */
+            /* Page break controls */
+            .page-break-before {
+                page-break-before: always;
+            }
+            
+            .smart-page-break {
+                page-break-before: auto;
+            }
+            
+            .page-break-avoid {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+            
+            /* Paragraph styles with widow/orphan control */
             .content-paragraph {
                 margin-bottom: 12pt;
-                widows: 2;
                 orphans: 2;
+                widows: 2;
             }
             
             /* List styles */
             .content-list {
                 margin-bottom: 12pt;
                 padding-left: 20pt;
+                orphans: 2;
+                widows: 2;
             }
             
             .content-list li {
                 margin-bottom: 4pt;
-                widows: 2;
                 orphans: 2;
+                widows: 2;
             }
             
-            /* Table styles */
+            /* Table styles - exact ChatGPT specs */
             .table-container {
                 margin: 12pt 0;
                 page-break-inside: avoid;
+                break-inside: avoid;
             }
             
             table {
@@ -231,21 +269,27 @@ export const createPdfHtml = (content: ProcessedContent, metadata: {
                 font-size: 10pt;
             }
             
-            th, td {
+            th {
+                font-size: 10pt;
+                font-weight: 600;
+                background: #f3f4f6;
                 border: 1pt solid #d1d5db;
-                padding: 6pt 8pt;
+                padding: 8pt;
                 text-align: left;
             }
             
-            th {
-                background: #f3f4f6;
-                font-weight: 600;
+            td {
+                border: 1pt solid #d1d5db;
+                padding: 8pt;
+                text-align: left;
+                font-size: 10pt;
             }
             
             /* Code block styles */
             .code-container {
                 margin: 12pt 0;
                 page-break-inside: avoid;
+                break-inside: avoid;
             }
             
             pre {
@@ -253,23 +297,45 @@ export const createPdfHtml = (content: ProcessedContent, metadata: {
                 border: 1pt solid #e2e8f0;
                 border-radius: 4pt;
                 padding: 12pt;
-                font-family: 'Courier New', monospace;
+                font-family: 'JetBrains Mono', 'Courier New', monospace;
                 font-size: 9pt;
                 overflow-wrap: anywhere;
                 white-space: pre-wrap;
             }
             
             code {
-                font-family: 'Courier New', monospace;
+                font-family: 'JetBrains Mono', 'Courier New', monospace;
+                font-size: 9pt;
+            }
+            
+            /* Inline code */
+            p code, li code {
+                background: #f1f5f9;
+                padding: 2pt 4pt;
+                border-radius: 2pt;
                 font-size: 9pt;
             }
             
             /* Image styles */
+            .image-container {
+                margin: 12pt 0;
+                page-break-inside: avoid;
+                text-align: center;
+            }
+            
             img {
                 max-width: 100%;
                 height: auto;
-                page-break-inside: avoid;
+            }
+            
+            /* Blockquote styles */
+            .content-blockquote {
                 margin: 12pt 0;
+                padding-left: 16pt;
+                border-left: 3pt solid #e5e7eb;
+                font-style: italic;
+                color: #4b5563;
+                page-break-inside: avoid;
             }
             
             /* Strong and emphasis */
@@ -284,13 +350,7 @@ export const createPdfHtml = (content: ProcessedContent, metadata: {
             /* Link styles for print */
             a {
                 color: #2563eb;
-                text-decoration: none;
-            }
-            
-            a:after {
-                content: " (" attr(href) ")";
-                font-size: 9pt;
-                color: #6b7280;
+                text-decoration: underline;
             }
         }
         
@@ -306,28 +366,31 @@ export const createPdfHtml = (content: ProcessedContent, metadata: {
         }
         
         .cover-title {
-            font-size: 36pt;
+            font-size: 32pt;
             font-weight: 700;
             margin-bottom: 24pt;
             color: #1f2937;
         }
         
         .cover-subtitle {
-            font-size: 16pt;
+            font-size: 14pt;
             color: #6b7280;
             margin-bottom: 48pt;
         }
         
         .cover-metadata {
             background: #f8fafc;
-            border-radius: 12pt;
+            border-radius: 8pt;
             padding: 24pt;
             border: 1pt solid #e2e8f0;
+            max-width: 400pt;
         }
         
         .metadata-item {
             margin-bottom: 8pt;
-            font-size: 12pt;
+            font-size: 11pt;
+            display: flex;
+            justify-content: space-between;
         }
         
         .metadata-label {
@@ -344,7 +407,7 @@ export const createPdfHtml = (content: ProcessedContent, metadata: {
     <!-- Cover Page -->
     <div class="cover-page">
         <h1 class="cover-title">${content.title}</h1>
-        <p class="cover-subtitle">AI Generated Report</p>
+        <p class="cover-subtitle">Generated by AI Assistant</p>
         <div class="cover-metadata">
             <div class="metadata-item">
                 <span class="metadata-label">Generated:</span>
@@ -374,3 +437,6 @@ export const createPdfHtml = (content: ProcessedContent, metadata: {
 </body>
 </html>`;
 };
+
+// Legacy function for backward compatibility
+export const createPdfHtml = createChatGptPdfHtml;
