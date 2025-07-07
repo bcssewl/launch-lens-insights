@@ -117,24 +117,33 @@ export const useMessages = (currentSessionId: string | null) => {
       
       // Apply specialized model workflows
       let aiResponseText: string;
+      console.log('useMessages: Selected model:', selectedModel);
+      
       if (selectedModel === 'stratix') {
-        console.log('useMessages: Activating Stratix Research Agent for query:', finalMessageText);
+        console.log('🔬 useMessages: Activating Stratix Research Agent for query:', finalMessageText);
         aiResponseText = await executeStratixResearchWorkflow(contextMessage, currentSessionId);
       } else if (selectedModel === 'perplexity') {
-        console.log('useMessages: Using Perplexity for query:', finalMessageText);
+        console.log('🔍 useMessages: Using Perplexity for real-time search:', finalMessageText);
         const { data, error } = await supabase.functions.invoke('perplexity-search', {
           body: { query: contextMessage, sessionId: currentSessionId }
         });
-        if (error) throw error;
+        if (error) {
+          console.error('Perplexity error:', error);
+          throw error;
+        }
         aiResponseText = data?.result || 'Unable to get response from Perplexity';
       } else if (selectedModel === 'gemini') {
-        console.log('useMessages: Using Gemini for query:', finalMessageText);
+        console.log('💎 useMessages: Using Gemini AI model:', finalMessageText);
         const { data, error } = await supabase.functions.invoke('gemini-chat', {
           body: { query: contextMessage, sessionId: currentSessionId }
         });
-        if (error) throw error;
+        if (error) {
+          console.error('Gemini error:', error);
+          throw error;
+        }
         aiResponseText = data?.result || 'Unable to get response from Gemini';
       } else {
+        console.log('🤖 useMessages: Using default N8N workflow:', selectedModel);
         aiResponseText = await sendMessageToN8n(contextMessage, currentSessionId);
       }
       

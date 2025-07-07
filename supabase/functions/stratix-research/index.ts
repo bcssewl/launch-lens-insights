@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+const OPENAI_API_KEY = Deno.env.get('OPENAI_KEY');
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -19,7 +19,7 @@ serve(async (req) => {
     console.log(`Stratix Research Step: ${stepName} for query: ${query}`);
 
     if (!OPENAI_API_KEY) {
-      throw new Error('OpenAI API key not configured');
+      throw new Error('OPENAI_KEY not configured in Supabase secrets');
     }
 
     // Create specialized prompt for each research step
