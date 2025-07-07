@@ -166,10 +166,62 @@
 }
 
 @layer components {
+  /* Custom prose styles for markdown content */
+  .prose {
+    @apply text-foreground max-w-none;
+    line-height: 1.7;
+    font-weight: 400; /* Explicitly normal weight */
+  }
+  
+  .prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+    @apply text-foreground font-semibold mt-6 mb-4;
+    font-weight: 600; /* Only headings should be semi-bold */
+  }
+  
+  .prose h1 { @apply text-2xl; }
+  .prose h2 { @apply text-xl; }
+  .prose h3 { @apply text-lg; }
+  
+  .prose p {
+    @apply text-foreground mb-4;
+    font-weight: 400; /* Explicitly normal weight */
+  }
+  
+  .prose ul, .prose ol {
+    @apply mb-4 pl-6;
+  }
+  
+  .prose li {
+    @apply mb-2 text-foreground;
+    font-weight: 400; /* Explicitly normal weight */
+  }
+  
+  .prose blockquote {
+    @apply border-l-4 border-border pl-4 italic text-muted-foreground my-6;
+  }
+  
+  .prose code {
+    @apply bg-muted px-1 py-0.5 rounded text-sm;
+  }
+  
+  .prose pre {
+    @apply bg-muted p-4 rounded-lg overflow-x-auto my-4;
+  }
+  
+  .prose pre code {
+    @apply bg-transparent p-0;
+  }
+  
+  .prose-sm {
+    @apply text-sm;
+    line-height: 1.6;
+  }
+
   /* Custom prose preset for Canvas reports with consulting slide deck spacing */
   .prose-report {
     @apply text-foreground;
     line-height: 1.75;
+    font-weight: 400; /* Explicitly normal weight */
   }
   
   .prose-report h1 {

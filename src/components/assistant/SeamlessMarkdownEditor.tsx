@@ -350,7 +350,7 @@ const SeamlessMarkdownEditor: React.FC<SeamlessMarkdownEditorProps> = ({
           ref={editorRef}
           contentEditable
           suppressContentEditableWarning
-          className="min-h-96 focus:outline-none prose-report prose dark:prose-invert max-w-none"
+          className="min-h-96 focus:outline-none prose-report max-w-none"
           style={{
             fontSize: '16px',
             lineHeight: '1.75',
