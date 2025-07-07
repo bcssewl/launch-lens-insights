@@ -4,6 +4,7 @@ import { Message, initialMessages, formatTimestamp } from '@/constants/aiAssista
 import { useN8nWebhook } from '@/hooks/useN8nWebhook';
 import { useChatHistory } from '@/hooks/useChatHistory';
 import { executeStratixResearchWorkflow } from '@/utils/stratixResearchAgent';
+import { supabase } from '@/integrations/supabase/client';
 
 export const useMessages = (currentSessionId: string | null) => {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
@@ -114,11 +115,25 @@ export const useMessages = (currentSessionId: string | null) => {
         contextMessage = `Current document content:\n\n${canvasState.content}\n\n---\n\nUser message: ${finalMessageText}`;
       }
       
-      // Apply Stratix Research Agent workflow if Stratix model is selected
+      // Apply specialized model workflows
       let aiResponseText: string;
       if (selectedModel === 'stratix') {
         console.log('useMessages: Activating Stratix Research Agent for query:', finalMessageText);
         aiResponseText = await executeStratixResearchWorkflow(contextMessage, currentSessionId);
+      } else if (selectedModel === 'perplexity') {
+        console.log('useMessages: Using Perplexity for query:', finalMessageText);
+        const { data, error } = await supabase.functions.invoke('perplexity-search', {
+          body: { query: contextMessage, sessionId: currentSessionId }
+        });
+        if (error) throw error;
+        aiResponseText = data?.result || 'Unable to get response from Perplexity';
+      } else if (selectedModel === 'gemini') {
+        console.log('useMessages: Using Gemini for query:', finalMessageText);
+        const { data, error } = await supabase.functions.invoke('gemini-chat', {
+          body: { query: contextMessage, sessionId: currentSessionId }
+        });
+        if (error) throw error;
+        aiResponseText = data?.result || 'Unable to get response from Gemini';
       } else {
         aiResponseText = await sendMessageToN8n(contextMessage, currentSessionId);
       }

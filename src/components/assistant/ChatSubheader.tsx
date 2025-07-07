@@ -33,6 +33,8 @@ const ChatSubheader: React.FC<ChatSubheaderProps> = ({
       case 'nexus': return 'Nexus';
       case 'algeon': return 'Algeon';
       case 'stratix': return 'Stratix';
+      case 'perplexity': return 'Perplexity';
+      case 'gemini': return 'Gemini';
       default: return 'Best';
     }
   };
@@ -42,6 +44,8 @@ const ChatSubheader: React.FC<ChatSubheaderProps> = ({
       case 'stratix': return 'bg-purple-100 text-purple-800 hover:bg-purple-200';
       case 'nexus': return 'bg-blue-100 text-blue-800 hover:bg-blue-200';
       case 'algeon': return 'bg-green-100 text-green-800 hover:bg-green-200';
+      case 'perplexity': return 'bg-orange-100 text-orange-800 hover:bg-orange-200';
+      case 'gemini': return 'bg-indigo-100 text-indigo-800 hover:bg-indigo-200';
       default: return 'bg-gray-100 text-gray-800 hover:bg-gray-200';
     }
   };

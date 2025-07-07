@@ -12,7 +12,7 @@ interface ChatAreaProps {
   messages: Message[];
   isTyping: boolean;
   viewportRef: React.RefObject<HTMLDivElement>;
-  onSendMessage: (message: string) => void;
+  onSendMessage: (message: string, selectedModel?: string) => void;
   canvasState?: {
     isOpen: boolean;
     messageId: string | null;
@@ -47,7 +47,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   };
 
   const handleSendMessage = (message: string) => {
-    onSendMessage(message);
+    onSendMessage(message, selectedModel);
   };
 
   if (!hasConversation) {

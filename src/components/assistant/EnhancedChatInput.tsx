@@ -11,7 +11,7 @@ import ChatInputModals from './ChatInputModals';
 import { AIModel } from './ModelSelectionDropdown';
 
 interface EnhancedChatInputProps {
-  onSendMessage: (message: string) => void;
+  onSendMessage: (message: string, selectedModel?: string) => void;
   isTyping: boolean;
   isCompact?: boolean;
   selectedModel?: string;
@@ -41,7 +41,7 @@ const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
 
   const handleSendMessage = () => {
     if (inputValue.trim() === '') return;
-    onSendMessage(inputValue);
+    onSendMessage(inputValue, selectedModel);
     setInputValue('');
     clearFiles();
   };

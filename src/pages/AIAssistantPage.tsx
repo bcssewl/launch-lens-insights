@@ -92,7 +92,7 @@ const AIAssistantPage: React.FC = () => {
     console.log('Selected AI model:', model.name);
   };
 
-  const handleSendMessageWithSession = async (text: string) => {
+  const handleSendMessageWithSession = async (text: string, selectedModel?: string) => {
     console.log('AIAssistantPage: Sending message with session:', currentSessionId, 'and model:', selectedModel);
 
     // Create session if none exists
@@ -108,10 +108,10 @@ const AIAssistantPage: React.FC = () => {
 
       // Wait a bit for the session to be set before sending the message
       setTimeout(() => {
-        handleSendMessage(text, selectedModel);
+        handleSendMessage(text, undefined, selectedModel);
       }, 100);
     } else {
-      handleSendMessage(text, selectedModel);
+      handleSendMessage(text, undefined, selectedModel);
     }
   };
 
