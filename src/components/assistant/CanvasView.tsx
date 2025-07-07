@@ -4,6 +4,7 @@ import { ResizablePanelGroup, ResizableHandle } from '@/components/ui/resizable'
 import CanvasHeader from './CanvasHeader';
 import CanvasChatPanel from './CanvasChatPanel';
 import CanvasReportPanel from './CanvasReportPanel';
+import CanvasPrintView from './CanvasPrintView';
 import { useCanvasKeyboardShortcuts } from './useCanvasKeyboardShortcuts';
 import { FloatingElements } from '@/components/landing/FloatingElements';
 import { Message } from '@/constants/aiAssistant';
@@ -48,6 +49,7 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
   onContentUpdate
 }) => {
   const [currentContent, setCurrentContent] = useState(content);
+  const [showPrintView, setShowPrintView] = useState(false);
 
   console.log('CanvasView: Rendering with isOpen:', isOpen);
 
@@ -56,18 +58,18 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
     setCurrentContent(content);
   }, [content]);
 
-  // PDF download handler
+  // Enhanced PDF download handler
   const handlePdfDownload = useCallback(() => {
-    console.log('CanvasView: PDF download initiated');
-    window.print();
+    console.log('CanvasView: Enhanced PDF download initiated');
+    setShowPrintView(true);
   }, []);
 
-  // Use keyboard shortcuts hook with PDF download
+  // Use keyboard shortcuts hook with enhanced PDF download
   useCanvasKeyboardShortcuts({
     isOpen,
     isEditing: false, // Always false since we have seamless editing
     onClose,
-    onPrint: handlePdfDownload, // Use PDF download for Ctrl+P
+    onPrint: handlePdfDownload, // Use enhanced PDF download for Ctrl+P
     onToggleEdit: () => {} // No-op since we don't have edit mode
   });
 
@@ -83,6 +85,11 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
     setCurrentContent(newContent);
     onContentUpdate?.(newContent);
   }, [onContentUpdate]);
+
+  const handleClosePrintView = useCallback(() => {
+    console.log('CanvasView: Closing print view');
+    setShowPrintView(false);
+  }, []);
 
   // Format timestamp helper
   const formatTimestamp = useCallback((timestamp: Date): string => {
@@ -106,6 +113,17 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
       return msg;
     });
   }, [messages]);
+
+  // Show print view if requested
+  if (showPrintView) {
+    return (
+      <CanvasPrintView
+        content={currentContent}
+        title={title}
+        onClose={handleClosePrintView}
+      />
+    );
+  }
 
   // Early return if not open
   if (!isOpen) {
