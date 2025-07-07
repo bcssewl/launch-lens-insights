@@ -3,7 +3,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { Message, initialMessages, formatTimestamp } from '@/constants/aiAssistant';
 import { useN8nWebhook } from '@/hooks/useN8nWebhook';
 import { useChatHistory } from '@/hooks/useChatHistory';
-import { executeStratixResearchWorkflow } from '@/utils/stratixResearchAgent';
 
 export const useMessages = (currentSessionId: string | null) => {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
@@ -74,11 +73,11 @@ export const useMessages = (currentSessionId: string | null) => {
     setIsLoadingHistory(false);
   }, [currentSessionId, history]);
 
-  const handleSendMessage = useCallback(async (text?: string, messageText?: string, selectedModel?: string) => {
+  const handleSendMessage = useCallback(async (text?: string, messageText?: string) => {
     const finalMessageText = text || messageText;
     if (!finalMessageText || finalMessageText.trim() === '') return;
 
-    console.log('useMessages: Sending message in session:', currentSessionId, 'with model:', selectedModel);
+    console.log('useMessages: Sending message in session:', currentSessionId);
 
     const newUserMessage: Message = {
       id: uuidv4(),
@@ -114,14 +113,7 @@ export const useMessages = (currentSessionId: string | null) => {
         contextMessage = `Current document content:\n\n${canvasState.content}\n\n---\n\nUser message: ${finalMessageText}`;
       }
       
-      // Apply Stratix Research Agent workflow if Stratix model is selected
-      let aiResponseText: string;
-      if (selectedModel === 'stratix') {
-        console.log('useMessages: Activating Stratix Research Agent for query:', finalMessageText);
-        aiResponseText = await executeStratixResearchWorkflow(contextMessage, currentSessionId);
-      } else {
-        aiResponseText = await sendMessageToN8n(contextMessage, currentSessionId);
-      }
+      const aiResponseText = await sendMessageToN8n(contextMessage, currentSessionId);
       
       const aiResponse: Message = {
         id: uuidv4(),

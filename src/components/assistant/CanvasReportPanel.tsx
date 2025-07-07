@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { ResizablePanel } from '@/components/ui/resizable';
 import SeamlessMarkdownEditor from './SeamlessMarkdownEditor';
@@ -42,7 +41,7 @@ const CanvasReportPanel: React.FC<CanvasReportPanelProps> = ({
   return (
     <ResizablePanel defaultSize={hasChat ? 60 : 100}>
       <div className="h-full overflow-auto">
-        <div className="max-w-4xl mx-auto p-8">
+        <div className="max-w-3xl mx-auto p-8">
           <div 
             id="canvas-report"
             style={{ 

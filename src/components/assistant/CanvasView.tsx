@@ -4,6 +4,7 @@ import { ResizablePanelGroup, ResizableHandle } from '@/components/ui/resizable'
 import CanvasHeader from './CanvasHeader';
 import CanvasChatPanel from './CanvasChatPanel';
 import CanvasReportPanel from './CanvasReportPanel';
+import CanvasPrintView from './CanvasPrintView';
 import { useCanvasKeyboardShortcuts } from './useCanvasKeyboardShortcuts';
 import { FloatingElements } from '@/components/landing/FloatingElements';
 import { Message } from '@/constants/aiAssistant';
@@ -56,19 +57,13 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
     setCurrentContent(content);
   }, [content]);
 
-  // PDF download handler
-  const handlePdfDownload = useCallback(() => {
-    console.log('CanvasView: PDF download initiated');
-    window.print();
-  }, []);
-
-  // Use keyboard shortcuts hook with PDF download
+  // Use keyboard shortcuts hook - Ctrl+P now triggers instant print
   useCanvasKeyboardShortcuts({
     isOpen,
-    isEditing: false, // Always false since we have seamless editing
+    isEditing: false,
     onClose,
-    onPrint: handlePdfDownload, // Use PDF download for Ctrl+P
-    onToggleEdit: () => {} // No-op since we don't have edit mode
+    onPrint: () => {}, // Print handled directly in header now
+    onToggleEdit: () => {}
   });
 
   const handleBackdropClick = useCallback((event: React.MouseEvent) => {
@@ -113,7 +108,7 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
     return null;
   }
 
-  console.log('CanvasView: Rendering full canvas view with seamless editing');
+  console.log('CanvasView: Rendering full canvas view with instant print');
 
   const hasChat = Boolean(onSendMessage);
 
@@ -129,14 +124,14 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
         {/* Floating Elements for consistent background */}
         <FloatingElements />
         
-        {/* Header */}
+        {/* Header with instant print capability */}
         <CanvasHeader
           title={title}
-          isEditing={false} // Always false since we have seamless editing
+          content={currentContent}
+          isEditing={false}
           onDownload={onDownload}
           onPrint={onPrint}
-          onPdfDownload={handlePdfDownload}
-          onEdit={() => {}} // No-op since we don't need edit mode
+          onEdit={() => {}}
           onClose={onClose}
         />
 
@@ -162,10 +157,10 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
 
             {/* Report Panel with Seamless Editing */}
             <CanvasReportPanel
-              isEditing={false} // Not used anymore
+              isEditing={false}
               content={currentContent}
               onSave={handleContentUpdate}
-              onCancel={() => {}} // Not used anymore
+              onCancel={() => {}}
               hasChat={hasChat}
               onSendMessage={onSendMessage}
               messageId={canvasState?.messageId}

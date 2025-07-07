@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useCallback, useState } from 'react';
 import { cn } from '@/lib/utils';
 import TextSelectionTooltip from './TextSelectionTooltip';
+import ConflictResolutionDialog from './ConflictResolutionDialog';
 import { useTextSelection } from '@/hooks/useTextSelection';
 import { supabase } from '@/integrations/supabase/client';
 import { marked } from 'marked';
@@ -27,6 +28,12 @@ const SeamlessMarkdownEditor: React.FC<SeamlessMarkdownEditorProps> = ({
   const editorRef = useRef<HTMLDivElement>(null);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
   const [lastSavedContent, setLastSavedContent] = useState(content);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
+  const [showConflictDialog, setShowConflictDialog] = useState(false);
+  const [conflictData, setConflictData] = useState<{
+    currentContent: string;
+    latestContent: string;
+  } | null>(null);
   const isInitializedRef = useRef(false);
   const saveTimeoutRef = useRef<NodeJS.Timeout>();
   
@@ -99,7 +106,7 @@ const SeamlessMarkdownEditor: React.FC<SeamlessMarkdownEditorProps> = ({
     }
   }, [createTurndownService]);
 
-  // Auto-save functionality with proper error handling
+  // Auto-save functionality with compare-and-swap
   const saveToServer = useCallback(async (markdownContent: string) => {
     if (!documentId) {
       console.log('No document ID available for saving');
@@ -111,7 +118,7 @@ const SeamlessMarkdownEditor: React.FC<SeamlessMarkdownEditorProps> = ({
       return;
     }
     
-    console.log('Auto-saving content to server, document ID:', documentId);
+    console.log('Auto-saving content to server with compare-and-swap, document ID:', documentId);
     setIsAutoSaving(true);
     
     try {
@@ -121,29 +128,124 @@ const SeamlessMarkdownEditor: React.FC<SeamlessMarkdownEditorProps> = ({
         return;
       }
 
-      const { error } = await supabase
+      // Perform compare-and-swap update
+      const updateData = { 
+        content: markdownContent,
+        title: title,
+        updated_at: new Date().toISOString()
+      };
+
+      let query = supabase
         .from('canvas_documents')
-        .update({ 
-          content: markdownContent,
-          title: title,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', documentId)
         .eq('created_by', user.id);
 
+      // Add expected updated_at condition if we have it
+      if (lastUpdatedAt) {
+        query = query.eq('updated_at', lastUpdatedAt);
+      }
+
+      const { data, error } = await query.select().single();
+
       if (error) {
-        console.error('Auto-save failed:', error);
+        // Check if it's a conflict (no rows updated)
+        if (error.code === 'PGRST116') {
+          console.log('Conflict detected during save - fetching latest version');
+          
+          // Fetch the latest version
+          const { data: latestDoc, error: fetchError } = await supabase
+            .from('canvas_documents')
+            .select('content, updated_at')
+            .eq('id', documentId)
+            .eq('created_by', user.id)
+            .single();
+
+          if (fetchError) throw fetchError;
+
+          // Show conflict resolution dialog
+          setConflictData({
+            currentContent: markdownContent,
+            latestContent: latestDoc.content
+          });
+          setShowConflictDialog(true);
+          return;
+        }
         throw error;
       }
       
       setLastSavedContent(markdownContent);
+      setLastUpdatedAt(data.updated_at);
       console.log('Auto-save successful for document:', documentId);
     } catch (error) {
       console.error('Auto-save error:', error);
     } finally {
       setIsAutoSaving(false);
     }
-  }, [documentId, lastSavedContent, title]);
+  }, [documentId, lastSavedContent, lastUpdatedAt, title]);
+
+  // Handle conflict resolution
+  const handleConflictResolution = useCallback(async (resolvedContent: string) => {
+    if (!documentId) return;
+
+    console.log('Resolving conflict with merged content');
+    setIsAutoSaving(true);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      // Force update without compare-and-swap (conflict resolution)
+      const { data, error } = await supabase
+        .from('canvas_documents')
+        .update({ 
+          content: resolvedContent,
+          title: title,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', documentId)
+        .eq('created_by', user.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      setLastSavedContent(resolvedContent);
+      setLastUpdatedAt(data.updated_at);
+      onContentChange(resolvedContent);
+      
+      // Update editor display
+      if (editorRef.current) {
+        const html = await markdownToHtml(resolvedContent);
+        editorRef.current.innerHTML = html;
+      }
+      
+      console.log('Conflict resolved and saved successfully');
+    } catch (error) {
+      console.error('Error resolving conflict:', error);
+    } finally {
+      setIsAutoSaving(false);
+      setShowConflictDialog(false);
+      setConflictData(null);
+    }
+  }, [documentId, title, onContentChange, markdownToHtml]);
+
+  const handleAcceptLatest = useCallback(async () => {
+    if (!conflictData) return;
+    
+    console.log('Accepting latest version');
+    setLastSavedContent(conflictData.latestContent);
+    onContentChange(conflictData.latestContent);
+    
+    // Update editor display
+    if (editorRef.current) {
+      const html = await markdownToHtml(conflictData.latestContent);
+      editorRef.current.innerHTML = html;
+    }
+    
+    setShowConflictDialog(false);
+    setConflictData(null);
+  }, [conflictData, onContentChange, markdownToHtml]);
 
   // Initialize editor content once when component mounts
   useEffect(() => {
@@ -225,45 +327,59 @@ const SeamlessMarkdownEditor: React.FC<SeamlessMarkdownEditorProps> = ({
   };
 
   return (
-    <div 
-      ref={containerRef}
-      className={cn("seamless-markdown-editor relative", className)}
-      style={{ 
-        userSelect: 'text',
-        WebkitUserSelect: 'text',
-        MozUserSelect: 'text',
-        msUserSelect: 'text'
-      }}
-    >
-      {/* Auto-save indicator */}
-      {isAutoSaving && (
-        <div className="absolute top-2 right-2 text-xs text-muted-foreground bg-background/80 px-2 py-1 rounded z-10">
-          Saving...
-        </div>
-      )}
-
-      {/* Main editable content */}
-      <div
-        ref={editorRef}
-        contentEditable
-        suppressContentEditableWarning
-        className="min-h-96 focus:outline-none prose prose-gray dark:prose-invert max-w-none"
-        style={{
-          fontSize: '16px',
-          lineHeight: '1.7',
+    <>
+      <div 
+        ref={containerRef}
+        className={cn("seamless-markdown-editor relative", className)}
+        style={{ 
+          userSelect: 'text',
+          WebkitUserSelect: 'text',
+          MozUserSelect: 'text',
+          msUserSelect: 'text'
         }}
-      />
+      >
+        {/* Auto-save indicator */}
+        {isAutoSaving && (
+          <div className="absolute top-2 right-2 text-xs text-muted-foreground bg-background/80 px-2 py-1 rounded z-10">
+            Saving...
+          </div>
+        )}
 
-      {/* Text Selection Tooltip */}
-      {isVisible && selectionRect && selectedText && onSendMessage && (
-        <TextSelectionTooltip
-          rect={selectionRect}
-          onFollowUp={handleFollowUp}
-          onClose={handleClose}
-          tooltipRef={tooltipRef}
+        {/* Main editable content with custom prose-report styling */}
+        <div
+          ref={editorRef}
+          contentEditable
+          suppressContentEditableWarning
+          className="min-h-96 focus:outline-none prose-report prose dark:prose-invert max-w-none"
+          style={{
+            fontSize: '16px',
+            lineHeight: '1.75',
+          }}
+        />
+
+        {/* Text Selection Tooltip */}
+        {isVisible && selectionRect && selectedText && onSendMessage && (
+          <TextSelectionTooltip
+            rect={selectionRect}
+            onFollowUp={handleFollowUp}
+            onClose={handleClose}
+            tooltipRef={tooltipRef}
+          />
+        )}
+      </div>
+
+      {/* Conflict Resolution Dialog */}
+      {showConflictDialog && conflictData && (
+        <ConflictResolutionDialog
+          isOpen={showConflictDialog}
+          onClose={() => setShowConflictDialog(false)}
+          onResolve={handleConflictResolution}
+          currentContent={conflictData.currentContent}
+          latestContent={conflictData.latestContent}
+          onAcceptLatest={handleAcceptLatest}
         />
       )}
-    </div>
+    </>
   );
 };
 

@@ -37,7 +37,7 @@ const AI_MODELS: AIModel[] = [
   {
     id: 'stratix',
     name: 'Stratix',
-    description: 'Excels at deep consulting research'
+    description: 'Excels at business planning'
   }
 ];
 

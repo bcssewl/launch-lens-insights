@@ -8,22 +8,16 @@ import ChatInputControls from './ChatInputControls';
 import ChatInputStatus from './ChatInputStatus';
 import ChatInputModals from './ChatInputModals';
 
-import { AIModel } from './ModelSelectionDropdown';
-
 interface EnhancedChatInputProps {
   onSendMessage: (message: string) => void;
   isTyping: boolean;
   isCompact?: boolean;
-  selectedModel?: string;
-  onModelSelect?: (model: AIModel) => void;
 }
 
 const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({ 
   onSendMessage, 
   isTyping, 
-  isCompact = false,
-  selectedModel,
-  onModelSelect
+  isCompact = false 
 }) => {
   const [inputValue, setInputValue] = useState('');
   const [showProjectModal, setShowProjectModal] = useState(false);
