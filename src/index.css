@@ -153,12 +153,12 @@
 
   /* Modern, lightweight platform typography */
   body {
-    @apply font-normal text-foreground;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
     font-weight: 400;
+    color: hsl(var(--foreground));
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-normal;
     font-weight: 400;
   }
 }
@@ -166,77 +166,125 @@
 @layer components {
   /* Scoped Canvas Typography - Consulting Grade */
   .canvas-content {
-    @apply canvas:font-canvas canvas:text-foreground;
+    font-family: 'Playfair Display', serif;
     line-height: 1.75;
+    color: hsl(var(--foreground));
   }
   
   .canvas-content h1 {
-    @apply canvas:mt-12 canvas:mb-6 canvas:text-3xl canvas:font-medium canvas:text-foreground;
+    margin-top: 3rem;
+    margin-bottom: 1.5rem;
+    font-size: 1.875rem;
+    font-weight: 500;
+    color: hsl(var(--foreground));
   }
   
   .canvas-content h2 {
-    @apply canvas:mt-8 canvas:mb-4 canvas:text-2xl canvas:font-medium canvas:border-b canvas:border-border/30 canvas:pb-2 canvas:text-foreground;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+    font-weight: 500;
+    border-bottom: 1px solid hsl(var(--border) / 0.3);
+    padding-bottom: 0.5rem;
+    color: hsl(var(--foreground));
   }
   
   .canvas-content h3 {
-    @apply canvas:mt-6 canvas:mb-3 canvas:text-xl canvas:font-medium canvas:text-foreground;
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: hsl(var(--foreground));
   }
   
   .canvas-content h4,
   .canvas-content h5,
   .canvas-content h6 {
-    @apply canvas:mt-4 canvas:mb-2 canvas:font-medium canvas:text-foreground;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: hsl(var(--foreground));
   }
   
   .canvas-content p {
-    @apply canvas:mb-5 canvas:text-foreground;
+    margin-bottom: 1.25rem;
+    color: hsl(var(--foreground));
     line-height: 1.7;
   }
   
   .canvas-content ul,
   .canvas-content ol {
-    @apply canvas:mb-5 canvas:space-y-2 canvas:pl-6;
+    margin-bottom: 1.25rem;
+    padding-left: 1.5rem;
+  }
+  
+  .canvas-content ul li {
+    margin-bottom: 0.5rem;
+    color: hsl(var(--foreground));
+  }
+  
+  .canvas-content ol li {
+    margin-bottom: 0.5rem;
+    color: hsl(var(--foreground));
   }
   
   .canvas-content ul {
-    @apply canvas:list-disc;
+    list-style-type: disc;
   }
   
   .canvas-content ol {
-    @apply canvas:list-decimal;
-  }
-  
-  .canvas-content li {
-    @apply canvas:mb-2 canvas:text-foreground;
+    list-style-type: decimal;
   }
   
   .canvas-content blockquote {
-    @apply canvas:mt-6 canvas:mb-6 canvas:pl-4 canvas:border-l-4 canvas:border-border/20 canvas:italic canvas:text-muted-foreground;
+    margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
+    padding-left: 1rem;
+    border-left: 4px solid hsl(var(--border) / 0.2);
+    font-style: italic;
+    color: hsl(var(--muted-foreground));
   }
   
   .canvas-content table {
-    @apply canvas:mt-6 canvas:mb-6 canvas:w-full canvas:border-collapse;
+    margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
+    width: 100%;
+    border-collapse: collapse;
   }
   
   .canvas-content th,
   .canvas-content td {
-    @apply canvas:border canvas:border-border/20 canvas:px-4 canvas:py-3 canvas:text-foreground;
+    border: 1px solid hsl(var(--border) / 0.2);
+    padding: 1rem;
+    color: hsl(var(--foreground));
   }
   
   .canvas-content th {
-    @apply canvas:bg-surface-elevated canvas:font-medium canvas:text-foreground;
+    background-color: hsl(var(--surface-elevated));
+    font-weight: 500;
+    color: hsl(var(--foreground));
   }
   
   .canvas-content code {
-    @apply canvas:bg-surface-elevated canvas:px-2 canvas:py-1 canvas:rounded canvas:text-sm canvas:text-foreground;
+    background-color: hsl(var(--surface-elevated));
+    padding: 0.125rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    color: hsl(var(--foreground));
   }
   
   .canvas-content pre {
-    @apply canvas:mt-4 canvas:mb-4 canvas:p-4 canvas:bg-surface-elevated canvas:rounded-lg canvas:overflow-x-auto;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background-color: hsl(var(--surface-elevated));
+    border-radius: 0.5rem;
+    overflow-x: auto;
   }
   
   .canvas-content pre code {
-    @apply canvas:bg-transparent canvas:p-0;
+    background-color: transparent;
+    padding: 0;
   }
 
   /* Platform Typography - Clean and Modern */
@@ -281,33 +329,67 @@
 
   /* Updated platform components with lighter typography */
   .apple-heading {
-    @apply text-3xl md:text-4xl lg:text-5xl font-normal mb-6 text-foreground tracking-tight;
-    line-height: 1.1;
+    font-size: clamp(1.875rem, 4vw, 3rem);
     font-weight: 400;
+    margin-bottom: 1.5rem;
+    color: hsl(var(--foreground));
+    letter-spacing: -0.025em;
+    line-height: 1.1;
+  }
+  
+  @media (min-width: 768px) {
+    .apple-heading {
+      font-size: clamp(2.25rem, 4vw, 3rem);
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .apple-heading {
+      font-size: 3rem;
+    }
   }
 
   .apple-subheading {
-    @apply text-lg md:text-xl text-muted-foreground leading-relaxed font-light;
+    font-size: clamp(1.125rem, 3vw, 1.25rem);
+    color: hsl(var(--muted-foreground));
+    line-height: 1.6;
     font-weight: 300;
+  }
+  
+  @media (min-width: 768px) {
+    .apple-subheading {
+      font-size: 1.25rem;
+    }
   }
 
   .apple-badge {
-    @apply px-4 py-2 text-sm font-normal rounded-full;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 400;
+    border-radius: 9999px;
     background: hsl(var(--surface-elevated));
     border: 1px solid hsl(var(--border-subtle));
     color: hsl(var(--text-secondary));
-    font-weight: 400;
   }
 
   .apple-button {
-    @apply bg-gradient-to-r from-primary to-accent text-white font-normal rounded-xl transition-all duration-300 hover:shadow-lg hover:scale-105 border-0;
+    background: linear-gradient(to right, hsl(var(--primary)), hsl(var(--accent)));
+    color: white;
+    font-weight: 400;
+    border-radius: 0.75rem;
+    transition: all 0.3s ease;
+    border: none;
     font-size: clamp(0.875rem, 3vw, 1rem);
     padding: clamp(0.75rem, 3vw, 1rem) clamp(1rem, 4vw, 2rem);
     box-shadow: 0 2px 10px rgba(139, 92, 246, 0.3);
     min-height: 44px;
     width: 100%;
     max-width: 100%;
-    font-weight: 400;
+  }
+  
+  .apple-button:hover {
+    box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
+    transform: scale(1.02);
   }
   
   @media (min-width: 768px) {
@@ -318,17 +400,18 @@
   }
   
   .apple-button-outline {
-    @apply border font-normal rounded-xl transition-all duration-300;
-    border-color: hsl(var(--border-subtle));
+    border: 1px solid hsl(var(--border-subtle));
     color: hsl(var(--text-primary));
     background: hsl(var(--surface-elevated));
-    backdrop-filter: blur(xl);
+    backdrop-filter: blur(20px);
+    font-weight: 400;
+    border-radius: 0.75rem;
+    transition: all 0.3s ease;
     font-size: clamp(0.875rem, 3vw, 1rem);
     padding: clamp(0.75rem, 3vw, 1rem) clamp(1rem, 4vw, 2rem);
     min-height: 44px;
     width: 100%;
     max-width: 100%;
-    font-weight: 400;
   }
   
   .apple-button-outline:hover {
@@ -343,17 +426,28 @@
   }
 
   .apple-card {
-    @apply border rounded-2xl shadow-lg hover:shadow-xl transition-all duration-500;
+    border: 1px solid hsl(var(--border-subtle));
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     background: hsl(var(--surface-elevated));
-    border-color: hsl(var(--border-subtle));
     width: 100%;
     max-width: 100%;
     overflow-x: hidden;
+    transition: all 0.5s ease;
+  }
+  
+  .apple-card:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
   }
   
   @media (min-width: 768px) {
     .apple-card {
-      @apply rounded-3xl shadow-xl hover:shadow-2xl;
+      border-radius: 1.5rem;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .apple-card:hover {
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
     }
   }
 
@@ -378,7 +472,10 @@
   }
 
   .recording-sphere {
-    @apply w-24 h-24 rounded-full relative;
+    width: 6rem;
+    height: 6rem;
+    border-radius: 50%;
+    position: relative;
     background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 50%, hsl(var(--primary)) 100%);
     background-size: 200% 200%;
     animation: sphereFloat 3s ease-in-out infinite, sphereGradient 4s ease-in-out infinite, spherePulse 2s ease-in-out infinite;
@@ -393,7 +490,9 @@
 
   .recording-sphere::before {
     content: '';
-    @apply absolute inset-2 rounded-full;
+    position: absolute;
+    inset: 0.5rem;
+    border-radius: 50%;
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.05) 50%, rgba(255, 255, 255, 0.1) 100%);
     backdrop-filter: blur(5px);
   }
@@ -456,7 +555,7 @@
     background: hsl(var(--surface-elevated) / 0.1);
     backdrop-filter: blur(20px) saturate(180%);
     border: 1px solid hsl(var(--border-subtle));
-    @apply shadow-2xl;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
   }
 
   .apple-progress-ring {
