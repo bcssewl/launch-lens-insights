@@ -69,7 +69,8 @@ const createChatGptPdfRenderer = () => {
   renderer.list = (token: Tokens.List) => {
     const tag = token.ordered ? 'ol' : 'ul';
     const itemsHtml = token.items.map(item => {
-      const itemText = renderer.parser.parseInline(item.tokens);
+      // Fix: Use parse instead of parseInline for list item tokens
+      const itemText = renderer.parser.parse(item.tokens);
       return `<li>${itemText}</li>`;
     }).join('');
     return `<${tag} class="content-list page-break-avoid">${itemsHtml}</${tag}>`;
