@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -60,6 +60,7 @@ const useChatSearch = (query: string, enabled: boolean = true) => {
     enabled: enabled && debouncedQuery.trim().length > 0,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
+    retry: 1, // Only retry once to fail fast for local fallback
   });
 
   return {
@@ -67,6 +68,7 @@ const useChatSearch = (query: string, enabled: boolean = true) => {
     isLoading: queryResult.isLoading,
     error: queryResult.error,
     isSearching: debouncedQuery.trim().length > 0,
+    searchChats, // Expose for local fallback use
   };
 };
 

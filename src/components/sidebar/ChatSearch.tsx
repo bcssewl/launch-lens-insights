@@ -5,69 +5,55 @@ import { Input } from '@/components/ui/input';
 import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList } from '@/components/ui/command';
 import { useChatSearch, ChatSearchResult } from '@/hooks/useChatSearch';
 import { useNavigate } from 'react-router-dom';
+import { useSidebarHotkeys } from '@/hooks/useSidebarHotkeys';
+import { useToast } from '@/hooks/use-toast';
+import './sidebar-search.css';
 
 interface ChatSearchProps {
   onSessionSelect?: (sessionId: string) => void;
   onClose?: () => void;
 }
 
+// Simple local search fallback when API fails
+const filterResultsLocally = (results: ChatSearchResult[], query: string): ChatSearchResult[] => {
+  if (!query.trim()) return results;
+  
+  const searchTerm = query.toLowerCase();
+  return results.filter(result => 
+    result.title.toLowerCase().includes(searchTerm) ||
+    result.snippet.toLowerCase().includes(searchTerm)
+  );
+};
+
 export const ChatSearch: React.FC<ChatSearchProps> = ({ onSessionSelect, onClose }) => {
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedIndex, setSelectedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
-  const { results, isLoading, isSearching } = useChatSearch(query, isOpen);
+  const { results, isLoading, error, searchChats } = useChatSearch(query, isOpen);
 
-  // Keyboard shortcut to focus search (Cmd+K / Ctrl+K)
+  // Use our dedicated keyboard hook
+  useSidebarHotkeys({ inputRef, setIsOpen });
+
+  // Local fallback when API fails
+  const displayResults = error ? filterResultsLocally(results, query) : results;
+
+  // Show error toast once when API fails
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        inputRef.current?.focus();
-        setIsOpen(true);
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
-  // Handle arrow key navigation and enter
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!isOpen || !isSearching) return;
-
-      switch (e.key) {
-        case 'ArrowDown':
-          e.preventDefault();
-          setSelectedIndex(prev => Math.min(prev + 1, results.length - 1));
-          break;
-        case 'ArrowUp':
-          e.preventDefault();
-          setSelectedIndex(prev => Math.max(prev - 1, -1));
-          break;
-        case 'Enter':
-          e.preventDefault();
-          if (selectedIndex >= 0 && results[selectedIndex]) {
-            handleSessionSelect(results[selectedIndex]);
-          }
-          break;
-        case 'Escape':
-          handleClose();
-          break;
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, isSearching, results, selectedIndex]);
+    if (error) {
+      toast({
+        title: 'Search temporarily unavailable',
+        description: 'Falling back to local search - results may be limited.',
+        variant: 'destructive',
+      });
+    }
+  }, [error, toast]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setQuery(value);
-    setSelectedIndex(-1);
     setIsOpen(value.length > 0);
   };
 
@@ -96,7 +82,6 @@ export const ChatSearch: React.FC<ChatSearchProps> = ({ onSessionSelect, onClose
   const handleClose = () => {
     setIsOpen(false);
     setQuery('');
-    setSelectedIndex(-1);
     inputRef.current?.blur();
     
     if (onClose) {
@@ -145,7 +130,7 @@ export const ChatSearch: React.FC<ChatSearchProps> = ({ onSessionSelect, onClose
         )}
       </div>
 
-      {isOpen && isSearching && (
+      {isOpen && query.trim().length > 0 && (
         <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-surface-elevated border border-border-subtle rounded-md shadow-lg max-h-96 overflow-hidden">
           <Command className="sidebar-search__results">
             <CommandList>
@@ -154,18 +139,14 @@ export const ChatSearch: React.FC<ChatSearchProps> = ({ onSessionSelect, onClose
                   <Loader2 className="h-4 w-4 animate-spin mx-auto mb-2" />
                   Searching...
                 </div>
-              ) : results.length > 0 ? (
+              ) : displayResults.length > 0 ? (
                 <CommandGroup>
-                  {results.map((result, index) => (
+                  {displayResults.map((result) => (
                     <CommandItem
                       key={result.session_id}
                       value={result.session_id}
                       onSelect={() => handleSessionSelect(result)}
-                      className={`sidebar-search__result cursor-pointer p-3 ${
-                        index === selectedIndex ? 'bg-surface-elevated-2' : 'hover:bg-surface-elevated-2'
-                      }`}
-                      role="option"
-                      aria-selected={index === selectedIndex}
+                      className="sidebar-search__result cursor-pointer p-3 hover:bg-surface-elevated-2"
                     >
                       <div className="flex flex-col space-y-1 w-full">
                         <div className="flex items-center justify-between">
@@ -187,6 +168,11 @@ export const ChatSearch: React.FC<ChatSearchProps> = ({ onSessionSelect, onClose
               ) : (
                 <CommandEmpty className="sidebar-search__empty p-4 text-center text-text-secondary">
                   No chats found for "{query}"
+                  {error && (
+                    <div className="text-xs text-text-tertiary mt-1">
+                      (Local search only)
+                    </div>
+                  )}
                 </CommandEmpty>
               )}
             </CommandList>
