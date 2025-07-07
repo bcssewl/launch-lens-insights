@@ -1,4 +1,5 @@
-import { marked } from 'marked';
+
+import { marked, Tokens } from 'marked';
 
 interface ProcessedContent {
   html: string;
@@ -12,7 +13,7 @@ const createChatGptPdfRenderer = () => {
   const renderer = new marked.Renderer();
   
   // H1 always starts new page, H2 smart breaks
-  renderer.heading = ({ tokens, depth }: marked.Tokens.Heading) => {
+  renderer.heading = ({ tokens, depth }: Tokens.Heading) => {
     const text = renderer.parser.parseInline(tokens);
     const id = text.toLowerCase().replace(/[^\w]+/g, '-');
     
@@ -27,7 +28,7 @@ const createChatGptPdfRenderer = () => {
   };
   
   // Tables wrapped to avoid page breaks
-  renderer.table = (token: marked.Tokens.Table) => {
+  renderer.table = (token: Tokens.Table) => {
     const headerHtml = token.header.map(cell => {
       const cellText = renderer.parser.parseInline(cell.tokens);
       const align = cell.align ? ` style="text-align: ${cell.align}"` : '';
@@ -51,7 +52,7 @@ const createChatGptPdfRenderer = () => {
   };
   
   // Code blocks wrapped to avoid page breaks
-  renderer.code = ({ text, lang }: marked.Tokens.Code) => {
+  renderer.code = ({ text, lang }: Tokens.Code) => {
     const language = lang || '';
     return `<div class="code-container page-break-avoid">
       <pre><code class="language-${language}">${text}</code></pre>
@@ -59,13 +60,13 @@ const createChatGptPdfRenderer = () => {
   };
   
   // Paragraphs with proper spacing and widow/orphan control
-  renderer.paragraph = ({ tokens }: marked.Tokens.Paragraph) => {
+  renderer.paragraph = ({ tokens }: Tokens.Paragraph) => {
     const text = renderer.parser.parseInline(tokens);
     return `<p class="content-paragraph">${text}</p>`;
   };
   
   // Lists with proper spacing and page break avoidance
-  renderer.list = (token: marked.Tokens.List) => {
+  renderer.list = (token: Tokens.List) => {
     const tag = token.ordered ? 'ol' : 'ul';
     const itemsHtml = token.items.map(item => {
       const itemText = renderer.parser.parseInline(item.tokens);
@@ -75,7 +76,7 @@ const createChatGptPdfRenderer = () => {
   };
   
   // Handle images with page break avoidance
-  renderer.image = ({ href, title, text }: marked.Tokens.Image) => {
+  renderer.image = ({ href, title, text }: Tokens.Image) => {
     const titleAttr = title ? ` title="${title}"` : '';
     return `<div class="image-container page-break-avoid">
       <img src="${href}" alt="${text}"${titleAttr} />
@@ -83,7 +84,7 @@ const createChatGptPdfRenderer = () => {
   };
   
   // Handle blockquotes
-  renderer.blockquote = ({ tokens }: marked.Tokens.Blockquote) => {
+  renderer.blockquote = ({ tokens }: Tokens.Blockquote) => {
     const text = renderer.parser.parse(tokens);
     return `<blockquote class="content-blockquote page-break-avoid">${text}</blockquote>`;
   };
