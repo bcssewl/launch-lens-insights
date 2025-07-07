@@ -174,13 +174,47 @@ const SaveToClientModal: React.FC<SaveToClientModalProps> = ({
     }
   };
 
+  const preprocessCanvasContent = (rawContent: string): string => {
+    // Try to parse as JSON first to extract actual content
+    try {
+      const parsed = JSON.parse(rawContent);
+      
+      // Look for common content fields in the JSON
+      const contentFields = ['content', 'markdown', 'text', 'report', 'response', 'message'];
+      
+      for (const field of contentFields) {
+        if (parsed[field] && typeof parsed[field] === 'string' && parsed[field].trim()) {
+          console.log(`SaveToClientModal: Extracted content from JSON field: ${field}`);
+          return parsed[field].trim();
+        }
+      }
+      
+      // If it's a valid JSON but no content field found, convert to readable string
+      console.log('SaveToClientModal: JSON parsed but no content field found, using stringified version');
+      return JSON.stringify(parsed, null, 2);
+      
+    } catch (error) {
+      // Not valid JSON, treat as plain markdown/text
+      console.log('SaveToClientModal: Content is not JSON, treating as markdown');
+      return rawContent.trim();
+    }
+  };
+
   const generateHtmlBlob = async (): Promise<{ blob: Blob; fileExtension: string; contentType: string }> => {
     // Import PDF generation utilities
     const { processMarkdownForPdf, createChatGptPdfHtml } = await import('@/utils/canvasPdfProcessor');
     const { format } = await import('date-fns');
     
+    // Preprocess the canvas content to extract meaningful text from JSON if needed
+    const processedContent = preprocessCanvasContent(canvasContent);
+    
+    // Validate content length
+    if (!processedContent || processedContent.length < 10) {
+      throw new Error('Content is too short or empty to generate a meaningful report');
+    }
+    
     // Process markdown to HTML
-    const processed = await processMarkdownForPdf(canvasContent);
+    const processed = await processMarkdownForPdf(processedContent);
     const html = createChatGptPdfHtml(processed, {
       generatedDate: format(new Date(), 'd MMM yyyy'),
       author: 'AI Assistant'
