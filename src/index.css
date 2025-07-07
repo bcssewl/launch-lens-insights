@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -19,10 +20,10 @@
     --primary-hover: 251 95% 63%;     /* #7C3AED */
     --primary-active: 253 97% 57%;    /* #6D28D9 */
 
-    --secondary: 0 0% 98%;            /* #FAFAFA - Surface */
+    --secondary: 0 0% 96%;            /* #F5F5F5 - Lighter secondary */
     --secondary-foreground: 220 29% 10%; /* #111827 - Text primary */
 
-    --muted: 0 0% 98%;                /* #FAFAFA - Surface */
+    --muted: 0 0% 96%;                /* #F5F5F5 - Surface */
     --muted-foreground: 220 18% 32%;  /* #4B5563 - Improved contrast */
 
     --accent: 246 100% 94%;           /* #DDD6FE */
@@ -94,10 +95,10 @@
     --primary-hover: 250 100% 76%;    /* #A78BFA */
     --primary-active: 249 100% 88%;   /* #C4B5FD */
 
-    --secondary: 0 0% 12%;            /* #1F1F1F - Surface elevated */
+    --secondary: 0 0% 15%;            /* #262626 - Darker secondary */
     --secondary-foreground: 210 20% 98%; /* #F9FAFB - Text primary */
 
-    --muted: 0 0% 12%;                /* #1F1F1F - Surface elevated */
+    --muted: 0 0% 15%;                /* #262626 - Surface elevated */
     --muted-foreground: 217 20% 84%;  /* #D1D5DB - Improved contrast */
 
     --accent: 271 91% 65%;            /* #A855F7 */
