@@ -120,9 +120,7 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
       aria-modal="true"
       aria-labelledby="canvas-title"
     >
-      <div className="h-full flex flex-col animate-scale-in apple-hero" onClick={(e) => e.stopPropagation()}>
-        {/* Floating Elements for consistent background */}
-        <FloatingElements />
+      <div className="h-full flex flex-col animate-scale-in bg-background" onClick={(e) => e.stopPropagation()}>
         
         {/* Header with instant print capability */}
         <CanvasHeader
@@ -136,7 +134,7 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
         />
 
         {/* Resizable Content Area */}
-        <div className="flex-1 bg-background/10 backdrop-blur-sm overflow-hidden">
+        <div className="flex-1 bg-background overflow-hidden">
           <ResizablePanelGroup direction="horizontal" className="h-full">
             {/* Chat Panel */}
             {hasChat && (
