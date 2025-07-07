@@ -1,10 +1,10 @@
-
 import React, { useEffect, useCallback, useState } from 'react';
 import { ResizablePanelGroup, ResizableHandle } from '@/components/ui/resizable';
 import CanvasHeader from './CanvasHeader';
 import CanvasChatPanel from './CanvasChatPanel';
 import CanvasReportPanel from './CanvasReportPanel';
 import CanvasPrintView from './CanvasPrintView';
+import CanvasPdfView from './CanvasPdfView';
 import { useCanvasKeyboardShortcuts } from './useCanvasKeyboardShortcuts';
 import { FloatingElements } from '@/components/landing/FloatingElements';
 import { Message } from '@/constants/aiAssistant';
@@ -49,7 +49,7 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
   onContentUpdate
 }) => {
   const [currentContent, setCurrentContent] = useState(content);
-  const [showPrintView, setShowPrintView] = useState(false);
+  const [showPdfView, setShowPdfView] = useState(false);
 
   console.log('CanvasView: Rendering with isOpen:', isOpen);
 
@@ -58,10 +58,10 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
     setCurrentContent(content);
   }, [content]);
 
-  // Enhanced PDF download handler
+  // Enhanced PDF download handler - now uses the new PDF system
   const handlePdfDownload = useCallback(() => {
     console.log('CanvasView: Enhanced PDF download initiated');
-    setShowPrintView(true);
+    setShowPdfView(true);
   }, []);
 
   // Use keyboard shortcuts hook with enhanced PDF download
@@ -86,9 +86,9 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
     onContentUpdate?.(newContent);
   }, [onContentUpdate]);
 
-  const handleClosePrintView = useCallback(() => {
-    console.log('CanvasView: Closing print view');
-    setShowPrintView(false);
+  const handleClosePdfView = useCallback(() => {
+    console.log('CanvasView: Closing PDF view');
+    setShowPdfView(false);
   }, []);
 
   // Format timestamp helper
@@ -114,13 +114,13 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
     });
   }, [messages]);
 
-  // Show print view if requested
-  if (showPrintView) {
+  // Show PDF view if requested
+  if (showPdfView) {
     return (
-      <CanvasPrintView
+      <CanvasPdfView
         content={currentContent}
         title={title}
-        onClose={handleClosePrintView}
+        onClose={handleClosePdfView}
       />
     );
   }
