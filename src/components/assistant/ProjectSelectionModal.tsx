@@ -252,7 +252,7 @@ const ClientItem: React.FC<ClientItemProps> = ({
         <div className="flex items-center space-x-3 flex-1 min-w-0">
           <Checkbox
             checked={isSelected}
-            onChange={onToggleProject}
+            onCheckedChange={onToggleProject}
           />
           <Button
             variant="ghost"
@@ -305,7 +305,7 @@ const ClientItem: React.FC<ClientItemProps> = ({
                   >
                     <Checkbox
                       checked={isFileSelected}
-                      onChange={() => onToggleFile(file.id, file.file_name, client.id, client.name)}
+                      onCheckedChange={() => onToggleFile(file.id, file.file_name, client.id, client.name)}
                     />
                     <File className="h-4 w-4 text-muted-foreground" />
                     <div className="flex-1 min-w-0">
