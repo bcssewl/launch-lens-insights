@@ -155,38 +155,31 @@
 @layer components {
   /* Custom prose preset for Canvas reports with consulting slide deck spacing */
   .prose-report {
-    --tw-prose-body: hsl(var(--foreground));
-    --tw-prose-headings: hsl(var(--text-primary));
+    @apply text-foreground;
     line-height: 1.75;
-    color: hsl(var(--foreground));
   }
   
   .prose-report h1 {
-    @apply mt-10 mb-6 text-2xl font-semibold;
-    color: hsl(var(--text-primary));
+    @apply mt-10 mb-6 text-2xl font-semibold text-foreground;
   }
   
   .prose-report h2 {
-    @apply mt-8 mb-4 text-xl font-semibold border-b border-border/30 pb-1;
-    color: hsl(var(--text-primary));
+    @apply mt-8 mb-4 text-xl font-semibold border-b border-border/30 pb-1 text-foreground;
   }
   
   .prose-report h3 {
-    @apply mt-6 mb-3 text-lg font-medium;
-    color: hsl(var(--text-primary));
+    @apply mt-6 mb-3 text-lg font-medium text-foreground;
   }
   
   .prose-report h4,
   .prose-report h5,
   .prose-report h6 {
-    @apply mt-4 mb-2 font-medium;
-    color: hsl(var(--text-primary));
+    @apply mt-4 mb-2 font-medium text-foreground;
   }
   
   .prose-report p {
-    @apply mb-4;
+    @apply mb-4 text-foreground;
     line-height: 1.7;
-    color: hsl(var(--foreground));
   }
   
   .prose-report ul,
@@ -195,13 +188,11 @@
   }
   
   .prose-report li {
-    @apply mb-2;
-    color: hsl(var(--foreground));
+    @apply mb-2 text-foreground;
   }
   
   .prose-report blockquote {
-    @apply mt-6 mb-6 pl-4 border-l-4 border-border/50 italic;
-    color: hsl(var(--text-secondary));
+    @apply mt-6 mb-6 pl-4 border-l-4 border-border/50 italic text-muted-foreground;
   }
   
   .prose-report table {
@@ -210,18 +201,15 @@
   
   .prose-report th,
   .prose-report td {
-    @apply border border-border/30 px-3 py-2;
-    color: hsl(var(--foreground));
+    @apply border border-border/30 px-3 py-2 text-foreground;
   }
   
   .prose-report th {
-    @apply bg-surface-elevated font-semibold;
-    color: hsl(var(--text-primary));
+    @apply bg-surface-elevated font-semibold text-foreground;
   }
   
   .prose-report code {
-    @apply bg-surface-elevated px-1 py-0.5 rounded text-sm;
-    color: hsl(var(--foreground));
+    @apply bg-surface-elevated px-1 py-0.5 rounded text-sm text-foreground;
   }
   
   .prose-report pre {
