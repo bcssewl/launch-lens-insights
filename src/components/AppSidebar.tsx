@@ -29,7 +29,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Home, Lightbulb, FolderOpen, Bot, Settings as SettingsIcon, UserCircle, LogOut, ChevronLeft, ChevronRight, Folder, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { ChatSearch } from '@/components/sidebar/ChatSearch';
 
 const priorityNavItems = [
   { href: "/dashboard/assistant", label: "Advisor", icon: Bot },
@@ -183,19 +182,12 @@ export const AppSidebar: React.FC = () => {
             </SidebarGroupContent>
           </SidebarGroup>
 
-          {/* Chats Section with Search */}
+          {/* Chats Section - Always visible and separate from More section */}
           <SidebarGroup>
             <SidebarGroupLabel className="group-data-[collapsible=icon]:sr-only px-2 text-xs font-medium text-text-secondary/70">
               Chats
             </SidebarGroupLabel>
             <SidebarGroupContent className="px-2 group-data-[collapsible=icon]:px-1">
-              {/* Chat Search Bar */}
-              <div className="group-data-[collapsible=icon]:hidden mb-3">
-                <ChatSearch onSessionSelect={(sessionId) => {
-                  // The ChatSearch component handles navigation internally
-                }} />
-              </div>
-              
               <SidebarMenu>
                 {chatSessions.length === 0 ? (
                   <SidebarMenuItem>
