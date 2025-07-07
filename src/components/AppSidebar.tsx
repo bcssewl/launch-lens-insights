@@ -233,7 +233,7 @@ export const AppSidebar: React.FC = () => {
                         tooltip={session.title}
                         className="group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 text-text-secondary hover:text-text-primary hover:bg-surface-elevated data-[active=true]:text-primary data-[active=true]:bg-surface-elevated transition-colors"
                       >
-                        <Link to={`/dashboard/assistant?session=${session.id}`} className="flex items-center px-3 py-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1">
+                        <Link to={`/dashboard/assistant?session=${session.id}`} className="flex items-center gap-3 px-3 py-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 group-data-[collapsible=icon]:gap-0">
                           <span className="group-data-[collapsible=icon]:sr-only text-sm truncate">
                             {session.title || 'New Chat'}
                           </span>
