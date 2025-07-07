@@ -11,9 +11,11 @@ import {
   SidebarMenuButton,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarRail,
   useSidebar
 } from "@/components/ui/sidebar";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,16 +27,19 @@ import {
 import { Button } from "@/components/ui/button";
 import { Logo } from '@/components/icons';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Home, Lightbulb, FolderOpen, Bot, Settings as SettingsIcon, UserCircle, LogOut, ChevronLeft, ChevronRight, Folder } from 'lucide-react';
+import { Home, Lightbulb, FolderOpen, Bot, Settings as SettingsIcon, UserCircle, LogOut, ChevronLeft, ChevronRight, Folder, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
-const navItems = [
+const priorityNavItems = [
+  { href: "/dashboard/assistant", label: "Advisor", icon: Bot },
+  { href: "/dashboard/projects", label: "Projects (Mock)", icon: Folder },
+];
+
+const otherNavItems = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
   { href: "/dashboard/validate", label: "Analyze Idea", icon: Lightbulb },
   { href: "/dashboard/ideas", label: "Projects", icon: FolderOpen },
-  { href: "/dashboard/projects", label: "Projects (Mock)", icon: Folder },
-  { href: "/dashboard/assistant", label: "Advisor", icon: Bot },
   { href: "/dashboard/settings", label: "Settings", icon: SettingsIcon },
 ];
 
@@ -42,6 +47,7 @@ export const AppSidebar: React.FC = () => {
   const location = useLocation();
   const { user, signOut } = useAuth();
   const [profile, setProfile] = useState<any>(null);
+  const [isMoreOpen, setIsMoreOpen] = useState(true);
   const { setOpen, isMobile, state, toggleSidebar } = useSidebar();
 
   useEffect(() => {
@@ -124,14 +130,15 @@ export const AppSidebar: React.FC = () => {
         </SidebarHeader>
         
         <SidebarContent className="flex-grow bg-surface">
+          {/* Priority navigation items */}
           <SidebarGroup>
             <SidebarGroupContent className="px-2 group-data-[collapsible=icon]:px-1">
               <SidebarMenu>
-                {navItems.map((item) => (
+                {priorityNavItems.map((item) => (
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton
                       asChild
-                      isActive={location.pathname === item.href || (item.href === "/dashboard" && location.pathname.startsWith("/dashboard") && location.pathname.split('/').length <= 2)}
+                      isActive={location.pathname === item.href}
                       tooltip={item.label}
                       className="group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 text-text-secondary hover:text-text-primary hover:bg-surface-elevated data-[active=true]:text-primary data-[active=true]:bg-surface-elevated transition-colors"
                     >
@@ -145,6 +152,39 @@ export const AppSidebar: React.FC = () => {
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
+
+          {/* Collapsible group for other navigation items */}
+          <Collapsible open={isMoreOpen} onOpenChange={setIsMoreOpen}>
+            <SidebarGroup>
+              <CollapsibleTrigger asChild>
+                <SidebarGroupLabel className="group-data-[collapsible=icon]:sr-only hover:bg-surface-elevated cursor-pointer flex items-center justify-between p-2 rounded-md">
+                  <span>More</span>
+                  <ChevronDown className={`h-4 w-4 transition-transform ${isMoreOpen ? 'rotate-180' : ''}`} />
+                </SidebarGroupLabel>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <SidebarGroupContent className="px-2 group-data-[collapsible=icon]:px-1">
+                  <SidebarMenu>
+                    {otherNavItems.map((item) => (
+                      <SidebarMenuItem key={item.href}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={location.pathname === item.href || (item.href === "/dashboard" && location.pathname.startsWith("/dashboard") && location.pathname.split('/').length <= 2)}
+                          tooltip={item.label}
+                          className="group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 text-text-secondary hover:text-text-primary hover:bg-surface-elevated data-[active=true]:text-primary data-[active=true]:bg-surface-elevated transition-colors"
+                        >
+                          <Link to={item.href} className="flex items-center gap-3 px-3 py-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 group-data-[collapsible=icon]:gap-0">
+                            <item.icon className="h-5 w-5 flex-shrink-0" />
+                            <span className="group-data-[collapsible=icon]:sr-only">{item.label}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </SidebarGroup>
+          </Collapsible>
         </SidebarContent>
         
         <SidebarFooter className="p-4 border-t border-border-subtle bg-surface">
