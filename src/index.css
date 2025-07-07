@@ -150,92 +150,96 @@
     --focus-ring: 271 91% 65%;        /* #A855F7 - Adjusted for dark mode */
     --focus-ring-offset: 0 0% 7%;     /* #111111 - Dark background */
   }
+
+  /* Modern, lightweight platform typography */
+  body {
+    @apply font-normal text-foreground;
+    font-weight: 400;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-normal;
+    font-weight: 400;
+  }
 }
 
 @layer components {
-  /* Custom prose preset for Canvas reports with consulting slide deck spacing */
-  .prose-report {
-    @apply text-foreground;
+  /* Scoped Canvas Typography - Consulting Grade */
+  .canvas-content {
+    @apply canvas:font-canvas canvas:text-foreground;
     line-height: 1.75;
   }
   
-  .prose-report h1 {
-    @apply mt-10 mb-6 text-2xl font-semibold text-foreground;
+  .canvas-content h1 {
+    @apply canvas:mt-12 canvas:mb-6 canvas:text-3xl canvas:font-medium canvas:text-foreground;
   }
   
-  .prose-report h2 {
-    @apply mt-8 mb-4 text-xl font-semibold border-b border-border/30 pb-1 text-foreground;
+  .canvas-content h2 {
+    @apply canvas:mt-8 canvas:mb-4 canvas:text-2xl canvas:font-medium canvas:border-b canvas:border-border/30 canvas:pb-2 canvas:text-foreground;
   }
   
-  .prose-report h3 {
-    @apply mt-6 mb-3 text-lg font-medium text-foreground;
+  .canvas-content h3 {
+    @apply canvas:mt-6 canvas:mb-3 canvas:text-xl canvas:font-medium canvas:text-foreground;
   }
   
-  .prose-report h4,
-  .prose-report h5,
-  .prose-report h6 {
-    @apply mt-4 mb-2 font-medium text-foreground;
+  .canvas-content h4,
+  .canvas-content h5,
+  .canvas-content h6 {
+    @apply canvas:mt-4 canvas:mb-2 canvas:font-medium canvas:text-foreground;
   }
   
-  .prose-report p {
-    @apply mb-4 text-foreground;
+  .canvas-content p {
+    @apply canvas:mb-5 canvas:text-foreground;
     line-height: 1.7;
   }
   
-  .prose-report ul,
-  .prose-report ol {
-    @apply mb-4 space-y-2;
+  .canvas-content ul,
+  .canvas-content ol {
+    @apply canvas:mb-5 canvas:space-y-2 canvas:pl-6;
   }
   
-  .prose-report li {
-    @apply mb-2 text-foreground;
+  .canvas-content ul {
+    @apply canvas:list-disc;
   }
   
-  .prose-report blockquote {
-    @apply mt-6 mb-6 pl-4 border-l-4 border-border/50 italic text-muted-foreground;
+  .canvas-content ol {
+    @apply canvas:list-decimal;
   }
   
-  .prose-report table {
-    @apply mt-6 mb-6 w-full border-collapse;
+  .canvas-content li {
+    @apply canvas:mb-2 canvas:text-foreground;
   }
   
-  .prose-report th,
-  .prose-report td {
-    @apply border border-border/30 px-3 py-2 text-foreground;
+  .canvas-content blockquote {
+    @apply canvas:mt-6 canvas:mb-6 canvas:pl-4 canvas:border-l-4 canvas:border-border/20 canvas:italic canvas:text-muted-foreground;
   }
   
-  .prose-report th {
-    @apply bg-surface-elevated font-semibold text-foreground;
+  .canvas-content table {
+    @apply canvas:mt-6 canvas:mb-6 canvas:w-full canvas:border-collapse;
   }
   
-  .prose-report code {
-    @apply bg-surface-elevated px-1 py-0.5 rounded text-sm text-foreground;
+  .canvas-content th,
+  .canvas-content td {
+    @apply canvas:border canvas:border-border/20 canvas:px-4 canvas:py-3 canvas:text-foreground;
   }
   
-  .prose-report pre {
-    @apply mt-4 mb-4 p-4 bg-surface-elevated rounded-lg overflow-x-auto;
+  .canvas-content th {
+    @apply canvas:bg-surface-elevated canvas:font-medium canvas:text-foreground;
   }
   
-  .prose-report pre code {
-    @apply bg-transparent p-0;
+  .canvas-content code {
+    @apply canvas:bg-surface-elevated canvas:px-2 canvas:py-1 canvas:rounded canvas:text-sm canvas:text-foreground;
+  }
+  
+  .canvas-content pre {
+    @apply canvas:mt-4 canvas:mb-4 canvas:p-4 canvas:bg-surface-elevated canvas:rounded-lg canvas:overflow-x-auto;
+  }
+  
+  .canvas-content pre code {
+    @apply canvas:bg-transparent canvas:p-0;
   }
 
-  /* Responsive adjustments */
-  @media (max-width: 640px) {
-    .prose-report h1 {
-      @apply mt-8 mb-4 text-xl;
-    }
-    
-    .prose-report h2 {
-      @apply mt-6 mb-3 text-lg;
-    }
-    
-    .prose-report h3 {
-      @apply mt-4 mb-2 text-base;
-    }
-  }
-
-  /* Apple-inspired background system */
+  /* Platform Typography - Clean and Modern */
   .apple-hero {
     background: linear-gradient(135deg, 
       hsl(var(--background)) 0%, 
@@ -275,186 +279,35 @@
     pointer-events: none;
   }
 
-  /* Dashboard background variant */
-  .apple-dashboard {
-    background: linear-gradient(135deg, 
-      hsl(var(--surface)) 0%, 
-      hsl(var(--surface-elevated)) 25%,
-      hsl(var(--background)) 50%,
-      hsl(var(--surface-elevated)) 75%,
-      hsl(var(--surface)) 100%
-    );
-    position: relative;
-    overflow: hidden;
-    min-height: 100vh;
-  }
-
-  .apple-dashboard::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: 
-      radial-gradient(circle at 10% 20%, hsl(var(--primary) / 0.03) 0%, transparent 50%),
-      radial-gradient(circle at 90% 80%, hsl(var(--accent) / 0.03) 0%, transparent 50%);
-    pointer-events: none;
-    animation: dashboardFloat 20s ease-in-out infinite;
-  }
-
-  /* Form background variant */
-  .apple-form {
-    background: linear-gradient(150deg, 
-      hsl(var(--background)) 0%, 
-      hsl(var(--surface-elevated)) 30%,
-      hsl(var(--surface)) 70%,
-      hsl(var(--background)) 100%
-    );
-    position: relative;
-    overflow: hidden;
-    min-height: 100vh;
-  }
-
-  .apple-form::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: 
-      radial-gradient(circle at 50% 0%, hsl(var(--primary) / 0.04) 0%, transparent 60%);
-    pointer-events: none;
-  }
-
-  /* Results background variant */
-  .apple-results {
-    background: linear-gradient(120deg, 
-      hsl(var(--surface)) 0%, 
-      hsl(var(--background)) 40%,
-      hsl(var(--surface-elevated)) 80%,
-      hsl(var(--surface)) 100%
-    );
-    position: relative;
-    overflow: hidden;
-    min-height: 100vh;
-  }
-
-  .apple-results::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: 
-      radial-gradient(circle at 30% 70%, hsl(var(--primary) / 0.06) 0%, transparent 50%),
-      radial-gradient(circle at 70% 30%, hsl(var(--accent) / 0.04) 0%, transparent 50%);
-    pointer-events: none;
-  }
-
-  /* Settings background variant */
-  .apple-settings {
-    background: linear-gradient(110deg, 
-      hsl(var(--background)) 0%, 
-      hsl(var(--surface)) 50%,
-      hsl(var(--surface-elevated)) 100%
-    );
-    position: relative;
-    overflow: hidden;
-    min-height: 100vh;
-  }
-
-  .apple-settings::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: 
-      radial-gradient(circle at 80% 20%, hsl(var(--primary) / 0.02) 0%, transparent 40%);
-    pointer-events: none;
-  }
-
-  /* Enhanced floating elements for different page types */
-  .floating-elements-dashboard {
-    position: absolute;
-    inset: 0;
-    overflow: hidden;
-    pointer-events: none;
-  }
-
-  .floating-elements-dashboard::before {
-    content: '';
-    position: absolute;
-    top: 10%;
-    left: 5%;
-    width: 8px;
-    height: 8px;
-    background: hsl(var(--primary) / 0.2);
-    border-radius: 50%;
-    animation: floatGentle 12s ease-in-out infinite;
-  }
-
-  .floating-elements-dashboard::after {
-    content: '';
-    position: absolute;
-    top: 60%;
-    right: 10%;
-    width: 6px;
-    height: 6px;
-    background: hsl(var(--accent) / 0.25);
-    border-radius: 50%;
-    animation: floatGentle 15s ease-in-out infinite reverse;
-  }
-
-  /* Glass morphism containers */
-  .apple-glass {
-    background: hsl(var(--surface-elevated) / 0.8);
-    backdrop-filter: blur(20px) saturate(180%);
-    border: 1px solid hsl(var(--border-subtle) / 0.3);
-    box-shadow: 
-      0 8px 32px hsl(var(--foreground) / 0.05),
-      inset 0 1px 0 hsl(var(--surface-elevated) / 0.8);
-  }
-
-  /* Enhanced sections */
-  .apple-section {
-    @apply py-12 md:py-20 lg:py-24 px-4 relative;
-    overflow: hidden;
-  }
-
-  .apple-container {
-    @apply max-w-7xl mx-auto relative z-10;
-  }
-
+  /* Updated platform components with lighter typography */
   .apple-heading {
-    @apply text-3xl md:text-4xl lg:text-6xl font-semibold mb-6 text-foreground tracking-tight;
+    @apply text-3xl md:text-4xl lg:text-5xl font-normal mb-6 text-foreground tracking-tight;
     line-height: 1.1;
+    font-weight: 400;
   }
 
   .apple-subheading {
-    @apply text-lg md:text-xl text-muted-foreground leading-relaxed;
+    @apply text-lg md:text-xl text-muted-foreground leading-relaxed font-light;
+    font-weight: 300;
   }
 
   .apple-badge {
-    @apply px-4 py-2 text-sm font-medium rounded-full;
+    @apply px-4 py-2 text-sm font-normal rounded-full;
     background: hsl(var(--surface-elevated));
     border: 1px solid hsl(var(--border-subtle));
     color: hsl(var(--text-secondary));
+    font-weight: 400;
   }
 
-  /* Mobile-first button styles with fluid sizing */
   .apple-button {
-    @apply bg-gradient-to-r from-primary to-accent text-white font-medium rounded-xl transition-all duration-300 hover:shadow-lg hover:scale-105 border-0;
-    font-size: clamp(0.875rem, 3vw, 1rem); /* 14px to 16px */
-    padding: clamp(0.75rem, 3vw, 1rem) clamp(1rem, 4vw, 2rem); /* Responsive padding */
+    @apply bg-gradient-to-r from-primary to-accent text-white font-normal rounded-xl transition-all duration-300 hover:shadow-lg hover:scale-105 border-0;
+    font-size: clamp(0.875rem, 3vw, 1rem);
+    padding: clamp(0.75rem, 3vw, 1rem) clamp(1rem, 4vw, 2rem);
     box-shadow: 0 2px 10px rgba(139, 92, 246, 0.3);
-    min-height: 44px; /* iOS touch target */
+    min-height: 44px;
     width: 100%;
     max-width: 100%;
+    font-weight: 400;
   }
   
   @media (min-width: 768px) {
@@ -465,16 +318,17 @@
   }
   
   .apple-button-outline {
-    @apply border font-medium rounded-xl transition-all duration-300;
+    @apply border font-normal rounded-xl transition-all duration-300;
     border-color: hsl(var(--border-subtle));
     color: hsl(var(--text-primary));
     background: hsl(var(--surface-elevated));
     backdrop-filter: blur(xl);
-    font-size: clamp(0.875rem, 3vw, 1rem); /* 14px to 16px */
-    padding: clamp(0.75rem, 3vw, 1rem) clamp(1rem, 4vw, 2rem); /* Responsive padding */
-    min-height: 44px; /* iOS touch target */
+    font-size: clamp(0.875rem, 3vw, 1rem);
+    padding: clamp(0.75rem, 3vw, 1rem) clamp(1rem, 4vw, 2rem);
+    min-height: 44px;
     width: 100%;
     max-width: 100%;
+    font-weight: 400;
   }
   
   .apple-button-outline:hover {
@@ -488,7 +342,6 @@
     }
   }
 
-  /* Mobile-first card styles with overflow prevention */
   .apple-card {
     @apply border rounded-2xl shadow-lg hover:shadow-xl transition-all duration-500;
     background: hsl(var(--surface-elevated));
@@ -504,7 +357,6 @@
     }
   }
 
-  /* Premium surface utility classes */
   .surface-base {
     background: hsl(var(--surface));
   }
@@ -525,7 +377,6 @@
     border-color: hsl(var(--border-strong));
   }
 
-  /* Animated Recording Sphere */
   .recording-sphere {
     @apply w-24 h-24 rounded-full relative;
     background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 50%, hsl(var(--primary)) 100%);
@@ -555,7 +406,6 @@
     animation: sphereExit 0.3s ease-in forwards;
   }
 
-  /* Apple-inspired analysis loader animations */
   .analysis-float {
     animation: analysisFloat 6s ease-in-out infinite;
   }
@@ -578,7 +428,6 @@
     animation: progressShimmer 2s ease-in-out infinite;
   }
 
-  /* Floating elements animation */
   .floating-element {
     animation: float 8s ease-in-out infinite;
   }
@@ -603,7 +452,6 @@
     animation-delay: -5s;
   }
 
-  /* Enhanced glass morphism for analysis */
   .analysis-glass {
     background: hsl(var(--surface-elevated) / 0.1);
     backdrop-filter: blur(20px) saturate(180%);
@@ -611,7 +459,6 @@
     @apply shadow-2xl;
   }
 
-  /* Apple-style progress indicators */
   .apple-progress-ring {
     transform-origin: center;
     animation: progressRingRotate 2s linear infinite;
@@ -621,7 +468,6 @@
     transition: stroke-dashoffset 0.5s ease-in-out;
   }
 
-  /* Enhanced floating orb animations */
   .floating-orb-1 {
     animation: floatOrb1 15s ease-in-out infinite;
     transform-origin: center;
@@ -637,7 +483,6 @@
     transform-origin: center;
   }
 
-  /* Floating particle animations */
   .floating-particle-1 {
     animation: floatParticle1 12s ease-in-out infinite;
   }
@@ -650,7 +495,6 @@
     animation: floatParticle3 16s ease-in-out infinite;
   }
 
-  /* Particle drift animations */
   .particle-drift-1 {
     animation: particleDrift1 25s linear infinite;
   }
@@ -671,7 +515,6 @@
     animation: particleDrift5 26s linear infinite;
   }
 
-  /* Orbital element animations */
   .orbital-element-1 {
     animation: orbitalRotate1 40s linear infinite;
     transform-origin: center;
@@ -688,7 +531,6 @@
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   }
 
-  /* Utility classes for preventing horizontal overflow */
   .no-horizontal-scroll {
     overflow-x: hidden !important;
     width: 100% !important;

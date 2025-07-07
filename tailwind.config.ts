@@ -19,8 +19,14 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Inter", "sans-serif"],
-        heading: ["DM Sans", "sans-serif"],
+        sans: ["Inter", "system-ui", "-apple-system", "sans-serif"],
+        heading: ["Inter", "system-ui", "-apple-system", "sans-serif"],
+        canvas: ["Playfair Display", "serif"], // For canvas consulting typography
+      },
+      fontWeight: {
+        light: "300",
+        normal: "400",
+        medium: "500",
       },
       maxWidth: {
         container: "1280px",
@@ -147,5 +153,12 @@ export default {
       },
     },
   },
-  plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],
+  plugins: [
+    require("tailwindcss-animate"), 
+    require("@tailwindcss/typography"),
+    // Add custom variant for canvas-scoped typography
+    function({ addVariant }) {
+      addVariant('canvas', '.canvas-content &');
+    },
+  ],
 } satisfies Config;
