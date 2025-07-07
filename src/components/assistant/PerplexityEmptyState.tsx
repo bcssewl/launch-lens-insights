@@ -14,10 +14,14 @@ import ModelSelectionDropdown, { AIModel } from './ModelSelectionDropdown';
 
 interface PerplexityEmptyStateProps {
   onSendMessage: (message: string, attachments?: any[]) => void;
+  selectedModel?: string;
+  onModelSelect?: (model: AIModel) => void;
 }
 
 const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
-  onSendMessage
+  onSendMessage,
+  selectedModel: propSelectedModel,
+  onModelSelect: propOnModelSelect
 }) => {
   const {
     isRecording,
@@ -37,7 +41,15 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
   } = useFileAttachments();
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [showLocalUploader, setShowLocalUploader] = useState(false);
-  const [selectedModel, setSelectedModel] = useState<string>('best');
+  const [selectedModel, setSelectedModel] = useState<string>(propSelectedModel || 'best');
+
+  const handleModelSelect = (model: AIModel) => {
+    setSelectedModel(model.id);
+    console.log('Selected AI model:', model.name);
+    if (propOnModelSelect) {
+      propOnModelSelect(model);
+    }
+  };
 
   const handlePromptClick = (prompt: string) => {
     onSendMessage(prompt, attachedFiles);
@@ -56,11 +68,6 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
       handlePromptClick(e.currentTarget.value);
       e.currentTarget.value = '';
     }
-  };
-
-  const handleModelSelect = (model: AIModel) => {
-    setSelectedModel(model.id);
-    console.log('Selected AI model:', model.name);
   };
 
   return (

@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -20,20 +21,11 @@ interface CanvasVersion {
   created_by_user: boolean;
 }
 
-interface ConflictError {
-  isConflict: true;
-  statusCode: 412;
-  latestContent: string;
-  latestUpdatedAt: string;
-  message: string;
-}
-
 export const useCanvasDocument = (messageId?: string, initialContent?: string) => {
   const [document, setDocument] = useState<CanvasDocument | null>(null);
   const [versions, setVersions] = useState<CanvasVersion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [conflictError, setConflictError] = useState<ConflictError | null>(null);
 
   // Check if a document exists for a given message ID
   const findDocumentByMessageId = useCallback(async (msgId: string) => {
@@ -82,7 +74,6 @@ export const useCanvasDocument = (messageId?: string, initialContent?: string) =
     console.log('useCanvasDocument: Creating new document for message:', msgId);
     setIsLoading(true);
     setError(null);
-    setConflictError(null);
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -132,7 +123,6 @@ export const useCanvasDocument = (messageId?: string, initialContent?: string) =
     console.log('useCanvasDocument: Creating new document');
     setIsLoading(true);
     setError(null);
-    setConflictError(null);
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -162,53 +152,13 @@ export const useCanvasDocument = (messageId?: string, initialContent?: string) =
     }
   }, []);
 
-  // Update document content with compare-and-swap
-  const updateDocument = useCallback(async (
-    id: string, 
-    updates: Partial<Pick<CanvasDocument, 'title' | 'content'>>,
-    expectedUpdatedAt?: string
-  ) => {
-    console.log('useCanvasDocument: Updating document with compare-and-swap:', id);
+  // Update document content
+  const updateDocument = useCallback(async (id: string, updates: Partial<Pick<CanvasDocument, 'title' | 'content'>>) => {
+    console.log('useCanvasDocument: Updating document:', id);
     setIsLoading(true);
     setError(null);
-    setConflictError(null);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
-
-      // If expectedUpdatedAt is provided, check for conflicts first
-      if (expectedUpdatedAt) {
-        console.log('useCanvasDocument: Checking for conflicts with expectedUpdatedAt:', expectedUpdatedAt);
-        
-        const { data: currentDoc, error: fetchError } = await supabase
-          .from('canvas_documents')
-          .select('updated_at, content, title')
-          .eq('id', id)
-          .eq('created_by', user.id)
-          .single();
-
-        if (fetchError) throw fetchError;
-
-        // Compare timestamps to detect conflicts
-        if (currentDoc.updated_at !== expectedUpdatedAt) {
-          console.log('useCanvasDocument: Conflict detected - timestamps do not match');
-          console.log('Expected:', expectedUpdatedAt, 'Current:', currentDoc.updated_at);
-          
-          const conflictErr: ConflictError = {
-            isConflict: true,
-            statusCode: 412,
-            latestContent: currentDoc.content,
-            latestUpdatedAt: currentDoc.updated_at,
-            message: 'Document has been modified by another user. Please merge your changes.'
-          };
-          
-          setConflictError(conflictErr);
-          return null;
-        }
-      }
-
-      // Perform the update
       const { data, error } = await supabase
         .from('canvas_documents')
         .update({
@@ -216,7 +166,6 @@ export const useCanvasDocument = (messageId?: string, initialContent?: string) =
           updated_at: new Date().toISOString()
         })
         .eq('id', id)
-        .eq('created_by', user.id)
         .select()
         .single();
 
@@ -234,17 +183,11 @@ export const useCanvasDocument = (messageId?: string, initialContent?: string) =
     }
   }, []);
 
-  // Clear conflict error
-  const clearConflictError = useCallback(() => {
-    setConflictError(null);
-  }, []);
-
   // Load document by ID
   const loadDocument = useCallback(async (id: string) => {
     console.log('useCanvasDocument: Loading document:', id);
     setIsLoading(true);
     setError(null);
-    setConflictError(null);
 
     try {
       const { data, error } = await supabase
@@ -346,13 +289,11 @@ export const useCanvasDocument = (messageId?: string, initialContent?: string) =
     versions,
     isLoading,
     error,
-    conflictError,
     createDocument,
     updateDocument,
     loadDocument,
     loadVersions,
     createVersion,
-    findDocumentByMessageId,
-    clearConflictError
+    findDocumentByMessageId
   };
 };
