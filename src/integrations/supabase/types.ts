@@ -601,6 +601,166 @@ export type Database = {
           },
         ]
       }
+      research_api_usage: {
+        Row: {
+          api_name: string
+          created_at: string
+          date: string
+          id: string
+          requests_count: number
+          user_id: string
+        }
+        Insert: {
+          api_name: string
+          created_at?: string
+          date?: string
+          id?: string
+          requests_count?: number
+          user_id: string
+        }
+        Update: {
+          api_name?: string
+          created_at?: string
+          date?: string
+          id?: string
+          requests_count?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      research_cache: {
+        Row: {
+          cache_key: string
+          created_at: string
+          data: Json
+          expires_at: string
+          id: string
+        }
+        Insert: {
+          cache_key: string
+          created_at?: string
+          data: Json
+          expires_at: string
+          id?: string
+        }
+        Update: {
+          cache_key?: string
+          created_at?: string
+          data?: Json
+          expires_at?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      research_citations: {
+        Row: {
+          citation_text: string
+          confidence_score: number | null
+          created_at: string
+          id: string
+          project_id: string
+          source_name: string
+          source_url: string | null
+        }
+        Insert: {
+          citation_text: string
+          confidence_score?: number | null
+          created_at?: string
+          id?: string
+          project_id: string
+          source_name: string
+          source_url?: string | null
+        }
+        Update: {
+          citation_text?: string
+          confidence_score?: number | null
+          created_at?: string
+          id?: string
+          project_id?: string
+          source_name?: string
+          source_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "research_citations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "research_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      research_projects: {
+        Row: {
+          completed_at: string | null
+          confidence_score: number | null
+          created_at: string
+          id: string
+          query: string
+          research_domain: string
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          id?: string
+          query: string
+          research_domain: string
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          id?: string
+          query?: string
+          research_domain?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      research_results: {
+        Row: {
+          content: Json
+          created_at: string
+          id: string
+          project_id: string
+          result_type: string
+        }
+        Insert: {
+          content: Json
+          created_at?: string
+          id?: string
+          project_id: string
+          result_type: string
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          id?: string
+          project_id?: string
+          result_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "research_results_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "research_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       validation_reports: {
         Row: {
           client_id: string | null
@@ -690,6 +850,10 @@ export type Database = {
       binary_quantize: {
         Args: { "": string } | { "": unknown }
         Returns: unknown
+      }
+      clean_expired_research_cache: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       create_report_share: {
         Args: {
