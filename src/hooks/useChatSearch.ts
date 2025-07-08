@@ -1,73 +1,75 @@
-import { useState, useCallback } from 'react';
+
+import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { useDebounce } from '@/hooks/useDebounce';
 
 export interface ChatSearchResult {
   session_id: string;
-  session_title: string;
-  session_created_at: string;
-  message_snippet: string;
-  rank: number;
+  title: string;
+  snippet: string;
+  created_at: string;
 }
 
-export interface ChatSearchResponse {
+interface SearchResponse {
   results: ChatSearchResult[];
-  query: string;
 }
 
-export const useChatSearch = () => {
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState<ChatSearchResult[]>([]);
-  const { toast } = useToast();
+const useChatSearch = (query: string, enabled: boolean = true) => {
+  const [searchQuery, setSearchQuery] = useState(query);
+  const debouncedQuery = useDebounce(searchQuery, 300);
 
-  const searchChats = useCallback(async (query: string, limit = 10): Promise<ChatSearchResult[]> => {
-    if (!query.trim()) {
-      setSearchResults([]);
+  useEffect(() => {
+    setSearchQuery(query);
+  }, [query]);
+
+  const searchChats = async (searchTerm: string): Promise<ChatSearchResult[]> => {
+    if (!searchTerm || searchTerm.trim().length === 0) {
       return [];
     }
 
-    setIsSearching(true);
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     
-    try {
-      const { data, error } = await supabase.functions.invoke('search-chats', {
-        body: { query: query.trim(), limit }
-      });
-
-      if (error) {
-        console.error('Search error:', error);
-        toast({
-          title: "Search Error",
-          description: "Failed to search chats. Please try again.",
-          variant: "destructive",
-        });
-        return [];
-      }
-
-      const results = data?.results || [];
-      setSearchResults(results);
-      return results;
-
-    } catch (error) {
-      console.error('Unexpected search error:', error);
-      toast({
-        title: "Search Error", 
-        description: "An unexpected error occurred while searching.",
-        variant: "destructive",
-      });
-      return [];
-    } finally {
-      setIsSearching(false);
+    if (sessionError || !session?.access_token) {
+      throw new Error('Authentication required');
     }
-  }, [toast]);
 
-  const clearSearch = useCallback(() => {
-    setSearchResults([]);
-  }, []);
+    const response = await fetch('https://jtnedstugyvkfthtsumh.supabase.co/functions/v1/search-chats', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        query: searchTerm,
+        limit: 20,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Search request failed');
+    }
+
+    const data: SearchResponse = await response.json();
+    return data.results || [];
+  };
+
+  const queryResult = useQuery({
+    queryKey: ['chat-search', debouncedQuery],
+    queryFn: () => searchChats(debouncedQuery),
+    enabled: enabled && debouncedQuery.trim().length > 0,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
+    retry: 1, // Only retry once to fail fast for local fallback
+  });
 
   return {
-    searchChats,
-    clearSearch,
-    isSearching,
-    searchResults,
+    results: queryResult.data || [],
+    isLoading: queryResult.isLoading,
+    error: queryResult.error,
+    isSearching: debouncedQuery.trim().length > 0,
+    searchChats, // Expose for local fallback use
   };
 };
+
+export { useChatSearch };

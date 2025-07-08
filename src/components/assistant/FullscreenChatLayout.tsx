@@ -16,7 +16,6 @@ interface FullscreenChatLayoutProps {
   onClearConversation: () => void;
   onSessionSelect: (sessionId: string) => void;
   onToggleFullscreen: () => void;
-  selectedModel?: string;
   canvasState?: {
     isOpen: boolean;
     messageId: string | null;
@@ -39,7 +38,6 @@ const FullscreenChatLayout: React.FC<FullscreenChatLayoutProps> = ({
   onClearConversation,
   onSessionSelect,
   onToggleFullscreen,
-  selectedModel = 'best',
   canvasState,
   onOpenCanvas,
   onCloseCanvas,
@@ -60,8 +58,6 @@ const FullscreenChatLayout: React.FC<FullscreenChatLayoutProps> = ({
           onDownloadChat={onDownloadChat}
           onClearConversation={onClearConversation}
           onSessionSelect={onSessionSelect}
-          selectedModel={selectedModel}
-          onModelSelect={() => {}} // No-op in fullscreen mode for now
         />
         
         <ChatArea
@@ -69,7 +65,6 @@ const FullscreenChatLayout: React.FC<FullscreenChatLayoutProps> = ({
           isTyping={isTyping}
           viewportRef={viewportRef}
           onSendMessage={onSendMessage}
-          selectedModel={selectedModel}
           canvasState={canvasState}
           onOpenCanvas={onOpenCanvas}
           onCloseCanvas={onCloseCanvas}

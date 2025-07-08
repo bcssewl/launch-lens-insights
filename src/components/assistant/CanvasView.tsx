@@ -21,7 +21,6 @@ interface CanvasViewProps {
   isTyping?: boolean;
   viewportRef?: React.RefObject<HTMLDivElement>;
   onSendMessage?: (message: string) => void;
-  selectedModel?: string;
   canvasState?: {
     isOpen: boolean;
     messageId: string | null;
@@ -45,7 +44,6 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
   isTyping = false,
   viewportRef,
   onSendMessage,
-  selectedModel = 'best',
   canvasState,
   onCanvasDownload,
   onCanvasPrint,
@@ -162,7 +160,6 @@ const CanvasView: React.FC<CanvasViewProps> = React.memo(({
                   onCanvasDownload={onCanvasDownload}
                   onCanvasPrint={onCanvasPrint}
                   formatTimestamp={formatTimestamp}
-                  selectedModel={selectedModel}
                 />
                 
                 <ResizableHandle withHandle />

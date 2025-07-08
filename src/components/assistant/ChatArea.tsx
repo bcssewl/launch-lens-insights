@@ -5,20 +5,13 @@ import ChatMessage from '@/components/assistant/ChatMessage';
 import TypingIndicator from '@/components/assistant/TypingIndicator';
 import PerplexityEmptyState from '@/components/assistant/PerplexityEmptyState';
 import EnhancedChatInput from '@/components/assistant/EnhancedChatInput';
-import StratixProgressIndicator from '@/components/assistant/StratixProgressIndicator';
 import { Message } from '@/constants/aiAssistant';
 
 interface ChatAreaProps {
   messages: Message[];
   isTyping: boolean;
   viewportRef: React.RefObject<HTMLDivElement>;
-  onSendMessage: (message: string, attachments?: any[], selectedModel?: string) => void;
-  selectedModel: string;
-  stratixProgress?: {
-    projectId: string | null;
-    status: string;
-    events: Array<{ type: string; message: string; timestamp: Date; data?: any }>;
-  };
+  onSendMessage: (message: string) => void;
   canvasState?: {
     isOpen: boolean;
     messageId: string | null;
@@ -35,8 +28,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   isTyping,
   viewportRef,
   onSendMessage,
-  selectedModel,
-  stratixProgress,
   onOpenCanvas,
   onCanvasDownload,
   onCanvasPrint
@@ -47,10 +38,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     // Show Perplexity-inspired empty state with transparent background
     return (
       <div className="flex flex-col flex-1 min-h-0 w-full relative bg-transparent">
-        <PerplexityEmptyState 
-          onSendMessage={onSendMessage}
-          selectedModel={selectedModel}
-        />
+        <PerplexityEmptyState onSendMessage={onSendMessage} />
       </div>
     );
   }
@@ -62,12 +50,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       <div className="flex-1 overflow-hidden">
         <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
           <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
-            {stratixProgress && stratixProgress.projectId && (
-              <StratixProgressIndicator 
-                status={stratixProgress.status} 
-                events={stratixProgress.events} 
-              />
-            )}
             {messages.map((msg) => (
               <ChatMessage 
                 key={msg.id} 
@@ -91,7 +73,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             onSendMessage={onSendMessage} 
             isTyping={isTyping}
             isCompact={true}
-            selectedModel={selectedModel}
           />
         </div>
       </div>

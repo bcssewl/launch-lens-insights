@@ -1,8 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { MessageCircle, Settings, LogOut, UserCircle, Search } from 'lucide-react';
-import { useHotkeys } from 'react-hotkeys-hook';
+import { MessageCircle, Settings, LogOut, UserCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import {
@@ -17,7 +16,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { ChatSearchModal } from '@/components/search/ChatSearchModal';
 
 interface DashboardHeaderProps {
   children?: React.ReactNode;
@@ -28,13 +26,6 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ children }) => {
   const { signOut, user } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<any>(null);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-
-  // Global search hotkey
-  useHotkeys('ctrl+k,cmd+k', (e) => {
-    e.preventDefault();
-    setIsSearchOpen(true);
-  }, { enableOnFormTags: true });
 
   useEffect(() => {
     if (user) {
@@ -111,16 +102,6 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ children }) => {
           <p className="text-sm text-text-tertiary">{currentDate}</p>
         </div>
         <div className="flex items-center space-x-4">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => setIsSearchOpen(true)}
-            aria-label="Search chats (Ctrl+K)"
-            className="text-text-secondary hover:text-text-primary"
-          >
-            <Search className="h-5 w-5" />
-            <span className="sr-only">Search chats</span>
-          </Button>
           <ThemeToggle />
           <Button variant="ghost" size="icon" aria-label="Notifications" className="text-text-secondary hover:text-text-primary">
             <MessageCircle className="h-5 w-5" />
@@ -161,11 +142,6 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ children }) => {
           </DropdownMenu>
         </div>
       </div>
-      
-      <ChatSearchModal 
-        isOpen={isSearchOpen}
-        onClose={() => setIsSearchOpen(false)}
-      />
     </header>
   );
 };

@@ -4,7 +4,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { Message, initialMessages, formatTimestamp } from '@/constants/aiAssistant';
 import { useN8nWebhook } from '@/hooks/useN8nWebhook';
 import { useChatHistory } from '@/hooks/useChatHistory';
-import { supabase } from '@/integrations/supabase/client';
 
 export const useMessages = (currentSessionId: string | null) => {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
@@ -75,11 +74,11 @@ export const useMessages = (currentSessionId: string | null) => {
     }
   }, [currentSessionId, history, isInitialLoad]);
 
-  const handleSendMessage = useCallback(async (text?: string, messageText?: string, selectedModel?: string) => {
+  const handleSendMessage = useCallback(async (text?: string, messageText?: string) => {
     const finalMessageText = text || messageText;
     if (!finalMessageText || finalMessageText.trim() === '') return;
 
-    console.log('useMessages: Sending message in session:', currentSessionId, 'with model:', selectedModel);
+    console.log('useMessages: Sending message in session:', currentSessionId);
 
     const newUserMessage: Message = {
       id: uuidv4(),
@@ -109,20 +108,13 @@ export const useMessages = (currentSessionId: string | null) => {
     setIsTyping(true);
     
     try {
-      let aiResponseText: string;
-
-      // Route to Stratix if model is 'stratix'
-      if (selectedModel === 'stratix') {
-        aiResponseText = await handleStratixRequest(finalMessageText, currentSessionId);
-      } else {
-        // Use existing N8N webhook for all other models
-        let contextMessage = finalMessageText;
-        if (canvasState.isOpen && canvasState.content) {
-          contextMessage = `Current document content:\n\n${canvasState.content}\n\n---\n\nUser message: ${finalMessageText}`;
-        }
-        
-        aiResponseText = await sendMessageToN8n(contextMessage, currentSessionId);
+      // Include current canvas content in the context if canvas is open
+      let contextMessage = finalMessageText;
+      if (canvasState.isOpen && canvasState.content) {
+        contextMessage = `Current document content:\n\n${canvasState.content}\n\n---\n\nUser message: ${finalMessageText}`;
       }
+      
+      const aiResponseText = await sendMessageToN8n(contextMessage, currentSessionId);
       
       const aiResponse: Message = {
         id: uuidv4(),
@@ -150,252 +142,6 @@ export const useMessages = (currentSessionId: string | null) => {
       setIsTyping(false);
     }
   }, [currentSessionId, addMessage, isConfigured, sendMessageToN8n, canvasState]);
-
-  const [stratixProgress, setStratixProgress] = useState<{
-    projectId: string | null;
-    status: string;
-    events: Array<{ type: string; message: string; timestamp: Date; data?: any }>;
-  }>({
-    projectId: null,
-    status: 'idle',
-    events: []
-  });
-
-  const startStratixPolling = useCallback((projectId: string) => {
-    console.log('Starting Stratix polling for project:', projectId);
-    
-    // Initialize progress tracking
-    setStratixProgress({
-      projectId,
-      status: 'connecting',
-      events: [{ type: 'status', message: 'Starting research...', timestamp: new Date() }]
-    });
-    
-    let pollCount = 0;
-    const maxPollCount = 60; // Max 2 minutes (2 second intervals)
-    
-    const pollInterval = setInterval(async () => {
-      pollCount++;
-      
-      try {
-        // Check project status
-        const { data: project } = await supabase
-          .from('stratix_projects')
-          .select('status')
-          .eq('id', projectId)
-          .single();
-
-        if (!project) {
-          console.error('Project not found');
-          clearInterval(pollInterval);
-          setStratixProgress(prev => ({ ...prev, status: 'error' }));
-          return;
-        }
-
-        // Get latest events
-        const { data: events } = await supabase
-          .from('stratix_events')
-          .select('*')
-          .eq('project_id', projectId)
-          .order('created_at', { ascending: true });
-
-        if (events && events.length > 0) {
-          const latestEvent = events[events.length - 1];
-          
-          // Update progress with latest events
-          setStratixProgress(prev => ({
-            ...prev,
-            status: latestEvent.event_type,
-            events: events.map(event => ({
-              type: event.event_type,
-              message: event.message,
-              timestamp: new Date(event.created_at),
-              data: event.data
-            }))
-          }));
-
-          // Handle completion
-          if (latestEvent.event_type === 'done') {
-            clearInterval(pollInterval);
-            
-            // Get final results and display
-            const { data: results } = await supabase
-              .from('stratix_results')
-              .select(`
-                *,
-                stratix_citations (*)
-              `)
-              .eq('project_id', projectId);
-
-            if (results && results.length > 0) {
-              const synthesizedResponse = formatStratixResults(results);
-              
-              const aiResponse: Message = {
-                id: uuidv4(),
-                text: synthesizedResponse,
-                sender: 'ai',
-                timestamp: new Date(),
-              };
-              
-              setMessages(prev => [...prev, aiResponse]);
-              
-              // Save final response to history
-              if (currentSessionId) {
-                addMessage(`AI: ${synthesizedResponse}`);
-              }
-            } else if (latestEvent.data && typeof latestEvent.data === 'object' && 'response' in latestEvent.data) {
-              // Use response from event data if available
-              const response = (latestEvent.data as any).response;
-              if (typeof response === 'string') {
-                const aiResponse: Message = {
-                  id: uuidv4(),
-                  text: response,
-                  sender: 'ai',
-                  timestamp: new Date(),
-                };
-                
-                setMessages(prev => [...prev, aiResponse]);
-                
-                if (currentSessionId) {
-                  addMessage(`AI: ${response}`);
-                }
-              }
-            }
-            
-            setStratixProgress(prev => ({ ...prev, status: 'complete' }));
-            return;
-          }
-
-          // Handle errors
-          if (latestEvent.event_type === 'error') {
-            clearInterval(pollInterval);
-            setStratixProgress(prev => ({ ...prev, status: 'error' }));
-            
-            const errorMessage: Message = {
-              id: uuidv4(),
-              text: `❌ Research encountered an issue: ${latestEvent.message}`,
-              sender: 'ai',
-              timestamp: new Date(),
-            };
-            setMessages(prev => [...prev, errorMessage]);
-            return;
-          }
-        }
-
-        // Timeout after max attempts
-        if (pollCount >= maxPollCount) {
-          clearInterval(pollInterval);
-          setStratixProgress(prev => ({ ...prev, status: 'error' }));
-          
-          const timeoutMessage: Message = {
-            id: uuidv4(),
-            text: `⏱️ Research request timed out. Please try again with a more specific query.`,
-            sender: 'ai',
-            timestamp: new Date(),
-          };
-          setMessages(prev => [...prev, timeoutMessage]);
-        }
-
-      } catch (error) {
-        console.error('Error polling Stratix progress:', error);
-        clearInterval(pollInterval);
-        setStratixProgress(prev => ({ ...prev, status: 'error' }));
-      }
-    }, 2000); // Poll every 2 seconds
-
-    // Clean up on component unmount
-    return () => {
-      clearInterval(pollInterval);
-    };
-  }, [currentSessionId, addMessage]);
-
-  const handleStratixRequest = useCallback(async (prompt: string, sessionId: string | null): Promise<string> => {
-    if (!sessionId) {
-      throw new Error('Session ID required for Stratix research');
-    }
-
-    try {
-      console.log('Initiating Stratix research request...');
-      
-      // Use supabase.functions.invoke to properly handle authentication
-      const { data, error } = await supabase.functions.invoke('stratix-router', {
-        body: {
-          prompt,
-          sessionId,
-          deepDive: false // Could be made configurable
-        }
-      });
-
-      if (error) {
-        console.error('Stratix request error:', error);
-        throw new Error(`Stratix request failed: ${error.message}`);
-      }
-      
-      if (data.error) {
-        throw new Error(data.error);
-      }
-
-      // Handle different response types
-      if (data.type === 'conversation') {
-        // Simple conversational response - return directly
-        return data.response;
-      } else if (data.type === 'research') {
-        // Research request - start polling and return acknowledgment
-        startStratixPolling(data.projectId);
-        return data.acknowledgment;
-      }
-
-      // Fallback
-      return data.acknowledgment || "I'm processing your request...";
-
-    } catch (error) {
-      console.error('Stratix request error:', error);
-      throw new Error(`Failed to process Stratix request: ${error.message}`);
-    }
-  }, [startStratixPolling]);
-
-  const formatStratixResults = useCallback((results: any[]): string => {
-    let formattedResponse = "# 📊 Stratix Research Report\n\n";
-    
-    for (const result of results) {
-      const sectionTitle = result.section.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
-      formattedResponse += `## ${sectionTitle}\n\n`;
-      
-      if (result.content.summary) {
-        formattedResponse += `${result.content.summary}\n\n`;
-      }
-      
-      if (result.content.data) {
-        formattedResponse += "**Key Metrics:**\n";
-        for (const [key, value] of Object.entries(result.content.data)) {
-          formattedResponse += `- **${key}**: ${value}\n`;
-        }
-        formattedResponse += "\n";
-      }
-      
-      if (result.content.insights && Array.isArray(result.content.insights)) {
-        formattedResponse += "**Strategic Insights:**\n";
-        for (const insight of result.content.insights) {
-          formattedResponse += `- ${insight}\n`;
-        }
-        formattedResponse += "\n";
-      }
-      
-      // Add confidence indicator
-      const confidence = Math.round((result.confidence || 0) * 100);
-      const confidenceIcon = confidence >= 85 ? '🟢' : confidence >= 70 ? '🟡' : '🔴';
-      formattedResponse += `${confidenceIcon} *Data Confidence: ${confidence}%*\n\n`;
-      
-      if (result.provisional) {
-        formattedResponse += "⚠️ *This data is provisional and may require additional verification.*\n\n";
-      }
-    }
-    
-    formattedResponse += "---\n\n*Research completed by Stratix Research Agent*\n";
-    formattedResponse += "*Sources available upon request*";
-    
-    return formattedResponse;
-  }, []);
 
   const handleClearConversation = useCallback(() => {
     console.log('useMessages: Clearing conversation');
@@ -475,7 +221,6 @@ export const useMessages = (currentSessionId: string | null) => {
     handleCloseCanvas,
     handleCanvasDownload,
     handleCanvasPrint,
-    handleCanvasPdfDownload,
-    stratixProgress
+    handleCanvasPdfDownload
   };
 };

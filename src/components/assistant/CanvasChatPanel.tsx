@@ -15,7 +15,6 @@ interface CanvasChatPanelProps {
   onCanvasDownload?: () => void;
   onCanvasPrint?: () => void;
   formatTimestamp: (timestamp: Date) => string;
-  selectedModel?: string;
 }
 
 const CanvasChatPanel: React.FC<CanvasChatPanelProps> = ({
@@ -24,7 +23,6 @@ const CanvasChatPanel: React.FC<CanvasChatPanelProps> = ({
   viewportRef,
   onSendMessage,
   onCanvasDownload,
-  selectedModel = 'best',
   onCanvasPrint,
   formatTimestamp
 }) => {
@@ -56,7 +54,6 @@ const CanvasChatPanel: React.FC<CanvasChatPanelProps> = ({
             onSendMessage={onSendMessage} 
             isTyping={isTyping}
             isCompact={true}
-            selectedModel={selectedModel}
           />
         </div>
       </div>

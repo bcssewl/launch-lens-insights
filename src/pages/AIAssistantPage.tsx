@@ -5,14 +5,12 @@ import { FloatingElements } from '@/components/landing/FloatingElements';
 import DashboardHeader from '@/components/DashboardHeader';
 import MobileDashboardHeader from '@/components/mobile/MobileDashboardHeader';
 import ChatArea from '@/components/assistant/ChatArea';
-import StratixChatArea from '@/components/assistant/StratixChatArea';
 import CanvasView from '@/components/assistant/CanvasView';
 import FullscreenChatLayout from '@/components/assistant/FullscreenChatLayout';
 import ChatSubheader from '@/components/assistant/ChatSubheader';
 import { useChatSessions } from '@/hooks/useChatSessions';
 import { useChatHistory } from '@/hooks/useChatHistory';
 import { useMessages } from '@/hooks/useMessages';
-import { useStratixMessages } from '@/hooks/useStratixMessages';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTheme } from 'next-themes';
 import { Loader2 } from 'lucide-react';
@@ -20,25 +18,16 @@ import { Loader2 } from 'lucide-react';
 const AIAssistantPage: React.FC = () => {
   const isMobile = useIsMobile();
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [selectedModel, setSelectedModel] = useState<string>('best');
   const { theme } = useTheme();
 
   const {
     currentSessionId,
     setCurrentSessionId,
-    navigateToSession,
     createSession
   } = useChatSessions();
   const {
     clearHistory
   } = useChatHistory(currentSessionId);
-  
-  // Use different hooks based on selected model
-  const regularMessages = useMessages(currentSessionId);
-  const stratixMessages = useStratixMessages(currentSessionId);
-  
-  // Choose which message hooks to use based on model
-  const isStratixModel = selectedModel === 'stratix';
   const {
     messages,
     isTyping,
@@ -53,9 +42,8 @@ const AIAssistantPage: React.FC = () => {
     handleCloseCanvas,
     handleCanvasDownload,
     handleCanvasPrint,
-    handleCanvasPdfDownload,
-    stratixProgress
-  } = isStratixModel ? stratixMessages : regularMessages;
+    handleCanvasPdfDownload
+  } = useMessages(currentSessionId);
   const [editedCanvasContent, setEditedCanvasContent] = useState(canvasState.content);
 
   // Update edited content when canvas state changes
@@ -96,10 +84,8 @@ const AIAssistantPage: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isFullscreen]);
 
-  const handleSendMessageWithSession = async (text: string, attachments?: any[], modelOverride?: string) => {
-    // Use the modelOverride if provided, otherwise use the current selectedModel
-    const modelToUse = modelOverride || selectedModel;
-    console.log('AIAssistantPage: Sending message with session:', currentSessionId, 'model:', modelToUse);
+  const handleSendMessageWithSession = async (text: string) => {
+    console.log('AIAssistantPage: Sending message with session:', currentSessionId);
 
     // Create session if none exists
     if (!currentSessionId) {
@@ -110,14 +96,14 @@ const AIAssistantPage: React.FC = () => {
         return;
       }
       console.log('AIAssistantPage: Created new session:', newSession.id);
-      
-      // Wait for session to be fully set and URL to update
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
-      // Now send the message with the new session
-      handleSendMessage(text, undefined, modelToUse);
+      setCurrentSessionId(newSession.id);
+
+      // Wait a bit for the session to be set before sending the message
+      setTimeout(() => {
+        handleSendMessage(text);
+      }, 100);
     } else {
-      handleSendMessage(text, undefined, modelToUse);
+      handleSendMessage(text);
     }
   };
 
@@ -133,9 +119,9 @@ const AIAssistantPage: React.FC = () => {
     console.log('AIAssistantPage: Session selected:', sessionId);
     if (sessionId === '') {
       // Empty string means clear current session
-      navigateToSession(null);
+      setCurrentSessionId(null);
     } else {
-      navigateToSession(sessionId);
+      setCurrentSessionId(sessionId);
     }
   };
 
@@ -173,7 +159,7 @@ const AIAssistantPage: React.FC = () => {
   if (isFullscreen) {
     return (
       <FullscreenChatLayout 
-        messages={messages as any}
+        messages={messages} 
         isTyping={isTyping} 
         viewportRef={viewportRef} 
         isConfigured={isConfigured} 
@@ -182,8 +168,7 @@ const AIAssistantPage: React.FC = () => {
         onDownloadChat={handleDownloadChat} 
         onClearConversation={handleClearConversationWithHistory} 
         onSessionSelect={handleSessionSelect} 
-        onToggleFullscreen={toggleFullscreen}
-        selectedModel={selectedModel}
+        onToggleFullscreen={toggleFullscreen} 
         canvasState={canvasState} 
         onOpenCanvas={handleOpenCanvas} 
         onCloseCanvas={handleCloseCanvas} 
@@ -207,51 +192,36 @@ const AIAssistantPage: React.FC = () => {
           {isMobile ? (
             <MobileDashboardHeader title="AI Assistant" />
           ) : (
-            <div className="flex-shrink-0 bg-transparent">
+            <div className="flex-shrink-0 border-b bg-background/10 backdrop-blur-sm">
               <div className="px-6 flex items-center justify-between py-[10px]">
-                <ChatSubheader 
-                  isConfigured={isConfigured} 
-                  currentSessionId={currentSessionId} 
-                  isFullscreen={isFullscreen} 
-                  onToggleFullscreen={toggleFullscreen} 
-                  onDownloadChat={handleDownloadChat} 
-                  onClearConversation={handleClearConversationWithHistory} 
-                  onSessionSelect={handleSessionSelect}
-                  selectedModel={selectedModel}
-                  onModelSelect={setSelectedModel}
-                />
+                <h1 className="text-lg font-semibold text-foreground">AI Assistant</h1>
+                <div className="flex items-center">
+                  <ChatSubheader 
+                    isConfigured={isConfigured} 
+                    currentSessionId={currentSessionId} 
+                    isFullscreen={isFullscreen} 
+                    onToggleFullscreen={toggleFullscreen} 
+                    onDownloadChat={handleDownloadChat} 
+                    onClearConversation={handleClearConversationWithHistory} 
+                    onSessionSelect={handleSessionSelect} 
+                  />
+                </div>
               </div>
             </div>
           )}
           
           {/* Main chat area - takes remaining height */}
           <div className="flex-1 min-h-0 bg-transparent">
-            {isStratixModel ? (
-              <StratixChatArea 
-                messages={messages as any} 
-                isTyping={isTyping} 
-                viewportRef={viewportRef} 
-                onSendMessage={handleSendMessageWithSession}
-                selectedModel={selectedModel}
-                onOpenCanvas={handleOpenCanvas} 
-                onCloseCanvas={handleCloseCanvas} 
-                onCanvasDownload={handleCanvasDownload} 
-                onCanvasPrint={handleCanvasPrint} 
-              />
-            ) : (
-              <ChatArea 
-                messages={messages as any} 
-                isTyping={isTyping} 
-                viewportRef={viewportRef} 
-                onSendMessage={handleSendMessageWithSession}
-                selectedModel={selectedModel}
-                stratixProgress={stratixProgress}
-                onOpenCanvas={handleOpenCanvas} 
-                onCloseCanvas={handleCloseCanvas} 
-                onCanvasDownload={handleCanvasDownload} 
-                onCanvasPrint={handleCanvasPrint} 
-              />
-            )}
+            <ChatArea 
+              messages={messages} 
+              isTyping={isTyping} 
+              viewportRef={viewportRef} 
+              onSendMessage={handleSendMessageWithSession} 
+              onOpenCanvas={handleOpenCanvas} 
+              onCloseCanvas={handleCloseCanvas} 
+              onCanvasDownload={handleCanvasDownload} 
+              onCanvasPrint={handleCanvasPrint} 
+            />
           </div>
         </SidebarInset>
       </SidebarProvider>
@@ -264,11 +234,10 @@ const AIAssistantPage: React.FC = () => {
         title="AI Report" 
         onDownload={handleCanvasDownload} 
         onPrint={handleCanvasPdfDownload} 
-        messages={messages as any} 
+        messages={messages} 
         isTyping={isTyping} 
         viewportRef={viewportRef} 
-        onSendMessage={handleSendMessageWithSession}
-        selectedModel={selectedModel}
+        onSendMessage={handleSendMessageWithSession} 
         canvasState={canvasState} 
         onOpenCanvas={handleOpenCanvas} 
         onCloseCanvas={handleCloseCanvas} 

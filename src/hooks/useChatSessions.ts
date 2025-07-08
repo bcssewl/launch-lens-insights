@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -15,7 +15,6 @@ export interface ChatSession {
 
 export const useChatSessions = () => {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -96,9 +95,6 @@ export const useChatSessions = () => {
       setSessions(prev => [data, ...prev]);
       setCurrentSessionId(data.id);
       
-      // Navigate to the new session URL
-      navigate(`/dashboard/assistant?session=${data.id}`, { replace: true });
-      
       return data;
     } catch (error) {
       console.error('Error creating chat session:', error);
@@ -154,7 +150,6 @@ export const useChatSessions = () => {
       
       if (currentSessionId === sessionId) {
         setCurrentSessionId(null);
-        navigate('/dashboard/assistant', { replace: true });
       }
       
       console.log('Session deleted successfully');
@@ -168,21 +163,10 @@ export const useChatSessions = () => {
     }
   };
 
-  const navigateToSession = (sessionId: string | null) => {
-    console.log('Navigating to session:', sessionId);
-    setCurrentSessionId(sessionId);
-    if (sessionId) {
-      navigate(`/dashboard/assistant?session=${sessionId}`, { replace: true });
-    } else {
-      navigate('/dashboard/assistant', { replace: true });
-    }
-  };
-
   return {
     sessions,
     currentSessionId,
     setCurrentSessionId,
-    navigateToSession,
     loading,
     creating,
     createSession,

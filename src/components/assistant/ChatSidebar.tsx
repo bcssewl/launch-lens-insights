@@ -39,10 +39,8 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   const [editTitle, setEditTitle] = useState('');
 
   const handleCreateSession = async () => {
-    console.log('ChatSidebar: Creating new session...');
     const newSession = await createSession();
     if (newSession && onSessionSelect) {
-      console.log('ChatSidebar: Notifying parent of new session:', newSession.id);
       onSessionSelect(newSession.id);
     }
     if (isMobile) {

@@ -37,7 +37,7 @@ const AI_MODELS: AIModel[] = [
   {
     id: 'stratix',
     name: 'Stratix',
-    description: 'Advanced research agent for market analysis, competitor intelligence & strategic insights'
+    description: 'Excels at business planning'
   }
 ];
 
