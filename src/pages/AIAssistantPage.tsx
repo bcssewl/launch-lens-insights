@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AppSidebar } from '@/components/AppSidebar';
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { FloatingElements } from '@/components/landing/FloatingElements';
@@ -16,6 +17,7 @@ import { useTheme } from 'next-themes';
 import { Loader2 } from 'lucide-react';
 
 const AIAssistantPage: React.FC = () => {
+  const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [isFullscreen, setIsFullscreen] = useState(false);
   const { theme } = useTheme();
@@ -118,10 +120,13 @@ const AIAssistantPage: React.FC = () => {
   const handleSessionSelect = (sessionId: string) => {
     console.log('AIAssistantPage: Session selected:', sessionId);
     if (sessionId === '') {
-      // Empty string means clear current session
+      // Empty string means clear current session - navigate to assistant without session
       setCurrentSessionId(null);
+      navigate('/dashboard/assistant');
     } else {
+      // Navigate to the assistant page with the new session ID
       setCurrentSessionId(sessionId);
+      navigate(`/dashboard/assistant?session=${sessionId}`);
     }
   };
 
