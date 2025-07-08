@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -111,7 +110,7 @@ export const useMessages = (sessionId: string | null) => {
     }
 
     try {
-      console.log('Saving message to history:', { sessionId, message, sender });
+      console.log('Saving message to history:', { sessionId, message: message.substring(0, 100) + '...', sender });
       
       const { data, error } = await supabase
         .from('n8n_chat_history')
@@ -143,7 +142,7 @@ export const useMessages = (sessionId: string | null) => {
     }
 
     try {
-      console.log('Sending message:', { text, sessionId, selectedModel });
+      console.log('Sending message:', { text: text.substring(0, 100) + '...', sessionId, selectedModel });
       
       const userMessageId = uuidv4();
       const userMessage: Message = {
@@ -158,8 +157,13 @@ export const useMessages = (sessionId: string | null) => {
       setMessages(prev => [...prev, userMessage]);
       setIsTyping(true);
 
-      // Save user message to database
-      await saveMessageToHistory(text, 'user');
+      // Save user message to database immediately
+      const savedUserMessage = await saveMessageToHistory(text, 'user');
+      if (!savedUserMessage) {
+        console.error('Failed to save user message to database');
+      } else {
+        console.log('User message saved to database:', savedUserMessage.id);
+      }
 
       // Check if Stratix model is selected
       if (selectedModel === 'stratix') {
@@ -182,6 +186,9 @@ export const useMessages = (sessionId: string | null) => {
         timestamp: new Date()
       };
       setMessages(prev => [...prev, errorMessage]);
+      
+      // Save error message to database
+      await saveMessageToHistory(errorMessage.text, 'ai');
     }
   };
 
@@ -203,9 +210,10 @@ export const useMessages = (sessionId: string | null) => {
 
       console.log('Stratix Research Agent response:', data);
 
+      const aiResponse = data.report || 'Research completed successfully.';
       const aiMessage: Message = {
         id: uuidv4(),
-        text: data.report || 'Research completed successfully.',
+        text: aiResponse,
         sender: 'ai' as const,
         timestamp: new Date(),
         metadata: {
@@ -219,20 +227,26 @@ export const useMessages = (sessionId: string | null) => {
       setMessages(prev => [...prev, aiMessage]);
 
       // Save AI response to database
-      await saveMessageToHistory(aiMessage.text, 'ai');
+      const savedAiMessage = await saveMessageToHistory(aiResponse, 'ai');
+      if (!savedAiMessage) {
+        console.error('Failed to save AI message to database');
+      } else {
+        console.log('AI message saved to database:', savedAiMessage.id);
+      }
 
     } catch (error) {
       console.error('Stratix Research Agent error:', error);
       
-      const errorMessage: Message = {
+      const errorMessage = 'Sorry, I encountered an error while conducting the research. Please try again.';
+      const errorAiMessage: Message = {
         id: uuidv4(),
-        text: 'Sorry, I encountered an error while conducting the research. Please try again.',
+        text: errorMessage,
         sender: 'ai' as const,
         timestamp: new Date()
       };
 
-      setMessages(prev => [...prev, errorMessage]);
-      await saveMessageToHistory(errorMessage.text, 'ai');
+      setMessages(prev => [...prev, errorAiMessage]);
+      await saveMessageToHistory(errorMessage, 'ai');
     } finally {
       setIsTyping(false);
     }
@@ -259,9 +273,10 @@ export const useMessages = (sessionId: string | null) => {
 
       console.log('N8N webhook response:', data);
       
+      const aiResponse = data.response || 'I received your message.';
       const aiMessage: Message = {
         id: uuidv4(),
-        text: data.response || 'I received your message.',
+        text: aiResponse,
         sender: 'ai' as const,
         timestamp: new Date()
       };
@@ -269,20 +284,26 @@ export const useMessages = (sessionId: string | null) => {
       setMessages(prev => [...prev, aiMessage]);
 
       // Save AI response to database
-      await saveMessageToHistory(aiMessage.text, 'ai');
+      const savedAiMessage = await saveMessageToHistory(aiResponse, 'ai');
+      if (!savedAiMessage) {
+        console.error('Failed to save AI message to database');
+      } else {
+        console.log('AI message saved to database:', savedAiMessage.id);
+      }
 
     } catch (error) {
       console.error('Regular chat error:', error);
       
-      const errorMessage: Message = {
+      const errorMessage = 'Sorry, I encountered an error. Please try again.';
+      const errorAiMessage: Message = {
         id: uuidv4(),
-        text: 'Sorry, I encountered an error. Please try again.',
+        text: errorMessage,
         sender: 'ai' as const,
         timestamp: new Date()
       };
 
-      setMessages(prev => [...prev, errorMessage]);
-      await saveMessageToHistory(errorMessage.text, 'ai');
+      setMessages(prev => [...prev, errorAiMessage]);
+      await saveMessageToHistory(errorMessage, 'ai');
     } finally {
       setIsTyping(false);
     }
