@@ -6,13 +6,6 @@ export interface Message {
   text: string;
   sender: 'ai' | 'user';
   timestamp: Date;
-  attachments?: any[];
-  metadata?: {
-    type?: string;
-    domain?: string;
-    confidence?: number;
-    projectId?: string;
-  };
 }
 
 export const formatTimestamp = (date: Date): string => {

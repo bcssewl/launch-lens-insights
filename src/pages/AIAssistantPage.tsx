@@ -1,6 +1,4 @@
-
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AppSidebar } from '@/components/AppSidebar';
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { FloatingElements } from '@/components/landing/FloatingElements';
@@ -18,8 +16,6 @@ import { useTheme } from 'next-themes';
 import { Loader2 } from 'lucide-react';
 
 const AIAssistantPage: React.FC = () => {
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const isMobile = useIsMobile();
   const [isFullscreen, setIsFullscreen] = useState(false);
   const { theme } = useTheme();
@@ -55,27 +51,11 @@ const AIAssistantPage: React.FC = () => {
     setEditedCanvasContent(canvasState.content);
   }, [canvasState.content]);
 
-  // Initialize session from URL or create new one if none exists
-  useEffect(() => {
-    const sessionParam = searchParams.get('session');
-    console.log('URL session parameter:', sessionParam);
-    
-    if (sessionParam && sessionParam !== currentSessionId) {
-      console.log('Setting session from URL:', sessionParam);
-      setCurrentSessionId(sessionParam);
-    } else if (!sessionParam && !currentSessionId) {
-      console.log('No session in URL and no current session, creating new one...');
-      handleCreateNewSession();
-    }
-  }, [searchParams, currentSessionId, setCurrentSessionId]);
-
   // Enhanced debugging with CSS inspection
   useEffect(() => {
     console.log('=== AI Assistant Page Debug ===');
     console.log('Current route:', window.location.pathname);
     console.log('Current session ID:', currentSessionId);
-    console.log('URL session param:', searchParams.get('session'));
-    console.log('Messages count:', messages.length);
     console.log('Theme mode:', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
     console.log('Theme from hook:', theme);
 
@@ -88,7 +68,7 @@ const AIAssistantPage: React.FC = () => {
       accent: rootStyles.getPropertyValue('--accent')
     });
     console.log('=== End Debug ===');
-  }, [theme, currentSessionId, messages, searchParams]);
+  }, [theme, currentSessionId]);
 
   // Handle keyboard shortcuts
   useEffect(() => {
@@ -104,32 +84,23 @@ const AIAssistantPage: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isFullscreen]);
 
-  const handleCreateNewSession = async () => {
-    console.log('Creating new session...');
-    try {
-      const newSession = await createSession('New Chat');
-      if (newSession) {
-        console.log('New session created:', newSession.id);
-        setCurrentSessionId(newSession.id);
-        navigate(`/dashboard/assistant?session=${newSession.id}`, { replace: true });
-      }
-    } catch (error) {
-      console.error('Failed to create new session:', error);
-    }
-  };
-
   const handleSendMessageWithSession = async (text: string) => {
     console.log('AIAssistantPage: Sending message with session:', currentSessionId);
 
     // Create session if none exists
     if (!currentSessionId) {
       console.log('AIAssistantPage: No current session, creating new one...');
-      await handleCreateNewSession();
+      const newSession = await createSession();
+      if (!newSession) {
+        console.error('AIAssistantPage: Failed to create new session');
+        return;
+      }
+      console.log('AIAssistantPage: Created new session:', newSession.id);
+      setCurrentSessionId(newSession.id);
+
       // Wait a bit for the session to be set before sending the message
       setTimeout(() => {
-        if (currentSessionId) {
-          handleSendMessage(text);
-        }
+        handleSendMessage(text);
       }, 100);
     } else {
       handleSendMessage(text);
@@ -147,12 +118,10 @@ const AIAssistantPage: React.FC = () => {
   const handleSessionSelect = (sessionId: string) => {
     console.log('AIAssistantPage: Session selected:', sessionId);
     if (sessionId === '') {
-      // Empty string means create new session
-      handleCreateNewSession();
+      // Empty string means clear current session
+      setCurrentSessionId(null);
     } else {
-      // Navigate to the assistant page with the selected session ID
       setCurrentSessionId(sessionId);
-      navigate(`/dashboard/assistant?session=${sessionId}`);
     }
   };
 

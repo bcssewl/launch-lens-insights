@@ -56,10 +56,39 @@ export const useChatHistory = (sessionId: string | null) => {
     }
   };
 
+  const addMessage = async (message: string) => {
+    if (!sessionId) return null;
+
+    try {
+      const { data, error } = await supabase
+        .from('n8n_chat_history')
+        .insert([
+          {
+            session_id: sessionId,
+            message,
+          }
+        ])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setHistory(prev => [...prev, data]);
+      return data;
+    } catch (error) {
+      console.error('Error adding message to history:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save message",
+        variant: "destructive",
+      });
+      return null;
+    }
+  };
+
   const clearHistory = async () => {
     if (!sessionId) return;
 
-    console.log('useChatHistory: Clearing history for session:', sessionId);
     try {
       const { error } = await supabase
         .from('n8n_chat_history')
@@ -68,8 +97,6 @@ export const useChatHistory = (sessionId: string | null) => {
 
       if (error) throw error;
       setHistory([]);
-      
-      console.log('useChatHistory: History cleared successfully');
     } catch (error) {
       console.error('Error clearing chat history:', error);
       toast({
@@ -84,6 +111,7 @@ export const useChatHistory = (sessionId: string | null) => {
     history,
     loading,
     isInitialLoad,
+    addMessage,
     clearHistory,
     refreshHistory: fetchHistory,
   };
