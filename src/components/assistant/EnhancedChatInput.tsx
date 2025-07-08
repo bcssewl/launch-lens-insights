@@ -12,12 +12,14 @@ interface EnhancedChatInputProps {
   onSendMessage: (message: string, attachments?: any[], selectedModel?: string) => void;
   isTyping: boolean;
   isCompact?: boolean;
+  selectedModel: string;
 }
 
 const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({ 
   onSendMessage, 
   isTyping, 
-  isCompact = false 
+  isCompact = false,
+  selectedModel
 }) => {
   const [inputValue, setInputValue] = useState('');
   const [showProjectModal, setShowProjectModal] = useState(false);
@@ -35,7 +37,7 @@ const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
 
   const handleSendMessage = () => {
     if (inputValue.trim() === '') return;
-    onSendMessage(inputValue, attachedFiles, 'best'); // Default to 'best' model for now
+    onSendMessage(inputValue, attachedFiles, selectedModel);
     setInputValue('');
     clearFiles();
   };

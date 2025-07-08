@@ -18,6 +18,7 @@ import { Loader2 } from 'lucide-react';
 const AIAssistantPage: React.FC = () => {
   const isMobile = useIsMobile();
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [selectedModel, setSelectedModel] = useState<string>('best');
   const { theme } = useTheme();
 
   const {
@@ -85,8 +86,10 @@ const AIAssistantPage: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isFullscreen]);
 
-  const handleSendMessageWithSession = async (text: string, attachments?: any[], selectedModel?: string) => {
-    console.log('AIAssistantPage: Sending message with session:', currentSessionId, 'model:', selectedModel);
+  const handleSendMessageWithSession = async (text: string, attachments?: any[], modelOverride?: string) => {
+    // Use the modelOverride if provided, otherwise use the current selectedModel
+    const modelToUse = modelOverride || selectedModel;
+    console.log('AIAssistantPage: Sending message with session:', currentSessionId, 'model:', modelToUse);
 
     // Create session if none exists
     if (!currentSessionId) {
@@ -102,9 +105,9 @@ const AIAssistantPage: React.FC = () => {
       await new Promise(resolve => setTimeout(resolve, 200));
       
       // Now send the message with the new session
-      handleSendMessage(text, undefined, selectedModel);
+      handleSendMessage(text, undefined, modelToUse);
     } else {
-      handleSendMessage(text, undefined, selectedModel);
+      handleSendMessage(text, undefined, modelToUse);
     }
   };
 
@@ -169,7 +172,8 @@ const AIAssistantPage: React.FC = () => {
         onDownloadChat={handleDownloadChat} 
         onClearConversation={handleClearConversationWithHistory} 
         onSessionSelect={handleSessionSelect} 
-        onToggleFullscreen={toggleFullscreen} 
+        onToggleFullscreen={toggleFullscreen}
+        selectedModel={selectedModel}
         canvasState={canvasState} 
         onOpenCanvas={handleOpenCanvas} 
         onCloseCanvas={handleCloseCanvas} 
@@ -195,18 +199,17 @@ const AIAssistantPage: React.FC = () => {
           ) : (
             <div className="flex-shrink-0 bg-transparent">
               <div className="px-6 flex items-center justify-between py-[10px]">
-                <h1 className="text-lg font-semibold text-foreground">AI Assistant</h1>
-                <div className="flex items-center">
-                  <ChatSubheader 
-                    isConfigured={isConfigured} 
-                    currentSessionId={currentSessionId} 
-                    isFullscreen={isFullscreen} 
-                    onToggleFullscreen={toggleFullscreen} 
-                    onDownloadChat={handleDownloadChat} 
-                    onClearConversation={handleClearConversationWithHistory} 
-                    onSessionSelect={handleSessionSelect} 
-                  />
-                </div>
+                <ChatSubheader 
+                  isConfigured={isConfigured} 
+                  currentSessionId={currentSessionId} 
+                  isFullscreen={isFullscreen} 
+                  onToggleFullscreen={toggleFullscreen} 
+                  onDownloadChat={handleDownloadChat} 
+                  onClearConversation={handleClearConversationWithHistory} 
+                  onSessionSelect={handleSessionSelect}
+                  selectedModel={selectedModel}
+                  onModelSelect={setSelectedModel}
+                />
               </div>
             </div>
           )}
@@ -217,7 +220,8 @@ const AIAssistantPage: React.FC = () => {
               messages={messages} 
               isTyping={isTyping} 
               viewportRef={viewportRef} 
-              onSendMessage={handleSendMessageWithSession} 
+              onSendMessage={handleSendMessageWithSession}
+              selectedModel={selectedModel}
               onOpenCanvas={handleOpenCanvas} 
               onCloseCanvas={handleCloseCanvas} 
               onCanvasDownload={handleCanvasDownload} 
@@ -238,7 +242,8 @@ const AIAssistantPage: React.FC = () => {
         messages={messages} 
         isTyping={isTyping} 
         viewportRef={viewportRef} 
-        onSendMessage={handleSendMessageWithSession} 
+        onSendMessage={handleSendMessageWithSession}
+        selectedModel={selectedModel}
         canvasState={canvasState} 
         onOpenCanvas={handleOpenCanvas} 
         onCloseCanvas={handleCloseCanvas} 

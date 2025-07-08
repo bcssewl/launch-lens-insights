@@ -13,9 +13,11 @@ import ModelSelectionDropdown, { AIModel } from './ModelSelectionDropdown';
 
 interface PerplexityEmptyStateProps {
   onSendMessage: (message: string, attachments?: any[], selectedModel?: string) => void;
+  selectedModel: string;
 }
 const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
-  onSendMessage
+  onSendMessage,
+  selectedModel: parentSelectedModel
 }) => {
   const {
     isRecording,
@@ -35,9 +37,10 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
   } = useFileAttachments();
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [showLocalUploader, setShowLocalUploader] = useState(false);
-  const [selectedModel, setSelectedModel] = useState<string>('best');
+  // Use the model from parent, but allow local override for this component
+  const [localSelectedModel, setLocalSelectedModel] = useState<string>(parentSelectedModel);
   const handlePromptClick = (prompt: string) => {
-    onSendMessage(prompt, attachedFiles, selectedModel);
+    onSendMessage(prompt, attachedFiles, localSelectedModel);
   };
   const handleVoiceRecording = () => {
     if (isRecording) {
@@ -53,7 +56,7 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
     }
   };
   const handleModelSelect = (model: AIModel) => {
-    setSelectedModel(model.id);
+    setLocalSelectedModel(model.id);
     console.log('Selected AI model:', model.name);
   };
   return <TooltipProvider>
@@ -90,7 +93,7 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
               <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground">
                 <Target className="h-5 w-5" />
               </Button>
-              <ModelSelectionDropdown selectedModel={selectedModel} onModelSelect={handleModelSelect} />
+              <ModelSelectionDropdown selectedModel={localSelectedModel} onModelSelect={handleModelSelect} />
             </div>
 
             {/* Right Side Button Group */}
