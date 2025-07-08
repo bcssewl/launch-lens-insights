@@ -1,95 +1,29 @@
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { Message } from '@/constants/aiAssistant';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import { Message, initialMessages, formatTimestamp } from '@/constants/aiAssistant';
+import { useN8nWebhook } from '@/hooks/useN8nWebhook';
+import { useChatHistory } from '@/hooks/useChatHistory';
 
-interface CanvasState {
-  isOpen: boolean;
-  messageId: string | null;
-  content: string;
-}
-
-export const useMessages = (sessionId: string | null) => {
-  const [messages, setMessages] = useState<Message[]>([]);
+export const useMessages = (currentSessionId: string | null) => {
+  const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [isTyping, setIsTyping] = useState(false);
-  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
-  const [isConfigured, setIsConfigured] = useState(true);
-  const [canvasState, setCanvasState] = useState<CanvasState>({
+  const [canvasState, setCanvasState] = useState<{
+    isOpen: boolean;
+    messageId: string | null;
+    content: string;
+  }>({
     isOpen: false,
     messageId: null,
     content: ''
   });
   const viewportRef = useRef<HTMLDivElement>(null);
-  const { user } = useAuth();
-
-  // Load message history when session changes
-  useEffect(() => {
-    if (sessionId) {
-      loadMessageHistory();
-    } else {
-      // Clear messages when no session
-      setMessages([]);
-    }
-  }, [sessionId]);
-
-  const loadMessageHistory = async () => {
-    if (!sessionId) return;
-
-    setIsLoadingHistory(true);
-    try {
-      const { data, error } = await supabase
-        .from('n8n_chat_history')
-        .select('*')
-        .eq('session_id', sessionId)
-        .order('created_at', { ascending: true });
-
-      if (error) {
-        console.error('Error loading message history:', error);
-        return;
-      }
-
-      if (data && data.length > 0) {
-        const formattedMessages: Message[] = [];
-        
-        for (let i = 0; i < data.length; i += 2) {
-          const userMsg = data[i];
-          const aiMsg = data[i + 1];
-
-          // Add user message
-          if (userMsg) {
-            formattedMessages.push({
-              id: userMsg.id,
-              text: userMsg.message,
-              isUser: true,
-              timestamp: new Date(userMsg.created_at)
-            });
-          }
-
-          // Add AI message if it exists
-          if (aiMsg) {
-            formattedMessages.push({
-              id: aiMsg.id,
-              text: aiMsg.message,
-              isUser: false,
-              timestamp: new Date(aiMsg.created_at)
-            });
-          }
-        }
-
-        setMessages(formattedMessages);
-      }
-    } catch (error) {
-      console.error('Error in loadMessageHistory:', error);
-    } finally {
-      setIsLoadingHistory(false);
-    }
-  };
+  const { sendMessageToN8n, isConfigured } = useN8nWebhook();
+  const { history, addMessage, isInitialLoad } = useChatHistory(currentSessionId);
 
   const scrollToBottom = useCallback(() => {
     if (viewportRef.current) {
-      viewportRef.current.scrollTop = viewportRef.current.scrollHeight;
+      viewportRef.current.scrollTo({ top: viewportRef.current.scrollHeight, behavior: 'smooth' });
     }
   }, []);
 
@@ -97,240 +31,186 @@ export const useMessages = (sessionId: string | null) => {
     scrollToBottom();
   }, [messages, isTyping, scrollToBottom]);
 
-  const handleSendMessage = async (text: string, attachments?: any[], selectedModel?: string) => {
-    if (!sessionId || !user) {
-      console.error('No session ID or user available');
+  // Load messages from history when session changes - but wait for initial load to complete
+  useEffect(() => {
+    console.log('useMessages: Session/History changed - Session:', currentSessionId, 'History length:', history.length, 'Is initial load:', isInitialLoad);
+    
+    // Don't process until initial load is complete
+    if (isInitialLoad) {
+      console.log('useMessages: Still loading initial history, waiting...');
+      return;
+    }
+    
+    if (currentSessionId && history.length > 0) {
+      console.log('useMessages: Loading history for session:', currentSessionId);
+      // Convert history to messages format, parsing out USER: and AI: prefixes
+      const historyMessages: Message[] = history.map((item) => {
+        let text = item.message;
+        let sender: 'user' | 'ai' = 'user';
+        
+        // Parse the message to determine sender and clean text
+        if (text.startsWith('USER: ')) {
+          sender = 'user';
+          text = text.substring(6); // Remove "USER: " prefix
+        } else if (text.startsWith('AI: ')) {
+          sender = 'ai';
+          text = text.substring(4); // Remove "AI: " prefix
+        }
+        
+        return {
+          id: item.id,
+          text: text,
+          sender: sender,
+          timestamp: new Date(item.created_at),
+        };
+      });
+      
+      console.log('useMessages: Setting messages with history:', historyMessages.length, 'messages');
+      setMessages([...initialMessages, ...historyMessages]);
+    } else if (!currentSessionId || history.length === 0) {
+      console.log('useMessages: No session or empty history, showing initial messages only');
+      // Reset to initial messages for new sessions or when no session is selected
+      setMessages([...initialMessages]);
+    }
+  }, [currentSessionId, history, isInitialLoad]);
+
+  const handleSendMessage = useCallback(async (text?: string, messageText?: string) => {
+    const finalMessageText = text || messageText;
+    if (!finalMessageText || finalMessageText.trim() === '') return;
+
+    console.log('useMessages: Sending message in session:', currentSessionId);
+
+    const newUserMessage: Message = {
+      id: uuidv4(),
+      text: finalMessageText,
+      sender: 'user',
+      timestamp: new Date(),
+    };
+    
+    setMessages(prev => [...prev, newUserMessage]);
+
+    // Save user message to history without prefix
+    if (currentSessionId) {
+      await addMessage(`USER: ${finalMessageText}`);
+    }
+
+    if (!isConfigured) {
+      const fallbackResponse: Message = {
+        id: uuidv4(),
+        text: "The AI service is not configured properly. Please contact support for assistance.",
+        sender: 'ai',
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, fallbackResponse]);
       return;
     }
 
+    setIsTyping(true);
+    
     try {
-      const userMessageId = uuidv4();
-      const userMessage: Message = {
-        id: userMessageId,
-        text,
-        isUser: true,
-        timestamp: new Date(),
-        attachments
-      };
-
-      setMessages(prev => [...prev, userMessage]);
-      setIsTyping(true);
-
-      // Check if Stratix model is selected
-      if (selectedModel === 'stratix') {
-        console.log('Routing to Stratix Research Agent');
-        await handleStratixResearch(text, userMessageId);
-      } else {
-        // Regular N8N webhook for other models
-        await handleRegularChat(text, userMessageId, attachments);
+      // Include current canvas content in the context if canvas is open
+      let contextMessage = finalMessageText;
+      if (canvasState.isOpen && canvasState.content) {
+        contextMessage = `Current document content:\n\n${canvasState.content}\n\n---\n\nUser message: ${finalMessageText}`;
       }
-
-    } catch (error) {
-      console.error('Error sending message:', error);
-      setIsTyping(false);
-    }
-  };
-
-  const handleStratixResearch = async (query: string, userMessageId: string) => {
-    try {
-      console.log('Calling Stratix Research Agent with query:', query);
-
-      const { data, error } = await supabase.functions.invoke('stratix-research-agent', {
-        body: {
-          query: query,
-          sessionId: sessionId,
-          userId: user?.id
-        }
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      console.log('Stratix Research Agent response:', data);
-
-      const aiMessage: Message = {
-        id: uuidv4(),
-        text: data.report || 'Research completed successfully.',
-        isUser: false,
-        timestamp: new Date(),
-        metadata: {
-          type: 'research_report',
-          domain: data.domain,
-          confidence: data.confidence,
-          projectId: data.projectId
-        }
-      };
-
-      setMessages(prev => [...prev, aiMessage]);
-
-      // Store messages in chat history
-      await Promise.all([
-        supabase.from('n8n_chat_history').insert({
-          session_id: sessionId,
-          message: query,
-          search_body: query
-        }),
-        supabase.from('n8n_chat_history').insert({
-          session_id: sessionId,
-          message: aiMessage.text,
-          search_body: aiMessage.text
-        })
-      ]);
-
-    } catch (error) {
-      console.error('Stratix Research Agent error:', error);
       
-      const errorMessage: Message = {
+      const aiResponseText = await sendMessageToN8n(contextMessage, currentSessionId);
+      
+      const aiResponse: Message = {
         id: uuidv4(),
-        text: 'Sorry, I encountered an error while conducting the research. Please try again.',
-        isUser: false,
-        timestamp: new Date()
+        text: aiResponseText,
+        sender: 'ai',
+        timestamp: new Date(),
       };
-
-      setMessages(prev => [...prev, errorMessage]);
+      
+      setMessages(prev => [...prev, aiResponse]);
+      
+      // Save AI response to history without showing prefix to user
+      if (currentSessionId) {
+        await addMessage(`AI: ${aiResponseText}`);
+      }
+    } catch (error) {
+      console.error('useMessages: Error sending message:', error);
+      const errorResponse: Message = {
+        id: uuidv4(),
+        text: "I'm experiencing some technical difficulties right now. Please try sending your message again in a few moments.",
+        sender: 'ai',
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, errorResponse]);
     } finally {
       setIsTyping(false);
     }
-  };
+  }, [currentSessionId, addMessage, isConfigured, sendMessageToN8n, canvasState]);
 
-  const handleRegularChat = async (text: string, userMessageId: string, attachments?: any[]) => {
-    try {
-      const webhookUrl = 'https://n8n-webhook-url.com/webhook';
-      
-      const payload = {
-        message: text,
-        sessionId: sessionId,
-        userId: user?.id,
-        attachments: attachments || []
-      };
+  const handleClearConversation = useCallback(() => {
+    console.log('useMessages: Clearing conversation');
+    setMessages([initialMessages[0]]);
+  }, []);
 
-      const response = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload)
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      
-      const aiMessage: Message = {
-        id: uuidv4(),
-        text: data.response || 'I received your message.',
-        isUser: false,
-        timestamp: new Date()
-      };
-
-      setMessages(prev => [...prev, aiMessage]);
-
-      // Store messages in chat history
-      await Promise.all([
-        supabase.from('n8n_chat_history').insert({
-          session_id: sessionId,
-          message: text,
-          search_body: text
-        }),
-        supabase.from('n8n_chat_history').insert({
-          session_id: sessionId,
-          message: aiMessage.text,
-          search_body: aiMessage.text
-        })
-      ]);
-
-    } catch (error) {
-      console.error('Regular chat error:', error);
-      
-      const errorMessage: Message = {
-        id: uuidv4(),
-        text: 'Sorry, I encountered an error. Please try again.',
-        isUser: false,
-        timestamp: new Date()
-      };
-
-      setMessages(prev => [...prev, errorMessage]);
-    } finally {
-      setIsTyping(false);
-    }
-  };
-
-  const handleClearConversation = () => {
-    setMessages([]);
-  };
-
-  const handleDownloadChat = () => {
+  const handleDownloadChat = useCallback(() => {
     const chatContent = messages.map(msg => 
-      `${msg.isUser ? 'User' : 'AI'}: ${msg.text}`
+      `[${formatTimestamp(msg.timestamp)}] ${msg.sender.toUpperCase()}: ${msg.text}`
     ).join('\n\n');
     
     const blob = new Blob([chatContent], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `chat-${sessionId}.txt`;
+    a.download = `ai-chat-${new Date().toISOString().split('T')[0]}.txt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  };
+  }, [messages]);
 
-  const handleOpenCanvas = (messageId: string, content: string) => {
+  const handleOpenCanvas = useCallback((messageId: string, content: string) => {
+    console.log('useMessages: Opening canvas for message:', messageId);
     setCanvasState({
       isOpen: true,
       messageId,
       content
     });
-  };
+  }, []);
 
-  const handleCloseCanvas = () => {
+  const handleCloseCanvas = useCallback(() => {
+    console.log('useMessages: Closing canvas');
     setCanvasState({
       isOpen: false,
       messageId: null,
       content: ''
     });
-  };
+  }, []);
 
-  const handleCanvasDownload = () => {
+  const handleCanvasDownload = useCallback(() => {
     if (!canvasState.content) return;
     
+    console.log('useMessages: Downloading canvas content');
     const blob = new Blob([canvasState.content], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'canvas-content.md';
+    a.download = `ai-report-${new Date().toISOString().split('T')[0]}.md`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  };
+  }, [canvasState.content]);
 
-  const handleCanvasPrint = () => {
+  const handleCanvasPrint = useCallback(() => {
+    console.log('useMessages: Printing canvas');
     window.print();
-  };
+  }, []);
 
-  const handleCanvasPdfDownload = async () => {
-    try {
-      const { data, error } = await supabase.functions.invoke('generate-canvas-pdf', {
-        body: { content: canvasState.content }
-      });
-
-      if (error) throw error;
-
-      // Handle PDF download
-      console.log('PDF generated:', data);
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-    }
-  };
+  const handleCanvasPdfDownload = useCallback(() => {
+    console.log('useMessages: PDF download initiated');
+    window.print();
+  }, []);
 
   return {
     messages,
     isTyping,
-    isLoadingHistory,
+    isLoadingHistory: isInitialLoad,
     viewportRef,
     handleSendMessage,
     handleClearConversation,
