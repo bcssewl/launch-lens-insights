@@ -23,6 +23,7 @@ const AIAssistantPage: React.FC = () => {
   const {
     currentSessionId,
     setCurrentSessionId,
+    navigateToSession,
     createSession
   } = useChatSessions();
   const {
@@ -96,12 +97,12 @@ const AIAssistantPage: React.FC = () => {
         return;
       }
       console.log('AIAssistantPage: Created new session:', newSession.id);
-      setCurrentSessionId(newSession.id);
-
-      // Wait a bit for the session to be set before sending the message
-      setTimeout(() => {
-        handleSendMessage(text, undefined, selectedModel);
-      }, 100);
+      
+      // Wait for session to be fully set and URL to update
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      // Now send the message with the new session
+      handleSendMessage(text, undefined, selectedModel);
     } else {
       handleSendMessage(text, undefined, selectedModel);
     }
@@ -119,9 +120,9 @@ const AIAssistantPage: React.FC = () => {
     console.log('AIAssistantPage: Session selected:', sessionId);
     if (sessionId === '') {
       // Empty string means clear current session
-      setCurrentSessionId(null);
+      navigateToSession(null);
     } else {
-      setCurrentSessionId(sessionId);
+      navigateToSession(sessionId);
     }
   };
 
