@@ -62,7 +62,7 @@ export const useMessages = (sessionId: string | null) => {
             formattedMessages.push({
               id: userMsg.id,
               text: userMsg.message,
-              isUser: true,
+              sender: 'user' as const,
               timestamp: new Date(userMsg.created_at)
             });
           }
@@ -72,7 +72,7 @@ export const useMessages = (sessionId: string | null) => {
             formattedMessages.push({
               id: aiMsg.id,
               text: aiMsg.message,
-              isUser: false,
+              sender: 'ai' as const,
               timestamp: new Date(aiMsg.created_at)
             });
           }
@@ -108,7 +108,7 @@ export const useMessages = (sessionId: string | null) => {
       const userMessage: Message = {
         id: userMessageId,
         text,
-        isUser: true,
+        sender: 'user' as const,
         timestamp: new Date(),
         attachments
       };
@@ -152,7 +152,7 @@ export const useMessages = (sessionId: string | null) => {
       const aiMessage: Message = {
         id: uuidv4(),
         text: data.report || 'Research completed successfully.',
-        isUser: false,
+        sender: 'ai' as const,
         timestamp: new Date(),
         metadata: {
           type: 'research_report',
@@ -184,7 +184,7 @@ export const useMessages = (sessionId: string | null) => {
       const errorMessage: Message = {
         id: uuidv4(),
         text: 'Sorry, I encountered an error while conducting the research. Please try again.',
-        isUser: false,
+        sender: 'ai' as const,
         timestamp: new Date()
       };
 
@@ -222,7 +222,7 @@ export const useMessages = (sessionId: string | null) => {
       const aiMessage: Message = {
         id: uuidv4(),
         text: data.response || 'I received your message.',
-        isUser: false,
+        sender: 'ai' as const,
         timestamp: new Date()
       };
 
@@ -248,7 +248,7 @@ export const useMessages = (sessionId: string | null) => {
       const errorMessage: Message = {
         id: uuidv4(),
         text: 'Sorry, I encountered an error. Please try again.',
-        isUser: false,
+        sender: 'ai' as const,
         timestamp: new Date()
       };
 
@@ -264,7 +264,7 @@ export const useMessages = (sessionId: string | null) => {
 
   const handleDownloadChat = () => {
     const chatContent = messages.map(msg => 
-      `${msg.isUser ? 'User' : 'AI'}: ${msg.text}`
+      `${msg.sender === 'user' ? 'User' : 'AI'}: ${msg.text}`
     ).join('\n\n');
     
     const blob = new Blob([chatContent], { type: 'text/plain' });
