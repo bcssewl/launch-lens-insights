@@ -1,24 +1,17 @@
-
 import React from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import ChatMessage from '@/components/assistant/ChatMessage';
+import StratixChatMessage from '@/components/assistant/StratixChatMessage';
 import TypingIndicator from '@/components/assistant/TypingIndicator';
 import PerplexityEmptyState from '@/components/assistant/PerplexityEmptyState';
 import EnhancedChatInput from '@/components/assistant/EnhancedChatInput';
-import StratixProgressIndicator from '@/components/assistant/StratixProgressIndicator';
-import { Message } from '@/constants/aiAssistant';
+import { StratixChatMessageData } from '@/components/assistant/StratixChatMessage';
 
-interface ChatAreaProps {
-  messages: Message[];
+interface StratixChatAreaProps {
+  messages: StratixChatMessageData[];
   isTyping: boolean;
   viewportRef: React.RefObject<HTMLDivElement>;
   onSendMessage: (message: string, attachments?: any[], selectedModel?: string) => void;
   selectedModel: string;
-  stratixProgress?: {
-    projectId: string | null;
-    status: string;
-    events: Array<{ type: string; message: string; timestamp: Date; data?: any }>;
-  };
   canvasState?: {
     isOpen: boolean;
     messageId: string | null;
@@ -30,13 +23,12 @@ interface ChatAreaProps {
   onCanvasPrint?: () => void;
 }
 
-const ChatArea: React.FC<ChatAreaProps> = ({
+const StratixChatArea: React.FC<StratixChatAreaProps> = ({
   messages,
   isTyping,
   viewportRef,
   onSendMessage,
   selectedModel,
-  stratixProgress,
   onOpenCanvas,
   onCanvasDownload,
   onCanvasPrint
@@ -55,23 +47,17 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     );
   }
 
-  // Show conversation with fixed input bar that blends seamlessly
+  // Show conversation with Stratix-specific message components
   return (
     <div className="h-full flex flex-col relative bg-background/10 backdrop-blur-sm">
       {/* Chat Messages Area with proper scrolling */}
       <div className="flex-1 overflow-hidden">
         <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
           <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
-            {stratixProgress && stratixProgress.projectId && (
-              <StratixProgressIndicator 
-                status={stratixProgress.status} 
-                events={stratixProgress.events} 
-              />
-            )}
             {messages.map((msg) => (
-              <ChatMessage 
+              <StratixChatMessage 
                 key={msg.id} 
-                message={{ ...msg, timestamp: formatTimestamp(msg.timestamp) }}
+                message={msg}
                 onOpenCanvas={onOpenCanvas}
                 onCanvasDownload={onCanvasDownload}
                 onCanvasPrint={onCanvasPrint}
@@ -99,9 +85,4 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   );
 };
 
-// Helper function moved from constants
-const formatTimestamp = (timestamp: Date): string => {
-  return timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-};
-
-export default ChatArea;
+export default StratixChatArea;

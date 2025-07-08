@@ -1,136 +1,168 @@
 import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Loader2, Search, Brain, CheckCircle, AlertCircle } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Check, Search, BookOpen, Zap, CheckCircle2, XCircle } from 'lucide-react';
 
-interface StratixProgressEvent {
+export interface StratixProgressEvent {
   type: string;
   message: string;
   timestamp: Date;
+  progress_percentage?: number;
   data?: any;
 }
 
-interface StratixProgressState {
-  projectId: string | null;
+interface StratixProgressIndicatorProps {
   status: string;
   events: StratixProgressEvent[];
+  className?: string;
 }
 
-interface StratixProgressIndicatorProps {
-  progress: StratixProgressState;
-}
+const statusSteps = [
+  { key: 'thinking', label: 'Searching', icon: Search },
+  { key: 'search', label: 'Reading', icon: BookOpen },
+  { key: 'synthesis', label: 'Synthesizing', icon: Zap },
+  { key: 'verification', label: 'Verifying', icon: CheckCircle2 },
+];
 
-const StratixProgressIndicator: React.FC<StratixProgressIndicatorProps> = ({ progress }) => {
-  if (!progress.projectId || progress.status === 'idle') {
-    return null;
-  }
+const getStepStatus = (stepKey: string, currentStatus: string, events: StratixProgressEvent[]) => {
+  if (currentStatus === 'error') return 'error';
+  if (currentStatus === 'done') return 'completed';
+  
+  const stepIndex = statusSteps.findIndex(step => step.key === stepKey);
+  const currentIndex = statusSteps.findIndex(step => step.key === currentStatus);
+  
+  if (stepIndex < currentIndex) return 'completed';
+  if (stepIndex === currentIndex) return 'active';
+  return 'pending';
+};
 
-  const getStatusIcon = (type: string) => {
-    switch (type) {
-      case 'thinking':
-        return <Brain className="h-4 w-4 animate-pulse text-blue-500" />;
-      case 'search':
-        return <Search className="h-4 w-4 animate-spin text-orange-500" />;
-      case 'snippet':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'synthesis':
-        return <Loader2 className="h-4 w-4 animate-spin text-purple-500" />;
-      case 'done':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'error':
-        return <AlertCircle className="h-4 w-4 text-red-500" />;
-      default:
-        return <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />;
-    }
-  };
-
-  const getStatusColor = (type: string) => {
-    switch (type) {
-      case 'thinking': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100';
-      case 'search': return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-100';
-      case 'snippet': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100';
-      case 'synthesis': return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100';
-      case 'done': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100';
-      case 'error': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100';
-      default: return 'bg-muted text-muted-foreground';
-    }
-  };
-
-  const isActive = ['connecting', 'thinking', 'search', 'synthesis', 'running'].includes(progress.status);
-  const latestEvent = progress.events[progress.events.length - 1];
-
-  // Calculate progress percentage based on latest event
-  const getProgressPercentage = () => {
-    if (!latestEvent?.data) return 0;
-    if (typeof latestEvent.data === 'object' && 'progress_percentage' in latestEvent.data) {
-      return latestEvent.data.progress_percentage as number;
-    }
-    // Fallback based on status
-    switch (progress.status) {
-      case 'thinking': return 15;
-      case 'search': return 35;
-      case 'synthesis': return 75;
-      case 'done': return 100;
-      default: return 0;
-    }
-  };
-
-  const progressPercent = getProgressPercentage();
-
-  if (progress.status === 'complete') {
-    return null; // Hide when complete
-  }
+const StratixProgressIndicator: React.FC<StratixProgressIndicatorProps> = ({
+  status,
+  events,
+  className
+}) => {
+  const snippetEvents = events.filter(event => event.type === 'snippet' && event.data);
+  const currentProgress = events.find(e => e.progress_percentage)?.progress_percentage || 0;
 
   return (
-    <Card className="mb-4 border-l-4 border-l-primary">
-      <CardContent className="p-4">
-        <div className="flex items-center gap-3">
-          {getStatusIcon(progress.status)}
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-sm font-medium">Stratix Research</span>
-              <Badge variant="secondary" className={getStatusColor(progress.status)}>
-                {progress.status}
-              </Badge>
-              {progressPercent > 0 && (
-                <span className="text-xs text-muted-foreground ml-auto">
-                  {progressPercent}%
-                </span>
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground mb-2">
-              {latestEvent?.message || 'Processing your research request...'}
-            </p>
-            {progressPercent > 0 && (
-              <Progress value={progressPercent} className="h-2" />
-            )}
-          </div>
-          {isActive && (
-            <div className="flex space-x-1">
-              <div className="w-1 h-1 bg-primary rounded-full animate-pulse"></div>
-              <div className="w-1 h-1 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-              <div className="w-1 h-1 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
-            </div>
-          )}
+    <div className={cn("w-full space-y-4", className)}>
+      {/* Progress Bar */}
+      <div className="relative">
+        <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+          <div 
+            className="h-full bg-primary transition-all duration-500 ease-out"
+            style={{ width: `${Math.min(currentProgress, 100)}%` }}
+          />
         </div>
-        
-        {progress.events.length > 1 && (
-          <div className="mt-3 space-y-1">
-            <div className="text-xs font-medium text-muted-foreground mb-1">Recent Activity:</div>
-            {progress.events.slice(-3).map((event, index) => (
-              <div key={`${event.timestamp.getTime()}-${index}`} className="flex items-center gap-2 text-xs text-muted-foreground">
-                {getStatusIcon(event.type)}
-                <span className="flex-1">{event.message}</span>
-                <span className="text-xs opacity-60">
-                  {event.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+        <div className="flex justify-between mt-2">
+          {statusSteps.map((step, index) => {
+            const stepStatus = getStepStatus(step.key, status, events);
+            const Icon = step.icon;
+            
+            return (
+              <div key={step.key} className="flex flex-col items-center">
+                <div
+                  className={cn(
+                    "w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300",
+                    stepStatus === 'completed' && "bg-primary text-primary-foreground",
+                    stepStatus === 'active' && "bg-primary/20 text-primary border-2 border-primary",
+                    stepStatus === 'pending' && "bg-muted text-muted-foreground",
+                    stepStatus === 'error' && "bg-destructive text-destructive-foreground"
+                  )}
+                >
+                  {stepStatus === 'completed' ? (
+                    <Check className="w-4 h-4" />
+                  ) : stepStatus === 'error' ? (
+                    <XCircle className="w-4 h-4" />
+                  ) : (
+                    <Icon className={cn(
+                      "w-4 h-4",
+                      stepStatus === 'active' && "animate-pulse"
+                    )} />
+                  )}
+                </div>
+                <span className={cn(
+                  "text-xs mt-1 transition-colors duration-300",
+                  stepStatus === 'active' && "text-primary font-medium",
+                  stepStatus === 'completed' && "text-primary",
+                  stepStatus === 'pending' && "text-muted-foreground",
+                  stepStatus === 'error' && "text-destructive"
+                )}>
+                  {step.label}
                 </span>
               </div>
-            ))}
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Sources Found */}
+      {snippetEvents.length > 0 && (
+        <div className="space-y-2">
+          <h4 className="text-sm font-medium text-muted-foreground">Sources Found:</h4>
+          <div className="flex flex-wrap gap-2">
+            {snippetEvents.slice(-5).map((event, index) => {
+              const source = event.data?.source || 'Unknown Source';
+              const url = event.data?.url || '';
+              
+              // Extract domain for favicon
+              let domain = '';
+              let displayUrl = source;
+              
+              try {
+                if (url) {
+                  const urlObj = new URL(url);
+                  domain = urlObj.hostname;
+                  displayUrl = domain.replace('www.', '');
+                }
+              } catch (e) {
+                displayUrl = source.toLowerCase();
+              }
+
+              return (
+                <div
+                  key={`${event.timestamp.getTime()}-${index}`}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-full text-xs"
+                >
+                  {domain && (
+                    <img
+                      src={`https://www.google.com/s2/favicons?domain=${domain}&sz=16`}
+                      alt=""
+                      className="w-4 h-4 rounded"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  )}
+                  <span className="text-muted-foreground">
+                    {displayUrl.length > 20 ? `${displayUrl.substring(0, 17)}...` : displayUrl}
+                  </span>
+                </div>
+              );
+            })}
           </div>
-        )}
-      </CardContent>
-    </Card>
+        </div>
+      )}
+
+      {/* Status Message */}
+      {status !== 'idle' && (
+        <div className="text-center">
+          <p className={cn(
+            "text-sm",
+            status === 'error' && "text-destructive",
+            status === 'done' && "text-primary font-medium",
+            !['error', 'done'].includes(status) && "text-muted-foreground"
+          )}>
+            {status === 'error' && "Research encountered an issue"}
+            {status === 'done' && "Research completed successfully"}
+            {status === 'thinking' && "Analyzing your query and planning research..."}
+            {status === 'search' && "Searching across industry databases..."}
+            {status === 'analysis' && "Processing and analyzing data..."}
+            {status === 'synthesis' && "Synthesizing findings and insights..."}
+            {status === 'verification' && "Verifying sources and cross-referencing..."}
+          </p>
+        </div>
+      )}
+    </div>
   );
 };
 

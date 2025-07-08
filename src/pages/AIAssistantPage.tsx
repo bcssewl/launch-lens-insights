@@ -5,12 +5,14 @@ import { FloatingElements } from '@/components/landing/FloatingElements';
 import DashboardHeader from '@/components/DashboardHeader';
 import MobileDashboardHeader from '@/components/mobile/MobileDashboardHeader';
 import ChatArea from '@/components/assistant/ChatArea';
+import StratixChatArea from '@/components/assistant/StratixChatArea';
 import CanvasView from '@/components/assistant/CanvasView';
 import FullscreenChatLayout from '@/components/assistant/FullscreenChatLayout';
 import ChatSubheader from '@/components/assistant/ChatSubheader';
 import { useChatSessions } from '@/hooks/useChatSessions';
 import { useChatHistory } from '@/hooks/useChatHistory';
 import { useMessages } from '@/hooks/useMessages';
+import { useStratixMessages } from '@/hooks/useStratixMessages';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTheme } from 'next-themes';
 import { Loader2 } from 'lucide-react';
@@ -30,6 +32,13 @@ const AIAssistantPage: React.FC = () => {
   const {
     clearHistory
   } = useChatHistory(currentSessionId);
+  
+  // Use different hooks based on selected model
+  const regularMessages = useMessages(currentSessionId);
+  const stratixMessages = useStratixMessages(currentSessionId);
+  
+  // Choose which message hooks to use based on model
+  const isStratixModel = selectedModel === 'stratix';
   const {
     messages,
     isTyping,
@@ -46,7 +55,7 @@ const AIAssistantPage: React.FC = () => {
     handleCanvasPrint,
     handleCanvasPdfDownload,
     stratixProgress
-  } = useMessages(currentSessionId);
+  } = isStratixModel ? stratixMessages : regularMessages;
   const [editedCanvasContent, setEditedCanvasContent] = useState(canvasState.content);
 
   // Update edited content when canvas state changes
@@ -164,7 +173,7 @@ const AIAssistantPage: React.FC = () => {
   if (isFullscreen) {
     return (
       <FullscreenChatLayout 
-        messages={messages} 
+        messages={messages as any}
         isTyping={isTyping} 
         viewportRef={viewportRef} 
         isConfigured={isConfigured} 
@@ -217,18 +226,32 @@ const AIAssistantPage: React.FC = () => {
           
           {/* Main chat area - takes remaining height */}
           <div className="flex-1 min-h-0 bg-transparent">
-            <ChatArea 
-              messages={messages} 
-              isTyping={isTyping} 
-              viewportRef={viewportRef} 
-              onSendMessage={handleSendMessageWithSession}
-              selectedModel={selectedModel}
-              stratixProgress={stratixProgress}
-              onOpenCanvas={handleOpenCanvas} 
-              onCloseCanvas={handleCloseCanvas} 
-              onCanvasDownload={handleCanvasDownload} 
-              onCanvasPrint={handleCanvasPrint} 
-            />
+            {isStratixModel ? (
+              <StratixChatArea 
+                messages={messages as any} 
+                isTyping={isTyping} 
+                viewportRef={viewportRef} 
+                onSendMessage={handleSendMessageWithSession}
+                selectedModel={selectedModel}
+                onOpenCanvas={handleOpenCanvas} 
+                onCloseCanvas={handleCloseCanvas} 
+                onCanvasDownload={handleCanvasDownload} 
+                onCanvasPrint={handleCanvasPrint} 
+              />
+            ) : (
+              <ChatArea 
+                messages={messages as any} 
+                isTyping={isTyping} 
+                viewportRef={viewportRef} 
+                onSendMessage={handleSendMessageWithSession}
+                selectedModel={selectedModel}
+                stratixProgress={stratixProgress}
+                onOpenCanvas={handleOpenCanvas} 
+                onCloseCanvas={handleCloseCanvas} 
+                onCanvasDownload={handleCanvasDownload} 
+                onCanvasPrint={handleCanvasPrint} 
+              />
+            )}
           </div>
         </SidebarInset>
       </SidebarProvider>
@@ -241,7 +264,7 @@ const AIAssistantPage: React.FC = () => {
         title="AI Report" 
         onDownload={handleCanvasDownload} 
         onPrint={handleCanvasPdfDownload} 
-        messages={messages} 
+        messages={messages as any} 
         isTyping={isTyping} 
         viewportRef={viewportRef} 
         onSendMessage={handleSendMessageWithSession}
