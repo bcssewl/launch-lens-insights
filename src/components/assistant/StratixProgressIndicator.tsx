@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { Loader2, Search, Brain, CheckCircle, AlertCircle } from 'lucide-react';
 
 interface StratixProgressEvent {
@@ -59,6 +60,24 @@ const StratixProgressIndicator: React.FC<StratixProgressIndicatorProps> = ({ pro
   const isActive = ['connecting', 'thinking', 'search', 'synthesis', 'running'].includes(progress.status);
   const latestEvent = progress.events[progress.events.length - 1];
 
+  // Calculate progress percentage based on latest event
+  const getProgressPercentage = () => {
+    if (!latestEvent?.data) return 0;
+    if (typeof latestEvent.data === 'object' && 'progress_percentage' in latestEvent.data) {
+      return latestEvent.data.progress_percentage as number;
+    }
+    // Fallback based on status
+    switch (progress.status) {
+      case 'thinking': return 15;
+      case 'search': return 35;
+      case 'synthesis': return 75;
+      case 'done': return 100;
+      default: return 0;
+    }
+  };
+
+  const progressPercent = getProgressPercentage();
+
   if (progress.status === 'complete') {
     return null; // Hide when complete
   }
@@ -69,15 +88,23 @@ const StratixProgressIndicator: React.FC<StratixProgressIndicatorProps> = ({ pro
         <div className="flex items-center gap-3">
           {getStatusIcon(progress.status)}
           <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-2 mb-2">
               <span className="text-sm font-medium">Stratix Research</span>
               <Badge variant="secondary" className={getStatusColor(progress.status)}>
                 {progress.status}
               </Badge>
+              {progressPercent > 0 && (
+                <span className="text-xs text-muted-foreground ml-auto">
+                  {progressPercent}%
+                </span>
+              )}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground mb-2">
               {latestEvent?.message || 'Processing your research request...'}
             </p>
+            {progressPercent > 0 && (
+              <Progress value={progressPercent} className="h-2" />
+            )}
           </div>
           {isActive && (
             <div className="flex space-x-1">
@@ -90,11 +117,12 @@ const StratixProgressIndicator: React.FC<StratixProgressIndicatorProps> = ({ pro
         
         {progress.events.length > 1 && (
           <div className="mt-3 space-y-1">
+            <div className="text-xs font-medium text-muted-foreground mb-1">Recent Activity:</div>
             {progress.events.slice(-3).map((event, index) => (
               <div key={`${event.timestamp.getTime()}-${index}`} className="flex items-center gap-2 text-xs text-muted-foreground">
                 {getStatusIcon(event.type)}
-                <span>{event.message}</span>
-                <span className="ml-auto">
+                <span className="flex-1">{event.message}</span>
+                <span className="text-xs opacity-60">
                   {event.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                 </span>
               </div>

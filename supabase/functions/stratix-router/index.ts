@@ -243,41 +243,26 @@ async function processStratixResearch(
       .update({ status: 'running' })
       .eq('id', projectId);
 
-    // Stream thinking event
-    await broadcastThinkingEvent(supabase, projectId, 'thinking', {
-      message: 'Parsing query and identifying key research areas...',
-      confidence: 0.9
-    });
+    // Log thinking stage
+    await logProgressEvent(supabase, projectId, 'thinking', 'Parsing query and identifying key research areas...', 10);
+    await new Promise(resolve => setTimeout(resolve, 800));
 
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // Stream search event
-    await broadcastThinkingEvent(supabase, projectId, 'search', {
-      message: 'Accessing industry databases and market intelligence sources...',
-      queries: extractSearchQueries(prompt)
-    });
-
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // Log search stage
+    await logProgressEvent(supabase, projectId, 'search', 'Accessing industry databases and market intelligence sources...', 30);
+    await new Promise(resolve => setTimeout(resolve, 1200));
 
     // Perform research across multiple APIs
     const results = await performResearch(supabase, projectId, prompt, deepDive);
     
-    // Stream synthesis event
-    await broadcastThinkingEvent(supabase, projectId, 'synthesis', {
-      message: 'Synthesizing findings and cross-referencing data points...',
-      confidence: calculateOverallConfidence(results)
-    });
-
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    // Log synthesis stage
+    await logProgressEvent(supabase, projectId, 'synthesis', 'Synthesizing findings and cross-referencing data points...', 80);
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
     // Generate final formatted response using AI
     const finalResponse = await synthesizeResponseWithAI(supabase, projectId, results, prompt, deepDive);
     
-    // Stream completion event
-    await broadcastThinkingEvent(supabase, projectId, 'done', {
-      message: 'Research complete',
-      response: finalResponse
-    });
+    // Log completion
+    await logProgressEvent(supabase, projectId, 'done', 'Research complete', 100, { response: finalResponse });
 
     // Update project status
     await supabase
@@ -290,10 +275,7 @@ async function processStratixResearch(
   } catch (error) {
     console.error('Stratix research error:', error);
     
-    await broadcastThinkingEvent(supabase, projectId, 'error', {
-      message: `Research encountered an issue: ${error.message}`,
-      error: error.message
-    });
+    await logProgressEvent(supabase, projectId, 'error', `Research encountered an issue: ${error.message}`, 0, { error: error.message });
 
     await supabase
       .from('stratix_projects')
@@ -530,6 +512,30 @@ function synthesizeBasicResponse(results: any[], originalPrompt: string): string
   response += "*Sources and detailed citations available upon request*";
   
   return response;
+}
+
+async function logProgressEvent(
+  supabase: any,
+  projectId: string,
+  eventType: string,
+  message: string,
+  progressPercentage: number = 0,
+  data: any = {}
+) {
+  try {
+    await supabase
+      .from('stratix_events')
+      .insert({
+        project_id: projectId,
+        event_type: eventType,
+        message: message,
+        progress_percentage: progressPercentage,
+        data: data
+      });
+    console.log(`Stratix Progress [${projectId}] ${eventType}: ${message} (${progressPercentage}%)`);
+  } catch (error) {
+    console.error('Error logging progress event:', error);
+  }
 }
 
 async function broadcastThinkingEvent(

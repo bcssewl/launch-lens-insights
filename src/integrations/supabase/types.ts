@@ -834,6 +834,44 @@ export type Database = {
           },
         ]
       }
+      stratix_events: {
+        Row: {
+          created_at: string
+          data: Json | null
+          event_type: string
+          id: string
+          message: string
+          progress_percentage: number | null
+          project_id: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json | null
+          event_type: string
+          id?: string
+          message: string
+          progress_percentage?: number | null
+          project_id: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json | null
+          event_type?: string
+          id?: string
+          message?: string
+          progress_percentage?: number | null
+          project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stratix_events_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "stratix_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stratix_projects: {
         Row: {
           created_at: string

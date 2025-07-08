@@ -151,6 +151,164 @@ export const useMessages = (currentSessionId: string | null) => {
     }
   }, [currentSessionId, addMessage, isConfigured, sendMessageToN8n, canvasState]);
 
+  const [stratixProgress, setStratixProgress] = useState<{
+    projectId: string | null;
+    status: string;
+    events: Array<{ type: string; message: string; timestamp: Date; data?: any }>;
+  }>({
+    projectId: null,
+    status: 'idle',
+    events: []
+  });
+
+  const startStratixPolling = useCallback((projectId: string) => {
+    console.log('Starting Stratix polling for project:', projectId);
+    
+    // Initialize progress tracking
+    setStratixProgress({
+      projectId,
+      status: 'connecting',
+      events: [{ type: 'status', message: 'Starting research...', timestamp: new Date() }]
+    });
+    
+    let pollCount = 0;
+    const maxPollCount = 60; // Max 2 minutes (2 second intervals)
+    
+    const pollInterval = setInterval(async () => {
+      pollCount++;
+      
+      try {
+        // Check project status
+        const { data: project } = await supabase
+          .from('stratix_projects')
+          .select('status')
+          .eq('id', projectId)
+          .single();
+
+        if (!project) {
+          console.error('Project not found');
+          clearInterval(pollInterval);
+          setStratixProgress(prev => ({ ...prev, status: 'error' }));
+          return;
+        }
+
+        // Get latest events
+        const { data: events } = await supabase
+          .from('stratix_events')
+          .select('*')
+          .eq('project_id', projectId)
+          .order('created_at', { ascending: true });
+
+        if (events && events.length > 0) {
+          const latestEvent = events[events.length - 1];
+          
+          // Update progress with latest events
+          setStratixProgress(prev => ({
+            ...prev,
+            status: latestEvent.event_type,
+            events: events.map(event => ({
+              type: event.event_type,
+              message: event.message,
+              timestamp: new Date(event.created_at),
+              data: event.data
+            }))
+          }));
+
+          // Handle completion
+          if (latestEvent.event_type === 'done') {
+            clearInterval(pollInterval);
+            
+            // Get final results and display
+            const { data: results } = await supabase
+              .from('stratix_results')
+              .select(`
+                *,
+                stratix_citations (*)
+              `)
+              .eq('project_id', projectId);
+
+            if (results && results.length > 0) {
+              const synthesizedResponse = formatStratixResults(results);
+              
+              const aiResponse: Message = {
+                id: uuidv4(),
+                text: synthesizedResponse,
+                sender: 'ai',
+                timestamp: new Date(),
+              };
+              
+              setMessages(prev => [...prev, aiResponse]);
+              
+              // Save final response to history
+              if (currentSessionId) {
+                addMessage(`AI: ${synthesizedResponse}`);
+              }
+            } else if (latestEvent.data && typeof latestEvent.data === 'object' && 'response' in latestEvent.data) {
+              // Use response from event data if available
+              const response = (latestEvent.data as any).response;
+              if (typeof response === 'string') {
+                const aiResponse: Message = {
+                  id: uuidv4(),
+                  text: response,
+                  sender: 'ai',
+                  timestamp: new Date(),
+                };
+                
+                setMessages(prev => [...prev, aiResponse]);
+                
+                if (currentSessionId) {
+                  addMessage(`AI: ${response}`);
+                }
+              }
+            }
+            
+            setStratixProgress(prev => ({ ...prev, status: 'complete' }));
+            return;
+          }
+
+          // Handle errors
+          if (latestEvent.event_type === 'error') {
+            clearInterval(pollInterval);
+            setStratixProgress(prev => ({ ...prev, status: 'error' }));
+            
+            const errorMessage: Message = {
+              id: uuidv4(),
+              text: `❌ Research encountered an issue: ${latestEvent.message}`,
+              sender: 'ai',
+              timestamp: new Date(),
+            };
+            setMessages(prev => [...prev, errorMessage]);
+            return;
+          }
+        }
+
+        // Timeout after max attempts
+        if (pollCount >= maxPollCount) {
+          clearInterval(pollInterval);
+          setStratixProgress(prev => ({ ...prev, status: 'error' }));
+          
+          const timeoutMessage: Message = {
+            id: uuidv4(),
+            text: `⏱️ Research request timed out. Please try again with a more specific query.`,
+            sender: 'ai',
+            timestamp: new Date(),
+          };
+          setMessages(prev => [...prev, timeoutMessage]);
+        }
+
+      } catch (error) {
+        console.error('Error polling Stratix progress:', error);
+        clearInterval(pollInterval);
+        setStratixProgress(prev => ({ ...prev, status: 'error' }));
+      }
+    }, 2000); // Poll every 2 seconds
+
+    // Clean up on component unmount
+    return () => {
+      clearInterval(pollInterval);
+    };
+  }, [currentSessionId, addMessage]);
+
   const handleStratixRequest = useCallback(async (prompt: string, sessionId: string | null): Promise<string> => {
     if (!sessionId) {
       throw new Error('Session ID required for Stratix research');
@@ -182,8 +340,8 @@ export const useMessages = (currentSessionId: string | null) => {
         // Simple conversational response - return directly
         return data.response;
       } else if (data.type === 'research') {
-        // Research request - start streaming and return acknowledgment
-        startStratixStream(data.projectId);
+        // Research request - start polling and return acknowledgment
+        startStratixPolling(data.projectId);
         return data.acknowledgment;
       }
 
@@ -194,133 +352,7 @@ export const useMessages = (currentSessionId: string | null) => {
       console.error('Stratix request error:', error);
       throw new Error(`Failed to process Stratix request: ${error.message}`);
     }
-  }, []);
-
-  const [stratixProgress, setStratixProgress] = useState<{
-    projectId: string | null;
-    status: string;
-    events: Array<{ type: string; message: string; timestamp: Date; data?: any }>;
-  }>({
-    projectId: null,
-    status: 'idle',
-    events: []
-  });
-
-  const startStratixStream = useCallback((projectId: string) => {
-    console.log('Starting Stratix stream for project:', projectId);
-    
-    // Initialize progress tracking
-    setStratixProgress({
-      projectId,
-      status: 'connecting',
-      events: [{ type: 'status', message: 'Connecting to research stream...', timestamp: new Date() }]
-    });
-    
-    // Use the correct Supabase project URL for the stream
-    const eventSource = new EventSource(
-      `https://jtnedstugyvkfthtsumh.supabase.co/functions/v1/stratix-stream/${projectId}`
-    );
-
-    eventSource.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        console.log('Stratix stream event:', data);
-
-        // Update progress with real-time events
-        setStratixProgress(prev => ({
-          ...prev,
-          status: data.type,
-          events: [...prev.events, {
-            type: data.type,
-            message: data.msg || data.message,
-            timestamp: new Date(),
-            data: data
-          }]
-        }));
-
-        // Handle different event types
-        if (data.type === 'thinking') {
-          // Show thinking progress in UI
-        } else if (data.type === 'search') {
-          // Show search progress
-        } else if (data.type === 'snippet') {
-          // Show snippet as it arrives (Perplexity-style)
-          const snippetMessage: Message = {
-            id: uuidv4(),
-            text: `📄 **Found:** ${data.snippet}\n\n*Source: ${data.source}* | *Confidence: ${Math.round((data.confidence || 0) * 100)}%*`,
-            sender: 'ai',
-            timestamp: new Date(),
-          };
-          setMessages(prev => [...prev, snippetMessage]);
-        } else if (data.type === 'synthesis') {
-          // Show synthesis progress
-        } else if (data.type === 'done') {
-          // Handle completion
-          if (data.response) {
-            const aiResponse: Message = {
-              id: uuidv4(),
-              text: data.response,
-              sender: 'ai',
-              timestamp: new Date(),
-            };
-            
-            setMessages(prev => [...prev, aiResponse]);
-            
-            // Save final response to history
-            if (currentSessionId) {
-              addMessage(`AI: ${data.response}`);
-            }
-          } else if (data.results) {
-            const synthesizedResponse = formatStratixResults(data.results);
-            
-            const aiResponse: Message = {
-              id: uuidv4(),
-              text: synthesizedResponse,
-              sender: 'ai',
-              timestamp: new Date(),
-            };
-            
-            setMessages(prev => [...prev, aiResponse]);
-            
-            // Save final response to history
-            if (currentSessionId) {
-              addMessage(`AI: ${synthesizedResponse}`);
-            }
-          }
-          
-          setStratixProgress(prev => ({ ...prev, status: 'complete' }));
-          eventSource.close();
-        } else if (data.type === 'error') {
-          console.error('Stratix stream error:', data.message);
-          setStratixProgress(prev => ({ ...prev, status: 'error' }));
-          
-          const errorMessage: Message = {
-            id: uuidv4(),
-            text: `❌ Research encountered an issue: ${data.message}`,
-            sender: 'ai',
-            timestamp: new Date(),
-          };
-          setMessages(prev => [...prev, errorMessage]);
-          
-          eventSource.close();
-        }
-        
-      } catch (error) {
-        console.error('Error parsing Stratix stream data:', error);
-      }
-    };
-
-    eventSource.onerror = (error) => {
-      console.error('Stratix stream connection error:', error);
-      setStratixProgress(prev => ({ ...prev, status: 'error' }));
-      eventSource.close();
-    };
-
-    // Clean up on component unmount
-    return () => {
-      eventSource.close();
-    };
-  }, [currentSessionId, addMessage]);
+  }, [startStratixPolling]);
 
   const formatStratixResults = useCallback((results: any[]): string => {
     let formattedResponse = "# 📊 Stratix Research Report\n\n";
