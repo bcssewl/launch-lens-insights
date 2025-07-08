@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Message, initialMessages, formatTimestamp } from '@/constants/aiAssistant';
 import { useN8nWebhook } from '@/hooks/useN8nWebhook';
 import { useChatHistory } from '@/hooks/useChatHistory';
+import { supabase } from '@/integrations/supabase/client';
 
 export const useMessages = (currentSessionId: string | null) => {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
@@ -158,24 +159,19 @@ export const useMessages = (currentSessionId: string | null) => {
     try {
       console.log('Initiating Stratix research request...');
       
-      const response = await fetch(`${window.location.origin}/functions/v1/stratix-router`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('supabase.auth.token')}`,
-        },
-        body: JSON.stringify({
+      // Use supabase.functions.invoke to properly handle authentication
+      const { data, error } = await supabase.functions.invoke('stratix-router', {
+        body: {
           prompt,
           sessionId,
           deepDive: false // Could be made configurable
-        }),
+        }
       });
 
-      if (!response.ok) {
-        throw new Error(`Stratix request failed: ${response.statusText}`);
+      if (error) {
+        console.error('Stratix request error:', error);
+        throw new Error(`Stratix request failed: ${error.message}`);
       }
-
-      const data = await response.json();
       
       if (data.error) {
         throw new Error(data.error);
