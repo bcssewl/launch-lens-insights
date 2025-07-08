@@ -33,7 +33,10 @@ Deno.serve(async (req) => {
         message: 'Connected to Stratix research stream'
       })}\n\n`);
 
-      // Set up periodic status checks
+      // Set up periodic status checks and event streaming
+      let lastUpdateTime = new Date().toISOString();
+      let heartbeatCount = 0;
+      
       const intervalId = setInterval(async () => {
         try {
           const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -48,12 +51,17 @@ Deno.serve(async (req) => {
             .single();
 
           if (project) {
-            controller.enqueue(`data: ${JSON.stringify({
-              type: 'status',
-              timestamp: new Date().toISOString(),
-              status: project.status,
-              message: getStatusMessage(project.status)
-            })}\n\n`);
+            // Send status update if project was updated
+            if (project.updated_at !== lastUpdateTime) {
+              controller.enqueue(`data: ${JSON.stringify({
+                type: 'status',
+                timestamp: new Date().toISOString(),
+                status: project.status,
+                msg: getStatusMessage(project.status)
+              })}\n\n`);
+              
+              lastUpdateTime = project.updated_at;
+            }
 
             // If project is done, get final results
             if (project.status === 'done') {
@@ -68,7 +76,7 @@ Deno.serve(async (req) => {
               controller.enqueue(`data: ${JSON.stringify({
                 type: 'done',
                 timestamp: new Date().toISOString(),
-                message: 'Research complete',
+                msg: 'Research complete',
                 results: results
               })}\n\n`);
 
@@ -82,12 +90,23 @@ Deno.serve(async (req) => {
               controller.enqueue(`data: ${JSON.stringify({
                 type: 'error',
                 timestamp: new Date().toISOString(),
-                message: 'Research failed and needs manual review'
+                msg: 'Research failed and needs manual review'
               })}\n\n`);
 
               clearInterval(intervalId);
               controller.close();
               return;
+            }
+
+            // Send heartbeat for long-running operations
+            heartbeatCount++;
+            if (heartbeatCount >= 15 && project.status === 'running') { // Every 30 seconds
+              controller.enqueue(`data: ${JSON.stringify({
+                type: 'heartbeat',
+                timestamp: new Date().toISOString(),
+                msg: 'Still working on your research...'
+              })}\n\n`);
+              heartbeatCount = 0;
             }
           }
         } catch (error) {
@@ -95,7 +114,7 @@ Deno.serve(async (req) => {
           controller.enqueue(`data: ${JSON.stringify({
             type: 'error',
             timestamp: new Date().toISOString(),
-            message: error.message
+            msg: error.message
           })}\n\n`);
         }
       }, 2000); // Check every 2 seconds

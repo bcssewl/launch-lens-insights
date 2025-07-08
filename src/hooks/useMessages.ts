@@ -177,33 +177,44 @@ export const useMessages = (currentSessionId: string | null) => {
         throw new Error(data.error);
       }
 
-      // Start listening to the research stream
-      startStratixStream(data.projectId);
-      
-      return `🔍 **Stratix Research Agent Activated**
+      // Handle different response types
+      if (data.type === 'conversation') {
+        // Simple conversational response - return directly
+        return data.response;
+      } else if (data.type === 'research') {
+        // Research request - start streaming and return acknowledgment
+        startStratixStream(data.projectId);
+        return data.acknowledgment;
+      }
 
-I'm conducting comprehensive research on your query. This will include:
-
-- Market analysis and sizing
-- Competitor intelligence
-- Industry trends and forecasts
-- Regulatory landscape assessment
-- Strategic recommendations
-
-**Research Status:** Processing...
-
-I'll stream my findings in real-time as they become available. This typically takes 2-3 minutes for comprehensive analysis.
-
-*Project ID: ${data.projectId}*`;
+      // Fallback
+      return data.acknowledgment || "I'm processing your request...";
 
     } catch (error) {
       console.error('Stratix request error:', error);
-      throw new Error(`Failed to initiate Stratix research: ${error.message}`);
+      throw new Error(`Failed to process Stratix request: ${error.message}`);
     }
   }, []);
 
+  const [stratixProgress, setStratixProgress] = useState<{
+    projectId: string | null;
+    status: string;
+    events: Array<{ type: string; message: string; timestamp: Date; data?: any }>;
+  }>({
+    projectId: null,
+    status: 'idle',
+    events: []
+  });
+
   const startStratixStream = useCallback((projectId: string) => {
     console.log('Starting Stratix stream for project:', projectId);
+    
+    // Initialize progress tracking
+    setStratixProgress({
+      projectId,
+      status: 'connecting',
+      events: [{ type: 'status', message: 'Connecting to research stream...', timestamp: new Date() }]
+    });
     
     const eventSource = new EventSource(
       `${window.location.origin}/functions/v1/stratix-stream/${projectId}`
@@ -214,30 +225,84 @@ I'll stream my findings in real-time as they become available. This typically ta
         const data = JSON.parse(event.data);
         console.log('Stratix stream event:', data);
 
-        // Update messages with streaming research updates
-        if (data.type === 'done' && data.results) {
-          const synthesizedResponse = formatStratixResults(data.results);
-          
-          const aiResponse: Message = {
+        // Update progress with real-time events
+        setStratixProgress(prev => ({
+          ...prev,
+          status: data.type,
+          events: [...prev.events, {
+            type: data.type,
+            message: data.msg || data.message,
+            timestamp: new Date(),
+            data: data
+          }]
+        }));
+
+        // Handle different event types
+        if (data.type === 'thinking') {
+          // Show thinking progress in UI
+        } else if (data.type === 'search') {
+          // Show search progress
+        } else if (data.type === 'snippet') {
+          // Show snippet as it arrives (Perplexity-style)
+          const snippetMessage: Message = {
             id: uuidv4(),
-            text: synthesizedResponse,
+            text: `📄 **Found:** ${data.snippet}\n\n*Source: ${data.source}* | *Confidence: ${Math.round((data.confidence || 0) * 100)}%*`,
             sender: 'ai',
             timestamp: new Date(),
           };
-          
-          setMessages(prev => [...prev, aiResponse]);
-          
-          // Save final response to history
-          if (currentSessionId) {
-            addMessage(`AI: ${synthesizedResponse}`);
+          setMessages(prev => [...prev, snippetMessage]);
+        } else if (data.type === 'synthesis') {
+          // Show synthesis progress
+        } else if (data.type === 'done') {
+          // Handle completion
+          if (data.response) {
+            const aiResponse: Message = {
+              id: uuidv4(),
+              text: data.response,
+              sender: 'ai',
+              timestamp: new Date(),
+            };
+            
+            setMessages(prev => [...prev, aiResponse]);
+            
+            // Save final response to history
+            if (currentSessionId) {
+              addMessage(`AI: ${data.response}`);
+            }
+          } else if (data.results) {
+            const synthesizedResponse = formatStratixResults(data.results);
+            
+            const aiResponse: Message = {
+              id: uuidv4(),
+              text: synthesizedResponse,
+              sender: 'ai',
+              timestamp: new Date(),
+            };
+            
+            setMessages(prev => [...prev, aiResponse]);
+            
+            // Save final response to history
+            if (currentSessionId) {
+              addMessage(`AI: ${synthesizedResponse}`);
+            }
           }
           
+          setStratixProgress(prev => ({ ...prev, status: 'complete' }));
           eventSource.close();
         } else if (data.type === 'error') {
           console.error('Stratix stream error:', data.message);
+          setStratixProgress(prev => ({ ...prev, status: 'error' }));
+          
+          const errorMessage: Message = {
+            id: uuidv4(),
+            text: `❌ Research encountered an issue: ${data.message}`,
+            sender: 'ai',
+            timestamp: new Date(),
+          };
+          setMessages(prev => [...prev, errorMessage]);
+          
           eventSource.close();
         }
-        // Other event types (search, snippet, thought) could update UI in real-time
         
       } catch (error) {
         console.error('Error parsing Stratix stream data:', error);
@@ -246,6 +311,7 @@ I'll stream my findings in real-time as they become available. This typically ta
 
     eventSource.onerror = (error) => {
       console.error('Stratix stream connection error:', error);
+      setStratixProgress(prev => ({ ...prev, status: 'error' }));
       eventSource.close();
     };
 
@@ -376,6 +442,7 @@ I'll stream my findings in real-time as they become available. This typically ta
     handleCloseCanvas,
     handleCanvasDownload,
     handleCanvasPrint,
-    handleCanvasPdfDownload
+    handleCanvasPdfDownload,
+    stratixProgress
   };
 };

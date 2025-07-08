@@ -5,6 +5,7 @@ import ChatMessage from '@/components/assistant/ChatMessage';
 import TypingIndicator from '@/components/assistant/TypingIndicator';
 import PerplexityEmptyState from '@/components/assistant/PerplexityEmptyState';
 import EnhancedChatInput from '@/components/assistant/EnhancedChatInput';
+import StratixProgressIndicator from '@/components/assistant/StratixProgressIndicator';
 import { Message } from '@/constants/aiAssistant';
 
 interface ChatAreaProps {
@@ -13,6 +14,11 @@ interface ChatAreaProps {
   viewportRef: React.RefObject<HTMLDivElement>;
   onSendMessage: (message: string, attachments?: any[], selectedModel?: string) => void;
   selectedModel: string;
+  stratixProgress?: {
+    projectId: string | null;
+    status: string;
+    events: Array<{ type: string; message: string; timestamp: Date; data?: any }>;
+  };
   canvasState?: {
     isOpen: boolean;
     messageId: string | null;
@@ -30,6 +36,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   viewportRef,
   onSendMessage,
   selectedModel,
+  stratixProgress,
   onOpenCanvas,
   onCanvasDownload,
   onCanvasPrint
@@ -55,6 +62,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       <div className="flex-1 overflow-hidden">
         <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
           <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
+            {stratixProgress && <StratixProgressIndicator progress={stratixProgress} />}
             {messages.map((msg) => (
               <ChatMessage 
                 key={msg.id} 

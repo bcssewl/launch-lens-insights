@@ -44,7 +44,8 @@ const AIAssistantPage: React.FC = () => {
     handleCloseCanvas,
     handleCanvasDownload,
     handleCanvasPrint,
-    handleCanvasPdfDownload
+    handleCanvasPdfDownload,
+    stratixProgress
   } = useMessages(currentSessionId);
   const [editedCanvasContent, setEditedCanvasContent] = useState(canvasState.content);
 
@@ -222,6 +223,7 @@ const AIAssistantPage: React.FC = () => {
               viewportRef={viewportRef} 
               onSendMessage={handleSendMessageWithSession}
               selectedModel={selectedModel}
+              stratixProgress={stratixProgress}
               onOpenCanvas={handleOpenCanvas} 
               onCloseCanvas={handleCloseCanvas} 
               onCanvasDownload={handleCanvasDownload} 
