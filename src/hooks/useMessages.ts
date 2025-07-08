@@ -37,6 +37,7 @@ export const useMessages = (sessionId: string | null) => {
   const loadMessageHistory = async () => {
     if (!sessionId) return;
 
+    console.log('Loading message history for session:', sessionId);
     setIsLoadingHistory(true);
     try {
       const { data, error } = await supabase
@@ -49,6 +50,8 @@ export const useMessages = (sessionId: string | null) => {
         console.error('Error loading message history:', error);
         return;
       }
+
+      console.log('Raw message history data:', data);
 
       if (data && data.length > 0) {
         const formattedMessages: Message[] = [];
@@ -78,7 +81,11 @@ export const useMessages = (sessionId: string | null) => {
           }
         }
 
+        console.log('Formatted messages:', formattedMessages);
         setMessages(formattedMessages);
+      } else {
+        console.log('No message history found for session:', sessionId);
+        setMessages([]);
       }
     } catch (error) {
       console.error('Error in loadMessageHistory:', error);
@@ -97,6 +104,38 @@ export const useMessages = (sessionId: string | null) => {
     scrollToBottom();
   }, [messages, isTyping, scrollToBottom]);
 
+  const saveMessageToHistory = async (message: string, sender: 'user' | 'ai') => {
+    if (!sessionId) {
+      console.error('No session ID available for saving message');
+      return null;
+    }
+
+    try {
+      console.log('Saving message to history:', { sessionId, message, sender });
+      
+      const { data, error } = await supabase
+        .from('n8n_chat_history')
+        .insert({
+          session_id: sessionId,
+          message: message,
+          search_body: message
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error saving message to history:', error);
+        throw error;
+      }
+
+      console.log('Message saved successfully:', data);
+      return data;
+    } catch (error) {
+      console.error('Failed to save message:', error);
+      return null;
+    }
+  };
+
   const handleSendMessage = async (text: string, attachments?: any[], selectedModel?: string) => {
     if (!sessionId || !user) {
       console.error('No session ID or user available');
@@ -104,6 +143,8 @@ export const useMessages = (sessionId: string | null) => {
     }
 
     try {
+      console.log('Sending message:', { text, sessionId, selectedModel });
+      
       const userMessageId = uuidv4();
       const userMessage: Message = {
         id: userMessageId,
@@ -113,8 +154,12 @@ export const useMessages = (sessionId: string | null) => {
         attachments
       };
 
+      // Add user message to UI immediately
       setMessages(prev => [...prev, userMessage]);
       setIsTyping(true);
+
+      // Save user message to database
+      await saveMessageToHistory(text, 'user');
 
       // Check if Stratix model is selected
       if (selectedModel === 'stratix') {
@@ -128,6 +173,15 @@ export const useMessages = (sessionId: string | null) => {
     } catch (error) {
       console.error('Error sending message:', error);
       setIsTyping(false);
+      
+      // Show error message to user
+      const errorMessage: Message = {
+        id: uuidv4(),
+        text: 'Sorry, there was an error sending your message. Please try again.',
+        sender: 'ai' as const,
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorMessage]);
     }
   };
 
@@ -164,19 +218,8 @@ export const useMessages = (sessionId: string | null) => {
 
       setMessages(prev => [...prev, aiMessage]);
 
-      // Store messages in chat history
-      await Promise.all([
-        supabase.from('n8n_chat_history').insert({
-          session_id: sessionId,
-          message: query,
-          search_body: query
-        }),
-        supabase.from('n8n_chat_history').insert({
-          session_id: sessionId,
-          message: aiMessage.text,
-          search_body: aiMessage.text
-        })
-      ]);
+      // Save AI response to database
+      await saveMessageToHistory(aiMessage.text, 'ai');
 
     } catch (error) {
       console.error('Stratix Research Agent error:', error);
@@ -189,6 +232,7 @@ export const useMessages = (sessionId: string | null) => {
       };
 
       setMessages(prev => [...prev, errorMessage]);
+      await saveMessageToHistory(errorMessage.text, 'ai');
     } finally {
       setIsTyping(false);
     }
@@ -196,28 +240,24 @@ export const useMessages = (sessionId: string | null) => {
 
   const handleRegularChat = async (text: string, userMessageId: string, attachments?: any[]) => {
     try {
-      const webhookUrl = 'https://n8n-webhook-url.com/webhook';
+      console.log('Calling regular chat with N8N webhook');
       
-      const payload = {
-        message: text,
-        sessionId: sessionId,
-        userId: user?.id,
-        attachments: attachments || []
-      };
-
-      const response = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload)
+      // Use the N8N webhook edge function
+      const { data, error } = await supabase.functions.invoke('n8n-chat-webhook', {
+        body: {
+          message: text,
+          sessionId: sessionId,
+          userId: user?.id,
+          attachments: attachments || []
+        }
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      if (error) {
+        console.error('N8N webhook error:', error);
+        throw error;
       }
 
-      const data = await response.json();
+      console.log('N8N webhook response:', data);
       
       const aiMessage: Message = {
         id: uuidv4(),
@@ -228,19 +268,8 @@ export const useMessages = (sessionId: string | null) => {
 
       setMessages(prev => [...prev, aiMessage]);
 
-      // Store messages in chat history
-      await Promise.all([
-        supabase.from('n8n_chat_history').insert({
-          session_id: sessionId,
-          message: text,
-          search_body: text
-        }),
-        supabase.from('n8n_chat_history').insert({
-          session_id: sessionId,
-          message: aiMessage.text,
-          search_body: aiMessage.text
-        })
-      ]);
+      // Save AI response to database
+      await saveMessageToHistory(aiMessage.text, 'ai');
 
     } catch (error) {
       console.error('Regular chat error:', error);
@@ -253,12 +282,14 @@ export const useMessages = (sessionId: string | null) => {
       };
 
       setMessages(prev => [...prev, errorMessage]);
+      await saveMessageToHistory(errorMessage.text, 'ai');
     } finally {
       setIsTyping(false);
     }
   };
 
   const handleClearConversation = () => {
+    console.log('Clearing conversation for session:', sessionId);
     setMessages([]);
   };
 

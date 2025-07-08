@@ -93,8 +93,9 @@ const ChatSessionsDropdown: React.FC<ChatSessionsDropdownProps> = ({
   const handleDeleteSession = async (sessionId: string) => {
     await deleteSession(sessionId);
     if (currentSessionId === sessionId && onSessionSelect) {
-      console.log('ChatSessionsDropdown: Deleted current session, clearing selection');
-      onSessionSelect('');
+      console.log('ChatSessionsDropdown: Deleted current session, creating new one');
+      // Instead of clearing selection, create a new session
+      handleCreateSession();
     }
   };
 
@@ -224,9 +225,30 @@ const ChatSessionsDropdown: React.FC<ChatSessionsDropdownProps> = ({
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                No chat sessions yet. Create one to get started!
-              </p>
+              <div className="text-center py-4">
+                <p className="text-sm text-muted-foreground mb-3">
+                  No chat sessions yet.
+                </p>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleCreateSession}
+                  disabled={creating}
+                  className="w-full"
+                >
+                  {creating ? (
+                    <>
+                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-3 w-3 mr-1" />
+                      Create Your First Chat
+                    </>
+                  )}
+                </Button>
+              </div>
             )}
           </div>
         </ScrollArea>
