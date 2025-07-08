@@ -9,7 +9,7 @@ import ChatInputStatus from './ChatInputStatus';
 import ChatInputModals from './ChatInputModals';
 
 interface EnhancedChatInputProps {
-  onSendMessage: (message: string) => void;
+  onSendMessage: (message: string, attachments?: any[], selectedModel?: string) => void;
   isTyping: boolean;
   isCompact?: boolean;
 }
@@ -35,7 +35,7 @@ const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
 
   const handleSendMessage = () => {
     if (inputValue.trim() === '') return;
-    onSendMessage(inputValue);
+    onSendMessage(inputValue, attachedFiles, 'best'); // Default to 'best' model for now
     setInputValue('');
     clearFiles();
   };

@@ -10,8 +10,9 @@ import ProjectSelectionModal from './ProjectSelectionModal';
 import LocalFileUploader from './LocalFileUploader';
 import AttachmentsList from './AttachmentsList';
 import ModelSelectionDropdown, { AIModel } from './ModelSelectionDropdown';
+
 interface PerplexityEmptyStateProps {
-  onSendMessage: (message: string, attachments?: any[]) => void;
+  onSendMessage: (message: string, attachments?: any[], selectedModel?: string) => void;
 }
 const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
   onSendMessage
@@ -36,7 +37,7 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
   const [showLocalUploader, setShowLocalUploader] = useState(false);
   const [selectedModel, setSelectedModel] = useState<string>('best');
   const handlePromptClick = (prompt: string) => {
-    onSendMessage(prompt, attachedFiles);
+    onSendMessage(prompt, attachedFiles, selectedModel);
   };
   const handleVoiceRecording = () => {
     if (isRecording) {

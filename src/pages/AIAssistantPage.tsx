@@ -84,8 +84,8 @@ const AIAssistantPage: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isFullscreen]);
 
-  const handleSendMessageWithSession = async (text: string) => {
-    console.log('AIAssistantPage: Sending message with session:', currentSessionId);
+  const handleSendMessageWithSession = async (text: string, attachments?: any[], selectedModel?: string) => {
+    console.log('AIAssistantPage: Sending message with session:', currentSessionId, 'model:', selectedModel);
 
     // Create session if none exists
     if (!currentSessionId) {
@@ -100,10 +100,10 @@ const AIAssistantPage: React.FC = () => {
 
       // Wait a bit for the session to be set before sending the message
       setTimeout(() => {
-        handleSendMessage(text);
+        handleSendMessage(text, undefined, selectedModel);
       }, 100);
     } else {
-      handleSendMessage(text);
+      handleSendMessage(text, undefined, selectedModel);
     }
   };
 

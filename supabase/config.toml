@@ -6,3 +6,9 @@ verify_jwt = false
 
 [functions.validate-token]
 verify_jwt = false
+
+[functions.stratix-router]
+verify_jwt = true
+
+[functions.stratix-stream]
+verify_jwt = false
