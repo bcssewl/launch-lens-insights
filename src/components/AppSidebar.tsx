@@ -26,10 +26,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Logo } from '@/components/icons';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Home, Lightbulb, FolderOpen, Bot, Settings as SettingsIcon, UserCircle, LogOut, ChevronLeft, ChevronRight, Folder, ChevronDown } from 'lucide-react';
+import { Home, Lightbulb, FolderOpen, Bot, Settings as SettingsIcon, UserCircle, LogOut, ChevronLeft, ChevronRight, Folder, ChevronDown, Search } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { ChatSearch } from '@/components/sidebar/ChatSearch';
+import { ChatSearchModal } from '@/components/search/ChatSearchModal';
+import { useHotkeys } from 'react-hotkeys-hook';
 
 const priorityNavItems = [
   { href: "/dashboard/assistant", label: "Advisor", icon: Bot },
@@ -49,7 +50,15 @@ export const AppSidebar: React.FC = () => {
   const [profile, setProfile] = useState<any>(null);
   const [chatSessions, setChatSessions] = useState<any[]>([]);
   const [isMoreOpen, setIsMoreOpen] = useState(true);
-  const { setOpen, isMobile, state, toggleSidebar } = useSidebar();
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const { setOpen, isMobile, state } = useSidebar();
+  const [collapseTimer, setCollapseTimer] = useState<NodeJS.Timeout | null>(null);
+
+  // Global search hotkey
+  useHotkeys('ctrl+k,cmd+k', (e) => {
+    e.preventDefault();
+    setIsSearchOpen(true);
+  }, { enableOnFormTags: true });
 
   useEffect(() => {
     if (user) {
@@ -140,9 +149,30 @@ export const AppSidebar: React.FC = () => {
     await signOut();
   };
 
-  const handleToggleSidebar = () => {
-    toggleSidebar();
+  // Handle hover expand/collapse functionality
+  const handleMouseEnter = () => {
+    if (collapseTimer) {
+      clearTimeout(collapseTimer);
+      setCollapseTimer(null);
+    }
+    setOpen(true);
   };
+
+  const handleMouseLeave = () => {
+    const timer = setTimeout(() => {
+      setOpen(false);
+    }, 2000);
+    setCollapseTimer(timer);
+  };
+
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (collapseTimer) {
+        clearTimeout(collapseTimer);
+      }
+    };
+  }, [collapseTimer]);
 
   // Helper function to check if a chat session is currently active
   const isActiveChatSession = (sessionId: string) => {
@@ -152,7 +182,12 @@ export const AppSidebar: React.FC = () => {
 
   return (
     <div className="relative">
-      <Sidebar collapsible="icon" className="border-r border-border-subtle bg-surface">
+      <Sidebar 
+        collapsible="icon" 
+        className="border-r border-border-subtle bg-surface"
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
         <SidebarHeader className="p-4 bg-surface border-b border-border-subtle">
           <div className="flex items-center justify-center group-data-[collapsible=icon]:justify-center px-3">
             <Logo />
@@ -179,23 +214,34 @@ export const AppSidebar: React.FC = () => {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
+                
+                {/* Search Button */}
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={() => setIsSearchOpen(true)}
+                    tooltip="Search Chats (Ctrl+K)"
+                    className="group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 text-text-secondary hover:text-text-primary hover:bg-surface-elevated transition-colors cursor-pointer flex items-center gap-3 px-3 py-2 group-data-[collapsible=icon]:gap-0"
+                  >
+                    <Search className="h-5 w-5 flex-shrink-0" />
+                    <span className="group-data-[collapsible=icon]:sr-only">Search Chats</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
 
-          {/* Chats Section with Search */}
+          {/* Chat Search Modal */}
+          <ChatSearchModal 
+            isOpen={isSearchOpen}
+            onClose={() => setIsSearchOpen(false)}
+          />
+
+          {/* Chats Section - Always visible and separate from More section */}
           <SidebarGroup>
             <SidebarGroupLabel className="group-data-[collapsible=icon]:sr-only px-2 text-xs font-medium text-text-secondary/70">
               Chats
             </SidebarGroupLabel>
             <SidebarGroupContent className="px-2 group-data-[collapsible=icon]:px-1">
-              {/* Chat Search Bar */}
-              <div className="group-data-[collapsible=icon]:hidden mb-3">
-                <ChatSearch onSessionSelect={(sessionId) => {
-                  // The ChatSearch component handles navigation internally
-                }} />
-              </div>
-              
               <SidebarMenu>
                 {chatSessions.length === 0 ? (
                   <SidebarMenuItem>
@@ -212,7 +258,7 @@ export const AppSidebar: React.FC = () => {
                         tooltip={session.title}
                         className="group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 text-text-secondary hover:text-text-primary hover:bg-surface-elevated data-[active=true]:text-primary data-[active=true]:bg-surface-elevated transition-colors"
                       >
-                        <Link to={`/dashboard/assistant?session=${session.id}`} className="flex items-center px-3 py-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1">
+                        <Link to={`/dashboard/assistant?session=${session.id}`} className="flex items-center gap-3 px-3 py-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 group-data-[collapsible=icon]:gap-0">
                           <span className="group-data-[collapsible=icon]:sr-only text-sm truncate">
                             {session.title || 'New Chat'}
                           </span>
@@ -314,25 +360,6 @@ export const AppSidebar: React.FC = () => {
         <SidebarRail />
       </Sidebar>
       
-      {/* Toggle button positioned fixed on the right edge, vertically centered - only visible on desktop */}
-      {!isMobile && (
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleToggleSidebar}
-          className="fixed top-1/2 left-[var(--sidebar-width)] transform -translate-y-1/2 -translate-x-4 h-8 w-8 rounded-full bg-surface-elevated border border-border-subtle shadow-sm hover:bg-surface-elevated-2 z-50 transition-all duration-200"
-          style={{
-            left: state === "expanded" ? "var(--sidebar-width)" : "var(--sidebar-width-icon)",
-          }}
-          aria-label="Toggle sidebar"
-        >
-          {state === "expanded" ? (
-            <ChevronLeft className="h-4 w-4 text-text-secondary" />
-          ) : (
-            <ChevronRight className="h-4 w-4 text-text-secondary" />
-          )}
-        </Button>
-      )}
     </div>
   );
 };

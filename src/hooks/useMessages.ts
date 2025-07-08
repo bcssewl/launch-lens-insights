@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Message, initialMessages, formatTimestamp } from '@/constants/aiAssistant';
 import { useN8nWebhook } from '@/hooks/useN8nWebhook';
 import { useChatHistory } from '@/hooks/useChatHistory';
+import { supabase } from '@/integrations/supabase/client';
 
 export const useMessages = (currentSessionId: string | null) => {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
@@ -74,11 +75,11 @@ export const useMessages = (currentSessionId: string | null) => {
     }
   }, [currentSessionId, history, isInitialLoad]);
 
-  const handleSendMessage = useCallback(async (text?: string, messageText?: string) => {
+  const handleSendMessage = useCallback(async (text?: string, messageText?: string, selectedModel?: string) => {
     const finalMessageText = text || messageText;
     if (!finalMessageText || finalMessageText.trim() === '') return;
 
-    console.log('useMessages: Sending message in session:', currentSessionId);
+    console.log('useMessages: Sending message in session:', currentSessionId, 'with model:', selectedModel);
 
     const newUserMessage: Message = {
       id: uuidv4(),
@@ -108,13 +109,20 @@ export const useMessages = (currentSessionId: string | null) => {
     setIsTyping(true);
     
     try {
-      // Include current canvas content in the context if canvas is open
-      let contextMessage = finalMessageText;
-      if (canvasState.isOpen && canvasState.content) {
-        contextMessage = `Current document content:\n\n${canvasState.content}\n\n---\n\nUser message: ${finalMessageText}`;
+      let aiResponseText: string;
+
+      // Route to Stratix if model is 'stratix'
+      if (selectedModel === 'stratix') {
+        aiResponseText = await handleStratixRequest(finalMessageText, currentSessionId);
+      } else {
+        // Use existing N8N webhook for all other models
+        let contextMessage = finalMessageText;
+        if (canvasState.isOpen && canvasState.content) {
+          contextMessage = `Current document content:\n\n${canvasState.content}\n\n---\n\nUser message: ${finalMessageText}`;
+        }
+        
+        aiResponseText = await sendMessageToN8n(contextMessage, currentSessionId);
       }
-      
-      const aiResponseText = await sendMessageToN8n(contextMessage, currentSessionId);
       
       const aiResponse: Message = {
         id: uuidv4(),
@@ -142,6 +150,153 @@ export const useMessages = (currentSessionId: string | null) => {
       setIsTyping(false);
     }
   }, [currentSessionId, addMessage, isConfigured, sendMessageToN8n, canvasState]);
+
+  const handleStratixRequest = useCallback(async (prompt: string, sessionId: string | null): Promise<string> => {
+    if (!sessionId) {
+      throw new Error('Session ID required for Stratix research');
+    }
+
+    try {
+      console.log('Initiating Stratix research request...');
+      
+      // Use supabase.functions.invoke to properly handle authentication
+      const { data, error } = await supabase.functions.invoke('stratix-router', {
+        body: {
+          prompt,
+          sessionId,
+          deepDive: false // Could be made configurable
+        }
+      });
+
+      if (error) {
+        console.error('Stratix request error:', error);
+        throw new Error(`Stratix request failed: ${error.message}`);
+      }
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      // Start listening to the research stream
+      startStratixStream(data.projectId);
+      
+      return `🔍 **Stratix Research Agent Activated**
+
+I'm conducting comprehensive research on your query. This will include:
+
+- Market analysis and sizing
+- Competitor intelligence
+- Industry trends and forecasts
+- Regulatory landscape assessment
+- Strategic recommendations
+
+**Research Status:** Processing...
+
+I'll stream my findings in real-time as they become available. This typically takes 2-3 minutes for comprehensive analysis.
+
+*Project ID: ${data.projectId}*`;
+
+    } catch (error) {
+      console.error('Stratix request error:', error);
+      throw new Error(`Failed to initiate Stratix research: ${error.message}`);
+    }
+  }, []);
+
+  const startStratixStream = useCallback((projectId: string) => {
+    console.log('Starting Stratix stream for project:', projectId);
+    
+    const eventSource = new EventSource(
+      `${window.location.origin}/functions/v1/stratix-stream/${projectId}`
+    );
+
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log('Stratix stream event:', data);
+
+        // Update messages with streaming research updates
+        if (data.type === 'done' && data.results) {
+          const synthesizedResponse = formatStratixResults(data.results);
+          
+          const aiResponse: Message = {
+            id: uuidv4(),
+            text: synthesizedResponse,
+            sender: 'ai',
+            timestamp: new Date(),
+          };
+          
+          setMessages(prev => [...prev, aiResponse]);
+          
+          // Save final response to history
+          if (currentSessionId) {
+            addMessage(`AI: ${synthesizedResponse}`);
+          }
+          
+          eventSource.close();
+        } else if (data.type === 'error') {
+          console.error('Stratix stream error:', data.message);
+          eventSource.close();
+        }
+        // Other event types (search, snippet, thought) could update UI in real-time
+        
+      } catch (error) {
+        console.error('Error parsing Stratix stream data:', error);
+      }
+    };
+
+    eventSource.onerror = (error) => {
+      console.error('Stratix stream connection error:', error);
+      eventSource.close();
+    };
+
+    // Clean up on component unmount
+    return () => {
+      eventSource.close();
+    };
+  }, [currentSessionId, addMessage]);
+
+  const formatStratixResults = useCallback((results: any[]): string => {
+    let formattedResponse = "# 📊 Stratix Research Report\n\n";
+    
+    for (const result of results) {
+      const sectionTitle = result.section.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
+      formattedResponse += `## ${sectionTitle}\n\n`;
+      
+      if (result.content.summary) {
+        formattedResponse += `${result.content.summary}\n\n`;
+      }
+      
+      if (result.content.data) {
+        formattedResponse += "**Key Metrics:**\n";
+        for (const [key, value] of Object.entries(result.content.data)) {
+          formattedResponse += `- **${key}**: ${value}\n`;
+        }
+        formattedResponse += "\n";
+      }
+      
+      if (result.content.insights && Array.isArray(result.content.insights)) {
+        formattedResponse += "**Strategic Insights:**\n";
+        for (const insight of result.content.insights) {
+          formattedResponse += `- ${insight}\n`;
+        }
+        formattedResponse += "\n";
+      }
+      
+      // Add confidence indicator
+      const confidence = Math.round((result.confidence || 0) * 100);
+      const confidenceIcon = confidence >= 85 ? '🟢' : confidence >= 70 ? '🟡' : '🔴';
+      formattedResponse += `${confidenceIcon} *Data Confidence: ${confidence}%*\n\n`;
+      
+      if (result.provisional) {
+        formattedResponse += "⚠️ *This data is provisional and may require additional verification.*\n\n";
+      }
+    }
+    
+    formattedResponse += "---\n\n*Research completed by Stratix Research Agent*\n";
+    formattedResponse += "*Sources available upon request*";
+    
+    return formattedResponse;
+  }, []);
 
   const handleClearConversation = useCallback(() => {
     console.log('useMessages: Clearing conversation');
