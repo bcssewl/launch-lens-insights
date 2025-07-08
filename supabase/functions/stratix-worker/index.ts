@@ -72,12 +72,16 @@ async function processStratixResearch(
     // Perform research across multiple APIs
     const results = await performResearch(supabase, projectId, prompt, deepDive);
     
+    // Verify results for dual-sourcing and update confidence scores
+    await logProgressEvent(supabase, projectId, 'verification', 'Verifying data sources and cross-referencing metrics...', 75);
+    const verifiedResults = await verifyResults(supabase, projectId, results);
+    
     // Log synthesis stage
     await logProgressEvent(supabase, projectId, 'synthesis', 'Synthesizing findings and cross-referencing data points...', 80);
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     // Generate final formatted response using AI
-    const finalResponse = await synthesizeResponseWithAI(supabase, projectId, results, prompt, deepDive);
+    const finalResponse = await synthesizeResponseWithAI(supabase, projectId, verifiedResults, prompt, deepDive);
     
     // Log completion
     await logProgressEvent(supabase, projectId, 'done', 'Research complete', 100, { response: finalResponse });
@@ -709,4 +713,141 @@ function extractCitations(perplexityResults: any[], category: string): any[] {
       weight: 0.9
     }
   ];
+}
+
+async function verifyResults(
+  supabase: any,
+  projectId: string,
+  results: any[]
+): Promise<any[]> {
+  console.log('Verifying results for dual-sourcing...');
+  
+  const verifiedResults = [];
+  
+  for (const result of results) {
+    let updatedResult = { ...result };
+    let provisionalFlag = false;
+    let sourceCount = 0;
+    const uniqueDomains = new Set<string>();
+    
+    // Get citations for this result from database
+    const { data: citations } = await supabase
+      .from('stratix_citations')
+      .select('url, title')
+      .eq('result_id', result.id || '');
+    
+    // Extract unique source domains from citations and content
+    if (citations && citations.length > 0) {
+      for (const citation of citations) {
+        if (citation.url) {
+          try {
+            const domain = new URL(citation.url).hostname.replace('www.', '');
+            uniqueDomains.add(domain);
+          } catch (e) {
+            // If URL parsing fails, use the title or source name
+            uniqueDomains.add(citation.title.toLowerCase());
+          }
+        }
+      }
+    }
+    
+    // Also check source_meta for additional source information
+    if (result.source_meta?.source) {
+      const sourceName = result.source_meta.source.toLowerCase();
+      uniqueDomains.add(sourceName);
+    }
+    
+    // Check for numeric metrics in the content data
+    const hasNumericMetrics = hasNumericData(result.content);
+    sourceCount = uniqueDomains.size;
+    
+    console.log(`Result ${result.section}: ${sourceCount} unique sources found`, Array.from(uniqueDomains));
+    
+    if (hasNumericMetrics && sourceCount < 2) {
+      provisionalFlag = true;
+      
+      // Append "Needs verification" note to summary or insights
+      if (updatedResult.content.summary) {
+        updatedResult.content.summary += ' (Needs verification from additional sources)';
+      }
+      
+      if (updatedResult.content.insights && Array.isArray(updatedResult.content.insights)) {
+        updatedResult.content.insights.push('Needs verification from additional independent sources');
+      }
+      
+      console.log(`Marking ${result.section} as provisional - only ${sourceCount} source(s)`);
+    }
+    
+    // Recompute confidence score
+    const baseScore = result.confidence || 0.7;
+    let adjustedScore = baseScore;
+    
+    if (hasNumericMetrics && sourceCount >= 2) {
+      // Boost confidence for dual-sourced metrics
+      adjustedScore = Math.min(1.0, baseScore + 0.1);
+      console.log(`Boosting confidence for ${result.section}: ${baseScore} → ${adjustedScore} (dual-sourced)`);
+    }
+    
+    // Update the result object
+    updatedResult.confidence = adjustedScore;
+    updatedResult.provisional = provisionalFlag;
+    
+    // Update database record if it exists
+    if (result.id) {
+      try {
+        await supabase
+          .from('stratix_results')
+          .update({
+            confidence: adjustedScore,
+            provisional: provisionalFlag,
+            content: updatedResult.content
+          })
+          .eq('id', result.id);
+      } catch (error) {
+        console.error('Error updating result in database:', error);
+      }
+    }
+    
+    verifiedResults.push(updatedResult);
+  }
+  
+  console.log('Results verification completed');
+  return verifiedResults;
+}
+
+function hasNumericData(content: any): boolean {
+  if (!content || typeof content !== 'object') return false;
+  
+  // Check if content.data contains numeric values
+  if (content.data && typeof content.data === 'object') {
+    for (const [key, value] of Object.entries(content.data)) {
+      const valueStr = String(value).toLowerCase();
+      
+      // Look for patterns that suggest numeric metrics
+      const numericPatterns = [
+        /\$[\d,.]+(b|m|billion|million|k|thousand)/i,
+        /\d+(\.\d+)?\s*%/,
+        /\d+(\.\d+)?\s*(cagr|growth|rate)/i,
+        /\d{4}/,  // Years
+        /\d+(\.\d+)?\s*(million|billion|trillion)/i
+      ];
+      
+      const hasNumericPattern = numericPatterns.some(pattern => pattern.test(valueStr));
+      if (hasNumericPattern && !valueStr.includes('not available') && !valueStr.includes('n/a')) {
+        return true;
+      }
+    }
+  }
+  
+  // Also check summary text for numeric patterns
+  if (content.summary && typeof content.summary === 'string') {
+    const numericPatterns = [
+      /\$[\d,.]+(b|m|billion|million)/i,
+      /\d+(\.\d+)?\s*%.*\s*(growth|cagr|rate)/i
+    ];
+    
+    return numericPatterns.some(pattern => pattern.test(content.summary));
+  }
+  
+  return false;
 }
