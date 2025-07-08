@@ -799,11 +799,47 @@ export type Database = {
           },
         ]
       }
+      stratix_conversations: {
+        Row: {
+          conversation_context: Json
+          created_at: string
+          id: string
+          project_id: string | null
+          session_id: string
+          updated_at: string
+        }
+        Insert: {
+          conversation_context?: Json
+          created_at?: string
+          id?: string
+          project_id?: string | null
+          session_id: string
+          updated_at?: string
+        }
+        Update: {
+          conversation_context?: Json
+          created_at?: string
+          id?: string
+          project_id?: string | null
+          session_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stratix_conversations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "stratix_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stratix_projects: {
         Row: {
           created_at: string
           deep_dive: boolean
           id: string
+          prompt_snapshot: string | null
           status: string
           title: string
           updated_at: string
@@ -813,6 +849,7 @@ export type Database = {
           created_at?: string
           deep_dive?: boolean
           id?: string
+          prompt_snapshot?: string | null
           status?: string
           title: string
           updated_at?: string
@@ -822,10 +859,35 @@ export type Database = {
           created_at?: string
           deep_dive?: boolean
           id?: string
+          prompt_snapshot?: string | null
           status?: string
           title?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      stratix_prompts: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          slot: string
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          slot: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          slot?: string
+          updated_at?: string
         }
         Relationships: []
       }
