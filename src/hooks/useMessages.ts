@@ -216,8 +216,9 @@ export const useMessages = (currentSessionId: string | null) => {
       events: [{ type: 'status', message: 'Connecting to research stream...', timestamp: new Date() }]
     });
     
+    // Use the correct Supabase project URL for the stream
     const eventSource = new EventSource(
-      `${window.location.origin}/functions/v1/stratix-stream/${projectId}`
+      `https://jtnedstugyvkfthtsumh.supabase.co/functions/v1/stratix-stream/${projectId}`
     );
 
     eventSource.onmessage = (event) => {

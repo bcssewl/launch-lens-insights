@@ -74,8 +74,8 @@ Deno.serve(async (req) => {
         conversation_context: { original_prompt: prompt, timestamp: new Date().toISOString() }
       });
 
-    // Start the research process in the background
-    EdgeRuntime.waitUntil(processStratixResearch(supabase, project.id!, prompt, deepDive, sessionId));
+    // Start the research process immediately (not background)
+    await processStratixResearch(supabase, project.id!, prompt, deepDive, sessionId);
 
     // Return immediate conversational acknowledgment
     const acknowledgment = generateAcknowledgment(prompt);
