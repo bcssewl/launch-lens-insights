@@ -40,10 +40,11 @@ Deno.serve(async (req) => {
     const { data: project, error: projectError } = await supabase
       .from('stratix_projects')
       .insert({
-        title: prompt.slice(0, 100) + (prompt.length > 100 ? '...' : ''),
-        status: 'running',
-        deep_dive: deepDive,
-        user_id: await getUserIdFromSession(supabase, sessionId)
+        user_id: await getUserIdFromSession(supabase, sessionId),
+        session_id: sessionId,
+        prompt: prompt,
+        status: 'initializing',
+        prompt_snapshot: prompt
       })
       .select()
       .single();
@@ -55,8 +56,8 @@ Deno.serve(async (req) => {
 
     console.log('Created Stratix project:', project.id);
 
-    // Start the research process in the background
-    EdgeRuntime.waitUntil(processStratixResearch(supabase, project.id!, prompt, deepDive));
+    // Start the Railway agent research process in the background
+    EdgeRuntime.waitUntil(processRailwayResearch(supabase, project.id!, prompt, sessionId));
 
     // Return immediate response with project ID for streaming
     return new Response(JSON.stringify({
@@ -88,14 +89,14 @@ async function getUserIdFromSession(supabase: any, sessionId: string): Promise<s
   return session?.user_id || '00000000-0000-0000-0000-000000000000';
 }
 
-async function processStratixResearch(
+async function processRailwayResearch(
   supabase: any, 
   projectId: string, 
   prompt: string, 
-  deepDive: boolean
+  sessionId: string
 ) {
   try {
-    console.log('Starting Stratix research process for:', projectId);
+    console.log('Starting Railway research process for:', projectId);
     
     // Update status to running
     await supabase
@@ -103,198 +104,124 @@ async function processStratixResearch(
       .update({ status: 'running' })
       .eq('id', projectId);
 
-    // Stream thinking event
-    await broadcastThinkingEvent(supabase, projectId, 'search', {
-      message: 'Analyzing research requirements and planning data collection strategy...',
-      queries: extractSearchQueries(prompt)
-    });
+    const railwayUrl = Deno.env.get('STRATIX_RAILWAY_URL');
+    if (!railwayUrl) {
+      throw new Error('STRATIX_RAILWAY_URL not configured');
+    }
 
-    // Perform research across multiple APIs
-    const results = await performResearch(supabase, projectId, prompt, deepDive);
+    // For streaming research, use WebSocket
+    const wsUrl = railwayUrl.replace('https://', 'wss://').replace('http://', 'ws://') + '/stream';
+    console.log('Connecting to Railway WebSocket:', wsUrl);
     
-    // Stream synthesis event
-    await broadcastThinkingEvent(supabase, projectId, 'thought', {
-      message: 'Synthesizing findings and cross-referencing sources...',
-      confidence: calculateOverallConfidence(results)
-    });
-
-    // Generate final formatted response
-    const finalResponse = await synthesizeResponse(supabase, projectId, results, deepDive);
+    const ws = new WebSocket(wsUrl);
     
-    // Stream completion event
-    await broadcastThinkingEvent(supabase, projectId, 'done', {
-      message: 'Research complete',
-      response: finalResponse
-    });
+    ws.onopen = () => {
+      console.log('Connected to Railway agent');
+      ws.send(JSON.stringify({
+        query: prompt,
+        context: {
+          platform: "optivise",
+          session_id: sessionId
+        }
+      }));
+    };
 
-    // Update project status
-    await supabase
-      .from('stratix_projects')
-      .update({ status: 'done' })
-      .eq('id', projectId);
+    ws.onmessage = async (event) => {
+      try {
+        const message = JSON.parse(event.data);
+        console.log('Railway message:', message);
+        
+        // Store event for streaming
+        await supabase
+          .from('stratix_events')
+          .insert({
+            project_id: projectId,
+            event_type: message.type,
+            event_data: message
+          });
 
-    console.log('Stratix research completed for:', projectId);
+        // Handle different message types
+        switch (message.type) {
+          case 'source_discovered':
+            // Store citation
+            await supabase
+              .from('stratix_citations')
+              .insert({
+                project_id: projectId,
+                source_name: message.source_name,
+                source_url: message.source_url,
+                agent: message.agent,
+                clickable: message.clickable !== false
+              });
+            break;
+            
+          case 'research_complete':
+            // Store final result
+            await supabase
+              .from('stratix_results')
+              .insert({
+                project_id: projectId,
+                content: message.final_answer,
+                agents_consulted: message.agents_consulted || [],
+                primary_agent: message.primary_agent,
+                confidence: message.confidence,
+                methodology: message.methodology,
+                processing_time: message.processing_time,
+                analysis_depth: message.analysis_depth
+              });
+            
+            // Store clickable sources
+            if (message.clickable_sources) {
+              for (const source of message.clickable_sources) {
+                await supabase
+                  .from('stratix_citations')
+                  .insert({
+                    project_id: projectId,
+                    source_name: source.name,
+                    source_url: source.url,
+                    source_type: source.type || 'Research',
+                    clickable: true
+                  });
+              }
+            }
+            
+            // Update project status to done
+            await supabase
+              .from('stratix_projects')
+              .update({ 
+                status: 'done',
+                completed_at: new Date().toISOString()
+              })
+              .eq('id', projectId);
+            
+            ws.close();
+            break;
+        }
+      } catch (error) {
+        console.error('Error processing Railway message:', error);
+      }
+    };
+
+    ws.onerror = (error) => {
+      console.error('Railway WebSocket error:', error);
+      throw new Error('WebSocket connection failed');
+    };
+
+    ws.onclose = () => {
+      console.log('Railway WebSocket closed');
+    };
+
+    console.log('Railway research initiated for:', projectId);
 
   } catch (error) {
-    console.error('Stratix research error:', error);
+    console.error('Railway research error:', error);
     
-    await broadcastThinkingEvent(supabase, projectId, 'error', {
-      message: `Research failed: ${error.message}`,
-      error: error.message
-    });
-
+    // Update status to error
     await supabase
       .from('stratix_projects')
-      .update({ status: 'needs_review' })
+      .update({ status: 'error' })
       .eq('id', projectId);
   }
 }
 
-function extractSearchQueries(prompt: string): string[] {
-  // Simple query extraction - in production, use NLP
-  const queries = [
-    `market analysis ${prompt}`,
-    `industry trends ${prompt}`,
-    `competitor research ${prompt}`,
-    `financial data ${prompt}`
-  ];
-  return queries.slice(0, 3); // Limit to 3 initial queries
-}
-
-async function performResearch(
-  supabase: any, 
-  projectId: string, 
-  prompt: string, 
-  deepDive: boolean
-): Promise<APIResponse[]> {
-  const results: APIResponse[] = [];
-  
-  // Mock research results - replace with actual API calls
-  const mockResults = await generateMockResearchData(prompt, deepDive);
-  
-  for (const result of mockResults) {
-    // Store result in database
-    const { data: dbResult } = await supabase
-      .from('stratix_results')
-      .insert({
-        project_id: projectId,
-        section: result.section,
-        content: result.content,
-        confidence: result.confidence,
-        provisional: result.confidence < 0.7
-      })
-      .select()
-      .single();
-
-    // Store citations
-    for (const citation of result.citations) {
-      await supabase
-        .from('stratix_citations')
-        .insert({
-          result_id: dbResult.id,
-          citation_key: citation.key,
-          title: citation.title,
-          url: citation.url,
-          weight: citation.weight
-        });
-    }
-
-    // Stream snippet event
-    await broadcastThinkingEvent(supabase, projectId, 'snippet', {
-      message: `Found ${result.section} data`,
-      snippet: result.content.summary || 'Data collected',
-      source: result.source_meta.source,
-      confidence: result.confidence
-    });
-
-    results.push(result);
-  }
-
-  return results;
-}
-
-async function generateMockResearchData(prompt: string, deepDive: boolean) {
-  // Mock data structure - replace with real API integration
-  return [
-    {
-      section: 'market_size',
-      content: {
-        summary: `Market analysis for ${prompt}`,
-        data: { size: '$2.4B', growth: '15.2%', year: '2024' },
-        insights: ['Growing demand', 'Emerging technologies', 'Regulatory support']
-      },
-      confidence: 0.85,
-      source_meta: { source: 'industry_reports', timestamp: new Date().toISOString(), confidence: 0.85 },
-      citations: [
-        { key: '[1]', title: 'Industry Report 2024', url: 'https://example.com/report', weight: 1.0 }
-      ]
-    },
-    {
-      section: 'competitor_analysis', 
-      content: {
-        summary: `Competitive landscape for ${prompt}`,
-        data: { leaders: ['CompanyA', 'CompanyB'], market_share: { CompanyA: '25%', CompanyB: '18%' } },
-        insights: ['Market fragmentation', 'Innovation focus', 'Price competition']
-      },
-      confidence: 0.78,
-      source_meta: { source: 'crunchbase', timestamp: new Date().toISOString(), confidence: 0.78 },
-      citations: [
-        { key: '[2]', title: 'Market Analysis Q4 2024', url: 'https://example.com/analysis', weight: 0.9 }
-      ]
-    }
-  ];
-}
-
-function calculateOverallConfidence(results: APIResponse[]): number {
-  if (results.length === 0) return 0;
-  return results.reduce((sum, r) => sum + r.source_meta.confidence, 0) / results.length;
-}
-
-async function synthesizeResponse(
-  supabase: any,
-  projectId: string, 
-  results: APIResponse[], 
-  deepDive: boolean
-): Promise<string> {
-  // Simple synthesis - in production, use GPT-4o
-  let response = "# Research Summary\n\n";
-  
-  for (const result of results) {
-    response += `## ${result.section.replace('_', ' ').toUpperCase()}\n\n`;
-    response += `${result.content.summary}\n\n`;
-    
-    if (result.content.data) {
-      response += "**Key Metrics:**\n";
-      for (const [key, value] of Object.entries(result.content.data)) {
-        response += `- ${key}: ${value}\n`;
-      }
-      response += "\n";
-    }
-    
-    if (result.content.insights) {
-      response += "**Key Insights:**\n";
-      for (const insight of result.content.insights) {
-        response += `- ${insight}\n`;
-      }
-      response += "\n";
-    }
-    
-    response += `*Confidence: ${Math.round(result.confidence * 100)}%*\n\n`;
-  }
-  
-  return response;
-}
-
-async function broadcastThinkingEvent(
-  supabase: any,
-  projectId: string,
-  eventType: string,
-  payload: any
-) {
-  // In a real implementation, this would broadcast to SSE clients
-  // For now, we'll just log the thinking events
-  console.log(`Stratix Thinking [${projectId}] ${eventType}:`, payload);
-  
-  // Could store thinking events in a separate table for debugging
-  // or broadcast via Supabase realtime channels
-}
+// Old functions removed - now using Railway agent directly

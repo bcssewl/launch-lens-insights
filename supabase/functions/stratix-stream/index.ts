@@ -33,12 +33,94 @@ Deno.serve(async (req) => {
         message: 'Connected to Stratix research stream'
       })}\n\n`);
 
-      // Set up periodic status checks
+      let lastEventId = 0;
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+      // Set up periodic checks for new events
       const intervalId = setInterval(async () => {
         try {
-          const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-          const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-          const supabase = createClient(supabaseUrl, supabaseServiceKey);
+          // Get new events since last check
+          const { data: events } = await supabase
+            .from('stratix_events')
+            .select('*')
+            .eq('project_id', projectId)
+            .gt('id', lastEventId)
+            .order('created_at', { ascending: true });
+
+          // Send new events
+          if (events && events.length > 0) {
+            for (const event of events) {
+              const eventData = event.event_data;
+              
+              // Convert Railway agent events to Stratix format
+              let stratixEvent;
+              switch (eventData.type) {
+                case 'started':
+                  stratixEvent = { 
+                    type: 'status', 
+                    status: 'searching', 
+                    message: 'Initializing research...' 
+                  };
+                  break;
+                case 'agents_selected':
+                  stratixEvent = { 
+                    type: 'status', 
+                    status: 'reading', 
+                    message: eventData.message || 'Consulting specialists...' 
+                  };
+                  break;
+                case 'agent_started':
+                  stratixEvent = { 
+                    type: 'status', 
+                    status: 'reading', 
+                    message: `${eventData.agent_name || eventData.agent} analyzing...` 
+                  };
+                  break;
+                case 'source_discovered':
+                  stratixEvent = { 
+                    type: 'snippet', 
+                    source: eventData.source_name,
+                    url: eventData.source_url,
+                    message: `Found: ${eventData.source_name}`
+                  };
+                  break;
+                case 'research_progress':
+                  stratixEvent = { 
+                    type: 'thought', 
+                    message: eventData.content_preview || 'Processing research data...' 
+                  };
+                  break;
+                case 'synthesis_started':
+                  stratixEvent = { 
+                    type: 'status', 
+                    status: 'synthesizing', 
+                    message: 'Synthesizing insights...' 
+                  };
+                  break;
+                case 'research_complete':
+                  stratixEvent = { 
+                    type: 'done', 
+                    message: 'Research completed successfully',
+                    content: eventData.final_answer 
+                  };
+                  break;
+                default:
+                  stratixEvent = { 
+                    type: 'status', 
+                    message: eventData.message || `Status: ${eventData.type}` 
+                  };
+              }
+
+              controller.enqueue(`data: ${JSON.stringify({
+                ...stratixEvent,
+                timestamp: event.created_at
+              })}\n\n`);
+
+              lastEventId = Math.max(lastEventId, parseInt(event.id));
+            }
+          }
 
           // Check project status
           const { data: project } = await supabase
@@ -48,43 +130,8 @@ Deno.serve(async (req) => {
             .single();
 
           if (project) {
-            controller.enqueue(`data: ${JSON.stringify({
-              type: 'status',
-              timestamp: new Date().toISOString(),
-              status: project.status,
-              message: getStatusMessage(project.status)
-            })}\n\n`);
-
-            // If project is done, get final results
-            if (project.status === 'done') {
-              const { data: results } = await supabase
-                .from('stratix_results')
-                .select(`
-                  *,
-                  stratix_citations (*)
-                `)
-                .eq('project_id', projectId);
-
-              controller.enqueue(`data: ${JSON.stringify({
-                type: 'done',
-                timestamp: new Date().toISOString(),
-                message: 'Research complete',
-                results: results
-              })}\n\n`);
-
-              clearInterval(intervalId);
-              controller.close();
-              return;
-            }
-
-            // If project failed, send error and close
-            if (project.status === 'needs_review') {
-              controller.enqueue(`data: ${JSON.stringify({
-                type: 'error',
-                timestamp: new Date().toISOString(),
-                message: 'Research failed and needs manual review'
-              })}\n\n`);
-
+            // If project is done or error, close stream
+            if (project.status === 'done' || project.status === 'error') {
               clearInterval(intervalId);
               controller.close();
               return;
@@ -98,7 +145,7 @@ Deno.serve(async (req) => {
             message: error.message
           })}\n\n`);
         }
-      }, 2000); // Check every 2 seconds
+      }, 1000); // Check every second for real-time updates
 
       // Clean up on stream close
       return () => {
