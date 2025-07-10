@@ -14,6 +14,7 @@ import { useMessages } from '@/hooks/useMessages';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTheme } from 'next-themes';
 import { Loader2 } from 'lucide-react';
+import type { AIModel } from '@/components/assistant/ModelSelectionDropdown';
 
 const AIAssistantPage: React.FC = () => {
   const isMobile = useIsMobile();
@@ -139,6 +140,12 @@ const AIAssistantPage: React.FC = () => {
     // TODO: You might want to save this to the backend or update the original message
   };
 
+  // Fixed model selection handler
+  const handleModelSelect = (model: AIModel) => {
+    console.log('AIAssistantPage: Model selected:', model.id);
+    setSelectedModel(model.id);
+  };
+
   // Show loading state while history is being loaded
   if (isLoadingHistory) {
     return (
@@ -208,7 +215,7 @@ const AIAssistantPage: React.FC = () => {
                   onClearConversation={handleClearConversationWithHistory} 
                   onSessionSelect={handleSessionSelect}
                   selectedModel={selectedModel}
-                  onModelSelect={setSelectedModel}
+                  onModelSelect={handleModelSelect}
                 />
               </div>
             </div>

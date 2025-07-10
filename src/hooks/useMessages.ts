@@ -177,7 +177,7 @@ export const useMessages = (currentSessionId: string | null) => {
         throw new Error(data.error);
       }
 
-      // Start listening to the research stream
+      // Start listening to the research stream with proper authentication
       startStratixStream(data.projectId);
       
       return `🔍 **Stratix Research Agent Activated**
@@ -205,90 +205,107 @@ I'll stream my findings in real-time as they become available. This typically ta
   const startStratixStream = useCallback((projectId: string) => {
     console.log('Starting Stratix stream for project:', projectId);
     
-    const eventSource = new EventSource(
-      `${window.location.origin}/functions/v1/stratix-stream/${projectId}`
-    );
-
-    eventSource.onmessage = (event) => {
+    // Use authenticated polling instead of EventSource since we can't send auth headers with EventSource
+    let pollInterval: NodeJS.Timeout;
+    let lastEventId = 0;
+    
+    const pollForUpdates = async () => {
       try {
-        const data = JSON.parse(event.data);
-        console.log('Stratix stream event:', data);
+        // Get new events from the project
+        const { data: events, error } = await supabase
+          .from('stratix_events')
+          .select('*')
+          .eq('project_id', projectId)
+          .gt('id', lastEventId)
+          .order('created_at', { ascending: true });
 
-        // Update messages with streaming research updates
-        if (data.type === 'done' && data.results) {
-          const synthesizedResponse = formatStratixResults(data.results);
-          
-          const aiResponse: Message = {
-            id: uuidv4(),
-            text: synthesizedResponse,
-            sender: 'ai',
-            timestamp: new Date(),
-          };
-          
-          setMessages(prev => [...prev, aiResponse]);
-          
-          // Save final response to history
-          if (currentSessionId) {
-            addMessage(`AI: ${synthesizedResponse}`);
-          }
-          
-          eventSource.close();
-        } else if (data.type === 'error') {
-          console.error('Stratix stream error:', data.message);
-          eventSource.close();
+        if (error) {
+          console.error('Error fetching Stratix events:', error);
+          return;
         }
-        // Other event types (search, snippet, thought) could update UI in real-time
-        
+
+        // Process new events
+        if (events && events.length > 0) {
+          for (const event of events) {
+            const eventData = event.event_data;
+            console.log('Stratix event:', eventData);
+
+            // Handle different event types
+            if (eventData.type === 'research_complete') {
+              // Final result received
+              const finalAnswer = eventData.final_answer || eventData.content;
+              if (finalAnswer) {
+                const aiResponse: Message = {
+                  id: uuidv4(),
+                  text: formatStratixResults(finalAnswer, eventData),
+                  sender: 'ai',
+                  timestamp: new Date(),
+                };
+                
+                setMessages(prev => [...prev, aiResponse]);
+                
+                // Save final response to history
+                if (currentSessionId) {
+                  addMessage(`AI: ${aiResponse.text}`);
+                }
+              }
+              
+              // Stop polling when research is complete
+              clearInterval(pollInterval);
+              return;
+            }
+            
+            lastEventId = Math.max(lastEventId, parseInt(event.id));
+          }
+        }
+
+        // Check if project is complete
+        const { data: project } = await supabase
+          .from('stratix_projects')
+          .select('status')
+          .eq('id', projectId)
+          .single();
+
+        if (project && (project.status === 'done' || project.status === 'error')) {
+          clearInterval(pollInterval);
+        }
       } catch (error) {
-        console.error('Error parsing Stratix stream data:', error);
+        console.error('Error polling Stratix updates:', error);
       }
     };
 
-    eventSource.onerror = (error) => {
-      console.error('Stratix stream connection error:', error);
-      eventSource.close();
-    };
+    // Poll every 2 seconds for updates
+    pollInterval = setInterval(pollForUpdates, 2000);
+    
+    // Initial poll
+    pollForUpdates();
 
     // Clean up on component unmount
     return () => {
-      eventSource.close();
+      clearInterval(pollInterval);
     };
   }, [currentSessionId, addMessage]);
 
-  const formatStratixResults = useCallback((results: any[]): string => {
+  const formatStratixResults = useCallback((content: string, eventData?: any): string => {
     let formattedResponse = "# 📊 Stratix Research Report\n\n";
     
-    for (const result of results) {
-      const sectionTitle = result.section.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
-      formattedResponse += `## ${sectionTitle}\n\n`;
-      
-      if (result.content.summary) {
-        formattedResponse += `${result.content.summary}\n\n`;
+    // Add the main content
+    formattedResponse += content + "\n\n";
+    
+    // Add metadata if available
+    if (eventData) {
+      if (eventData.confidence) {
+        const confidence = Math.round((eventData.confidence || 0) * 100);
+        const confidenceIcon = confidence >= 85 ? '🟢' : confidence >= 70 ? '🟡' : '🔴';
+        formattedResponse += `${confidenceIcon} *Research Confidence: ${confidence}%*\n\n`;
       }
       
-      if (result.content.data) {
-        formattedResponse += "**Key Metrics:**\n";
-        for (const [key, value] of Object.entries(result.content.data)) {
-          formattedResponse += `- **${key}**: ${value}\n`;
-        }
-        formattedResponse += "\n";
+      if (eventData.agents_consulted && Array.isArray(eventData.agents_consulted)) {
+        formattedResponse += "**Agents Consulted:** " + eventData.agents_consulted.join(', ') + "\n\n";
       }
       
-      if (result.content.insights && Array.isArray(result.content.insights)) {
-        formattedResponse += "**Strategic Insights:**\n";
-        for (const insight of result.content.insights) {
-          formattedResponse += `- ${insight}\n`;
-        }
-        formattedResponse += "\n";
-      }
-      
-      // Add confidence indicator
-      const confidence = Math.round((result.confidence || 0) * 100);
-      const confidenceIcon = confidence >= 85 ? '🟢' : confidence >= 70 ? '🟡' : '🔴';
-      formattedResponse += `${confidenceIcon} *Data Confidence: ${confidence}%*\n\n`;
-      
-      if (result.provisional) {
-        formattedResponse += "⚠️ *This data is provisional and may require additional verification.*\n\n";
+      if (eventData.methodology) {
+        formattedResponse += "**Methodology:** " + eventData.methodology + "\n\n";
       }
     }
     
