@@ -1,7 +1,6 @@
 
 export const createProfessionalStyles = (): string => `
 /* Professional Report Styles */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@400;500;600;700&display=swap');
 
 /* Global Variables */
 :root {
@@ -32,7 +31,7 @@ export const createProfessionalStyles = (): string => `
 
 /* Base Document Styles */
 .professional-report-container {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'Arial', sans-serif;
   font-size: 11pt;
   line-height: 1.6;
   color: var(--gray-800);
@@ -103,7 +102,7 @@ export const createProfessionalStyles = (): string => `
 }
 
 .brand-text h1 {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Arial', sans-serif;
   font-size: 24pt;
   font-weight: 700;
   color: var(--gray-900);
@@ -144,7 +143,7 @@ export const createProfessionalStyles = (): string => `
 }
 
 .idea-title {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Arial', sans-serif;
   font-size: 36pt;
   font-weight: 700;
   color: var(--gray-900);
@@ -313,7 +312,7 @@ export const createProfessionalStyles = (): string => `
 }
 
 .toc-title {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Arial', sans-serif;
   font-size: 32pt;
   font-weight: 700;
   color: var(--gray-900);
@@ -432,7 +431,7 @@ export const createProfessionalStyles = (): string => `
 }
 
 .section-title {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Arial', sans-serif;
   font-size: 28pt;
   font-weight: 700;
   color: var(--gray-900);

@@ -166,7 +166,7 @@
 @layer components {
   /* Scoped Canvas Typography - Consulting Grade */
   .canvas-content {
-    font-family: 'Playfair Display', serif;
+    font-family: 'Arial', sans-serif;
     line-height: 1.75;
     color: hsl(var(--foreground));
   }

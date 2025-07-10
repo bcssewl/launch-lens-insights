@@ -152,8 +152,6 @@ const CanvasPrintView: React.FC<CanvasPrintViewProps> = ({
 
       {/* Enhanced Print Styles */}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        
         .light {
           color-scheme: light !important;
         }
@@ -164,19 +162,19 @@ const CanvasPrintView: React.FC<CanvasPrintViewProps> = ({
             margin: 1.5cm 2cm 2cm 2cm;
             @bottom-center {
               content: counter(page);
-              font-family: 'Inter', sans-serif;
+              font-family: 'Arial', sans-serif;
               font-size: 10pt;
               color: #6b7280;
             }
             @bottom-left {
               content: "AI Generated Report";
-              font-family: 'Inter', sans-serif;
+              font-family: 'Arial', sans-serif;
               font-size: 10pt;
               color: #6b7280;
             }
             @bottom-right {
               content: "${metadata.generatedDate}";
-              font-family: 'Inter', sans-serif;
+              font-family: 'Arial', sans-serif;
               font-size: 10pt;
               color: #6b7280;
             }
@@ -191,7 +189,7 @@ const CanvasPrintView: React.FC<CanvasPrintViewProps> = ({
           }
           
           body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-family: 'Arial', sans-serif;
             font-size: 11pt;
             line-height: 1.5;
             color: #1f2937 !important;

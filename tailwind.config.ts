@@ -21,7 +21,7 @@ export default {
       fontFamily: {
         sans: ["Inter", "system-ui", "-apple-system", "sans-serif"],
         heading: ["Inter", "system-ui", "-apple-system", "sans-serif"],
-        canvas: ["Playfair Display", "serif"], // For canvas consulting typography
+        canvas: ["Arial", "sans-serif"], // For canvas consulting typography
       },
       fontWeight: {
         light: "300",

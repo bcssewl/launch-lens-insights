@@ -131,8 +131,7 @@ export const createChatGptPdfHtml = (content: ProcessedContent, metadata: {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${content.title}</title>
     <style>
-        /* Import Inter font */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+        /* Arial font for canvas content */
         
         /* Global reset and base styles */
         * {
@@ -142,7 +141,7 @@ export const createChatGptPdfHtml = (content: ProcessedContent, metadata: {
         }
         
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-family: 'Arial', sans-serif;
             font-size: 11pt;
             line-height: 1.5;
             color: #1f2937;
@@ -156,19 +155,19 @@ export const createChatGptPdfHtml = (content: ProcessedContent, metadata: {
                 margin: 20mm;
                 @bottom-left {
                     content: "${content.title}";
-                    font-family: 'Inter', sans-serif;
+                    font-family: 'Arial', sans-serif;
                     font-size: 9pt;
                     color: #6b7280;
                 }
                 @bottom-center {
                     content: counter(page) " / " counter(pages);
-                    font-family: 'Inter', sans-serif;
+                    font-family: 'Arial', sans-serif;
                     font-size: 9pt;
                     color: #6b7280;
                 }
                 @bottom-right {
                     content: "${metadata.generatedDate}";
-                    font-family: 'Inter', sans-serif;
+                    font-family: 'Arial', sans-serif;
                     font-size: 9pt;
                     color: #6b7280;
                 }
