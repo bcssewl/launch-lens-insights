@@ -227,13 +227,13 @@ I'll stream my findings in real-time as they become available. This typically ta
         // Process new events
         if (events && events.length > 0) {
           for (const event of events) {
-            const eventData = event.event_data;
+            const eventData = event.event_data as any;
             console.log('Stratix event:', eventData);
 
             // Handle different event types
-            if (eventData.type === 'research_complete') {
+            if (eventData?.type === 'research_complete') {
               // Final result received
-              const finalAnswer = eventData.final_answer || eventData.content;
+              const finalAnswer = eventData?.final_answer || eventData?.content;
               if (finalAnswer) {
                 const aiResponse: Message = {
                   id: uuidv4(),

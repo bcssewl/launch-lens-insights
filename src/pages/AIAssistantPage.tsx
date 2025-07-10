@@ -141,9 +141,9 @@ const AIAssistantPage: React.FC = () => {
   };
 
   // Fixed model selection handler
-  const handleModelSelect = (model: AIModel) => {
-    console.log('AIAssistantPage: Model selected:', model.id);
-    setSelectedModel(model.id);
+  const handleModelSelect = (modelId: string) => {
+    console.log('AIAssistantPage: Model selected:', modelId);
+    setSelectedModel(modelId);
   };
 
   // Show loading state while history is being loaded
