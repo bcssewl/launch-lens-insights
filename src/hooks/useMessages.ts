@@ -207,7 +207,7 @@ I'll stream my findings in real-time as they become available. This typically ta
     
     // Use authenticated polling instead of EventSource since we can't send auth headers with EventSource
     let pollInterval: NodeJS.Timeout;
-    let lastEventId = 0;
+    let lastEventTime = new Date().toISOString();
     
     const pollForUpdates = async () => {
       try {
@@ -216,7 +216,7 @@ I'll stream my findings in real-time as they become available. This typically ta
           .from('stratix_events')
           .select('*')
           .eq('project_id', projectId)
-          .gt('id', lastEventId)
+          .gt('created_at', lastEventTime)
           .order('created_at', { ascending: true });
 
         if (error) {
@@ -255,7 +255,8 @@ I'll stream my findings in real-time as they become available. This typically ta
               return;
             }
             
-            lastEventId = Math.max(lastEventId, parseInt(event.id));
+            // Update last event time to newest event's timestamp
+            lastEventTime = event.created_at;
           }
         }
 
