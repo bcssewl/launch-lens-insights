@@ -180,21 +180,9 @@ export const useMessages = (currentSessionId: string | null) => {
       // Start listening to the research stream with proper authentication
       startStratixStream(data.projectId);
       
-      return `🔍 **Stratix Research Agent Activated**
+      return `🔍 **Starting Stratix Research...**
 
-I'm conducting comprehensive research on your query. This will include:
-
-- Market analysis and sizing
-- Competitor intelligence
-- Industry trends and forecasts
-- Regulatory landscape assessment
-- Strategic recommendations
-
-**Research Status:** Processing...
-
-I'll stream my findings in real-time as they become available. This typically takes 2-3 minutes for comprehensive analysis.
-
-*Project ID: ${data.projectId}*`;
+Initializing comprehensive market research and analysis.`;
 
     } catch (error) {
       console.error('Stratix request error:', error);
@@ -205,9 +193,34 @@ I'll stream my findings in real-time as they become available. This typically ta
   const startStratixStream = useCallback((projectId: string) => {
     console.log('Starting Stratix stream for project:', projectId);
     
-    // Use authenticated polling instead of EventSource since we can't send auth headers with EventSource
     let pollInterval: NodeJS.Timeout;
     let lastEventTime = new Date().toISOString();
+    let progressMessageId: string | null = null;
+    let currentProgress = '';
+    
+    const updateProgressMessage = (newContent: string) => {
+      currentProgress = newContent;
+      setMessages(prev => {
+        if (!progressMessageId) {
+          // Create new progress message
+          const progressMessage: Message = {
+            id: uuidv4(),
+            text: newContent,
+            sender: 'ai',
+            timestamp: new Date(),
+          };
+          progressMessageId = progressMessage.id;
+          return [...prev, progressMessage];
+        } else {
+          // Update existing progress message
+          return prev.map(msg => 
+            msg.id === progressMessageId 
+              ? { ...msg, text: newContent, timestamp: new Date() }
+              : msg
+          );
+        }
+      });
+    };
     
     const pollForUpdates = async () => {
       try {
@@ -230,29 +243,61 @@ I'll stream my findings in real-time as they become available. This typically ta
             const eventData = event.event_data as any;
             console.log('Stratix event:', eventData);
 
-            // Handle different event types
-            if (eventData?.type === 'research_complete') {
-              // Final result received
-              const finalAnswer = eventData?.final_answer || eventData?.content;
-              if (finalAnswer) {
-                const aiResponse: Message = {
-                  id: uuidv4(),
-                  text: formatStratixResults(finalAnswer, eventData),
-                  sender: 'ai',
-                  timestamp: new Date(),
-                };
+            // Handle different event types with real-time updates
+            switch (eventData?.type) {
+              case 'agent_start':
+                updateProgressMessage(`🤖 **${eventData.agent || 'Research Agent'} Activated**\n\n${eventData.message || 'Starting analysis...'}`);
+                break;
                 
-                setMessages(prev => [...prev, aiResponse]);
+              case 'source_discovered':
+                updateProgressMessage(`${currentProgress}\n\n📖 **Source Found:** ${eventData.source_name}\n*${eventData.agent || 'Agent'} is analyzing this source...*`);
+                break;
                 
-                // Save final response to history
-                if (currentSessionId) {
-                  addMessage(`AI: ${aiResponse.text}`);
+              case 'agent_progress':
+                updateProgressMessage(`${currentProgress}\n\n⚡ **${eventData.agent || 'Agent'} Update:** ${eventData.message || 'Processing...'}`);
+                break;
+                
+              case 'intermediate_result':
+                updateProgressMessage(`${currentProgress}\n\n📊 **Preliminary Finding:**\n${eventData.content || eventData.message}`);
+                break;
+                
+              case 'research_complete':
+                // Final result received - replace progress with final result
+                const finalAnswer = eventData?.final_answer || eventData?.content;
+                if (finalAnswer) {
+                  formatStratixResults(finalAnswer, eventData, projectId).then(formattedText => {
+                    const finalResponse: Message = {
+                      id: uuidv4(),
+                      text: formattedText,
+                      sender: 'ai',
+                      timestamp: new Date(),
+                    };
+                    
+                    setMessages(prev => {
+                      // Remove progress message and add final result
+                      const filteredMessages = progressMessageId 
+                        ? prev.filter(msg => msg.id !== progressMessageId)
+                        : prev;
+                      return [...filteredMessages, finalResponse];
+                    });
+                    
+                    // Save final response to history
+                    if (currentSessionId) {
+                      addMessage(`AI: ${finalResponse.text}`);
+                    }
+                  });
                 }
-              }
-              
-              // Stop polling when research is complete
-              clearInterval(pollInterval);
-              return;
+                
+                // Stop polling when research is complete
+                clearInterval(pollInterval);
+                return;
+                
+              default:
+                // Handle any other event types
+                if (eventData.message) {
+                  updateProgressMessage(`${currentProgress}\n\n🔄 **Research Update:** ${eventData.message}`);
+                }
+                break;
             }
             
             // Update last event time to newest event's timestamp
@@ -260,23 +305,57 @@ I'll stream my findings in real-time as they become available. This typically ta
           }
         }
 
-        // Check if project is complete
+        // Check if project is complete or in error state
         const { data: project } = await supabase
           .from('stratix_projects')
           .select('status')
           .eq('id', projectId)
           .single();
 
-        if (project && (project.status === 'done' || project.status === 'error')) {
-          clearInterval(pollInterval);
+        if (project) {
+          if (project.status === 'done') {
+            // Get final result if we haven't received it via events
+            const { data: result } = await supabase
+              .from('stratix_results')
+              .select('*')
+              .eq('project_id', projectId)
+              .single();
+            
+            if (result && !currentProgress.includes('Research Report')) {
+              formatStratixResults(result.content, result, projectId).then(formattedText => {
+                const finalResponse: Message = {
+                  id: uuidv4(),
+                  text: formattedText,
+                  sender: 'ai',
+                  timestamp: new Date(),
+                };
+                
+                setMessages(prev => {
+                  const filteredMessages = progressMessageId 
+                    ? prev.filter(msg => msg.id !== progressMessageId)
+                    : prev;
+                  return [...filteredMessages, finalResponse];
+                });
+                
+                if (currentSessionId) {
+                  addMessage(`AI: ${finalResponse.text}`);
+                }
+              });
+            }
+            
+            clearInterval(pollInterval);
+          } else if (project.status === 'error') {
+            updateProgressMessage(`❌ **Research Error**\n\nSorry, there was an issue completing the research. Please try again.`);
+            clearInterval(pollInterval);
+          }
         }
       } catch (error) {
         console.error('Error polling Stratix updates:', error);
       }
     };
 
-    // Poll every 2 seconds for updates
-    pollInterval = setInterval(pollForUpdates, 2000);
+    // Poll every 1.5 seconds for updates (slightly faster for better UX)
+    pollInterval = setInterval(pollForUpdates, 1500);
     
     // Initial poll
     pollForUpdates();
@@ -287,7 +366,7 @@ I'll stream my findings in real-time as they become available. This typically ta
     };
   }, [currentSessionId, addMessage]);
 
-  const formatStratixResults = useCallback((content: string, eventData?: any): string => {
+  const formatStratixResults = useCallback(async (content: string, eventData?: any, projectId?: string): Promise<string> => {
     let formattedResponse = "# 📊 Stratix Research Report\n\n";
     
     // Add the main content
@@ -295,23 +374,58 @@ I'll stream my findings in real-time as they become available. This typically ta
     
     // Add metadata if available
     if (eventData) {
+      formattedResponse += "## Research Details\n\n";
+      
       if (eventData.confidence) {
         const confidence = Math.round((eventData.confidence || 0) * 100);
         const confidenceIcon = confidence >= 85 ? '🟢' : confidence >= 70 ? '🟡' : '🔴';
-        formattedResponse += `${confidenceIcon} *Research Confidence: ${confidence}%*\n\n`;
+        formattedResponse += `${confidenceIcon} **Research Confidence:** ${confidence}%\n\n`;
       }
       
       if (eventData.agents_consulted && Array.isArray(eventData.agents_consulted)) {
-        formattedResponse += "**Agents Consulted:** " + eventData.agents_consulted.join(', ') + "\n\n";
+        formattedResponse += "**🤖 Agents Consulted:** " + eventData.agents_consulted.join(', ') + "\n\n";
       }
       
       if (eventData.methodology) {
-        formattedResponse += "**Methodology:** " + eventData.methodology + "\n\n";
+        formattedResponse += "**📋 Methodology:** " + eventData.methodology + "\n\n";
+      }
+      
+      if (eventData.processing_time) {
+        const timeInSeconds = Math.round(eventData.processing_time / 1000);
+        formattedResponse += `**⏱️ Processing Time:** ${timeInSeconds} seconds\n\n`;
       }
     }
     
-    formattedResponse += "---\n\n*Research completed by Stratix Research Agent*\n";
-    formattedResponse += "*Sources available upon request*";
+    // Try to get citations if projectId is available
+    if (projectId || eventData?.project_id) {
+      try {
+        const { data: citations } = await supabase
+          .from('stratix_citations')
+          .select('*')
+          .eq('project_id', projectId || eventData.project_id)
+          .eq('clickable', true);
+        
+        if (citations && citations.length > 0) {
+          formattedResponse += "## 📚 Sources & References\n\n";
+          citations.forEach((citation, index) => {
+            if (citation.source_url) {
+              formattedResponse += `${index + 1}. **[${citation.source_name}](${citation.source_url})**`;
+            } else {
+              formattedResponse += `${index + 1}. **${citation.source_name}**`;
+            }
+            if (citation.agent) {
+              formattedResponse += ` *(via ${citation.agent})*`;
+            }
+            formattedResponse += "\n";
+          });
+          formattedResponse += "\n";
+        }
+      } catch (error) {
+        console.error('Error fetching citations:', error);
+      }
+    }
+    
+    formattedResponse += "---\n\n*✅ Research completed by Stratix Research Agent*";
     
     return formattedResponse;
   }, []);

@@ -131,17 +131,32 @@ async function processRailwayResearch(
         const message = JSON.parse(event.data);
         console.log('Railway message:', message);
         
-        // Store event for streaming
+        // Store event for streaming - always store raw event first
         await supabase
           .from('stratix_events')
           .insert({
             project_id: projectId,
-            event_type: message.type,
+            event_type: message.type || 'unknown',
             event_data: message
           });
 
-        // Handle different message types
+        // Handle different message types and create additional events for better UX
         switch (message.type) {
+          case 'agent_start':
+            // Create a clear agent start event
+            await supabase
+              .from('stratix_events')
+              .insert({
+                project_id: projectId,
+                event_type: 'agent_start',
+                event_data: {
+                  type: 'agent_start',
+                  agent: message.agent || 'Research Agent',
+                  message: message.message || `${message.agent || 'Research Agent'} is starting analysis...`
+                }
+              });
+            break;
+            
           case 'source_discovered':
             // Store citation
             await supabase
@@ -155,13 +170,44 @@ async function processRailwayResearch(
               });
             break;
             
+          case 'progress_update':
+          case 'agent_progress':
+            // Create progress update event
+            await supabase
+              .from('stratix_events')
+              .insert({
+                project_id: projectId,
+                event_type: 'agent_progress',
+                event_data: {
+                  type: 'agent_progress',
+                  agent: message.agent || 'Research Agent',
+                  message: message.message || message.content || 'Analyzing data...'
+                }
+              });
+            break;
+            
+          case 'intermediate_result':
+            // Create intermediate result event
+            await supabase
+              .from('stratix_events')
+              .insert({
+                project_id: projectId,
+                event_type: 'intermediate_result',
+                event_data: {
+                  type: 'intermediate_result',
+                  content: message.content || message.message,
+                  agent: message.agent
+                }
+              });
+            break;
+            
           case 'research_complete':
             // Store final result
             await supabase
               .from('stratix_results')
               .insert({
                 project_id: projectId,
-                content: message.final_answer,
+                content: message.final_answer || message.content,
                 agents_consulted: message.agents_consulted || [],
                 primary_agent: message.primary_agent,
                 confidence: message.confidence,
@@ -195,6 +241,23 @@ async function processRailwayResearch(
               .eq('id', projectId);
             
             ws.close();
+            break;
+            
+          default:
+            // Handle any unrecognized message types
+            if (message.message || message.content) {
+              await supabase
+                .from('stratix_events')
+                .insert({
+                  project_id: projectId,
+                  event_type: 'general_update',
+                  event_data: {
+                    type: 'general_update',
+                    message: message.message || message.content,
+                    agent: message.agent
+                  }
+                });
+            }
             break;
         }
       } catch (error) {
