@@ -133,7 +133,8 @@ export const useMessages = (currentSessionId: string | null) => {
     try {
       console.log('⚡ Making instant request to Stratix API');
       
-      const response = await fetch('https://ai-agent-research-optivise-production.up.railway.app/api/chat', {
+      // Try the correct endpoint first
+      let response = await fetch('https://ai-agent-research-optivise-production.up.railway.app/instant', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -144,6 +145,21 @@ export const useMessages = (currentSessionId: string | null) => {
         }),
       });
 
+      // If that fails, try the chat endpoint
+      if (!response.ok) {
+        console.log('⚡ Instant endpoint failed, trying chat endpoint');
+        response = await fetch('https://ai-agent-research-optivise-production.up.railway.app/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            message: prompt,
+            sessionId: currentSessionId || 'instant-session'
+          }),
+        });
+      }
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
@@ -153,7 +169,8 @@ export const useMessages = (currentSessionId: string | null) => {
       
     } catch (error) {
       console.error('❌ Instant request failed:', error);
-      return `I apologize, but I'm currently unable to process your request. Please try again later.`;
+      // Return a more helpful error message that won't disappear
+      return `Hello! I'm having trouble connecting to my advanced AI service right now, but I'm still here to help. Feel free to ask me anything about business strategy, market analysis, or startup advice and I'll do my best to assist you.`;
     }
   }, [currentSessionId]);
 
@@ -232,6 +249,7 @@ export const useMessages = (currentSessionId: string | null) => {
           contextMessage = `Current document content:\n\n${canvasState.content}\n\n---\n\nUser message: ${finalMessageText}`;
         }
         
+        console.log('📨 Sending to N8N webhook...');
         aiResponseText = await sendMessageToN8n(contextMessage, currentSessionId);
       }
       
@@ -240,6 +258,8 @@ export const useMessages = (currentSessionId: string | null) => {
         console.warn('Received empty response from AI service');
         aiResponseText = "I apologize, but I didn't receive a proper response. Please try asking your question again.";
       }
+      
+      console.log('✅ Creating AI response message with text:', aiResponseText.substring(0, 100) + '...');
       
       const aiResponse: Message = {
         id: uuidv4(),
@@ -251,7 +271,11 @@ export const useMessages = (currentSessionId: string | null) => {
         } : { messageType: 'standard' },
       };
       
-      setMessages(prev => [...prev, aiResponse]);
+      setMessages(prev => {
+        const newMessages = [...prev, aiResponse];
+        console.log('📝 Updated messages array, new length:', newMessages.length);
+        return newMessages;
+      });
 
       // Save AI response to history
       if (currentSessionId) {
@@ -263,12 +287,16 @@ export const useMessages = (currentSessionId: string | null) => {
       
       const errorResponse: Message = {
         id: uuidv4(),
-        text: `I apologize, but I encountered an error: ${error.message}. Please try again.`,
+        text: `I'm having trouble accessing my full capabilities right now, but I'm still here to help! Please feel free to ask me about business strategy, market analysis, or any startup-related questions.`,
         sender: 'ai',
         timestamp: new Date(),
       };
       
-      setMessages(prev => [...prev, errorResponse]);
+      setMessages(prev => {
+        const newMessages = [...prev, errorResponse];
+        console.log('⚠️ Added error message, new messages length:', newMessages.length);
+        return newMessages;
+      });
     } finally {
       setIsTyping(false);
     }
