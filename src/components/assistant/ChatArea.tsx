@@ -59,17 +59,85 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       <div className="flex-1 overflow-hidden">
         <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
           <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
-            {messages.map((msg) => (
-              <ChatMessage 
-                key={msg.id} 
-                message={{ ...msg, timestamp: formatTimestamp(msg.timestamp) }}
-                onOpenCanvas={onOpenCanvas}
-                onCanvasDownload={onCanvasDownload}
-                onCanvasPrint={onCanvasPrint}
-                isStreaming={isStreamingForMessage ? isStreamingForMessage(msg.id) : false}
-                streamingUpdates={getUpdatesForMessage ? getUpdatesForMessage(msg.id) : []}
-              />
-            ))}
+            {messages.map((msg) => {
+              // Get streaming state for this message
+              const isStreaming = isStreamingForMessage ? isStreamingForMessage(msg.id) : false;
+              const rawUpdates = getUpdatesForMessage ? getUpdatesForMessage(msg.id) : [];
+              
+              // Debug: Log what we're receiving
+              console.log('🔄 ChatArea: Processing message', {
+                messageId: msg.id,
+                sender: msg.sender,
+                isStreaming,
+                rawUpdatesCount: rawUpdates.length,
+                sampleUpdates: rawUpdates.slice(0, 2) // Show first 2 updates
+              });
+
+              // Transform raw updates into structured format
+              const streamingUpdates = rawUpdates.map((update, index) => ({
+                type: update.type || 'thought',
+                message: update.message || update.status || update.content || update.text || '',
+                timestamp: update.timestamp || Date.now() + index,
+                data: update
+              }));
+
+              // Extract sources from updates
+              const streamingSources = rawUpdates
+                .filter(update => 
+                  update.type === 'source_discovered' || 
+                  update.source_name || 
+                  update.name
+                )
+                .map(update => ({
+                  name: update.source_name || update.name || 'Unknown Source',
+                  url: update.source_url || update.url || '',
+                  type: update.source_type || 'Web Source',
+                  confidence: update.confidence || 85
+                }));
+
+              // Extract progress from updates
+              const progressUpdates = rawUpdates.filter(update => 
+                update.type === 'research_progress' || 
+                update.progress !== undefined ||
+                update.status
+              );
+
+              const streamingProgress = progressUpdates.length > 0 
+                ? progressUpdates.reduce((latest, current) => {
+                    const currentProgress = current.progress || 0;
+                    const latestProgress = latest.progress || 0;
+                    return currentProgress >= latestProgress ? {
+                      phase: current.status || current.message || 'Processing...',
+                      progress: currentProgress
+                    } : latest;
+                  }, { phase: 'Initializing...', progress: 0 })
+                : { phase: '', progress: 0 };
+
+              // Log transformed data for debugging
+              if (isStreaming || rawUpdates.length > 0) {
+                console.log('🎯 ChatArea: Transformed data', {
+                  messageId: msg.id,
+                  isStreaming,
+                  streamingUpdatesCount: streamingUpdates.length,
+                  sourcesCount: streamingSources.length,
+                  progress: streamingProgress
+                });
+              }
+
+              return (
+                <ChatMessage 
+                  key={msg.id} 
+                  message={{ ...msg, timestamp: formatTimestamp(msg.timestamp) }}
+                  onOpenCanvas={onOpenCanvas}
+                  onCanvasDownload={onCanvasDownload}
+                  onCanvasPrint={onCanvasPrint}
+                  isStreaming={isStreaming}
+                  streamingUpdates={streamingUpdates}
+                  streamingSources={streamingSources}
+                  streamingProgress={streamingProgress}
+                />
+              );
+            })}
             {isTyping && <TypingIndicator />}
           </div>
           {/* Spacer for input */}
