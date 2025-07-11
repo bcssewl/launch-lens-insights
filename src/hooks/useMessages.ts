@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Message, initialMessages, formatTimestamp } from '@/constants/aiAssistant';
@@ -289,24 +288,61 @@ export const useMessages = (currentSessionId: string | null) => {
         // Start streaming overlay for this message
         startStreaming(streamingMessageId);
         
-        // Connect to WebSocket
+        // Connect to WebSocket with improved error handling
         const wsUrl = 'wss://ai-agent-research-optivise-production.up.railway.app/stream';
         const ws = new WebSocket(wsUrl);
         
         let hasReceivedResponse = false;
+        let connectionTimeout: NodeJS.Timeout;
+        let heartbeatInterval: NodeJS.Timeout;
+        
+        // Set connection timeout
+        connectionTimeout = setTimeout(() => {
+          console.error('WebSocket connection timeout');
+          if (!hasReceivedResponse) {
+            ws.close();
+            stopStreaming();
+            console.log('🔄 Falling back to REST API due to timeout');
+            handleInstantRequest(prompt).then(resolve).catch(reject);
+          }
+        }, 10000); // 10 second connection timeout
         
         ws.onopen = () => {
           console.log('🔗 WebSocket connected for Perplexity-style streaming research');
-          ws.send(JSON.stringify({
+          clearTimeout(connectionTimeout);
+          
+          // Send the research request
+          const requestPayload = {
             query: prompt,
-            context: { sessionId }
-          }));
+            context: { 
+              sessionId,
+              conversation_history: messages.slice(-5).map(m => ({
+                role: m.sender === 'user' ? 'user' : 'assistant',
+                content: m.text
+              }))
+            }
+          };
+          
+          console.log('📤 Sending WebSocket request:', requestPayload);
+          ws.send(JSON.stringify(requestPayload));
+          
+          // Set up heartbeat to keep connection alive
+          heartbeatInterval = setInterval(() => {
+            if (ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({ type: 'ping' }));
+            }
+          }, 30000); // Ping every 30 seconds
         };
         
         ws.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);
             console.log('📡 Perplexity streaming update:', data.type, data.message);
+            
+            // Ignore ping responses
+            if (data.type === 'pong') {
+              return;
+            }
             
             // Handle new Perplexity-style events
             switch (data.type) {
@@ -349,6 +385,7 @@ export const useMessages = (currentSessionId: string | null) => {
               case 'complete':
                 console.log('✅ Perplexity streaming research complete');
                 hasReceivedResponse = true;
+                clearInterval(heartbeatInterval);
                 ws.close();
                 
                 // Stop streaming overlay
@@ -381,6 +418,7 @@ export const useMessages = (currentSessionId: string | null) => {
               case 'research_complete':
                 console.log('✅ Legacy streaming research complete');
                 hasReceivedResponse = true;
+                clearInterval(heartbeatInterval);
                 ws.close();
                 stopStreaming();
                 
@@ -422,6 +460,8 @@ export const useMessages = (currentSessionId: string | null) => {
         
         ws.onerror = (error) => {
           console.error('🚨 WebSocket error:', error);
+          clearTimeout(connectionTimeout);
+          clearInterval(heartbeatInterval);
           if (!hasReceivedResponse) {
             stopStreaming();
             // Fallback to regular API call
@@ -430,8 +470,10 @@ export const useMessages = (currentSessionId: string | null) => {
           }
         };
         
-        ws.onclose = () => {
-          console.log('🔌 WebSocket connection closed');
+        ws.onclose = (event) => {
+          console.log('🔌 WebSocket connection closed', { code: event.code, reason: event.reason });
+          clearTimeout(connectionTimeout);
+          clearInterval(heartbeatInterval);
           if (!hasReceivedResponse) {
             stopStreaming();
             // If we didn't get a complete response, fall back
@@ -440,10 +482,11 @@ export const useMessages = (currentSessionId: string | null) => {
           }
         };
         
-        // Timeout fallback
+        // Overall timeout fallback
         setTimeout(() => {
           if (!hasReceivedResponse) {
             console.log('⏰ Streaming timeout, falling back to REST API');
+            clearInterval(heartbeatInterval);
             stopStreaming();
             ws.close();
             handleInstantRequest(prompt).then(resolve).catch(reject);
@@ -457,7 +500,7 @@ export const useMessages = (currentSessionId: string | null) => {
         handleInstantRequest(prompt).then(resolve).catch(reject);
       }
     });
-  }, [handleInstantRequest, startStreaming, addStreamingUpdate, stopStreaming]);
+  }, [handleInstantRequest, startStreaming, addStreamingUpdate, stopStreaming, messages]);
 
   const handleClearConversation = useCallback(() => {
     console.log('useMessages: Clearing conversation');
