@@ -36,10 +36,18 @@ const SourceCard: React.FC<SourceCardProps> = ({
   };
 
   const getConfidenceColor = () => {
-    if (confidence >= 90) return 'text-green-600 bg-green-50';
-    if (confidence >= 75) return 'text-blue-600 bg-blue-50';
-    if (confidence >= 60) return 'text-yellow-600 bg-yellow-50';
-    return 'text-gray-600 bg-gray-50';
+    // Following the color guidelines from the quick reference
+    if (confidence >= 90) return 'text-green-600 bg-green-50 border-green-200'; // High credibility - Green
+    if (confidence >= 75) return 'text-blue-600 bg-blue-50 border-blue-200';   // Medium credibility - Blue  
+    if (confidence >= 60) return 'text-amber-600 bg-amber-50 border-amber-200'; // Low credibility - Amber
+    return 'text-red-600 bg-red-50 border-red-200'; // Very low credibility - Red
+  };
+
+  const getCredibilityLabel = () => {
+    if (confidence >= 90) return 'High';
+    if (confidence >= 75) return 'Medium';
+    if (confidence >= 60) return 'Low';
+    return 'Very Low';
   };
 
   return (
@@ -71,9 +79,9 @@ const SourceCard: React.FC<SourceCardProps> = ({
               {type}
             </span>
             
-            {/* Confidence Badge */}
-            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getConfidenceColor()}`}>
-              {confidence}%
+            {/* Enhanced Credibility Badge with label */}
+            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${getConfidenceColor()}`}>
+              {getCredibilityLabel()} ({confidence}%)
             </span>
           </div>
         </div>

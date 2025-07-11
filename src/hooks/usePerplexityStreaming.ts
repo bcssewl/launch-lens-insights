@@ -1,32 +1,56 @@
 import { useState, useCallback, useRef } from 'react';
 
 interface StreamingEvent {
-  type: 'search' | 'source' | 'snippet' | 'thought' | 'complete' | 'completion_start' | 'completion_chunk';
+  type: 'stream_start' | 'agent_progress' | 'source_found' | 'content_chunk' | 'agent_collaboration' | 'research_complete' | 'error' | 
+        // Legacy types for backward compatibility
+        'search' | 'source' | 'snippet' | 'thought' | 'complete' | 'completion_start' | 'completion_chunk';
   timestamp: string;
   message: string;
   data?: {
+    // Research and query data
     search_queries?: string[];
+    query?: string;
+    
+    // Source information (from source_found events)
     source_name?: string;
     source_url?: string;
     source_type?: string;
     confidence?: number;
+    credibility_score?: number; // 0.0-1.0 as per reference
+    
+    // Agent information
+    agent_name?: string;
+    agent_status?: 'active' | 'complete' | 'waiting' | 'error';
+    agent_progress?: number;
+    collaboration_mode?: 'sequential' | 'parallel' | 'hierarchical';
+    
+    // Content and completion
     snippet_text?: string;
+    content?: string;
+    chunk_index?: number;
+    total_chunks?: number;
+    total_sections?: number;
+    
+    // Progress and phases
     progress_percentage?: number;
     current_phase?: string;
     final_answer?: string;
+    
+    // Final results
     sources?: Array<{
       name: string;
       url: string;
       type: string;
       confidence: number;
+      credibility_score?: number;
     }>;
     methodology?: string;
     analysis_depth?: string;
-    // New fields for chunked completion
-    content?: string;
-    chunk_index?: number;
-    total_chunks?: number;
-    total_sections?: number;
+    
+    // Error handling
+    error_code?: string;
+    error_message?: string;
+    retry_after?: number;
   };
 }
 
@@ -45,7 +69,20 @@ interface StreamingState {
   discoveredSources: SourceCardProps[];
   currentMessage: string;
   error?: string;
-  // New fields for chunked completion
+  
+  // Enhanced agent tracking
+  activeAgents: Array<{
+    name: string;
+    status: 'active' | 'complete' | 'waiting' | 'error';
+    progress: number;
+  }>;
+  collaborationMode: 'sequential' | 'parallel' | 'hierarchical' | null;
+  
+  // Enhanced error handling
+  errorCode?: string;
+  retryAfter?: number;
+  
+  // Chunked completion fields
   chunkedContent: string;
   expectedChunks: number;
   receivedChunks: number;
@@ -59,6 +96,8 @@ export const usePerplexityStreaming = () => {
     searchQueries: [],
     discoveredSources: [],
     currentMessage: '',
+    activeAgents: [],
+    collaborationMode: null,
     chunkedContent: '',
     expectedChunks: 1,
     receivedChunks: 0
@@ -75,6 +114,8 @@ export const usePerplexityStreaming = () => {
       searchQueries: [],
       discoveredSources: [],
       currentMessage: '',
+      activeAgents: [],
+      collaborationMode: null,
       chunkedContent: '',
       expectedChunks: 1,
       receivedChunks: 0
@@ -93,6 +134,106 @@ export const usePerplexityStreaming = () => {
       const newState = { ...prev };
 
       switch (event.type) {
+        // New proper event types from the backend
+        case 'stream_start':
+          newState.isStreaming = true;
+          newState.currentPhase = event.message || 'Starting research...';
+          newState.progress = 5;
+          console.log('🎬 Research stream started');
+          break;
+
+        case 'agent_progress':
+          const agentName = event.data?.agent_name || 'Research Agent';
+          const agentStatus = event.data?.agent_status || 'active';
+          const agentProgress = event.data?.agent_progress || 0;
+          
+          newState.currentPhase = event.message || `${agentName} working...`;
+          newState.progress = event.data?.progress_percentage || prev.progress + 5;
+          
+          // Update or add agent to tracking
+          const existingAgentIndex = prev.activeAgents.findIndex(a => a.name === agentName);
+          if (existingAgentIndex >= 0) {
+            newState.activeAgents = [...prev.activeAgents];
+            newState.activeAgents[existingAgentIndex] = { name: agentName, status: agentStatus, progress: agentProgress };
+          } else {
+            newState.activeAgents = [...prev.activeAgents, { name: agentName, status: agentStatus, progress: agentProgress }];
+          }
+          
+          if (event.data?.collaboration_mode) {
+            newState.collaborationMode = event.data.collaboration_mode;
+          }
+          
+          console.log('👥 Agent progress:', { agentName, agentStatus, agentProgress });
+          break;
+
+        case 'source_found':
+          const credibilityScore = event.data?.credibility_score || event.data?.confidence || 0.85;
+          const sourceFoundName = event.data?.source_name || event.message;
+          
+          newState.currentPhase = `Found credible source: ${sourceFoundName}`;
+          newState.progress = event.data?.progress_percentage || prev.progress + 10;
+          
+          if (sourceFoundName) {
+            const newSource: SourceCardProps = {
+              name: sourceFoundName,
+              url: event.data?.source_url || '#',
+              type: event.data?.source_type || 'Web Source',
+              confidence: credibilityScore < 1 ? Math.round(credibilityScore * 100) : Math.round(credibilityScore)
+            };
+            console.log('🎯 High-quality source found:', newSource);
+            newState.discoveredSources = [...prev.discoveredSources, newSource];
+          }
+          break;
+
+        case 'agent_collaboration':
+          newState.currentPhase = event.message || 'Agents collaborating...';
+          newState.collaborationMode = event.data?.collaboration_mode || prev.collaborationMode;
+          newState.progress = event.data?.progress_percentage || prev.progress + 5;
+          console.log('🤝 Agent collaboration:', event.data?.collaboration_mode);
+          break;
+
+        case 'content_chunk':
+          // Handle streaming content delivery
+          newState.chunkedContent = prev.chunkedContent + (event.data?.content || '');
+          newState.receivedChunks = prev.receivedChunks + 1;
+          const contentChunkProgress = 80 + (event.data?.chunk_index || 0) / (event.data?.total_chunks || 1) * 15;
+          newState.progress = Math.min(contentChunkProgress, 95);
+          newState.currentPhase = `Delivering results (${event.data?.chunk_index + 1}/${event.data?.total_chunks})...`;
+          console.log('📝 Content chunk received:', event.data?.chunk_index, 'of', event.data?.total_chunks);
+          break;
+
+        case 'research_complete':
+          newState.isStreaming = false;
+          newState.currentPhase = 'Research Complete';
+          newState.progress = 100;
+          
+          // Use chunked content if available, otherwise use final answer
+          const researchCompleteContent = prev.chunkedContent || event.data?.final_answer || event.message || '';
+          newState.currentMessage = researchCompleteContent;
+          
+          // Mark all agents as complete
+          newState.activeAgents = prev.activeAgents.map(agent => ({ ...agent, status: 'complete' as const }));
+          
+          if (event.data?.sources) {
+            newState.discoveredSources = event.data.sources.map(source => ({
+              ...source,
+              confidence: source.credibility_score < 1 ? Math.round(source.credibility_score * 100) : Math.round(source.credibility_score || source.confidence)
+            }));
+          }
+          
+          console.log('✅ Research completed, final content length:', researchCompleteContent.length);
+          console.log('📚 Final sources:', event.data?.sources?.length || 0);
+          break;
+
+        case 'error':
+          newState.error = event.data?.error_message || event.message || 'An error occurred';
+          newState.errorCode = event.data?.error_code;
+          newState.retryAfter = event.data?.retry_after;
+          newState.currentPhase = 'Error occurred';
+          console.error('❌ Research error:', newState.error);
+          break;
+
+        // Legacy event types for backward compatibility
         case 'search':
           newState.currentPhase = event.message || 'Searching for information...';
           newState.progress = event.data?.progress_percentage || prev.progress + 10;
@@ -210,7 +351,7 @@ export const usePerplexityStreaming = () => {
       }, 45000);
 
       try {
-        const wsUrl = 'wss://ai-agent-research-optivise-production.up.railway.app/stream';
+        const wsUrl = 'wss://ai-agent-research-optivise-production.up.railway.app/ws';
         console.log('🔌 Connecting to:', wsUrl);
         
         wsRef.current = new WebSocket(wsUrl);

@@ -6,6 +6,7 @@ import TypingIndicator from '@/components/assistant/TypingIndicator';
 import PerplexityEmptyState from '@/components/assistant/PerplexityEmptyState';
 import EnhancedChatInput from '@/components/assistant/EnhancedChatInput';
 import StreamingProgress from '@/components/assistant/StreamingProgress';
+import StreamingError from '@/components/assistant/StreamingError';
 import { Message } from '@/constants/aiAssistant';
 
 interface ChatAreaProps {
@@ -66,6 +67,16 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       <div className="flex-1 overflow-hidden">
         <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
           <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
+            {/* Show streaming error if present */}
+            {streamingState?.error && (
+              <StreamingError
+                error={streamingState.error}
+                errorCode={streamingState.errorCode}
+                retryAfter={streamingState.retryAfter}
+                isVisible={true}
+              />
+            )}
+
             {/* Show Perplexity-style streaming progress */}
             {streamingState?.isStreaming && (
               <StreamingProgress
@@ -73,6 +84,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                 progress={streamingState.progress}
                 searchQueries={streamingState.searchQueries}
                 discoveredSources={streamingState.discoveredSources}
+                activeAgents={streamingState.activeAgents}
+                collaborationMode={streamingState.collaborationMode}
                 isVisible={true}
               />
             )}
