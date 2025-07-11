@@ -272,17 +272,17 @@ export const useMessages = (currentSessionId: string | null) => {
         const streamingMessageId = uuidv4();
         console.log('🎯 Starting streaming request with messageId:', streamingMessageId);
         
-        // CRITICAL FIX: Start streaming IMMEDIATELY and wait a tick for state to settle
+        // Start streaming IMMEDIATELY
         console.log('▶️ Starting streaming overlay for message:', streamingMessageId);
         startStreaming(streamingMessageId);
         
-        // IMPROVED: Add initial update after ensuring streaming has started
+        // Add initial update after ensuring streaming has started
         setTimeout(() => {
           console.log('🚀 Adding initial search event for message:', streamingMessageId);
           addStreamingUpdate(streamingMessageId, 'search', 'Initializing comprehensive research...', {
             progress_percentage: 5
           });
-        }, 100); // Small delay to ensure state is synchronized
+        }, 100);
         
         // Show immediate feedback with streaming message
         const streamingIndicator = "🔍 **Initializing Perplexity Research...**\n\nConnecting to research specialists...";
@@ -309,6 +309,7 @@ export const useMessages = (currentSessionId: string | null) => {
         let hasReceivedResponse = false;
         let connectionTimeout: NodeJS.Timeout;
         let heartbeatInterval: NodeJS.Timeout;
+        let initialTimeout: NodeJS.Timeout;
         
         // Set connection timeout
         connectionTimeout = setTimeout(() => {
@@ -326,13 +327,13 @@ export const useMessages = (currentSessionId: string | null) => {
           console.log('✅ WebSocket connected for Perplexity-style streaming research');
           clearTimeout(connectionTimeout);
           
-          // IMPROVED: Send search event with proper timing
+          // Send search progress event
           setTimeout(() => {
             console.log('🚀 Sending search progress event for message:', streamingMessageId);
             addStreamingUpdate(streamingMessageId, 'search', 'Analyzing query and selecting research approach...', {
               progress_percentage: 10
             });
-          }, 200); // Slightly longer delay for better synchronization
+          }, 200);
           
           // Send the research request
           const requestPayload = {
@@ -516,11 +517,11 @@ export const useMessages = (currentSessionId: string | null) => {
         };
         
         // Overall timeout fallback
-        setTimeout(() => {
+        initialTimeout = setTimeout(() => {
           if (!hasReceivedResponse) {
             console.log('⏰ Streaming timeout, falling back to REST API for message:', streamingMessageId);
             clearInterval(heartbeatInterval);
-            clearTimeout(initialTimeout);
+            clearTimeout(connectionTimeout);
             stopStreaming();
             ws.close();
             handleInstantRequest(prompt).then(resolve).catch(reject);
