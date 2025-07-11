@@ -106,6 +106,15 @@ const StreamingOverlay: React.FC<StreamingOverlayProps> = ({
   const [isAnimating, setIsAnimating] = useState(false);
   const [showSources, setShowSources] = useState(false);
 
+  // Debug logging
+  console.log('🎨 StreamingOverlay: Rendering with props:', {
+    isVisible,
+    updatesCount: updates.length,
+    sourcesCount: sources.length,
+    progress,
+    currentUpdateIndex
+  });
+
   // Auto-advance through updates
   useEffect(() => {
     if (updates.length > 0 && currentUpdateIndex < updates.length - 1) {
@@ -124,18 +133,42 @@ const StreamingOverlay: React.FC<StreamingOverlayProps> = ({
   // Reset when new updates arrive
   useEffect(() => {
     if (updates.length > 0) {
+      console.log('🔄 StreamingOverlay: Resetting update index for new updates');
       setCurrentUpdateIndex(0);
     }
   }, [updates]);
 
-  if (!isVisible || updates.length === 0) {
+  // Force visibility for debugging - show overlay if we have any updates
+  const shouldShow = isVisible || updates.length > 0;
+
+  console.log('👁️ StreamingOverlay: Visibility check:', {
+    isVisible,
+    updatesLength: updates.length,
+    shouldShow,
+    finalDecision: shouldShow && updates.length > 0
+  });
+
+  if (!shouldShow || updates.length === 0) {
+    console.log('🚫 StreamingOverlay: Not rendering - no visibility or no updates');
     return null;
   }
 
   const currentUpdate = updates[currentUpdateIndex];
+  if (!currentUpdate) {
+    console.log('⚠️ StreamingOverlay: No current update available');
+    return null;
+  }
+
   const IconComponent = getIconForUpdateType(currentUpdate.type);
   const iconColor = getPhaseColor(currentUpdate.type);
   const hasSnippet = currentUpdate.data?.snippet_text;
+
+  console.log('✅ StreamingOverlay: Rendering overlay with current update:', {
+    type: currentUpdate.type,
+    message: currentUpdate.message,
+    hasSnippet,
+    progress: progress.progress
+  });
 
   return (
     <div className={cn(
@@ -146,6 +179,11 @@ const StreamingOverlay: React.FC<StreamingOverlayProps> = ({
       className
     )}>
       <div className="space-y-3">
+        {/* Debug Info - Remove in production */}
+        <div className="text-xs text-muted-foreground/50 font-mono">
+          Debug: {updates.length} updates | {currentUpdateIndex + 1}/{updates.length} | {currentUpdate.type}
+        </div>
+
         {/* Main Status */}
         <div className="flex items-center gap-3">
           {/* Animated Icon */}

@@ -59,6 +59,17 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
   const isAi = message.sender === 'ai';
   const isReport = isAi && isReportMessage(message.text, message.metadata);
 
+  // Enhanced debug logging
+  console.log('💬 ChatMessage: Rendering message', {
+    messageId: message.id,
+    sender: message.sender,
+    isStreaming,
+    streamingUpdatesCount: streamingUpdates.length,
+    streamingSourcesCount: streamingSources.length,
+    streamingProgress,
+    isReport
+  });
+
   const handleCanvasExpand = () => {
     if (onOpenCanvas) {
       onOpenCanvas(message.id, message.text);
@@ -90,8 +101,8 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
               : "bg-primary/90 backdrop-blur-md border border-primary/30 text-primary-foreground rounded-tr-sm shadow-glass hover:bg-primary/95"
           )}
         >
-          {/* Streaming Overlay for AI messages */}
-          {isAi && isStreaming && (
+          {/* Enhanced Streaming Overlay for AI messages */}
+          {isAi && (isStreaming || streamingUpdates.length > 0) && (
             <StreamingOverlay
               isVisible={isStreaming}
               updates={streamingUpdates}

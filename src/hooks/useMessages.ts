@@ -91,7 +91,7 @@ export const useMessages = (currentSessionId: string | null) => {
     const finalMessageText = text || messageText;
     if (!finalMessageText || finalMessageText.trim() === '') return;
 
-    console.log('useMessages: Sending message in session:', currentSessionId, 'with model:', selectedModel);
+    console.log('🚀 useMessages: Sending message in session:', currentSessionId, 'with model:', selectedModel);
 
     const newUserMessage: Message = {
       id: uuidv4(),
@@ -151,16 +151,16 @@ export const useMessages = (currentSessionId: string | null) => {
       // Save AI response to history without showing prefix to user
       if (currentSessionId) {
         try {
-          console.log('Saving AI response to chat history...', aiResponseText.length, 'characters');
+          console.log('💾 Saving AI response to chat history...', aiResponseText.length, 'characters');
           await addMessage(`AI: ${aiResponseText}`);
-          console.log('Successfully saved AI response to chat history');
+          console.log('✅ Successfully saved AI response to chat history');
         } catch (error) {
-          console.error('Failed to save AI response to chat history:', error);
+          console.error('❌ Failed to save AI response to chat history:', error);
           // Don't throw - the message is already shown to user
         }
       }
     } catch (error) {
-      console.error('useMessages: Error sending message:', error);
+      console.error('💥 useMessages: Error sending message:', error);
       const errorResponse: Message = {
         id: uuidv4(),
         text: "I'm experiencing some technical difficulties right now. Please try sending your message again in a few moments.",
@@ -270,6 +270,7 @@ export const useMessages = (currentSessionId: string | null) => {
       try {
         // Create a unique ID for this streaming message
         const streamingMessageId = uuidv4();
+        console.log('🎯 Starting streaming request with messageId:', streamingMessageId);
         
         // Show immediate feedback
         const streamingIndicator = "🔍 **Initializing Perplexity Research...**\n\nConnecting to research specialists...";
@@ -283,13 +284,18 @@ export const useMessages = (currentSessionId: string | null) => {
           metadata: { messageType: 'progress_update' }
         };
         
-        setMessages(prev => [...prev, streamingMessage]);
+        setMessages(prev => {
+          console.log('📝 Adding streaming message to UI with ID:', streamingMessageId);
+          return [...prev, streamingMessage];
+        });
         
         // Start streaming overlay for this message
+        console.log('▶️ Starting streaming overlay for message:', streamingMessageId);
         startStreaming(streamingMessageId);
         
         // Connect to WebSocket with improved error handling
         const wsUrl = 'wss://ai-agent-research-optivise-production.up.railway.app/stream';
+        console.log('🔌 Connecting to WebSocket:', wsUrl);
         const ws = new WebSocket(wsUrl);
         
         let hasReceivedResponse = false;
@@ -298,7 +304,7 @@ export const useMessages = (currentSessionId: string | null) => {
         
         // Set connection timeout
         connectionTimeout = setTimeout(() => {
-          console.error('WebSocket connection timeout');
+          console.error('⏰ WebSocket connection timeout');
           if (!hasReceivedResponse) {
             ws.close();
             stopStreaming();
@@ -308,7 +314,7 @@ export const useMessages = (currentSessionId: string | null) => {
         }, 10000); // 10 second connection timeout
         
         ws.onopen = () => {
-          console.log('🔗 WebSocket connected for Perplexity-style streaming research');
+          console.log('✅ WebSocket connected for Perplexity-style streaming research');
           clearTimeout(connectionTimeout);
           
           // Send the research request
@@ -337,16 +343,22 @@ export const useMessages = (currentSessionId: string | null) => {
         ws.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);
-            console.log('📡 Perplexity streaming update:', data.type, data.message);
+            console.log('📨 WebSocket message received:', {
+              type: data.type,
+              message: data.message,
+              messageId: streamingMessageId,
+              rawData: data
+            });
             
             // Ignore ping responses
             if (data.type === 'pong') {
               return;
             }
             
-            // Handle new Perplexity-style events
+            // Handle new Perplexity-style events with enhanced logging
             switch (data.type) {
               case 'search':
+                console.log('🔍 Processing search event');
                 addStreamingUpdate(streamingMessageId, 'search', data.message || 'Searching for information...', {
                   search_queries: data.data?.search_queries,
                   progress_percentage: data.data?.progress_percentage || 10
@@ -354,6 +366,7 @@ export const useMessages = (currentSessionId: string | null) => {
                 break;
                 
               case 'source':
+                console.log('🌐 Processing source event');
                 addStreamingUpdate(streamingMessageId, 'source', 
                   data.message || `Found: ${data.data?.source_name || 'New source'}`, {
                   source_name: data.data?.source_name,
@@ -365,6 +378,7 @@ export const useMessages = (currentSessionId: string | null) => {
                 break;
                 
               case 'snippet':
+                console.log('📄 Processing snippet event');
                 addStreamingUpdate(streamingMessageId, 'snippet',
                   data.message || 'Analyzing content...', {
                   snippet_text: data.data?.snippet_text,
@@ -375,6 +389,7 @@ export const useMessages = (currentSessionId: string | null) => {
                 break;
                 
               case 'thought':
+                console.log('🧠 Processing thought event');
                 addStreamingUpdate(streamingMessageId, 'thought',
                   data.message || 'Processing insights...', {
                   progress_percentage: data.data?.progress_percentage,
@@ -383,7 +398,7 @@ export const useMessages = (currentSessionId: string | null) => {
                 break;
                 
               case 'complete':
-                console.log('✅ Perplexity streaming research complete');
+                console.log('🎉 Processing complete event');
                 hasReceivedResponse = true;
                 clearInterval(heartbeatInterval);
                 ws.close();
@@ -403,6 +418,7 @@ export const useMessages = (currentSessionId: string | null) => {
                 }
                 
                 // Update the streaming message with the final response
+                console.log('📝 Updating message with final response');
                 setMessages(prev => 
                   prev.map(msg => 
                     msg.id === streamingMessageId 
@@ -416,7 +432,7 @@ export const useMessages = (currentSessionId: string | null) => {
                 
               // Handle legacy events for backward compatibility
               case 'research_complete':
-                console.log('✅ Legacy streaming research complete');
+                console.log('✅ Processing legacy research_complete event');
                 hasReceivedResponse = true;
                 clearInterval(heartbeatInterval);
                 ws.close();
@@ -447,14 +463,14 @@ export const useMessages = (currentSessionId: string | null) => {
                 break;
                 
               default:
-                console.log('🔄 Unknown streaming event:', data.type);
+                console.log('❓ Processing unknown event type:', data.type);
                 // Add as a generic thought event
                 addStreamingUpdate(streamingMessageId, 'thought', 
                   data.message || `Status: ${data.type}`, data.data);
                 break;
             }
           } catch (error) {
-            console.error('Error parsing streaming message:', error);
+            console.error('💥 Error parsing streaming message:', error, 'Raw event:', event.data);
           }
         };
         
@@ -494,7 +510,7 @@ export const useMessages = (currentSessionId: string | null) => {
         }, 45000); // 45 second timeout as requested
         
       } catch (error) {
-        console.error('Failed to initiate streaming:', error);
+        console.error('💥 Failed to initiate streaming:', error);
         stopStreaming();
         // Fallback to instant request
         handleInstantRequest(prompt).then(resolve).catch(reject);

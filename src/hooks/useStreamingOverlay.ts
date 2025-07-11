@@ -49,6 +49,7 @@ export const useStreamingOverlay = () => {
   const streamingUpdateRef = useRef<(messageId: string, type: string, message: string, data?: any) => void>();
 
   const startStreaming = useCallback((messageId: string) => {
+    console.log('🎬 StreamingOverlay: Starting streaming for message:', messageId);
     setStreamingState({
       isStreaming: true,
       updates: [],
@@ -60,15 +61,24 @@ export const useStreamingOverlay = () => {
   }, []);
 
   const addStreamingUpdate = useCallback((messageId: string, type: string, message: string, data?: any) => {
+    console.log('📡 StreamingOverlay: Adding update for message:', messageId, 'type:', type, 'message:', message, 'data:', data);
+    
     setStreamingState(prev => {
+      // Debug logging for state matching
+      console.log('🔍 StreamingOverlay: Current state messageId:', prev.currentMessageId, 'Incoming messageId:', messageId);
+      
       // Only add updates for the current streaming message
       if (prev.currentMessageId !== messageId) {
+        console.log('⚠️ StreamingOverlay: Message ID mismatch, ignoring update');
         return prev;
       }
 
-      const streamingType = type as StreamingUpdate['type'];
+      // Normalize type to lowercase for case-insensitive matching
+      const normalizedType = type.toLowerCase() as StreamingUpdate['type'];
+      console.log('🔄 StreamingOverlay: Normalized type:', normalizedType);
+
       const newUpdate: StreamingUpdate = {
-        type: streamingType,
+        type: normalizedType,
         message,
         timestamp: Date.now(),
         data
@@ -76,7 +86,7 @@ export const useStreamingOverlay = () => {
 
       // Update sources array when source event is received
       let newSources = [...prev.sources];
-      if (streamingType === 'source' && data?.source_name && data?.source_url) {
+      if (normalizedType === 'source' && data?.source_name && data?.source_url) {
         const existingSource = newSources.find(s => s.url === data.source_url);
         if (!existingSource) {
           newSources.push({
@@ -85,6 +95,7 @@ export const useStreamingOverlay = () => {
             type: data.source_type || 'article',
             confidence: data.confidence
           });
+          console.log('🔗 StreamingOverlay: Added new source:', data.source_name);
         }
       }
 
@@ -92,7 +103,7 @@ export const useStreamingOverlay = () => {
       let currentPhase = prev.currentPhase;
       let progress = prev.progress;
       
-      switch (streamingType) {
+      switch (normalizedType) {
         case 'search':
           currentPhase = 'searching';
           progress = 10;
@@ -119,19 +130,31 @@ export const useStreamingOverlay = () => {
           break;
       }
 
-      return {
+      const newState = {
         ...prev,
         updates: [...prev.updates, newUpdate],
         sources: newSources,
         currentPhase,
         progress
       };
+
+      console.log('✅ StreamingOverlay: Updated state:', {
+        messageId,
+        updateCount: newState.updates.length,
+        currentPhase: newState.currentPhase,
+        progress: newState.progress,
+        sourcesCount: newState.sources.length
+      });
+
+      return newState;
     });
   }, []);
 
   const stopStreaming = useCallback(() => {
+    console.log('🛑 StreamingOverlay: Stopping streaming');
     // Clear streaming state after a short delay to allow final animation
     setTimeout(() => {
+      console.log('🧹 StreamingOverlay: Cleaning up streaming state');
       setStreamingState({
         isStreaming: false,
         updates: [],
@@ -144,18 +167,23 @@ export const useStreamingOverlay = () => {
   }, []);
 
   const isStreamingForMessage = useCallback((messageId: string) => {
-    return streamingState.isStreaming && streamingState.currentMessageId === messageId;
+    const isStreaming = streamingState.isStreaming && streamingState.currentMessageId === messageId;
+    console.log('🤔 StreamingOverlay: isStreamingForMessage check:', messageId, 'result:', isStreaming, 'currentMessageId:', streamingState.currentMessageId);
+    return isStreaming;
   }, [streamingState.isStreaming, streamingState.currentMessageId]);
 
   const getUpdatesForMessage = useCallback((messageId: string) => {
     if (streamingState.currentMessageId === messageId) {
+      console.log('📋 StreamingOverlay: Getting updates for message:', messageId, 'count:', streamingState.updates.length);
       return streamingState.updates;
     }
+    console.log('📋 StreamingOverlay: No updates for message:', messageId, 'currentMessageId:', streamingState.currentMessageId);
     return [];
   }, [streamingState.currentMessageId, streamingState.updates]);
 
   const getSourcesForMessage = useCallback((messageId: string) => {
     if (streamingState.currentMessageId === messageId) {
+      console.log('🔗 StreamingOverlay: Getting sources for message:', messageId, 'count:', streamingState.sources.length);
       return streamingState.sources;
     }
     return [];
@@ -163,10 +191,12 @@ export const useStreamingOverlay = () => {
 
   const getProgressForMessage = useCallback((messageId: string) => {
     if (streamingState.currentMessageId === messageId) {
-      return {
+      const progress = {
         phase: streamingState.currentPhase,
         progress: streamingState.progress
       };
+      console.log('📊 StreamingOverlay: Getting progress for message:', messageId, progress);
+      return progress;
     }
     return { phase: '', progress: 0 };
   }, [streamingState.currentMessageId, streamingState.currentPhase, streamingState.progress]);
