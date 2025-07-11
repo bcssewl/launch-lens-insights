@@ -95,8 +95,27 @@ async function processRailwayResearch(
   prompt: string, 
   sessionId: string
 ) {
+  let ws: WebSocket | null = null;
+  let connectionTimeout: number | null = null;
+  let heartbeatInterval: number | null = null;
+  let requestTimeout: number | null = null;
+  
+  const cleanup = () => {
+    if (connectionTimeout) clearTimeout(connectionTimeout);
+    if (heartbeatInterval) clearInterval(heartbeatInterval);
+    if (requestTimeout) clearTimeout(requestTimeout);
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.close();
+    }
+  };
+  
   try {
     console.log('Starting Railway research process for:', projectId);
+    
+    // Validate request size to prevent overwhelming Railway
+    if (prompt.length > 10000) {
+      throw new Error('Request too large. Please try with a shorter prompt.');
+    }
     
     // Update status to running
     await supabase
@@ -113,15 +132,50 @@ async function processRailwayResearch(
     const wsUrl = railwayUrl.replace('https://', 'wss://').replace('http://', 'ws://') + '/stream';
     console.log('Connecting to Railway WebSocket:', wsUrl);
     
-    const ws = new WebSocket(wsUrl);
+    // Set connection timeout (30 seconds)
+    connectionTimeout = setTimeout(() => {
+      console.error('Railway WebSocket connection timeout');
+      cleanup();
+      throw new Error('Connection timeout - Railway agent did not respond');
+    }, 30000);
+    
+    // Set overall request timeout (10 minutes for large requests)
+    requestTimeout = setTimeout(async () => {
+      console.error('Railway research request timeout');
+      cleanup();
+      await supabase
+        .from('stratix_projects')
+        .update({ status: 'error' })
+        .eq('id', projectId);
+    }, 600000); // 10 minutes
+    
+    ws = new WebSocket(wsUrl);
     
     ws.onopen = () => {
       console.log('Connected to Railway agent');
+      
+      // Clear connection timeout since we're connected
+      if (connectionTimeout) {
+        clearTimeout(connectionTimeout);
+        connectionTimeout = null;
+      }
+      
+      // Set up heartbeat to keep connection alive for long requests
+      heartbeatInterval = setInterval(() => {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'ping' }));
+        }
+      }, 30000); // Ping every 30 seconds
+      
+      // Send the actual research request with limits
       ws.send(JSON.stringify({
         query: prompt,
         context: {
           platform: "optivise",
-          session_id: sessionId
+          session_id: sessionId,
+          request_id: projectId,
+          max_response_size: 50000, // Set reasonable limits
+          timeout_minutes: 8 // Give Railway 8 minutes to complete
         }
       }));
     };
@@ -129,6 +183,12 @@ async function processRailwayResearch(
     ws.onmessage = async (event) => {
       try {
         const message = JSON.parse(event.data);
+        
+        // Ignore ping responses
+        if (message.type === 'pong') {
+          return;
+        }
+        
         console.log('Railway message:', message);
         
         // Store event for streaming - always store raw event first
@@ -265,19 +325,42 @@ async function processRailwayResearch(
       }
     };
 
-    ws.onerror = (error) => {
+    ws.onerror = async (error) => {
       console.error('Railway WebSocket error:', error);
-      throw new Error('WebSocket connection failed');
+      cleanup();
+      
+      // Update status to error
+      await supabase
+        .from('stratix_projects')
+        .update({ status: 'error' })
+        .eq('id', projectId);
     };
 
-    ws.onclose = () => {
-      console.log('Railway WebSocket closed');
+    ws.onclose = async (event) => {
+      console.log('Railway WebSocket closed', { code: event.code, reason: event.reason });
+      cleanup();
+      
+      // If closed without completion, mark as error
+      const { data: project } = await supabase
+        .from('stratix_projects')
+        .select('status')
+        .eq('id', projectId)
+        .single();
+        
+      if (project?.status === 'running') {
+        console.log('Connection closed prematurely, marking as error');
+        await supabase
+          .from('stratix_projects')
+          .update({ status: 'error' })
+          .eq('id', projectId);
+      }
     };
 
     console.log('Railway research initiated for:', projectId);
 
   } catch (error) {
     console.error('Railway research error:', error);
+    cleanup();
     
     // Update status to error
     await supabase
