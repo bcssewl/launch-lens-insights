@@ -8,7 +8,6 @@ import MarkdownRenderer from './MarkdownRenderer';
 import CanvasCompact from './CanvasCompact';
 import StreamingOverlay from './StreamingOverlay';
 import { isReportMessage } from '@/utils/reportDetection';
-import { StreamingUpdate } from '@/hooks/useStreamingOverlay';
 
 export interface ChatMessageData {
   id: string;
@@ -17,8 +16,15 @@ export interface ChatMessageData {
   timestamp: string;
   metadata?: {
     isCompleted?: boolean;
-    messageType?: 'progress_update' | 'completed_report' | 'standard';
+    messageType?: 'progress_update' | 'completed_report' | 'standard' | 'stratix_conversation';
   };
+}
+
+interface StreamingUpdate {
+  type: 'search' | 'source' | 'snippet' | 'thought' | 'complete';
+  message: string;
+  timestamp: number;
+  data?: any;
 }
 
 interface ChatMessageProps {
@@ -28,6 +34,16 @@ interface ChatMessageProps {
   onCanvasPrint?: () => void;
   isStreaming?: boolean;
   streamingUpdates?: StreamingUpdate[];
+  streamingSources?: Array<{
+    name: string;
+    url: string;
+    type?: string;
+    confidence?: number;
+  }>;
+  streamingProgress?: {
+    phase: string;
+    progress: number;
+  };
 }
 
 const ChatMessage: React.FC<ChatMessageProps> = ({ 
@@ -36,10 +52,31 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
   onCanvasDownload,
   onCanvasPrint,
   isStreaming = false,
-  streamingUpdates = []
+  streamingUpdates = [],
+  streamingSources = [],
+  streamingProgress = { phase: '', progress: 0 }
 }) => {
   const isAi = message.sender === 'ai';
   const isReport = isAi && isReportMessage(message.text, message.metadata);
+
+  // Enhanced debug logging
+  console.log('💬 ChatMessage: Rendering message', {
+    messageId: message.id,
+    sender: message.sender,
+    isStreaming,
+    streamingUpdatesCount: streamingUpdates.length,
+    streamingSourcesCount: streamingSources.length,
+    streamingProgress,
+    isReport
+  });
+
+  // TEMPORARY DEBUG: Force show streaming overlay for newest AI message to test
+  const isNewestAiMessage = isAi && message.text.includes("Starting Research");
+  const forceStreaming = isNewestAiMessage && (isStreaming || streamingUpdates.length > 0);
+  
+  if (forceStreaming) {
+    console.log('🔥 FORCING streaming overlay for message:', message.id);
+  }
 
   const handleCanvasExpand = () => {
     if (onOpenCanvas) {
@@ -72,11 +109,15 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
               : "bg-primary/90 backdrop-blur-md border border-primary/30 text-primary-foreground rounded-tr-sm shadow-glass hover:bg-primary/95"
           )}
         >
-          {/* Streaming Overlay for AI messages */}
-          {isAi && isStreaming && (
+          {/* Enhanced Streaming Overlay for AI messages */}
+          {isAi && (forceStreaming || isStreaming || streamingUpdates.length > 0) && (
             <StreamingOverlay
-              isVisible={isStreaming}
-              updates={streamingUpdates}
+              isVisible={forceStreaming || isStreaming}
+              updates={streamingUpdates.length > 0 ? streamingUpdates : [
+                { type: 'search', message: 'Testing streaming overlay...', timestamp: Date.now() }
+              ]}
+              sources={streamingSources}
+              progress={streamingProgress.progress > 0 ? streamingProgress : { phase: 'searching', progress: 25 }}
               className="z-10"
             />
           )}
