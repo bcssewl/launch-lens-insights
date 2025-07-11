@@ -42,11 +42,17 @@ This implementation adds real-time streaming overlays to AI chat messages during
 ## 🔄 How It Works
 
 ### Streaming Flow
-1. **Query Detection**: `detectStreamingNeed()` determines if query should use streaming
-2. **WebSocket Connection**: Opens connection to backend streaming endpoint
-3. **Real-Time Updates**: Receives streaming events and updates overlay
-4. **Progress Visualization**: Shows animated progress with icons and messages
-5. **Final Response**: Updates message content and stops streaming overlay
+1. **Message Creation**: AI message is created first with a unique ID in the UI
+2. **Query Detection**: `detectStreamingNeed()` determines if query should use streaming
+3. **WebSocket Connection**: Opens connection to backend streaming endpoint with message ID
+4. **Real-Time Updates**: Receives streaming events and updates overlay on the correct message
+5. **Progress Visualization**: Shows animated progress with icons and messages
+6. **Final Response**: Updates message content and stops streaming overlay
+
+### Message ID Tracking Fix
+- **Issue Fixed**: Previously, streaming overlays were tracking a different ID than the UI message
+- **Solution**: `handleStreamingRequest` now accepts and uses the message ID from the AI message in the UI
+- **Result**: Overlays now properly appear on the correct message bubble during streaming
 
 ### UI Integration
 ```tsx
@@ -150,3 +156,23 @@ interface StreamingUpdate {
 ## 🎯 Next Steps
 
 The implementation is complete and ready for testing. The streaming overlays will automatically appear when users submit research queries while maintaining the existing instant response behavior for simple conversations.
+
+## 🧪 Testing & Verification
+
+### To Test Streaming Overlays:
+1. **Start the development server**: `npm run dev` or `bun dev`
+2. **Navigate to AI Assistant**: Use the Stratix model
+3. **Send a research query**: Try "analyze the market trends for electric vehicles"
+4. **Observe overlays**: You should see real-time progress updates on the AI message
+5. **Test simple queries**: Try "hello" - should get instant response without overlays
+
+### Expected Behavior:
+- **Research queries**: Show streaming overlays with progress updates
+- **Simple conversations**: Get instant responses without streaming
+- **Fallback**: If WebSocket fails, falls back to REST API
+- **Message tracking**: Overlays appear on the correct AI message bubble
+
+### Recent Fixes (2025-01-11):
+- **Message ID Mismatch**: Fixed issue where overlays weren't appearing because they tracked wrong message ID
+- **Streaming Function**: Updated `handleStreamingRequest` to accept and use the correct message ID
+- **UI Alignment**: Ensured streaming overlays attach to the actual AI message shown in the UI
