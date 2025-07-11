@@ -272,34 +272,30 @@ export const useMessages = (currentSessionId: string | null) => {
         const streamingMessageId = uuidv4();
         console.log('🎯 Starting streaming request with messageId:', streamingMessageId);
         
-        // Start streaming IMMEDIATELY
+        // CRITICAL FIX: Create and display the streaming message IMMEDIATELY
+        const streamingMessage: Message = {
+          id: streamingMessageId,
+          text: "🔍 **Starting Research...**\n\nInitializing comprehensive analysis...",
+          sender: 'ai',
+          timestamp: new Date(),
+          metadata: { messageType: 'progress_update' }
+        };
+        
+        // Add the message to UI BEFORE starting streaming
+        console.log('📝 Adding streaming message to UI immediately with ID:', streamingMessageId);
+        setMessages(prev => [...prev, streamingMessage]);
+        
+        // Start streaming AFTER message is in UI
         console.log('▶️ Starting streaming overlay for message:', streamingMessageId);
         startStreaming(streamingMessageId);
         
-        // Add initial update after ensuring streaming has started
+        // Add initial update after a short delay to ensure message is rendered
         setTimeout(() => {
           console.log('🚀 Adding initial search event for message:', streamingMessageId);
           addStreamingUpdate(streamingMessageId, 'search', 'Initializing comprehensive research...', {
             progress_percentage: 5
           });
         }, 100);
-        
-        // Show immediate feedback with streaming message
-        const streamingIndicator = "🔍 **Initializing Perplexity Research...**\n\nConnecting to research specialists...";
-        
-        // Add the streaming message to the UI
-        const streamingMessage: Message = {
-          id: streamingMessageId,
-          text: streamingIndicator,
-          sender: 'ai',
-          timestamp: new Date(),
-          metadata: { messageType: 'progress_update' }
-        };
-        
-        setMessages(prev => {
-          console.log('📝 Adding streaming message to UI with ID:', streamingMessageId);
-          return [...prev, streamingMessage];
-        });
         
         // Connect to WebSocket with improved error handling
         const wsUrl = 'wss://ai-agent-research-optivise-production.up.railway.app/stream';
@@ -312,7 +308,7 @@ export const useMessages = (currentSessionId: string | null) => {
         let initialTimeout: NodeJS.Timeout;
         let isConnectionAlive = true;
         
-        // IMPROVED: Longer connection timeout for complex research
+        // Connection timeout - increased to 60 seconds for complex research
         connectionTimeout = setTimeout(() => {
           console.error('⏰ WebSocket connection timeout (60 seconds)');
           if (!hasReceivedResponse && isConnectionAlive) {
@@ -323,7 +319,7 @@ export const useMessages = (currentSessionId: string | null) => {
             console.log('🔄 Falling back to REST API due to connection timeout');
             handleInstantRequest(prompt).then(resolve).catch(reject);
           }
-        }, 60000); // Increased to 60 seconds
+        }, 60000);
         
         ws.onopen = () => {
           console.log('✅ WebSocket connected for Perplexity-style streaming research');
@@ -354,7 +350,7 @@ export const useMessages = (currentSessionId: string | null) => {
           console.log('📤 Sending WebSocket request:', requestPayload);
           ws.send(JSON.stringify(requestPayload));
           
-          // IMPROVED: More frequent heartbeat for better connection stability
+          // Heartbeat for connection stability
           heartbeatInterval = setInterval(() => {
             if (ws.readyState === WebSocket.OPEN && isConnectionAlive) {
               try {
@@ -364,7 +360,7 @@ export const useMessages = (currentSessionId: string | null) => {
                 isConnectionAlive = false;
               }
             }
-          }, 15000); // Reduced to 15 seconds for better stability
+          }, 15000);
         };
         
         ws.onmessage = (event) => {
@@ -537,7 +533,7 @@ export const useMessages = (currentSessionId: string | null) => {
           }
         };
         
-        // IMPROVED: Extended overall timeout for complex research
+        // Overall timeout for complex research - 5 minutes
         initialTimeout = setTimeout(() => {
           if (!hasReceivedResponse && isConnectionAlive) {
             console.log('⏰ Streaming timeout (5 minutes), falling back to REST API for message:', streamingMessageId);
@@ -548,7 +544,7 @@ export const useMessages = (currentSessionId: string | null) => {
             ws.close();
             handleInstantRequest(prompt).then(resolve).catch(reject);
           }
-        }, 300000); // Increased to 5 minutes for complex research
+        }, 300000);
         
       } catch (error) {
         console.error('💥 Failed to initiate streaming for message:', error);
