@@ -166,13 +166,155 @@ The implementation is complete and ready for testing. The streaming overlays wil
 4. **Observe overlays**: You should see real-time progress updates on the AI message
 5. **Test simple queries**: Try "hello" - should get instant response without overlays
 
+### Alternative: Test New Implementation
+1. **Navigate to** `/dashboard/streaming-test` (if route added)
+2. **Use the standalone StreamingChat component** for isolated testing
+3. **Test WebSocket directly** in browser console:
+   ```javascript
+   // Import and run tests
+   import { runAllTests } from '/src/utils/streamingTests.ts';
+   runAllTests();
+   ```
+
 ### Expected Behavior:
 - **Research queries**: Show streaming overlays with progress updates
 - **Simple conversations**: Get instant responses without streaming
 - **Fallback**: If WebSocket fails, falls back to REST API
 - **Message tracking**: Overlays appear on the correct AI message bubble
 
+### Console Test (Direct WebSocket Verification):
+```javascript
+const ws = new WebSocket('wss://ai-agent-research-optivise-production.up.railway.app/stream');
+ws.onopen = () => {
+  console.log('✅ Connected');
+  ws.send(JSON.stringify({
+    query: "analyze fintech market trends",
+    context: {}
+  }));
+};
+ws.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+  console.log('📨', data.type, data);
+};
+```
+
 ### Recent Fixes (2025-01-11):
 - **Message ID Mismatch**: Fixed issue where overlays weren't appearing because they tracked wrong message ID
 - **Streaming Function**: Updated `handleStreamingRequest` to accept and use the correct message ID
 - **UI Alignment**: Ensured streaming overlays attach to the actual AI message shown in the UI
+- **Alternative Implementation**: Created standalone `StreamingChat` component for isolated testing
+
+## 🔧 Troubleshooting Guide
+
+### Issue: Streaming overlays still not appearing
+**Possible Causes & Solutions:**
+
+1. **WebSocket Connection Issues**
+   ```javascript
+   // Test in browser console:
+   const ws = new WebSocket('wss://ai-agent-research-optivise-production.up.railway.app/stream');
+   ws.onopen = () => console.log('✅ Connected');
+   ws.onerror = (e) => console.error('❌ Error:', e);
+   ```
+
+2. **Message ID Tracking**
+   - Check if `streamingState` in `useStreamingOverlay` is being updated
+   - Verify `isStreamingForMessage(messageId)` returns true for the correct message
+   - Console log the message IDs in both streaming handler and UI components
+
+3. **Component Rendering**
+   - Ensure `StreamingOverlay` component is properly imported in `ChatMessage.tsx`
+   - Check if overlay props are being passed correctly
+   - Verify CSS classes for overlays are not being overridden
+
+4. **Backend Message Types**
+   - Backend might be sending different message types than expected
+   - Check console for unhandled message types
+   - Update `handleStreamingMessage` switch statement for new types
+
+### Issue: Getting only final report without streaming
+**Debugging Steps:**
+
+1. **Check Query Detection**
+   ```typescript
+   // In useMessages.ts, add logging:
+   console.log('Should stream?', shouldUseStreaming, 'Query:', prompt);
+   ```
+
+2. **Verify Model Selection**
+   ```typescript
+   // Ensure selectedModel === 'stratix':
+   console.log('Selected model:', selectedModel);
+   ```
+
+3. **WebSocket vs REST Routing**
+   ```typescript
+   // In handleStratixRequest, add logging:
+   console.log('Using streaming?', shouldUseStreaming && messageId);
+   ```
+
+### Issue: Overlays appear but don't update
+**Check These:**
+
+1. **Overlay State Management**
+   ```typescript
+   // In useStreamingOverlay.ts:
+   console.log('Streaming state:', streamingState);
+   console.log('Updates for message:', getUpdatesForMessage(messageId));
+   ```
+
+2. **Message Updates**
+   ```typescript
+   // In streaming handler:
+   console.log('Adding update:', messageId, type, message);
+   ```
+
+3. **Component Re-renders**
+   - Check if React components are re-rendering when streaming state changes
+   - Use React DevTools to monitor state changes
+
+### Issue: WebSocket connection fails
+**Solutions:**
+
+1. **Network/Firewall Issues**
+   - Try from different network
+   - Check if corporate firewall blocks WebSocket connections
+   - Test with mobile hotspot
+
+2. **SSL Certificate Issues**
+   - Ensure using `wss://` not `ws://`
+   - Check browser console for SSL errors
+
+3. **Backend Availability**
+   - Test REST endpoint first: `https://ai-agent-research-optivise-production.up.railway.app/research`
+   - Check Railway app status
+
+### Issue: Performance or Memory Leaks
+**Optimization:**
+
+1. **WebSocket Cleanup**
+   ```typescript
+   // Ensure proper cleanup:
+   useEffect(() => {
+     return () => {
+       if (wsRef.current) {
+         wsRef.current.close();
+       }
+     };
+   }, []);
+   ```
+
+2. **State Management**
+   - Clear streaming state when component unmounts
+   - Limit number of stored streaming updates
+
+### Emergency Fallback
+If streaming continues to fail, you can temporarily modify the detection logic:
+
+```typescript
+// In useMessages.ts, force REST API for all queries:
+const shouldUseStreaming = false; // Disable streaming
+
+// Or force streaming for all queries:
+const shouldUseStreaming = true; // Force streaming
+```
