@@ -105,12 +105,21 @@ export const useN8nWebhook = () => {
           throw error;
         }
 
-        if (!data || !data.response) {
-          throw new Error('Invalid response from AI service');
+        if (!data) {
+          throw new Error('No data received from AI service');
         }
 
         console.log('Received response from AI service:', data);
-        return data.response;
+        
+        // Handle different response formats
+        const responseText = data.response || data.message || data.text || '';
+        
+        if (!responseText || responseText.trim() === '') {
+          console.warn('Empty response received from AI service:', data);
+          return "I apologize, but I didn't receive a proper response. Please try asking your question again.";
+        }
+        
+        return responseText;
       } catch (error: any) {
         console.error(`Attempt ${retryCount + 1} failed:`, error);
         

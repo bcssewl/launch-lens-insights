@@ -67,15 +67,14 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
     streamingUpdatesCount: streamingUpdates.length,
     streamingSourcesCount: streamingSources.length,
     streamingProgress,
-    isReport
+    isReport,
+    messageText: message.text?.substring(0, 100) + (message.text?.length > 100 ? '...' : '')
   });
 
-  // TEMPORARY DEBUG: Force show streaming overlay for newest AI message to test
-  const isNewestAiMessage = isAi && message.text.includes("Starting Research");
-  const forceStreaming = isNewestAiMessage && (isStreaming || streamingUpdates.length > 0);
-  
-  if (forceStreaming) {
-    console.log('🔥 FORCING streaming overlay for message:', message.id);
+  // Don't render AI messages with empty or whitespace-only content
+  if (isAi && (!message.text || message.text.trim() === '')) {
+    console.log('🚫 Skipping empty AI message:', message.id);
+    return null;
   }
 
   const handleCanvasExpand = () => {
@@ -110,14 +109,12 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
           )}
         >
           {/* Enhanced Streaming Overlay for AI messages */}
-          {isAi && (forceStreaming || isStreaming || streamingUpdates.length > 0) && (
+          {isAi && (isStreaming || streamingUpdates.length > 0) && (
             <StreamingOverlay
-              isVisible={forceStreaming || isStreaming}
-              updates={streamingUpdates.length > 0 ? streamingUpdates : [
-                { type: 'search', message: 'Testing streaming overlay...', timestamp: Date.now() }
-              ]}
+              isVisible={isStreaming}
+              updates={streamingUpdates}
               sources={streamingSources}
-              progress={streamingProgress.progress > 0 ? streamingProgress : { phase: 'searching', progress: 25 }}
+              progress={streamingProgress}
               className="z-10"
             />
           )}

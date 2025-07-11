@@ -57,9 +57,23 @@ export const useMessages = (currentSessionId: string | null) => {
     if (!isInitialLoad && history.length > 0) {
       console.log('Converting history to messages:', history.slice(0, 3));
       const convertedMessages = history.map((entry, index) => {
+        // Enhanced logging to debug the message conversion
+        console.log(`Processing history entry ${index}:`, entry);
+        
+        if (!entry.message || typeof entry.message !== 'string') {
+          console.warn(`Invalid message entry at index ${index}:`, entry);
+          return null;
+        }
+        
         const lines = entry.message.split('\n');
         const isUser = lines[0].startsWith('USER:');
         const text = isUser ? lines[0].substring(5).trim() : lines.slice(1).join('\n').trim();
+        
+        // Don't render empty AI messages
+        if (!isUser && (!text || text.trim() === '')) {
+          console.log(`Skipping empty AI message at index ${index}`);
+          return null;
+        }
         
         return {
           id: `history-${index}`,
@@ -67,7 +81,7 @@ export const useMessages = (currentSessionId: string | null) => {
           sender: isUser ? 'user' : 'ai',
           timestamp: new Date(Date.now() - (history.length - index) * 1000),
         } as Message;
-      });
+      }).filter(Boolean); // Remove null entries
       
       setMessages([...initialMessages, ...convertedMessages]);
       console.log('Loaded messages from history:', convertedMessages.length);
@@ -219,6 +233,12 @@ export const useMessages = (currentSessionId: string | null) => {
         }
         
         aiResponseText = await sendMessageToN8n(contextMessage, currentSessionId);
+      }
+      
+      // Don't create message if response is empty
+      if (!aiResponseText || aiResponseText.trim() === '') {
+        console.warn('Received empty response from AI service');
+        aiResponseText = "I apologize, but I didn't receive a proper response. Please try asking your question again.";
       }
       
       const aiResponse: Message = {
