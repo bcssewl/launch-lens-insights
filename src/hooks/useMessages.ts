@@ -310,18 +310,20 @@ export const useMessages = (currentSessionId: string | null) => {
         let connectionTimeout: NodeJS.Timeout;
         let heartbeatInterval: NodeJS.Timeout;
         let initialTimeout: NodeJS.Timeout;
+        let isConnectionAlive = true;
         
-        // Set connection timeout
+        // IMPROVED: Longer connection timeout for complex research
         connectionTimeout = setTimeout(() => {
-          console.error('⏰ WebSocket connection timeout');
-          if (!hasReceivedResponse) {
+          console.error('⏰ WebSocket connection timeout (60 seconds)');
+          if (!hasReceivedResponse && isConnectionAlive) {
             clearTimeout(initialTimeout);
+            isConnectionAlive = false;
             ws.close();
             stopStreaming();
-            console.log('🔄 Falling back to REST API due to timeout');
+            console.log('🔄 Falling back to REST API due to connection timeout');
             handleInstantRequest(prompt).then(resolve).catch(reject);
           }
-        }, 10000);
+        }, 60000); // Increased to 60 seconds
         
         ws.onopen = () => {
           console.log('✅ WebSocket connected for Perplexity-style streaming research');
@@ -329,10 +331,12 @@ export const useMessages = (currentSessionId: string | null) => {
           
           // Send search progress event
           setTimeout(() => {
-            console.log('🚀 Sending search progress event for message:', streamingMessageId);
-            addStreamingUpdate(streamingMessageId, 'search', 'Analyzing query and selecting research approach...', {
-              progress_percentage: 10
-            });
+            if (isConnectionAlive) {
+              console.log('🚀 Sending search progress event for message:', streamingMessageId);
+              addStreamingUpdate(streamingMessageId, 'search', 'Analyzing query and selecting research approach...', {
+                progress_percentage: 10
+              });
+            }
           }, 200);
           
           // Send the research request
@@ -350,16 +354,23 @@ export const useMessages = (currentSessionId: string | null) => {
           console.log('📤 Sending WebSocket request:', requestPayload);
           ws.send(JSON.stringify(requestPayload));
           
-          // Set up heartbeat to keep connection alive
+          // IMPROVED: More frequent heartbeat for better connection stability
           heartbeatInterval = setInterval(() => {
-            if (ws.readyState === WebSocket.OPEN) {
-              ws.send(JSON.stringify({ type: 'ping' }));
+            if (ws.readyState === WebSocket.OPEN && isConnectionAlive) {
+              try {
+                ws.send(JSON.stringify({ type: 'ping' }));
+              } catch (error) {
+                console.error('❌ Failed to send heartbeat:', error);
+                isConnectionAlive = false;
+              }
             }
-          }, 30000);
+          }, 15000); // Reduced to 15 seconds for better stability
         };
         
         ws.onmessage = (event) => {
           try {
+            if (!isConnectionAlive) return;
+            
             const data = JSON.parse(event.data);
             console.log('📨 WebSocket message received:', {
               type: data.type,
@@ -417,8 +428,10 @@ export const useMessages = (currentSessionId: string | null) => {
               case 'complete':
                 console.log('🎉 Processing complete event for message:', streamingMessageId);
                 hasReceivedResponse = true;
+                isConnectionAlive = false;
                 clearInterval(heartbeatInterval);
                 clearTimeout(initialTimeout);
+                clearTimeout(connectionTimeout);
                 ws.close();
                 
                 // Stop streaming overlay
@@ -452,7 +465,9 @@ export const useMessages = (currentSessionId: string | null) => {
               case 'research_complete':
                 console.log('✅ Processing legacy research_complete event for message:', streamingMessageId);
                 hasReceivedResponse = true;
+                isConnectionAlive = false;
                 clearInterval(heartbeatInterval);
+                clearTimeout(initialTimeout);
                 ws.close();
                 stopStreaming();
                 
@@ -494,39 +509,46 @@ export const useMessages = (currentSessionId: string | null) => {
         
         ws.onerror = (error) => {
           console.error('🚨 WebSocket error for message:', streamingMessageId, error);
-          clearTimeout(connectionTimeout);
-          clearTimeout(initialTimeout);
-          clearInterval(heartbeatInterval);
-          if (!hasReceivedResponse) {
-            stopStreaming();
-            console.log('🔄 Falling back to REST API for message:', streamingMessageId);
-            handleInstantRequest(prompt).then(resolve).catch(reject);
+          if (isConnectionAlive) {
+            isConnectionAlive = false;
+            clearTimeout(connectionTimeout);
+            clearTimeout(initialTimeout);
+            clearInterval(heartbeatInterval);
+            if (!hasReceivedResponse) {
+              stopStreaming();
+              console.log('🔄 Falling back to REST API for message:', streamingMessageId);
+              handleInstantRequest(prompt).then(resolve).catch(reject);
+            }
           }
         };
         
         ws.onclose = (event) => {
           console.log('🔌 WebSocket connection closed for message:', streamingMessageId, { code: event.code, reason: event.reason });
-          clearTimeout(connectionTimeout);
-          clearTimeout(initialTimeout);
-          clearInterval(heartbeatInterval);
-          if (!hasReceivedResponse) {
-            stopStreaming();
-            console.log('🔄 Falling back due to incomplete streaming for message:', streamingMessageId);
-            handleInstantRequest(prompt).then(resolve).catch(reject);
+          if (isConnectionAlive) {
+            isConnectionAlive = false;
+            clearTimeout(connectionTimeout);
+            clearTimeout(initialTimeout);
+            clearInterval(heartbeatInterval);
+            if (!hasReceivedResponse) {
+              stopStreaming();
+              console.log('🔄 Falling back due to incomplete streaming for message:', streamingMessageId);
+              handleInstantRequest(prompt).then(resolve).catch(reject);
+            }
           }
         };
         
-        // Overall timeout fallback
+        // IMPROVED: Extended overall timeout for complex research
         initialTimeout = setTimeout(() => {
-          if (!hasReceivedResponse) {
-            console.log('⏰ Streaming timeout, falling back to REST API for message:', streamingMessageId);
+          if (!hasReceivedResponse && isConnectionAlive) {
+            console.log('⏰ Streaming timeout (5 minutes), falling back to REST API for message:', streamingMessageId);
+            isConnectionAlive = false;
             clearInterval(heartbeatInterval);
             clearTimeout(connectionTimeout);
             stopStreaming();
             ws.close();
             handleInstantRequest(prompt).then(resolve).catch(reject);
           }
-        }, 45000);
+        }, 300000); // Increased to 5 minutes for complex research
         
       } catch (error) {
         console.error('💥 Failed to initiate streaming for message:', error);
