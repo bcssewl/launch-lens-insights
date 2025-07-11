@@ -57,9 +57,9 @@ export const useStreamingOverlay = () => {
         currentMessageId: messageId,
         sources: [],
         currentPhase: 'initializing',
-        progress: 0
+        progress: 5
       };
-      console.log('🎬 StreamingOverlay: STARTED streaming state:', newState);
+      console.log('🎬 StreamingOverlay: NEW streaming state set:', newState);
       return newState;
     });
   }, []);
@@ -68,16 +68,23 @@ export const useStreamingOverlay = () => {
     console.log('📡 StreamingOverlay: Adding update for message:', messageId, 'type:', type, 'message:', message);
     
     setStreamingState(prev => {
-      // Debug logging for state matching
-      console.log('🔍 StreamingOverlay: Current state messageId:', prev.currentMessageId, 'Incoming messageId:', messageId, 'isStreaming:', prev.isStreaming);
+      console.log('🔍 StreamingOverlay: Current state before update:', {
+        currentMessageId: prev.currentMessageId,
+        isStreaming: prev.isStreaming,
+        updatesCount: prev.updates.length
+      });
       
-      // Only add updates for the current streaming message
-      if (prev.currentMessageId !== messageId) {
-        console.log('⚠️ StreamingOverlay: Message ID mismatch, ignoring update');
-        return prev;
+      // CRITICAL FIX: Don't ignore updates if currentMessageId doesn't match initially
+      // This can happen due to timing issues, so we'll be more permissive
+      if (prev.currentMessageId !== messageId && prev.currentMessageId !== null) {
+        console.log('⚠️ StreamingOverlay: Message ID mismatch but continuing, prev:', prev.currentMessageId, 'new:', messageId);
       }
 
-      // Normalize type to lowercase for case-insensitive matching
+      // If this is the first update and we don't have a currentMessageId, set it
+      if (!prev.currentMessageId && messageId) {
+        console.log('🔧 StreamingOverlay: Setting currentMessageId from first update:', messageId);
+      }
+
       const normalizedType = type.toLowerCase() as StreamingUpdate['type'];
       console.log('🔄 StreamingOverlay: Normalized type:', normalizedType);
 
@@ -110,7 +117,7 @@ export const useStreamingOverlay = () => {
       switch (normalizedType) {
         case 'search':
           currentPhase = 'searching';
-          progress = Math.max(progress, 10);
+          progress = Math.max(progress, 15);
           break;
         case 'source':
           currentPhase = 'discovering';
@@ -127,7 +134,6 @@ export const useStreamingOverlay = () => {
         case 'complete':
           currentPhase = 'complete';
           progress = 100;
-          // Add final sources if provided
           if (data?.sources) {
             newSources = data.sources;
           }
@@ -136,15 +142,16 @@ export const useStreamingOverlay = () => {
 
       const newState = {
         ...prev,
+        currentMessageId: prev.currentMessageId || messageId, // Ensure we have a messageId
         updates: [...prev.updates, newUpdate],
         sources: newSources,
         currentPhase,
         progress,
-        isStreaming: true // Ensure streaming stays true until stopped
+        isStreaming: normalizedType !== 'complete' // Keep streaming until complete
       };
 
       console.log('✅ StreamingOverlay: Updated state:', {
-        messageId,
+        messageId: newState.currentMessageId,
         updateCount: newState.updates.length,
         currentPhase: newState.currentPhase,
         progress: newState.progress,
@@ -180,13 +187,27 @@ export const useStreamingOverlay = () => {
   }, []);
 
   const isStreamingForMessage = useCallback((messageId: string) => {
+    // DEFENSIVE CHECK: Also return true if we have updates for this message
+    const hasUpdates = streamingState.updates.length > 0 && 
+                      (streamingState.currentMessageId === messageId || !streamingState.currentMessageId);
     const isStreaming = streamingState.isStreaming && streamingState.currentMessageId === messageId;
-    console.log('🤔 StreamingOverlay: isStreamingForMessage check:', messageId, 'result:', isStreaming, 'currentMessageId:', streamingState.currentMessageId, 'isStreaming:', streamingState.isStreaming);
-    return isStreaming;
-  }, [streamingState.isStreaming, streamingState.currentMessageId]);
+    const result = isStreaming || hasUpdates;
+    
+    console.log('🤔 StreamingOverlay: isStreamingForMessage check:', {
+      messageId,
+      currentMessageId: streamingState.currentMessageId,
+      isStreaming: streamingState.isStreaming,
+      hasUpdates,
+      result
+    });
+    
+    return result;
+  }, [streamingState.isStreaming, streamingState.currentMessageId, streamingState.updates]);
 
   const getUpdatesForMessage = useCallback((messageId: string) => {
-    if (streamingState.currentMessageId === messageId) {
+    // DEFENSIVE: Return updates if we have them, even if currentMessageId doesn't match exactly
+    if (streamingState.currentMessageId === messageId || 
+        (streamingState.updates.length > 0 && !streamingState.currentMessageId)) {
       console.log('📋 StreamingOverlay: Getting updates for message:', messageId, 'count:', streamingState.updates.length);
       return streamingState.updates;
     }
@@ -195,7 +216,8 @@ export const useStreamingOverlay = () => {
   }, [streamingState.currentMessageId, streamingState.updates]);
 
   const getSourcesForMessage = useCallback((messageId: string) => {
-    if (streamingState.currentMessageId === messageId) {
+    if (streamingState.currentMessageId === messageId || 
+        (streamingState.sources.length > 0 && !streamingState.currentMessageId)) {
       console.log('🔗 StreamingOverlay: Getting sources for message:', messageId, 'count:', streamingState.sources.length);
       return streamingState.sources;
     }
@@ -203,7 +225,8 @@ export const useStreamingOverlay = () => {
   }, [streamingState.currentMessageId, streamingState.sources]);
 
   const getProgressForMessage = useCallback((messageId: string) => {
-    if (streamingState.currentMessageId === messageId) {
+    if (streamingState.currentMessageId === messageId || 
+        (streamingState.progress > 0 && !streamingState.currentMessageId)) {
       const progress = {
         phase: streamingState.currentPhase,
         progress: streamingState.progress
@@ -226,7 +249,6 @@ export const useStreamingOverlay = () => {
     getUpdatesForMessage,
     getSourcesForMessage,
     getProgressForMessage,
-    // Export the ref for use in useMessages hook
     streamingUpdateRef
   };
 };

@@ -272,11 +272,19 @@ export const useMessages = (currentSessionId: string | null) => {
         const streamingMessageId = uuidv4();
         console.log('🎯 Starting streaming request with messageId:', streamingMessageId);
         
-        // CRITICAL FIX: Start streaming BEFORE adding message to UI
+        // CRITICAL FIX: Start streaming BEFORE creating WebSocket
         console.log('▶️ Starting streaming overlay for message:', streamingMessageId);
         startStreaming(streamingMessageId);
         
-        // Show immediate feedback
+        // Add immediate update to show we're starting
+        setTimeout(() => {
+          console.log('🚀 Adding initial search event for message:', streamingMessageId);
+          addStreamingUpdate(streamingMessageId, 'search', 'Initializing comprehensive research...', {
+            progress_percentage: 5
+          });
+        }, 100);
+        
+        // Show immediate feedback with streaming message
         const streamingIndicator = "🔍 **Initializing Perplexity Research...**\n\nConnecting to research specialists...";
         
         // Add the streaming message to the UI
@@ -311,16 +319,16 @@ export const useMessages = (currentSessionId: string | null) => {
             console.log('🔄 Falling back to REST API due to timeout');
             handleInstantRequest(prompt).then(resolve).catch(reject);
           }
-        }, 10000); // 10 second connection timeout
+        }, 10000);
         
         ws.onopen = () => {
           console.log('✅ WebSocket connected for Perplexity-style streaming research');
           clearTimeout(connectionTimeout);
           
           // Send initial search event immediately after connection
-          console.log('🚀 Sending initial search event for message:', streamingMessageId);
-          addStreamingUpdate(streamingMessageId, 'search', 'Starting comprehensive research...', {
-            progress_percentage: 5
+          console.log('🚀 Sending search progress event for message:', streamingMessageId);
+          addStreamingUpdate(streamingMessageId, 'search', 'Analyzing query and selecting research approach...', {
+            progress_percentage: 10
           });
           
           // Send the research request
@@ -343,7 +351,7 @@ export const useMessages = (currentSessionId: string | null) => {
             if (ws.readyState === WebSocket.OPEN) {
               ws.send(JSON.stringify({ type: 'ping' }));
             }
-          }, 30000); // Ping every 30 seconds
+          }, 30000);
         };
         
         ws.onmessage = (event) => {
@@ -367,7 +375,7 @@ export const useMessages = (currentSessionId: string | null) => {
                 console.log('🔍 Processing search event for message:', streamingMessageId);
                 addStreamingUpdate(streamingMessageId, 'search', data.message || 'Searching for information...', {
                   search_queries: data.data?.search_queries,
-                  progress_percentage: data.data?.progress_percentage || 10
+                  progress_percentage: data.data?.progress_percentage || 15
                 });
                 break;
                 
@@ -486,7 +494,6 @@ export const useMessages = (currentSessionId: string | null) => {
           clearInterval(heartbeatInterval);
           if (!hasReceivedResponse) {
             stopStreaming();
-            // Fallback to regular API call
             console.log('🔄 Falling back to REST API for message:', streamingMessageId);
             handleInstantRequest(prompt).then(resolve).catch(reject);
           }
@@ -498,7 +505,6 @@ export const useMessages = (currentSessionId: string | null) => {
           clearInterval(heartbeatInterval);
           if (!hasReceivedResponse) {
             stopStreaming();
-            // If we didn't get a complete response, fall back
             console.log('🔄 Falling back due to incomplete streaming for message:', streamingMessageId);
             handleInstantRequest(prompt).then(resolve).catch(reject);
           }
@@ -513,12 +519,11 @@ export const useMessages = (currentSessionId: string | null) => {
             ws.close();
             handleInstantRequest(prompt).then(resolve).catch(reject);
           }
-        }, 45000); // 45 second timeout as requested
+        }, 45000);
         
       } catch (error) {
         console.error('💥 Failed to initiate streaming for message:', error);
         stopStreaming();
-        // Fallback to instant request
         handleInstantRequest(prompt).then(resolve).catch(reject);
       }
     });

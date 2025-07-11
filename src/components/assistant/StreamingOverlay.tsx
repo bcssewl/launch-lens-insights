@@ -124,7 +124,7 @@ const StreamingOverlay: React.FC<StreamingOverlayProps> = ({
           setCurrentUpdateIndex(prev => prev + 1);
           setIsAnimating(false);
         }, 200);
-      }, 2500); // Show each update for 2.5 seconds
+      }, 2500);
       
       return () => clearTimeout(timer);
     }
@@ -138,22 +138,29 @@ const StreamingOverlay: React.FC<StreamingOverlayProps> = ({
     }
   }, [updates]);
 
-  // Force visibility for debugging - show overlay if we have any updates
+  // CRITICAL FIX: Show overlay if we have updates OR if explicitly visible
   const shouldShow = isVisible || updates.length > 0;
 
-  console.log('👁️ StreamingOverlay: Visibility check:', {
+  console.log('👁️ StreamingOverlay: Visibility decision:', {
     isVisible,
     updatesLength: updates.length,
     shouldShow,
-    finalDecision: shouldShow && updates.length > 0
+    finalDecision: shouldShow
   });
 
-  if (!shouldShow || updates.length === 0) {
-    console.log('🚫 StreamingOverlay: Not rendering - no visibility or no updates');
+  // Show overlay if we have any updates at all
+  if (!shouldShow) {
+    console.log('🚫 StreamingOverlay: Not rendering - no visibility and no updates');
     return null;
   }
 
-  const currentUpdate = updates[currentUpdateIndex];
+  // If we have updates, show the current one, otherwise show a default state
+  const currentUpdate = updates.length > 0 ? updates[currentUpdateIndex] : {
+    type: 'search' as const,
+    message: 'Initializing research...',
+    timestamp: Date.now()
+  };
+
   if (!currentUpdate) {
     console.log('⚠️ StreamingOverlay: No current update available');
     return null;
@@ -179,11 +186,6 @@ const StreamingOverlay: React.FC<StreamingOverlayProps> = ({
       className
     )}>
       <div className="space-y-3">
-        {/* Debug Info - Remove in production */}
-        <div className="text-xs text-muted-foreground/50 font-mono">
-          Debug: {updates.length} updates | {currentUpdateIndex + 1}/{updates.length} | {currentUpdate.type}
-        </div>
-
         {/* Main Status */}
         <div className="flex items-center gap-3">
           {/* Animated Icon */}
@@ -273,19 +275,21 @@ const StreamingOverlay: React.FC<StreamingOverlayProps> = ({
         )}
 
         {/* Progress Dots */}
-        <div className="flex items-center justify-center gap-1">
-          {updates.map((_, index) => (
-            <div
-              key={index}
-              className={cn(
-                "w-1 h-1 rounded-full transition-all duration-300",
-                index <= currentUpdateIndex
-                  ? "bg-blue-500 opacity-100"
-                  : "bg-muted-foreground/30 opacity-50"
-              )}
-            />
-          ))}
-        </div>
+        {updates.length > 1 && (
+          <div className="flex items-center justify-center gap-1">
+            {updates.map((_, index) => (
+              <div
+                key={index}
+                className={cn(
+                  "w-1 h-1 rounded-full transition-all duration-300",
+                  index <= currentUpdateIndex
+                    ? "bg-blue-500 opacity-100"
+                    : "bg-muted-foreground/30 opacity-50"
+                )}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
