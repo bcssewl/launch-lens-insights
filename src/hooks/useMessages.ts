@@ -208,6 +208,9 @@ Initializing comprehensive market research and analysis.`;
             text: newContent,
             sender: 'ai',
             timestamp: new Date(),
+            metadata: {
+              messageType: 'progress_update'
+            }
           };
           progressMessageId = progressMessage.id;
           return [...prev, progressMessage];
@@ -271,6 +274,10 @@ Initializing comprehensive market research and analysis.`;
                       text: formattedText,
                       sender: 'ai',
                       timestamp: new Date(),
+                      metadata: {
+                        isCompleted: true,
+                        messageType: 'completed_report'
+                      }
                     };
                     
                     setMessages(prev => {
@@ -328,6 +335,10 @@ Initializing comprehensive market research and analysis.`;
                   text: formattedText,
                   sender: 'ai',
                   timestamp: new Date(),
+                  metadata: {
+                    isCompleted: true,
+                    messageType: 'completed_report'
+                  }
                 };
                 
                 setMessages(prev => {

@@ -6,6 +6,10 @@ export interface Message {
   text: string;
   sender: 'ai' | 'user';
   timestamp: Date;
+  metadata?: {
+    isCompleted?: boolean;
+    messageType?: 'progress_update' | 'completed_report' | 'standard';
+  };
 }
 
 export const formatTimestamp = (date: Date): string => {

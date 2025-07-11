@@ -13,6 +13,10 @@ export interface ChatMessageData {
   text: string;
   sender: 'ai' | 'user';
   timestamp: string;
+  metadata?: {
+    isCompleted?: boolean;
+    messageType?: 'progress_update' | 'completed_report' | 'standard';
+  };
 }
 
 interface ChatMessageProps {
@@ -29,7 +33,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
   onCanvasPrint
 }) => {
   const isAi = message.sender === 'ai';
-  const isReport = isAi && isReportMessage(message.text);
+  const isReport = isAi && isReportMessage(message.text, message.metadata);
 
   const handleCanvasExpand = () => {
     if (onOpenCanvas) {

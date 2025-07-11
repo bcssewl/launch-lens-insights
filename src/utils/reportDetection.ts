@@ -1,8 +1,32 @@
 
-export const isReportMessage = (content: string): boolean => {
-  // Check for minimum word count (approximately 300 words)
+export const isReportMessage = (content: string, metadata?: { isCompleted?: boolean; messageType?: string }): boolean => {
+  // If we have metadata indicating this is a completed report, check for that first
+  if (metadata?.isCompleted === true || metadata?.messageType === 'completed_report') {
+    return true;
+  }
+  
+  // If it's explicitly marked as progress update, don't treat as report
+  if (metadata?.messageType === 'progress_update') {
+    return false;
+  }
+  
+  // For Stratix reports, only consider them reports if they contain completion indicators
+  if (content.includes('📊 Stratix Research Report') || content.includes('Research Report')) {
+    // Check if this is a completed research report (not progress)
+    const hasCompletionIndicators = 
+      content.includes('Research Details') || // Final formatted report
+      content.includes('## Research Complete') || // Completion section
+      (content.includes('Research Report') && !content.includes('⚡') && !content.includes('📊 **Preliminary')); // Not progress updates
+    
+    return hasCompletionIndicators;
+  }
+  
+  // For other types of reports (business validation, etc.), use word count as before
+  // but exclude obvious progress indicators
   const wordCount = content.trim().split(/\s+/).length;
-  return wordCount >= 300;
+  const hasProgressIndicators = content.includes('⚡') || content.includes('📊 **Preliminary') || content.includes('**Agent Update:**');
+  
+  return wordCount >= 300 && !hasProgressIndicators;
 };
 
 export const getReportPreview = (content: string, maxLength: number = 200): string => {
