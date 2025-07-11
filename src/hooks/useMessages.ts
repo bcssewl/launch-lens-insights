@@ -64,9 +64,9 @@ export const useMessages = (currentSessionId: string | null) => {
         return {
           id: `history-${index}`,
           text,
-          sender: isUser ? 'user' : 'ai' as const,
+          sender: isUser ? 'user' : 'ai',
           timestamp: new Date(Date.now() - (history.length - index) * 1000),
-        };
+        } as Message;
       });
       
       setMessages([...initialMessages, ...convertedMessages]);
