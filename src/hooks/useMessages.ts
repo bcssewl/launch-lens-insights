@@ -272,17 +272,17 @@ export const useMessages = (currentSessionId: string | null) => {
         const streamingMessageId = uuidv4();
         console.log('🎯 Starting streaming request with messageId:', streamingMessageId);
         
-        // CRITICAL FIX: Start streaming IMMEDIATELY and SYNCHRONOUSLY
+        // CRITICAL FIX: Start streaming IMMEDIATELY and wait a tick for state to settle
         console.log('▶️ Starting streaming overlay for message:', streamingMessageId);
         startStreaming(streamingMessageId);
         
-        // Add immediate update AFTER a brief delay to ensure state is set
-        const initialTimeout = setTimeout(() => {
+        // IMPROVED: Add initial update after ensuring streaming has started
+        setTimeout(() => {
           console.log('🚀 Adding initial search event for message:', streamingMessageId);
           addStreamingUpdate(streamingMessageId, 'search', 'Initializing comprehensive research...', {
             progress_percentage: 5
           });
-        }, 50); // Small delay to ensure startStreaming has taken effect
+        }, 100); // Small delay to ensure state is synchronized
         
         // Show immediate feedback with streaming message
         const streamingIndicator = "🔍 **Initializing Perplexity Research...**\n\nConnecting to research specialists...";
@@ -326,13 +326,13 @@ export const useMessages = (currentSessionId: string | null) => {
           console.log('✅ WebSocket connected for Perplexity-style streaming research');
           clearTimeout(connectionTimeout);
           
-          // Send search event after connection is established
+          // IMPROVED: Send search event with proper timing
           setTimeout(() => {
             console.log('🚀 Sending search progress event for message:', streamingMessageId);
             addStreamingUpdate(streamingMessageId, 'search', 'Analyzing query and selecting research approach...', {
               progress_percentage: 10
             });
-          }, 100);
+          }, 200); // Slightly longer delay for better synchronization
           
           // Send the research request
           const requestPayload = {
@@ -363,8 +363,7 @@ export const useMessages = (currentSessionId: string | null) => {
             console.log('📨 WebSocket message received:', {
               type: data.type,
               message: data.message,
-              messageId: streamingMessageId,
-              rawData: data
+              messageId: streamingMessageId
             });
             
             // Ignore ping responses

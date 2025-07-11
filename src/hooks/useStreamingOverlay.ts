@@ -46,8 +46,9 @@ export const useStreamingOverlay = () => {
     progress: 0
   });
 
-  // CRITICAL FIX: Use refs for synchronous access to current values
+  // CRITICAL FIX: Use refs for immediate synchronous access
   const currentMessageIdRef = useRef<string | null>(null);
+  const isStreamingRef = useRef<boolean>(false);
   const updatesRef = useRef<StreamingUpdate[]>([]);
   const sourcesRef = useRef<Array<{ name: string; url: string; type?: string; confidence?: number }>>([]);
 
@@ -56,6 +57,7 @@ export const useStreamingOverlay = () => {
     
     // CRITICAL FIX: Set ref values SYNCHRONOUSLY first
     currentMessageIdRef.current = messageId;
+    isStreamingRef.current = true;
     updatesRef.current = [];
     sourcesRef.current = [];
     
@@ -69,32 +71,30 @@ export const useStreamingOverlay = () => {
       progress: 5
     });
     
-    console.log('🎬 StreamingOverlay: Refs and state updated for message:', messageId);
+    console.log('🎬 StreamingOverlay: Started streaming for message:', messageId);
   }, []);
 
   const addStreamingUpdate = useCallback((messageId: string, type: string, message: string, data?: any) => {
-    console.log('📡 StreamingOverlay: Adding update for message:', messageId, 'type:', type, 'message:', message);
+    console.log('📡 StreamingOverlay: Adding update for message:', messageId, 'type:', type);
     
     // DEFENSIVE CHECK: Use ref values as primary source of truth
     const currentId = currentMessageIdRef.current;
-    
-    if (!currentId && !messageId) {
-      console.warn('⚠️ StreamingOverlay: No valid message ID available');
-      return;
-    }
+    const isCurrentlyStreaming = isStreamingRef.current;
     
     // DEFENSIVE: If we have a messageId but no current ID in ref, set it
-    if (messageId && !currentId) {
+    if (messageId && !currentId && isCurrentlyStreaming) {
       console.log('🔧 StreamingOverlay: Setting currentMessageId from update:', messageId);
       currentMessageIdRef.current = messageId;
     }
     
-    // DEFENSIVE: Use whichever ID we have
+    // Only process if we're streaming for this message or no specific message is set
     const effectiveMessageId = currentId || messageId;
+    if (!isCurrentlyStreaming && !messageId) {
+      console.warn('⚠️ StreamingOverlay: Not streaming and no messageId provided');
+      return;
+    }
 
     const normalizedType = type.toLowerCase() as StreamingUpdate['type'];
-    console.log('🔄 StreamingOverlay: Normalized type:', normalizedType);
-
     const newUpdate: StreamingUpdate = {
       type: normalizedType,
       message,
@@ -115,7 +115,6 @@ export const useStreamingOverlay = () => {
           type: data.source_type || 'article',
           confidence: data.confidence
         }];
-        console.log('🔗 StreamingOverlay: Added new source:', data.source_name);
       }
     }
 
@@ -124,7 +123,7 @@ export const useStreamingOverlay = () => {
       sourcesRef.current = data.sources;
     }
 
-    // Update current phase and progress
+    // Calculate progress
     let currentPhase = 'initializing';
     let progress = 5;
     
@@ -135,19 +134,20 @@ export const useStreamingOverlay = () => {
         break;
       case 'source':
         currentPhase = 'discovering';
-        progress = Math.max(30, data?.progress_percentage || Math.min(progress + 15, 60));
+        progress = Math.max(30, data?.progress_percentage || 45);
         break;
       case 'snippet':
         currentPhase = 'analyzing';
-        progress = Math.max(50, data?.progress_percentage || Math.min(progress + 10, 80));
+        progress = Math.max(50, data?.progress_percentage || 65);
         break;
       case 'thought':
         currentPhase = 'synthesizing';
-        progress = Math.max(70, data?.progress_percentage || Math.min(progress + 5, 95));
+        progress = Math.max(70, data?.progress_percentage || 85);
         break;
       case 'complete':
         currentPhase = 'complete';
         progress = 100;
+        isStreamingRef.current = false;
         break;
     }
 
@@ -162,18 +162,13 @@ export const useStreamingOverlay = () => {
       isStreaming: normalizedType !== 'complete'
     }));
 
-    console.log('✅ StreamingOverlay: Updated state with refs:', {
-      messageId: effectiveMessageId,
-      updateCount: updatesRef.current.length,
-      currentPhase,
-      progress,
-      sourcesCount: sourcesRef.current.length,
-      isStreaming: normalizedType !== 'complete'
-    });
+    console.log('✅ StreamingOverlay: Updated state for message:', effectiveMessageId, 'updates:', updatesRef.current.length);
   }, []);
 
   const stopStreaming = useCallback(() => {
     console.log('🛑 StreamingOverlay: Stopping streaming');
+    isStreamingRef.current = false;
+    
     setStreamingState(prev => ({
       ...prev,
       isStreaming: false,
@@ -200,53 +195,49 @@ export const useStreamingOverlay = () => {
   }, []);
 
   const isStreamingForMessage = useCallback((messageId: string) => {
-    // DEFENSIVE CHECK: Use refs for immediate access
-    const currentId = currentMessageIdRef.current;
+    // IMPROVED: Check both refs and state for comprehensive coverage
+    const currentIdRef = currentMessageIdRef.current;
+    const isStreamingFromRef = isStreamingRef.current;
     const hasUpdatesInRef = updatesRef.current.length > 0;
     
-    const hasUpdatesInState = streamingState.updates.length > 0;
-    const isCurrentMessage = currentId === messageId || streamingState.currentMessageId === messageId;
-    const hasAnyUpdates = hasUpdatesInRef || hasUpdatesInState;
+    const isCurrentMessage = currentIdRef === messageId || streamingState.currentMessageId === messageId;
+    const hasUpdates = hasUpdatesInRef || streamingState.updates.length > 0;
+    const isStreaming = isStreamingFromRef || streamingState.isStreaming;
     
-    // Return true if we're streaming for this message OR if we have updates for it
-    const result = (streamingState.isStreaming && isCurrentMessage) || 
-                  (hasAnyUpdates && (isCurrentMessage || (!currentId && !streamingState.currentMessageId)));
+    // Return true if we're actively streaming for this message OR if we have updates for it
+    const result = (isStreaming && isCurrentMessage) || (hasUpdates && isCurrentMessage);
     
     console.log('🤔 StreamingOverlay: isStreamingForMessage check:', {
       messageId,
-      currentIdRef: currentId,
+      currentIdRef,
       currentIdState: streamingState.currentMessageId,
-      isStreaming: streamingState.isStreaming,
+      isStreamingFromRef,
+      isStreamingFromState: streamingState.isStreaming,
       hasUpdatesInRef,
-      hasUpdatesInState,
+      hasUpdatesInState: streamingState.updates.length,
       result
     });
     
     return result;
-  }, [streamingState.isStreaming, streamingState.currentMessageId, streamingState.updates]);
+  }, [streamingState]);
 
   const getUpdatesForMessage = useCallback((messageId: string) => {
     const currentId = currentMessageIdRef.current;
     
-    // DEFENSIVE: Return updates if we have them for this message or if no specific message is set
-    if (currentId === messageId || streamingState.currentMessageId === messageId || 
-        (updatesRef.current.length > 0 && (!currentId && !streamingState.currentMessageId))) {
+    if (currentId === messageId || streamingState.currentMessageId === messageId) {
       // Prefer ref values as they're more up-to-date
       const updates = updatesRef.current.length > 0 ? updatesRef.current : streamingState.updates;
       console.log('📋 StreamingOverlay: Getting updates for message:', messageId, 'count:', updates.length);
       return updates;
     }
     
-    console.log('📋 StreamingOverlay: No updates for message:', messageId);
     return [];
   }, [streamingState.currentMessageId, streamingState.updates]);
 
   const getSourcesForMessage = useCallback((messageId: string) => {
     const currentId = currentMessageIdRef.current;
     
-    if (currentId === messageId || streamingState.currentMessageId === messageId || 
-        (sourcesRef.current.length > 0 && (!currentId && !streamingState.currentMessageId))) {
-      // Prefer ref values as they're more up-to-date
+    if (currentId === messageId || streamingState.currentMessageId === messageId) {
       const sources = sourcesRef.current.length > 0 ? sourcesRef.current : streamingState.sources;
       console.log('🔗 StreamingOverlay: Getting sources for message:', messageId, 'count:', sources.length);
       return sources;
@@ -258,8 +249,7 @@ export const useStreamingOverlay = () => {
   const getProgressForMessage = useCallback((messageId: string) => {
     const currentId = currentMessageIdRef.current;
     
-    if (currentId === messageId || streamingState.currentMessageId === messageId || 
-        (streamingState.progress > 0 && (!currentId && !streamingState.currentMessageId))) {
+    if (currentId === messageId || streamingState.currentMessageId === messageId) {
       const progress = {
         phase: streamingState.currentPhase,
         progress: streamingState.progress

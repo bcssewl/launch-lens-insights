@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { 
@@ -132,13 +133,12 @@ const StreamingOverlay: React.FC<StreamingOverlayProps> = ({
   // Reset when new updates arrive
   useEffect(() => {
     if (updates.length > 0) {
-      console.log('🔄 StreamingOverlay: Resetting update index for new updates');
       setCurrentUpdateIndex(0);
     }
-  }, [updates]);
+  }, [updates.length]);
 
-  // IMPROVED VISIBILITY LOGIC: Show overlay if we have updates OR if explicitly visible
-  const shouldShow = isVisible || updates.length > 0;
+  // CRITICAL FIX: Show overlay if we have updates OR if explicitly visible
+  const shouldShow = updates.length > 0 || isVisible;
 
   console.log('👁️ StreamingOverlay: Visibility decision:', {
     isVisible,
@@ -147,11 +147,11 @@ const StreamingOverlay: React.FC<StreamingOverlayProps> = ({
   });
 
   if (!shouldShow) {
-    console.log('🚫 StreamingOverlay: Not rendering - no visibility and no updates');
+    console.log('🚫 StreamingOverlay: Not rendering - no updates and not visible');
     return null;
   }
 
-  // DEFENSIVE: Show current update or default state
+  // Show current update or default state
   const currentUpdate = updates.length > 0 ? updates[currentUpdateIndex] : {
     type: 'search' as const,
     message: 'Initializing research...',
