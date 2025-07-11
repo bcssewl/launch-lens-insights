@@ -70,6 +70,14 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
     isReport
   });
 
+  // TEMPORARY DEBUG: Force show streaming overlay for newest AI message to test
+  const isNewestAiMessage = isAi && message.text.includes("Starting Research");
+  const forceStreaming = isNewestAiMessage && (isStreaming || streamingUpdates.length > 0);
+  
+  if (forceStreaming) {
+    console.log('🔥 FORCING streaming overlay for message:', message.id);
+  }
+
   const handleCanvasExpand = () => {
     if (onOpenCanvas) {
       onOpenCanvas(message.id, message.text);
@@ -102,12 +110,14 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
           )}
         >
           {/* Enhanced Streaming Overlay for AI messages */}
-          {isAi && (isStreaming || streamingUpdates.length > 0) && (
+          {isAi && (forceStreaming || isStreaming || streamingUpdates.length > 0) && (
             <StreamingOverlay
-              isVisible={isStreaming}
-              updates={streamingUpdates}
+              isVisible={forceStreaming || isStreaming}
+              updates={streamingUpdates.length > 0 ? streamingUpdates : [
+                { type: 'search', message: 'Testing streaming overlay...', timestamp: Date.now() }
+              ]}
               sources={streamingSources}
-              progress={streamingProgress}
+              progress={streamingProgress.progress > 0 ? streamingProgress : { phase: 'searching', progress: 25 }}
               className="z-10"
             />
           )}
