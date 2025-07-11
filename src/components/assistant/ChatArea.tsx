@@ -7,6 +7,13 @@ import PerplexityEmptyState from '@/components/assistant/PerplexityEmptyState';
 import EnhancedChatInput from '@/components/assistant/EnhancedChatInput';
 import { Message } from '@/constants/aiAssistant';
 
+interface StreamingUpdate {
+  type: 'search' | 'source' | 'snippet' | 'thought' | 'complete';
+  message: string;
+  timestamp: number;
+  data?: any;
+}
+
 interface ChatAreaProps {
   messages: Message[];
   isTyping: boolean;
@@ -23,7 +30,17 @@ interface ChatAreaProps {
   onCanvasDownload?: () => void;
   onCanvasPrint?: () => void;
   isStreamingForMessage?: (messageId: string) => boolean;
-  getUpdatesForMessage?: (messageId: string) => any[];
+  getUpdatesForMessage?: (messageId: string) => StreamingUpdate[];
+  getSourcesForMessage?: (messageId: string) => Array<{
+    name: string;
+    url: string;
+    type?: string;
+    confidence?: number;
+  }>;
+  getProgressForMessage?: (messageId: string) => {
+    phase: string;
+    progress: number;
+  };
 }
 
 const ChatArea: React.FC<ChatAreaProps> = ({
@@ -36,7 +53,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   onCanvasDownload,
   onCanvasPrint,
   isStreamingForMessage,
-  getUpdatesForMessage
+  getUpdatesForMessage,
+  getSourcesForMessage,
+  getProgressForMessage
 }) => {
   const hasConversation = messages.length > 1 || isTyping;
 
@@ -68,6 +87,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                 onCanvasPrint={onCanvasPrint}
                 isStreaming={isStreamingForMessage ? isStreamingForMessage(msg.id) : false}
                 streamingUpdates={getUpdatesForMessage ? getUpdatesForMessage(msg.id) : []}
+                streamingSources={getSourcesForMessage ? getSourcesForMessage(msg.id) : []}
+                streamingProgress={getProgressForMessage ? getProgressForMessage(msg.id) : { phase: '', progress: 0 }}
               />
             ))}
             {isTyping && <TypingIndicator />}

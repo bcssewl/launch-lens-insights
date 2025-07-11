@@ -30,7 +30,9 @@ export const useMessages = (currentSessionId: string | null) => {
     addStreamingUpdate,
     stopStreaming,
     isStreamingForMessage,
-    getUpdatesForMessage
+    getUpdatesForMessage,
+    getSourcesForMessage,
+    getProgressForMessage
   } = useStreamingOverlay();
 
   const scrollToBottom = useCallback(() => {
@@ -271,7 +273,7 @@ export const useMessages = (currentSessionId: string | null) => {
         const streamingMessageId = uuidv4();
         
         // Show immediate feedback
-        const streamingIndicator = "🔍 **Initializing Research Stream...**\n\nConnecting to research specialists...";
+        const streamingIndicator = "🔍 **Initializing Perplexity Research...**\n\nConnecting to research specialists...";
         
         // Add the streaming message to the UI
         const streamingMessage: Message = {
@@ -294,7 +296,7 @@ export const useMessages = (currentSessionId: string | null) => {
         let hasReceivedResponse = false;
         
         ws.onopen = () => {
-          console.log('🔗 WebSocket connected for streaming research');
+          console.log('🔗 WebSocket connected for Perplexity-style streaming research');
           ws.send(JSON.stringify({
             query: prompt,
             context: { sessionId }
@@ -304,68 +306,63 @@ export const useMessages = (currentSessionId: string | null) => {
         ws.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);
-            console.log('📡 Streaming update:', data.type);
+            console.log('📡 Perplexity streaming update:', data.type, data.message);
             
+            // Handle new Perplexity-style events
             switch (data.type) {
-              case 'started':
-                addStreamingUpdate(streamingMessageId, 'started', '🎯 Research initiated - Analyzing query...', data);
+              case 'search':
+                addStreamingUpdate(streamingMessageId, 'search', data.message || 'Searching for information...', {
+                  search_queries: data.data?.search_queries,
+                  progress_percentage: data.data?.progress_percentage || 10
+                });
                 break;
                 
-              case 'agents_selected':
-                const agentNames = data.agent_names?.join(', ') || 'Research Specialists';
-                addStreamingUpdate(streamingMessageId, 'agents_selected', `🧠 Consulting: ${agentNames}`, data);
+              case 'source':
+                addStreamingUpdate(streamingMessageId, 'source', 
+                  data.message || `Found: ${data.data?.source_name || 'New source'}`, {
+                  source_name: data.data?.source_name,
+                  source_url: data.data?.source_url,
+                  source_type: data.data?.source_type,
+                  confidence: data.data?.confidence,
+                  progress_percentage: data.data?.progress_percentage
+                });
                 break;
                 
-              case 'source_discovery_started':
-                addStreamingUpdate(streamingMessageId, 'source_discovery_started', `🔍 ${data.agent_name || 'Agent'} searching for sources...`, data);
+              case 'snippet':
+                addStreamingUpdate(streamingMessageId, 'snippet',
+                  data.message || 'Analyzing content...', {
+                  snippet_text: data.data?.snippet_text,
+                  source_name: data.data?.source_name,
+                  confidence: data.data?.confidence,
+                  progress_percentage: data.data?.progress_percentage
+                });
                 break;
                 
-              case 'source_discovered':
-                addStreamingUpdate(streamingMessageId, 'source_discovered', `📚 Found: ${data.source_name} (${data.source_count || 1} sources)`, data);
+              case 'thought':
+                addStreamingUpdate(streamingMessageId, 'thought',
+                  data.message || 'Processing insights...', {
+                  progress_percentage: data.data?.progress_percentage,
+                  confidence: data.data?.confidence
+                });
                 break;
                 
-              case 'research_progress':
-                const progress = data.progress ? `${data.progress}%` : 'In progress';
-                addStreamingUpdate(streamingMessageId, 'research_progress', `📊 Analyzing data... ${progress}`, data);
-                break;
-                
-              case 'expert_analysis_started':
-                addStreamingUpdate(streamingMessageId, 'expert_analysis_started', `🧠 ${data.agent_name || 'Expert'} applying insights...`, data);
-                break;
-                
-              case 'synthesis_started':
-                addStreamingUpdate(streamingMessageId, 'synthesis_started', '🔗 Synthesizing findings from all specialists...', data);
-                break;
-                
-              case 'research_complete':
-                console.log('✅ Streaming research complete');
+              case 'complete':
+                console.log('✅ Perplexity streaming research complete');
                 hasReceivedResponse = true;
                 ws.close();
                 
                 // Stop streaming overlay
                 stopStreaming();
                 
-                // Format final response with metadata
-                let finalResponse = data.final_answer || "Research completed successfully.";
+                // Format final response
+                let finalResponse = data.message || data.data?.content || "Research completed successfully.";
                 
-                if (data.methodology && data.methodology !== "Conversational Response") {
-                  finalResponse += `\n\n---\n**Research Method:** ${data.methodology}`;
-                  
-                  if (data.agents_consulted && data.agents_consulted.length > 0) {
-                    finalResponse += `\n**Agents Consulted:** ${data.agents_consulted.join(', ')}`;
-                  }
-                  
-                  if (data.confidence) {
-                    const confidencePercent = Math.round(data.confidence * 100);
-                    finalResponse += `\n**Confidence Level:** ${confidencePercent}%`;
-                  }
-                  
-                  if (data.clickable_sources && data.clickable_sources.length > 0) {
-                    finalResponse += '\n**Sources:**';
-                    data.clickable_sources.forEach(source => {
-                      finalResponse += `\n- [${source.name}](${source.url})`;
-                    });
-                  }
+                // Add sources to the final response if provided
+                if (data.data?.sources && data.data.sources.length > 0) {
+                  finalResponse += '\n\n**Sources:**';
+                  data.data.sources.forEach((source: any) => {
+                    finalResponse += `\n- [${source.name}](${source.url})`;
+                  });
                 }
                 
                 // Update the streaming message with the final response
@@ -380,26 +377,42 @@ export const useMessages = (currentSessionId: string | null) => {
                 resolve(finalResponse);
                 break;
                 
-              case 'conversation_complete':
-                console.log('� Streaming conversation complete');
+              // Handle legacy events for backward compatibility
+              case 'research_complete':
+                console.log('✅ Legacy streaming research complete');
                 hasReceivedResponse = true;
                 ws.close();
                 stopStreaming();
                 
-                // Update the streaming message with the final response
+                let legacyResponse = data.final_answer || "Research completed successfully.";
+                
+                if (data.methodology && data.methodology !== "Conversational Response") {
+                  legacyResponse += `\n\n---\n**Research Method:** ${data.methodology}`;
+                  
+                  if (data.clickable_sources && data.clickable_sources.length > 0) {
+                    legacyResponse += '\n**Sources:**';
+                    data.clickable_sources.forEach((source: any) => {
+                      legacyResponse += `\n- [${source.name}](${source.url})`;
+                    });
+                  }
+                }
+                
                 setMessages(prev => 
                   prev.map(msg => 
                     msg.id === streamingMessageId 
-                      ? { ...msg, text: data.final_answer || "Conversation completed.", metadata: { messageType: 'standard' } }
+                      ? { ...msg, text: legacyResponse, metadata: { messageType: 'completed_report' } }
                       : msg
                   )
                 );
                 
-                resolve(data.final_answer || "Conversation completed.");
+                resolve(legacyResponse);
                 break;
                 
               default:
                 console.log('🔄 Unknown streaming event:', data.type);
+                // Add as a generic thought event
+                addStreamingUpdate(streamingMessageId, 'thought', 
+                  data.message || `Status: ${data.type}`, data.data);
                 break;
             }
           } catch (error) {
@@ -435,7 +448,7 @@ export const useMessages = (currentSessionId: string | null) => {
             ws.close();
             handleInstantRequest(prompt).then(resolve).catch(reject);
           }
-        }, 30000); // 30 second timeout
+        }, 45000); // 45 second timeout as requested
         
       } catch (error) {
         console.error('Failed to initiate streaming:', error);
@@ -525,9 +538,11 @@ export const useMessages = (currentSessionId: string | null) => {
     handleCanvasDownload,
     handleCanvasPrint,
     handleCanvasPdfDownload,
-    // Streaming overlay functionality
+    // Enhanced streaming overlay functionality
     isStreamingForMessage,
     getUpdatesForMessage,
+    getSourcesForMessage,
+    getProgressForMessage,
     streamingState
   };
 };

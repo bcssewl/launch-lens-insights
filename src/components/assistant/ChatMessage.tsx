@@ -8,7 +8,6 @@ import MarkdownRenderer from './MarkdownRenderer';
 import CanvasCompact from './CanvasCompact';
 import StreamingOverlay from './StreamingOverlay';
 import { isReportMessage } from '@/utils/reportDetection';
-import { StreamingUpdate } from '@/hooks/useStreamingOverlay';
 
 export interface ChatMessageData {
   id: string;
@@ -21,6 +20,13 @@ export interface ChatMessageData {
   };
 }
 
+interface StreamingUpdate {
+  type: 'search' | 'source' | 'snippet' | 'thought' | 'complete';
+  message: string;
+  timestamp: number;
+  data?: any;
+}
+
 interface ChatMessageProps {
   message: ChatMessageData;
   onOpenCanvas?: (messageId: string, content: string) => void;
@@ -28,6 +34,16 @@ interface ChatMessageProps {
   onCanvasPrint?: () => void;
   isStreaming?: boolean;
   streamingUpdates?: StreamingUpdate[];
+  streamingSources?: Array<{
+    name: string;
+    url: string;
+    type?: string;
+    confidence?: number;
+  }>;
+  streamingProgress?: {
+    phase: string;
+    progress: number;
+  };
 }
 
 const ChatMessage: React.FC<ChatMessageProps> = ({ 
@@ -36,7 +52,9 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
   onCanvasDownload,
   onCanvasPrint,
   isStreaming = false,
-  streamingUpdates = []
+  streamingUpdates = [],
+  streamingSources = [],
+  streamingProgress = { phase: '', progress: 0 }
 }) => {
   const isAi = message.sender === 'ai';
   const isReport = isAi && isReportMessage(message.text, message.metadata);
@@ -77,6 +95,8 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
             <StreamingOverlay
               isVisible={isStreaming}
               updates={streamingUpdates}
+              sources={streamingSources}
+              progress={streamingProgress}
               className="z-10"
             />
           )}

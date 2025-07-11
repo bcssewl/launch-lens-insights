@@ -1,27 +1,49 @@
+
 import { useState, useCallback, useRef } from 'react';
 
 export interface StreamingUpdate {
-  type: string;
+  type: 'search' | 'source' | 'snippet' | 'thought' | 'complete';
   message: string;
   timestamp: number;
-  agentName?: string;
-  sourceName?: string;
-  progress?: number;
-  agentNames?: string[];
-  sourceCount?: number;
+  data?: {
+    source_name?: string;
+    source_url?: string;
+    snippet_text?: string;
+    confidence?: number;
+    progress_percentage?: number;
+    agent_name?: string;
+    search_queries?: string[];
+    source_type?: 'article' | 'research' | 'news' | 'academic';
+    sources?: Array<{
+      name: string;
+      url: string;
+      type?: string;
+    }>;
+  };
 }
 
 export interface StreamingState {
   isStreaming: boolean;
   updates: StreamingUpdate[];
   currentMessageId: string | null;
+  sources: Array<{
+    name: string;
+    url: string;
+    type?: string;
+    confidence?: number;
+  }>;
+  currentPhase: string;
+  progress: number;
 }
 
 export const useStreamingOverlay = () => {
   const [streamingState, setStreamingState] = useState<StreamingState>({
     isStreaming: false,
     updates: [],
-    currentMessageId: null
+    currentMessageId: null,
+    sources: [],
+    currentPhase: '',
+    progress: 0
   });
 
   const streamingUpdateRef = useRef<(messageId: string, type: string, message: string, data?: any) => void>();
@@ -30,7 +52,10 @@ export const useStreamingOverlay = () => {
     setStreamingState({
       isStreaming: true,
       updates: [],
-      currentMessageId: messageId
+      currentMessageId: messageId,
+      sources: [],
+      currentPhase: 'initializing',
+      progress: 0
     });
   }, []);
 
@@ -41,20 +66,65 @@ export const useStreamingOverlay = () => {
         return prev;
       }
 
+      const streamingType = type as StreamingUpdate['type'];
       const newUpdate: StreamingUpdate = {
-        type,
+        type: streamingType,
         message,
         timestamp: Date.now(),
-        agentName: data?.agent_name,
-        sourceName: data?.source_name,
-        progress: data?.progress,
-        agentNames: data?.agent_names,
-        sourceCount: data?.source_count
+        data
       };
+
+      // Update sources array when source event is received
+      let newSources = [...prev.sources];
+      if (streamingType === 'source' && data?.source_name && data?.source_url) {
+        const existingSource = newSources.find(s => s.url === data.source_url);
+        if (!existingSource) {
+          newSources.push({
+            name: data.source_name,
+            url: data.source_url,
+            type: data.source_type || 'article',
+            confidence: data.confidence
+          });
+        }
+      }
+
+      // Update current phase and progress
+      let currentPhase = prev.currentPhase;
+      let progress = prev.progress;
+      
+      switch (streamingType) {
+        case 'search':
+          currentPhase = 'searching';
+          progress = 10;
+          break;
+        case 'source':
+          currentPhase = 'discovering';
+          progress = Math.min(progress + 15, 60);
+          break;
+        case 'snippet':
+          currentPhase = 'analyzing';
+          progress = Math.min(progress + 10, 80);
+          break;
+        case 'thought':
+          currentPhase = 'synthesizing';
+          progress = data?.progress_percentage || Math.min(progress + 5, 95);
+          break;
+        case 'complete':
+          currentPhase = 'complete';
+          progress = 100;
+          // Add final sources if provided
+          if (data?.sources) {
+            newSources = data.sources;
+          }
+          break;
+      }
 
       return {
         ...prev,
-        updates: [...prev.updates, newUpdate]
+        updates: [...prev.updates, newUpdate],
+        sources: newSources,
+        currentPhase,
+        progress
       };
     });
   }, []);
@@ -65,9 +135,12 @@ export const useStreamingOverlay = () => {
       setStreamingState({
         isStreaming: false,
         updates: [],
-        currentMessageId: null
+        currentMessageId: null,
+        sources: [],
+        currentPhase: '',
+        progress: 0
       });
-    }, 2000);
+    }, 3000);
   }, []);
 
   const isStreamingForMessage = useCallback((messageId: string) => {
@@ -81,6 +154,23 @@ export const useStreamingOverlay = () => {
     return [];
   }, [streamingState.currentMessageId, streamingState.updates]);
 
+  const getSourcesForMessage = useCallback((messageId: string) => {
+    if (streamingState.currentMessageId === messageId) {
+      return streamingState.sources;
+    }
+    return [];
+  }, [streamingState.currentMessageId, streamingState.sources]);
+
+  const getProgressForMessage = useCallback((messageId: string) => {
+    if (streamingState.currentMessageId === messageId) {
+      return {
+        phase: streamingState.currentPhase,
+        progress: streamingState.progress
+      };
+    }
+    return { phase: '', progress: 0 };
+  }, [streamingState.currentMessageId, streamingState.currentPhase, streamingState.progress]);
+
   // Set up the streaming update callback
   streamingUpdateRef.current = addStreamingUpdate;
 
@@ -91,6 +181,8 @@ export const useStreamingOverlay = () => {
     stopStreaming,
     isStreamingForMessage,
     getUpdatesForMessage,
+    getSourcesForMessage,
+    getProgressForMessage,
     // Export the ref for use in useMessages hook
     streamingUpdateRef
   };
