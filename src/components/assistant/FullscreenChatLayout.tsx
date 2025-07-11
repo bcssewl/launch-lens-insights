@@ -26,17 +26,17 @@ interface FullscreenChatLayoutProps {
   onCloseCanvas?: () => void;
   onCanvasDownload?: () => void;
   onCanvasPrint?: () => void;
-  isStreamingForMessage?: (messageId: string) => boolean;
-  getUpdatesForMessage?: (messageId: string) => any[];
-  getSourcesForMessage?: (messageId: string) => Array<{
-    name: string;
-    url: string;
-    type?: string;
-    confidence?: number;
-  }>;
-  getProgressForMessage?: (messageId: string) => {
-    phase: string;
+  streamingState?: {
+    isStreaming: boolean;
+    currentPhase: string;
     progress: number;
+    searchQueries: string[];
+    discoveredSources: Array<{
+      name: string;
+      url: string;
+      type: string;
+      confidence: number;
+    }>;
   };
 }
 
@@ -57,10 +57,7 @@ const FullscreenChatLayout: React.FC<FullscreenChatLayoutProps> = ({
   onCloseCanvas,
   onCanvasDownload,
   onCanvasPrint,
-  isStreamingForMessage,
-  getUpdatesForMessage,
-  getSourcesForMessage,
-  getProgressForMessage
+  streamingState
 }) => {
   return (
     <div className="min-h-screen flex w-full apple-hero relative">
@@ -91,10 +88,7 @@ const FullscreenChatLayout: React.FC<FullscreenChatLayoutProps> = ({
           onCloseCanvas={onCloseCanvas}
           onCanvasDownload={onCanvasDownload}
           onCanvasPrint={onCanvasPrint}
-          isStreamingForMessage={isStreamingForMessage}
-          getUpdatesForMessage={getUpdatesForMessage}
-          getSourcesForMessage={getSourcesForMessage}
-          getProgressForMessage={getProgressForMessage}
+          streamingState={streamingState}
         />
       </div>
     </div>
