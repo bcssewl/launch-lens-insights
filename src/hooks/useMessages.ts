@@ -57,7 +57,7 @@ export const useMessages = (currentSessionId: string | null) => {
     if (!isInitialLoad && history.length > 0) {
       console.log('Converting history to messages:', history.slice(0, 3));
       const convertedMessages = history.map((entry, index) => {
-        const lines = entry.split('\n');
+        const lines = entry.message.split('\n');
         const isUser = lines[0].startsWith('USER:');
         const text = isUser ? lines[0].substring(5).trim() : lines.slice(1).join('\n').trim();
         
