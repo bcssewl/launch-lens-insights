@@ -124,29 +124,7 @@ export const useMessages = (currentSessionId: string | null) => {
 
       // Route to Stratix if model is 'stratix'
       if (selectedModel === 'stratix') {
-        // For streaming requests, we need to pass the AI message ID to track streaming
-        const aiMessageId = uuidv4();
-        const aiMessage: Message = {
-          id: aiMessageId,
-          text: "🔍 Connecting to research specialists...",
-          sender: 'ai',
-          timestamp: new Date(),
-          metadata: { messageType: 'progress_update' },
-        };
-        
-        setMessages(prev => [...prev, aiMessage]);
-        
-        // Pass the message ID to the streaming function
-        aiResponseText = await handleStratixRequest(finalMessageText, currentSessionId, aiMessageId);
-        
-        // Update the existing message with final response
-        setMessages(prev => 
-          prev.map(msg => 
-            msg.id === aiMessageId 
-              ? { ...msg, text: aiResponseText, metadata: { messageType: 'completed_report' } }
-              : msg
-          )
-        );
+        aiResponseText = await handleStratixRequest(finalMessageText, currentSessionId);
       } else {
         // Use existing N8N webhook for all other models
         let contextMessage = finalMessageText;
@@ -155,17 +133,19 @@ export const useMessages = (currentSessionId: string | null) => {
         }
         
         aiResponseText = await sendMessageToN8n(contextMessage, currentSessionId);
-        
-        const aiResponse: Message = {
-          id: uuidv4(),
-          text: aiResponseText,
-          sender: 'ai',
-          timestamp: new Date(),
-          metadata: { messageType: 'standard' },
-        };
-        
-        setMessages(prev => [...prev, aiResponse]);
       }
+      
+      const aiResponse: Message = {
+        id: uuidv4(),
+        text: aiResponseText,
+        sender: 'ai',
+        timestamp: new Date(),
+        metadata: selectedModel === 'stratix' ? {
+          messageType: aiResponseText.includes('Starting Stratix Research') ? 'progress_update' : 'stratix_conversation'
+        } : { messageType: 'standard' },
+      };
+      
+      setMessages(prev => [...prev, aiResponse]);
       
       // Save AI response to history without showing prefix to user
       if (currentSessionId) {
@@ -192,7 +172,7 @@ export const useMessages = (currentSessionId: string | null) => {
     }
   }, [currentSessionId, addMessage, isConfigured, sendMessageToN8n, canvasState]);
 
-  const handleStratixRequest = useCallback(async (prompt: string, sessionId: string | null, messageId?: string): Promise<string> => {
+  const handleStratixRequest = useCallback(async (prompt: string, sessionId: string | null): Promise<string> => {
     if (!sessionId) {
       throw new Error('Session ID required for Stratix communication');
     }
@@ -203,9 +183,9 @@ export const useMessages = (currentSessionId: string | null) => {
       // Smart detection for streaming vs instant response
       const shouldUseStreaming = detectStreamingNeed(prompt);
       
-      if (shouldUseStreaming && messageId) {
+      if (shouldUseStreaming) {
         console.log('🚀 Using WebSocket streaming for research query');
-        return await handleStreamingRequest(prompt, sessionId, messageId);
+        return await handleStreamingRequest(prompt, sessionId);
       } else {
         console.log('⚡ Using instant response for simple query');
         return await handleInstantRequest(prompt);
@@ -284,16 +264,27 @@ export const useMessages = (currentSessionId: string | null) => {
   }, []);
 
   // Handle streaming requests for research queries
-  const handleStreamingRequest = useCallback(async (prompt: string, sessionId: string, messageId: string): Promise<string> => {
+  const handleStreamingRequest = useCallback(async (prompt: string, sessionId: string): Promise<string> => {
     return new Promise((resolve, reject) => {
       try {
-        // Use the message ID that's already in the UI
-        const streamingMessageId = messageId;
+        // Create a unique ID for this streaming message
+        const streamingMessageId = uuidv4();
         
-        // DON'T add a message to UI here - let the main function handle it
-        // Just start the streaming process and return the final result
+        // Show immediate feedback
+        const streamingIndicator = "🔍 **Initializing Research Stream...**\n\nConnecting to research specialists...";
         
-        // Start streaming overlay for this message (will be used later)
+        // Add the streaming message to the UI
+        const streamingMessage: Message = {
+          id: streamingMessageId,
+          text: streamingIndicator,
+          sender: 'ai',
+          timestamp: new Date(),
+          metadata: { messageType: 'progress_update' }
+        };
+        
+        setMessages(prev => [...prev, streamingMessage]);
+        
+        // Start streaming overlay for this message
         startStreaming(streamingMessageId);
         
         // Connect to WebSocket
@@ -377,7 +368,15 @@ export const useMessages = (currentSessionId: string | null) => {
                   }
                 }
                 
-                // Just resolve with the final response - don't update messages here
+                // Update the streaming message with the final response
+                setMessages(prev => 
+                  prev.map(msg => 
+                    msg.id === streamingMessageId 
+                      ? { ...msg, text: finalResponse, metadata: { messageType: 'completed_report' } }
+                      : msg
+                  )
+                );
+                
                 resolve(finalResponse);
                 break;
                 
