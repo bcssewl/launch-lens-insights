@@ -125,6 +125,7 @@ export const useMessages = (currentSessionId: string | null) => {
 
       // Route to Stratix if model is 'stratix'
       if (selectedModel === 'stratix') {
+        console.log('🎯 Using Stratix model, calling handleStratixRequest');
         aiResponseText = await handleStratixRequest(finalMessageText, currentSessionId);
       } else {
         // Use existing N8N webhook for all other models
@@ -186,7 +187,9 @@ export const useMessages = (currentSessionId: string | null) => {
       
       if (shouldUseStreaming) {
         console.log('🚀 Using WebSocket streaming for research query');
-        return await handleStreamingRequest(prompt, sessionId);
+        const result = await handleStreamingRequest(prompt, sessionId);
+        console.log('✅ Streaming request completed with result:', result.substring(0, 100));
+        return result;
       } else {
         console.log('⚡ Using instant response for simple query');
         return await handleInstantRequest(prompt);
