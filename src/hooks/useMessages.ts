@@ -193,31 +193,42 @@ export const useMessages = (currentSessionId: string | null) => {
         hasDirectResponse: !!data.isDirectResponse,
         hasResponse: !!data.response,
         hasMessage: !!data.message,
+        needsResearch: !!data.needsResearch,
         keys: Object.keys(data)
       });
 
       // Check if this is a simple conversation response or research project
+      // Priority 1: Explicit direct response flag
       if (data.isDirectResponse && data.response) {
-        // This is a simple conversation - return the response directly
         console.log('Stratix provided direct response, no research needed');
         return data.response;
-      } else if (data.projectId) {
-        // This is a research project - start the research stream
+      }
+      
+      // Priority 2: Explicit "no research needed" flag or simple response without projectId
+      if ((data.needsResearch === false) || (data.response && !data.projectId)) {
+        console.log('Stratix provided simple response without research');
+        return data.response || data.message;
+      }
+      
+      // Priority 3: Check for projectId AND explicit research indication
+      if (data.projectId && (data.needsResearch === true || data.startResearch === true)) {
         console.log('Stratix initiated research project:', data.projectId);
         startStratixStream(data.projectId);
         
         return `🔍 **Starting Stratix Research...**
 
 Initializing comprehensive market research and analysis.`;
-      } else if (data.response || data.message) {
-        // Fallback - treat as direct response if we have any response
-        console.log('Stratix provided response without research');
-        return data.response || data.message;
-      } else {
-        // No clear response format - provide helpful message
-        console.log('Stratix response format unclear, providing default message');
-        return "I'm ready to help! Please let me know what you'd like to research or discuss.";
       }
+      
+      // Priority 4: Fallback - if we have any response text, use it directly
+      if (data.response || data.message) {
+        console.log('Stratix provided fallback response without research indicators');
+        return data.response || data.message;
+      }
+      
+      // Priority 5: Last resort - provide helpful default message
+      console.log('Stratix response format unclear, providing default message');
+      return "Hello! I'm Stratix, your research assistant. I can help with market research, competitive analysis, or just have a conversation. What would you like to discuss?";
 
     } catch (error) {
       console.error('Stratix request error:', error);
@@ -229,9 +240,17 @@ Initializing comprehensive market research and analysis.`;
     console.log('Starting Stratix stream for project:', projectId);
     
     let pollInterval: NodeJS.Timeout;
+    let timeoutInterval: NodeJS.Timeout;
     let lastEventTime = new Date().toISOString();
     let progressMessageId: string | null = null;
     let currentProgress = '';
+    
+    // Add a timeout to prevent infinite polling for simple conversations
+    timeoutInterval = setTimeout(() => {
+      console.log('Research polling timeout - stopping and providing fallback message');
+      clearInterval(pollInterval);
+      updateProgressMessage(`❌ **Research Timeout**\n\nThis request might be better suited for a direct conversation. Let me respond directly instead of running research.`);
+    }, 30000); // 30 second timeout
     
     const updateProgressMessage = (newContent: string) => {
       currentProgress = newContent;
@@ -339,6 +358,7 @@ Initializing comprehensive market research and analysis.`;
                 
                 // Stop polling when research is complete
                 clearInterval(pollInterval);
+                clearTimeout(timeoutInterval);
                 return;
                 
               default:
@@ -405,9 +425,12 @@ Initializing comprehensive market research and analysis.`;
             }
             
             clearInterval(pollInterval);
+            clearTimeout(timeoutInterval);
           } else if (project.status === 'error') {
-            updateProgressMessage(`❌ **Research Error**\n\nSorry, there was an issue completing the research. Please try again.`);
+            console.log('Research project failed, providing helpful error message');
+            updateProgressMessage(`❌ **Unable to Complete Research**\n\nThis request might not require research, or there was a technical issue. For simple questions or conversations, I can respond directly without research. Please try rephrasing your message or ask me something specific about market research, competitive analysis, or business insights.`);
             clearInterval(pollInterval);
+            clearTimeout(timeoutInterval);
           }
         }
       } catch (error) {
@@ -424,6 +447,7 @@ Initializing comprehensive market research and analysis.`;
     // Clean up on component unmount
     return () => {
       clearInterval(pollInterval);
+      clearTimeout(timeoutInterval);
     };
   }, [currentSessionId, addMessage]);
 
