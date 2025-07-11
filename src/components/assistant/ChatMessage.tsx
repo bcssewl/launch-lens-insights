@@ -6,7 +6,9 @@ import UserAvatar from './UserAvatar';
 import CopyButton from './CopyButton';
 import MarkdownRenderer from './MarkdownRenderer';
 import CanvasCompact from './CanvasCompact';
+import StreamingOverlay from './StreamingOverlay';
 import { isReportMessage } from '@/utils/reportDetection';
+import { StreamingUpdate } from '@/hooks/useStreamingOverlay';
 
 export interface ChatMessageData {
   id: string;
@@ -24,13 +26,17 @@ interface ChatMessageProps {
   onOpenCanvas?: (messageId: string, content: string) => void;
   onCanvasDownload?: () => void;
   onCanvasPrint?: () => void;
+  isStreaming?: boolean;
+  streamingUpdates?: StreamingUpdate[];
 }
 
 const ChatMessage: React.FC<ChatMessageProps> = ({ 
   message, 
   onOpenCanvas,
   onCanvasDownload,
-  onCanvasPrint
+  onCanvasPrint,
+  isStreaming = false,
+  streamingUpdates = []
 }) => {
   const isAi = message.sender === 'ai';
   const isReport = isAi && isReportMessage(message.text, message.metadata);
@@ -66,6 +72,15 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
               : "bg-primary/90 backdrop-blur-md border border-primary/30 text-primary-foreground rounded-tr-sm shadow-glass hover:bg-primary/95"
           )}
         >
+          {/* Streaming Overlay for AI messages */}
+          {isAi && isStreaming && (
+            <StreamingOverlay
+              isVisible={isStreaming}
+              updates={streamingUpdates}
+              className="z-10"
+            />
+          )}
+
           {isAi && (
             <div className="absolute top-2 right-2">
               <CopyButton content={message.text} />

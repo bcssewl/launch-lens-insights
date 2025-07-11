@@ -45,7 +45,10 @@ const AIAssistantPage: React.FC = () => {
     handleCloseCanvas,
     handleCanvasDownload,
     handleCanvasPrint,
-    handleCanvasPdfDownload
+    handleCanvasPdfDownload,
+    isStreamingForMessage,
+    getUpdatesForMessage,
+    streamingState
   } = useMessages(currentSessionId);
   const [editedCanvasContent, setEditedCanvasContent] = useState(canvasState.content);
 
@@ -168,8 +171,7 @@ const AIAssistantPage: React.FC = () => {
 
   // Fullscreen mode
   if (isFullscreen) {
-    return (
-      <FullscreenChatLayout 
+    return (      <FullscreenChatLayout 
         messages={messages} 
         isTyping={isTyping} 
         viewportRef={viewportRef} 
@@ -185,7 +187,9 @@ const AIAssistantPage: React.FC = () => {
         onOpenCanvas={handleOpenCanvas} 
         onCloseCanvas={handleCloseCanvas} 
         onCanvasDownload={handleCanvasDownload} 
-        onCanvasPrint={handleCanvasPrint} 
+        onCanvasPrint={handleCanvasPrint}
+        isStreamingForMessage={isStreamingForMessage}
+        getUpdatesForMessage={getUpdatesForMessage}
       />
     );
   }
@@ -232,7 +236,9 @@ const AIAssistantPage: React.FC = () => {
               onOpenCanvas={handleOpenCanvas} 
               onCloseCanvas={handleCloseCanvas} 
               onCanvasDownload={handleCanvasDownload} 
-              onCanvasPrint={handleCanvasPrint} 
+              onCanvasPrint={handleCanvasPrint}
+              isStreamingForMessage={isStreamingForMessage}
+              getUpdatesForMessage={getUpdatesForMessage}
             />
           </div>
         </SidebarInset>

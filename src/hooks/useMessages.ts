@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Message, initialMessages, formatTimestamp } from '@/constants/aiAssistant';
 import { useN8nWebhook } from '@/hooks/useN8nWebhook';
 import { useChatHistory } from '@/hooks/useChatHistory';
+import { useStreamingOverlay } from '@/hooks/useStreamingOverlay';
 import { supabase } from '@/integrations/supabase/client';
 
 export const useMessages = (currentSessionId: string | null) => {
@@ -21,6 +22,16 @@ export const useMessages = (currentSessionId: string | null) => {
   const viewportRef = useRef<HTMLDivElement>(null);
   const { sendMessageToN8n, isConfigured } = useN8nWebhook();
   const { history, addMessage, isInitialLoad } = useChatHistory(currentSessionId);
+  
+  // Initialize streaming overlay functionality
+  const {
+    streamingState,
+    startStreaming,
+    addStreamingUpdate,
+    stopStreaming,
+    isStreamingForMessage,
+    getUpdatesForMessage
+  } = useStreamingOverlay();
 
   const scrollToBottom = useCallback(() => {
     if (viewportRef.current) {
@@ -167,80 +178,22 @@ export const useMessages = (currentSessionId: string | null) => {
     }
 
     try {
-      console.log('Routing to Stratix backend:', prompt);
+      console.log('Smart routing Stratix request:', prompt);
       
-      // Check if this is a simple conversation that should get instant response
-      const isSimpleConversation = /^(hello|hi|hey|how are you|how\'s it going|thanks|thank you|good|great|ok|okay|what are you|who are you)[\s\?\.!]*$/i.test(prompt.trim());
+      // Smart detection for streaming vs instant response
+      const shouldUseStreaming = detectStreamingNeed(prompt);
       
-      if (isSimpleConversation) {
-        console.log('Using /chat endpoint for simple conversation');
-        
-        // Use chat endpoint for instant conversational response
-        const response = await fetch('https://ai-agent-research-optivise-production.up.railway.app/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query: prompt })
-        });
-
-        if (!response.ok) {
-          throw new Error(`Chat API error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        console.log('Chat response received:', data);
-        
-        return data.answer || data.response || "Hello! I'm Stratix, your research assistant. How can I help you today?";
-      } 
-      
-      // For complex queries, check if they need real-time streaming or simple research
-      else {
-        console.log('Using /research endpoint for complex query');
-        
-        // For now, use the research endpoint - we can add WebSocket streaming later
-        const response = await fetch('https://ai-agent-research-optivise-production.up.railway.app/research', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query: prompt })
-        });
-
-        if (!response.ok) {
-          throw new Error(`Research API error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        
-        console.log('Research response received:', {
-          hasAnswer: !!data.answer,
-          methodology: data.methodology,
-          analysisDepth: data.analysis_depth,
-          agentsConsulted: data.agents_consulted?.length || 0,
-          confidence: data.confidence
-        });
-
-        // Format the research response with metadata
-        let formattedResponse = data.answer || "Research completed successfully.";
-        
-        // Add methodology information for transparency
-        if (data.methodology && data.methodology !== "Conversational Response") {
-          formattedResponse += `\n\n---\n**Research Method:** ${data.methodology}`;
-          
-          if (data.agents_consulted && data.agents_consulted.length > 0) {
-            formattedResponse += `\n**Agents Consulted:** ${data.agents_consulted.join(', ')}`;
-          }
-          
-          if (data.confidence) {
-            const confidencePercent = Math.round(data.confidence * 100);
-            formattedResponse += `\n**Confidence Level:** ${confidencePercent}%`;
-          }
-        }
-        
-        return formattedResponse;
+      if (shouldUseStreaming) {
+        console.log('🚀 Using WebSocket streaming for research query');
+        return await handleStreamingRequest(prompt, sessionId);
+      } else {
+        console.log('⚡ Using instant response for simple query');
+        return await handleInstantRequest(prompt);
       }
 
     } catch (error) {
-      console.error('Stratix backend communication error:', error);
+      console.error('Stratix communication error:', error);
       
-      // Provide helpful error message based on the error type
       if (error.message.includes('Failed to fetch')) {
         throw new Error('Unable to connect to Stratix backend. Please check your internet connection.');
       } else {
@@ -248,6 +201,250 @@ export const useMessages = (currentSessionId: string | null) => {
       }
     }
   }, []);
+
+  // Smart detection logic for when to use streaming
+  const detectStreamingNeed = useCallback((prompt: string): boolean => {
+    const trimmedPrompt = prompt.trim().toLowerCase();
+    
+    // Simple conversations - never stream
+    const simplePatterns = [
+      /^(hello|hi|hey|good morning|good afternoon)[\s\?\.!]*$/,
+      /^(how are you|how\'s it going|what\'s up)[\s\?\.!]*$/,
+      /^(thanks|thank you|thx|ty)[\s\?\.!]*$/,
+      /^(ok|okay|alright|good|great|cool)[\s\?\.!]*$/,
+      /^(who are you|what are you|what can you do)[\s\?\.!]*$/,
+      /^(bye|goodbye|see you|talk later)[\s\?\.!]*$/
+    ];
+    
+    if (simplePatterns.some(pattern => pattern.test(trimmedPrompt))) {
+      return false;
+    }
+    
+    // Research indicators - use streaming
+    const researchKeywords = [
+      'analyze', 'research', 'competitive', 'market', 'strategy', 'trends',
+      'industry', 'growth', 'opportunities', 'insights', 'report', 'study',
+      'comparison', 'evaluation', 'assessment', 'forecast', 'outlook',
+      'landscape', 'ecosystem', 'regulations', 'compliance'
+    ];
+    
+    const hasResearchKeywords = researchKeywords.some(keyword => 
+      trimmedPrompt.includes(keyword)
+    );
+    
+    // Use streaming if:
+    // - Contains research keywords
+    // - Query is longer than 20 characters (complex question)
+    // - Contains multiple sentences or questions
+    const isLongQuery = prompt.length > 20;
+    const hasMultipleSentences = (prompt.match(/[.!?]/g) || []).length > 1;
+    
+    return hasResearchKeywords || isLongQuery || hasMultipleSentences;
+  }, []);
+
+  // Handle instant responses for simple queries
+  const handleInstantRequest = useCallback(async (prompt: string): Promise<string> => {
+    const response = await fetch('https://ai-agent-research-optivise-production.up.railway.app/research', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: prompt })
+    });
+
+    if (!response.ok) {
+      throw new Error(`API error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('Instant response received:', {
+      methodology: data.methodology,
+      analysisDepth: data.analysis_depth
+    });
+    
+    return data.answer || "I'm ready to help! What would you like to discuss?";
+  }, []);
+
+  // Handle streaming requests for research queries
+  const handleStreamingRequest = useCallback(async (prompt: string, sessionId: string): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      try {
+        // Create a unique ID for this streaming message
+        const streamingMessageId = uuidv4();
+        
+        // Show immediate feedback
+        const streamingIndicator = "🔍 **Initializing Research Stream...**\n\nConnecting to research specialists...";
+        
+        // Add the streaming message to the UI
+        const streamingMessage: Message = {
+          id: streamingMessageId,
+          text: streamingIndicator,
+          sender: 'ai',
+          timestamp: new Date(),
+          metadata: { messageType: 'progress_update' }
+        };
+        
+        setMessages(prev => [...prev, streamingMessage]);
+        
+        // Start streaming overlay for this message
+        startStreaming(streamingMessageId);
+        
+        // Connect to WebSocket
+        const wsUrl = 'wss://ai-agent-research-optivise-production.up.railway.app/stream';
+        const ws = new WebSocket(wsUrl);
+        
+        let hasReceivedResponse = false;
+        
+        ws.onopen = () => {
+          console.log('🔗 WebSocket connected for streaming research');
+          ws.send(JSON.stringify({
+            query: prompt,
+            context: { sessionId }
+          }));
+        };
+        
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            console.log('📡 Streaming update:', data.type);
+            
+            switch (data.type) {
+              case 'started':
+                addStreamingUpdate(streamingMessageId, 'started', '🎯 Research initiated - Analyzing query...', data);
+                break;
+                
+              case 'agents_selected':
+                const agentNames = data.agent_names?.join(', ') || 'Research Specialists';
+                addStreamingUpdate(streamingMessageId, 'agents_selected', `🧠 Consulting: ${agentNames}`, data);
+                break;
+                
+              case 'source_discovery_started':
+                addStreamingUpdate(streamingMessageId, 'source_discovery_started', `🔍 ${data.agent_name || 'Agent'} searching for sources...`, data);
+                break;
+                
+              case 'source_discovered':
+                addStreamingUpdate(streamingMessageId, 'source_discovered', `📚 Found: ${data.source_name} (${data.source_count || 1} sources)`, data);
+                break;
+                
+              case 'research_progress':
+                const progress = data.progress ? `${data.progress}%` : 'In progress';
+                addStreamingUpdate(streamingMessageId, 'research_progress', `📊 Analyzing data... ${progress}`, data);
+                break;
+                
+              case 'expert_analysis_started':
+                addStreamingUpdate(streamingMessageId, 'expert_analysis_started', `🧠 ${data.agent_name || 'Expert'} applying insights...`, data);
+                break;
+                
+              case 'synthesis_started':
+                addStreamingUpdate(streamingMessageId, 'synthesis_started', '🔗 Synthesizing findings from all specialists...', data);
+                break;
+                
+              case 'research_complete':
+                console.log('✅ Streaming research complete');
+                hasReceivedResponse = true;
+                ws.close();
+                
+                // Stop streaming overlay
+                stopStreaming();
+                
+                // Format final response with metadata
+                let finalResponse = data.final_answer || "Research completed successfully.";
+                
+                if (data.methodology && data.methodology !== "Conversational Response") {
+                  finalResponse += `\n\n---\n**Research Method:** ${data.methodology}`;
+                  
+                  if (data.agents_consulted && data.agents_consulted.length > 0) {
+                    finalResponse += `\n**Agents Consulted:** ${data.agents_consulted.join(', ')}`;
+                  }
+                  
+                  if (data.confidence) {
+                    const confidencePercent = Math.round(data.confidence * 100);
+                    finalResponse += `\n**Confidence Level:** ${confidencePercent}%`;
+                  }
+                  
+                  if (data.clickable_sources && data.clickable_sources.length > 0) {
+                    finalResponse += '\n**Sources:**';
+                    data.clickable_sources.forEach(source => {
+                      finalResponse += `\n- [${source.name}](${source.url})`;
+                    });
+                  }
+                }
+                
+                // Update the streaming message with the final response
+                setMessages(prev => 
+                  prev.map(msg => 
+                    msg.id === streamingMessageId 
+                      ? { ...msg, text: finalResponse, metadata: { messageType: 'completed_report' } }
+                      : msg
+                  )
+                );
+                
+                resolve(finalResponse);
+                break;
+                
+              case 'conversation_complete':
+                console.log('� Streaming conversation complete');
+                hasReceivedResponse = true;
+                ws.close();
+                stopStreaming();
+                
+                // Update the streaming message with the final response
+                setMessages(prev => 
+                  prev.map(msg => 
+                    msg.id === streamingMessageId 
+                      ? { ...msg, text: data.final_answer || "Conversation completed.", metadata: { messageType: 'standard' } }
+                      : msg
+                  )
+                );
+                
+                resolve(data.final_answer || "Conversation completed.");
+                break;
+                
+              default:
+                console.log('🔄 Unknown streaming event:', data.type);
+                break;
+            }
+          } catch (error) {
+            console.error('Error parsing streaming message:', error);
+          }
+        };
+        
+        ws.onerror = (error) => {
+          console.error('🚨 WebSocket error:', error);
+          if (!hasReceivedResponse) {
+            stopStreaming();
+            // Fallback to regular API call
+            console.log('🔄 Falling back to REST API');
+            handleInstantRequest(prompt).then(resolve).catch(reject);
+          }
+        };
+        
+        ws.onclose = () => {
+          console.log('🔌 WebSocket connection closed');
+          if (!hasReceivedResponse) {
+            stopStreaming();
+            // If we didn't get a complete response, fall back
+            console.log('🔄 Falling back due to incomplete streaming');
+            handleInstantRequest(prompt).then(resolve).catch(reject);
+          }
+        };
+        
+        // Timeout fallback
+        setTimeout(() => {
+          if (!hasReceivedResponse) {
+            console.log('⏰ Streaming timeout, falling back to REST API');
+            stopStreaming();
+            ws.close();
+            handleInstantRequest(prompt).then(resolve).catch(reject);
+          }
+        }, 30000); // 30 second timeout
+        
+      } catch (error) {
+        console.error('Failed to initiate streaming:', error);
+        stopStreaming();
+        // Fallback to instant request
+        handleInstantRequest(prompt).then(resolve).catch(reject);
+      }
+    });
+  }, [handleInstantRequest, startStreaming, addStreamingUpdate, stopStreaming]);
 
   const handleClearConversation = useCallback(() => {
     console.log('useMessages: Clearing conversation');
@@ -327,6 +524,10 @@ export const useMessages = (currentSessionId: string | null) => {
     handleCloseCanvas,
     handleCanvasDownload,
     handleCanvasPrint,
-    handleCanvasPdfDownload
+    handleCanvasPdfDownload,
+    // Streaming overlay functionality
+    isStreamingForMessage,
+    getUpdatesForMessage,
+    streamingState
   };
 };

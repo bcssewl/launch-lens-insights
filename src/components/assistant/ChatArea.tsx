@@ -22,6 +22,8 @@ interface ChatAreaProps {
   onCloseCanvas?: () => void;
   onCanvasDownload?: () => void;
   onCanvasPrint?: () => void;
+  isStreamingForMessage?: (messageId: string) => boolean;
+  getUpdatesForMessage?: (messageId: string) => any[];
 }
 
 const ChatArea: React.FC<ChatAreaProps> = ({
@@ -32,7 +34,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   selectedModel,
   onOpenCanvas,
   onCanvasDownload,
-  onCanvasPrint
+  onCanvasPrint,
+  isStreamingForMessage,
+  getUpdatesForMessage
 }) => {
   const hasConversation = messages.length > 1 || isTyping;
 
@@ -62,6 +66,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                 onOpenCanvas={onOpenCanvas}
                 onCanvasDownload={onCanvasDownload}
                 onCanvasPrint={onCanvasPrint}
+                isStreaming={isStreamingForMessage ? isStreamingForMessage(msg.id) : false}
+                streamingUpdates={getUpdatesForMessage ? getUpdatesForMessage(msg.id) : []}
               />
             ))}
             {isTyping && <TypingIndicator />}
