@@ -103,17 +103,38 @@ export const usePerplexityStreaming = () => {
           break;
 
         case 'source':
-          newState.currentPhase = `Analyzing source: ${event.data?.source_name || 'Unknown'}`;
-          newState.progress = event.data?.progress_percentage || prev.progress + 15;
-          if (event.data?.source_name) {
+          console.log('📚 Raw source event data:', {
+            fullEvent: event,
+            eventData: event.data,
+            eventMessage: event.message,
+            allFields: Object.keys(event.data || {})
+          });
+          
+          // Use type assertion to access potentially unknown fields
+          const sourceData = event.data as any;
+          
+          newState.currentPhase = `Analyzing source: ${sourceData?.source_name || sourceData?.name || 'Unknown'}`;
+          newState.progress = sourceData?.progress_percentage || prev.progress + 15;
+          
+          // Try different possible field names for source data
+          const sourceName = sourceData?.source_name || sourceData?.name || sourceData?.title || event.message;
+          const sourceUrl = sourceData?.source_url || sourceData?.url || sourceData?.link || sourceData?.href;
+          const sourceType = sourceData?.source_type || sourceData?.type || sourceData?.category || 'Web Source';
+          const sourceConfidence = sourceData?.confidence || sourceData?.score || sourceData?.relevance;
+          
+          if (sourceName) {
             const newSource: SourceCardProps = {
-              name: event.data.source_name,
-              url: event.data.source_url || '',
-              type: event.data.source_type || 'Web Source',
-              confidence: event.data.confidence || 85
+              name: sourceName,
+              url: sourceUrl || '#',
+              type: sourceType,
+              confidence: typeof sourceConfidence === 'number' 
+                ? (sourceConfidence < 1 ? Math.round(sourceConfidence * 100) : Math.round(sourceConfidence))
+                : 85
             };
-            console.log('📚 Adding new source:', newSource);
+            console.log('📚 Processed source for display:', newSource);
             newState.discoveredSources = [...prev.discoveredSources, newSource];
+          } else {
+            console.log('⚠️ No source name found in event data');
           }
           break;
 
