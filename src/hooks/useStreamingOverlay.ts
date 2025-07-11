@@ -224,7 +224,7 @@ export const useStreamingOverlay = () => {
       hasUpdatesInState: streamingState.updates.length,
       isCurrentMessage,
       result,
-      allCurrentUpdates: Object.keys(streamingUpdatesRef.current)
+      allCurrentUpdates: streamingUpdatesRef?.current ? Object.keys(streamingUpdatesRef.current) : []
     });
     
     return result;
