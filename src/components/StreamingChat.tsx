@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useStreamingChat } from '../hooks/useStreamingChat';
+import './StreamingChat.css';
 
 const StreamingChat: React.FC = () => {
   const [input, setInput] = useState('');
