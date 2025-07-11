@@ -272,7 +272,7 @@ export const useMessages = (currentSessionId: string | null) => {
         const streamingMessageId = uuidv4();
         console.log('🎯 Starting streaming request with messageId:', streamingMessageId);
         
-        // CRITICAL FIX: Create and display the streaming message IMMEDIATELY
+        // CRITICAL FIX: Add message to UI and wait for render before streaming
         const streamingMessage: Message = {
           id: streamingMessageId,
           text: "🔍 **Starting Research...**\n\nInitializing comprehensive analysis...",
@@ -281,21 +281,23 @@ export const useMessages = (currentSessionId: string | null) => {
           metadata: { messageType: 'progress_update' }
         };
         
-        // Add the message to UI BEFORE starting streaming
+        // Add message to UI first
         console.log('📝 Adding streaming message to UI immediately with ID:', streamingMessageId);
         setMessages(prev => [...prev, streamingMessage]);
         
-        // Start streaming AFTER message is in UI
-        console.log('▶️ Starting streaming overlay for message:', streamingMessageId);
-        startStreaming(streamingMessageId);
-        
-        // Add initial update after a short delay to ensure message is rendered
+        // CRITICAL: Wait for React render cycle to complete before starting overlay
         setTimeout(() => {
-          console.log('🚀 Adding initial search event for message:', streamingMessageId);
-          addStreamingUpdate(streamingMessageId, 'search', 'Initializing comprehensive research...', {
-            progress_percentage: 5
-          });
-        }, 100);
+          console.log('▶️ Starting streaming overlay AFTER message render for:', streamingMessageId);
+          startStreaming(streamingMessageId);
+          
+          // Add initial search event
+          setTimeout(() => {
+            console.log('🚀 Adding initial search event for message:', streamingMessageId);
+            addStreamingUpdate(streamingMessageId, 'search', 'Initializing comprehensive research...', {
+              progress_percentage: 5
+            });
+          }, 50);
+        }, 50);
         
         // Connect to WebSocket with improved error handling
         const wsUrl = 'wss://ai-agent-research-optivise-production.up.railway.app/stream';
