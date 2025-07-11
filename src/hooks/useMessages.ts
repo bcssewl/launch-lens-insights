@@ -129,6 +129,9 @@ export const useMessages = (currentSessionId: string | null) => {
         text: aiResponseText,
         sender: 'ai',
         timestamp: new Date(),
+        metadata: selectedModel === 'stratix' ? {
+          messageType: aiResponseText.includes('Starting Stratix Research') ? 'progress_update' : 'stratix_conversation'
+        } : { messageType: 'standard' },
       };
       
       setMessages(prev => [...prev, aiResponse]);
@@ -164,7 +167,7 @@ export const useMessages = (currentSessionId: string | null) => {
     }
 
     try {
-      console.log('Initiating Stratix research request...');
+      console.log('Sending message to Stratix agent...');
       
       // Use supabase.functions.invoke to properly handle authentication
       const { data, error } = await supabase.functions.invoke('stratix-router', {
@@ -184,16 +187,41 @@ export const useMessages = (currentSessionId: string | null) => {
         throw new Error(data.error);
       }
 
-      // Start listening to the research stream with proper authentication
-      startStratixStream(data.projectId);
-      
-      return `🔍 **Starting Stratix Research...**
+      // Debug: Log the response structure to understand what we're getting
+      console.log('Stratix response structure:', {
+        hasProjectId: !!data.projectId,
+        hasDirectResponse: !!data.isDirectResponse,
+        hasResponse: !!data.response,
+        hasMessage: !!data.message,
+        keys: Object.keys(data)
+      });
+
+      // Check if this is a simple conversation response or research project
+      if (data.isDirectResponse && data.response) {
+        // This is a simple conversation - return the response directly
+        console.log('Stratix provided direct response, no research needed');
+        return data.response;
+      } else if (data.projectId) {
+        // This is a research project - start the research stream
+        console.log('Stratix initiated research project:', data.projectId);
+        startStratixStream(data.projectId);
+        
+        return `🔍 **Starting Stratix Research...**
 
 Initializing comprehensive market research and analysis.`;
+      } else if (data.response || data.message) {
+        // Fallback - treat as direct response if we have any response
+        console.log('Stratix provided response without research');
+        return data.response || data.message;
+      } else {
+        // No clear response format - provide helpful message
+        console.log('Stratix response format unclear, providing default message');
+        return "I'm ready to help! Please let me know what you'd like to research or discuss.";
+      }
 
     } catch (error) {
       console.error('Stratix request error:', error);
-      throw new Error(`Failed to initiate Stratix research: ${error.message}`);
+      throw new Error(`Failed to communicate with Stratix: ${error.message}`);
     }
   }, []);
 
