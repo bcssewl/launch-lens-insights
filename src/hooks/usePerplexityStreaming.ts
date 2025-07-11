@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 
 interface StreamingEvent {
-  type: 'search' | 'source' | 'snippet' | 'thought' | 'complete';
+  type: 'search' | 'source' | 'snippet' | 'thought' | 'complete' | 'completion_start' | 'completion_chunk';
   timestamp: string;
   message: string;
   data?: {
@@ -22,6 +22,11 @@ interface StreamingEvent {
     }>;
     methodology?: string;
     analysis_depth?: string;
+    // New fields for chunked completion
+    content?: string;
+    chunk_index?: number;
+    total_chunks?: number;
+    total_sections?: number;
   };
 }
 
@@ -40,6 +45,10 @@ interface StreamingState {
   discoveredSources: SourceCardProps[];
   currentMessage: string;
   error?: string;
+  // New fields for chunked completion
+  chunkedContent: string;
+  expectedChunks: number;
+  receivedChunks: number;
 }
 
 export const usePerplexityStreaming = () => {
@@ -49,7 +58,10 @@ export const usePerplexityStreaming = () => {
     progress: 0,
     searchQueries: [],
     discoveredSources: [],
-    currentMessage: ''
+    currentMessage: '',
+    chunkedContent: '',
+    expectedChunks: 1,
+    receivedChunks: 0
   });
 
   const wsRef = useRef<WebSocket | null>(null);
@@ -62,12 +74,20 @@ export const usePerplexityStreaming = () => {
       progress: 0,
       searchQueries: [],
       discoveredSources: [],
-      currentMessage: ''
+      currentMessage: '',
+      chunkedContent: '',
+      expectedChunks: 1,
+      receivedChunks: 0
     });
   }, []);
 
   const handleStreamingEvent = useCallback((event: StreamingEvent) => {
-    console.log('📡 Perplexity Streaming Event:', event);
+    console.log('📡 Perplexity Streaming Event:', {
+      type: event.type,
+      message: event.message?.substring(0, 100),
+      data: event.data,
+      timestamp: event.timestamp
+    });
 
     setStreamingState(prev => {
       const newState = { ...prev };
@@ -77,6 +97,7 @@ export const usePerplexityStreaming = () => {
           newState.currentPhase = event.message || 'Searching for information...';
           newState.progress = event.data?.progress_percentage || prev.progress + 10;
           if (event.data?.search_queries) {
+            console.log('🔍 Adding search queries:', event.data.search_queries);
             newState.searchQueries = [...prev.searchQueries, ...event.data.search_queries];
           }
           break;
@@ -91,6 +112,7 @@ export const usePerplexityStreaming = () => {
               type: event.data.source_type || 'Web Source',
               confidence: event.data.confidence || 85
             };
+            console.log('📚 Adding new source:', newSource);
             newState.discoveredSources = [...prev.discoveredSources, newSource];
           }
           break;
@@ -98,18 +120,47 @@ export const usePerplexityStreaming = () => {
         case 'snippet':
           newState.currentPhase = 'Analyzing relevant information...';
           newState.progress = event.data?.progress_percentage || prev.progress + 10;
+          console.log('📄 Processing snippet:', event.data?.snippet_text?.substring(0, 100));
           break;
 
         case 'thought':
           newState.currentPhase = event.message || 'Processing insights...';
           newState.progress = event.data?.progress_percentage || prev.progress + 15;
+          console.log('💭 AI thought:', event.message?.substring(0, 100));
+          break;
+
+        case 'completion_start':
+          // Prepare for receiving chunked content
+          newState.chunkedContent = '';
+          newState.expectedChunks = event.data?.total_sections || 1;
+          newState.receivedChunks = 0;
+          newState.currentPhase = 'Finalizing analysis...';
+          newState.progress = 90;
+          console.log('🎬 Starting completion with', newState.expectedChunks, 'expected chunks');
+          break;
+
+        case 'completion_chunk':
+          // Append chunk to accumulated content
+          newState.chunkedContent = prev.chunkedContent + (event.data?.content || '');
+          newState.receivedChunks = prev.receivedChunks + 1;
+          const chunkProgress = 90 + (event.data?.chunk_index || 0) / (event.data?.total_chunks || 1) * 10;
+          newState.progress = Math.min(chunkProgress, 99);
+          newState.currentPhase = `Delivering section ${(event.data?.chunk_index || 0) + 1}...`;
+          console.log('🧩 Received chunk', event.data?.chunk_index + 1, 'of', event.data?.total_chunks);
+          console.log('📝 Chunk content length:', event.data?.content?.length || 0);
+          console.log('📚 Total accumulated content length:', newState.chunkedContent.length);
           break;
 
         case 'complete':
           newState.isStreaming = false;
           newState.currentPhase = 'Complete';
           newState.progress = 100;
-          newState.currentMessage = event.data?.final_answer || event.message || '';
+          // Use chunked content if available, otherwise use direct content
+          const finalContent = prev.chunkedContent || event.data?.final_answer || event.message || '';
+          newState.currentMessage = finalContent;
+          console.log('✅ Final response length:', newState.currentMessage.length);
+          console.log('📚 Final sources count:', event.data?.sources?.length || 0);
+          console.log('🧩 Used chunked content:', !!prev.chunkedContent);
           if (event.data?.sources) {
             newState.discoveredSources = event.data.sources;
           }
@@ -157,7 +208,13 @@ export const usePerplexityStreaming = () => {
 
         wsRef.current.onmessage = (event) => {
           try {
+            console.log('📨 Raw WebSocket message received:', event.data);
             const data: StreamingEvent = JSON.parse(event.data);
+            console.log('📋 Parsed streaming event:', {
+              type: data.type,
+              message: data.message?.substring(0, 100),
+              data: data.data
+            });
             handleStreamingEvent(data);
 
             // If complete, resolve with the final answer
@@ -170,7 +227,7 @@ export const usePerplexityStreaming = () => {
               resolve(finalAnswer);
             }
           } catch (error) {
-            console.error('❌ Error parsing WebSocket message:', error);
+            console.error('❌ Error parsing WebSocket message:', error, 'Raw data:', event.data);
             setStreamingState(prev => ({ ...prev, error: 'Message parsing error' }));
           }
         };
