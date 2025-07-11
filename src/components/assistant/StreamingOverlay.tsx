@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { 
@@ -138,33 +137,26 @@ const StreamingOverlay: React.FC<StreamingOverlayProps> = ({
     }
   }, [updates]);
 
-  // CRITICAL FIX: Show overlay if we have updates OR if explicitly visible
+  // IMPROVED VISIBILITY LOGIC: Show overlay if we have updates OR if explicitly visible
   const shouldShow = isVisible || updates.length > 0;
 
   console.log('👁️ StreamingOverlay: Visibility decision:', {
     isVisible,
     updatesLength: updates.length,
-    shouldShow,
-    finalDecision: shouldShow
+    shouldShow
   });
 
-  // Show overlay if we have any updates at all
   if (!shouldShow) {
     console.log('🚫 StreamingOverlay: Not rendering - no visibility and no updates');
     return null;
   }
 
-  // If we have updates, show the current one, otherwise show a default state
+  // DEFENSIVE: Show current update or default state
   const currentUpdate = updates.length > 0 ? updates[currentUpdateIndex] : {
     type: 'search' as const,
     message: 'Initializing research...',
     timestamp: Date.now()
   };
-
-  if (!currentUpdate) {
-    console.log('⚠️ StreamingOverlay: No current update available');
-    return null;
-  }
 
   const IconComponent = getIconForUpdateType(currentUpdate.type);
   const iconColor = getPhaseColor(currentUpdate.type);
