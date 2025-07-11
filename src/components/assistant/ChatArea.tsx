@@ -95,37 +95,38 @@ const ChatArea: React.FC<ChatAreaProps> = ({
               // Transform raw updates into structured format
               const streamingUpdates = rawUpdates.map((update, index) => ({
                 type: update.type || 'thought',
-                message: update.message || update.data?.status || update.data?.content || update.data?.text || '',
+                message: update.message || update.status || update.content || update.text || '',
                 timestamp: update.timestamp || Date.now() + index,
-                data: update.data
+                data: update
               }));
 
-              // Extract sources from updates - look for source type updates and extract source info from data
+              // Extract sources from updates
               const streamingSources = rawUpdates
                 .filter(update => 
-                  update.type === 'source' || 
-                  update.data?.source_name || 
-                  update.data?.name
+                  update.type === 'source_discovered' || 
+                  update.source_name || 
+                  update.name
                 )
                 .map(update => ({
-                  name: update.data?.source_name || update.data?.name || 'Unknown Source',
-                  url: update.data?.source_url || update.data?.url || '',
-                  type: update.data?.source_type || 'Web Source',
-                  confidence: update.data?.confidence || 85
+                  name: update.source_name || update.name || 'Unknown Source',
+                  url: update.source_url || update.url || '',
+                  type: update.source_type || 'Web Source',
+                  confidence: update.confidence || 85
                 }));
 
-              // Extract progress from updates - look for progress info in data
+              // Extract progress from updates
               const progressUpdates = rawUpdates.filter(update => 
-                update.data?.progress !== undefined ||
-                update.data?.status
+                update.type === 'research_progress' || 
+                update.progress !== undefined ||
+                update.status
               );
 
               const streamingProgress = progressUpdates.length > 0 
                 ? progressUpdates.reduce((latest, current) => {
-                    const currentProgress = current.data?.progress || 0;
+                    const currentProgress = current.progress || 0;
                     const latestProgress = latest.progress || 0;
                     return currentProgress >= latestProgress ? {
-                      phase: current.data?.status || current.message || 'Processing...',
+                      phase: current.status || current.message || 'Processing...',
                       progress: currentProgress
                     } : latest;
                   }, { phase: 'Initializing...', progress: 0 })

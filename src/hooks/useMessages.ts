@@ -87,69 +87,6 @@ export const useMessages = (currentSessionId: string | null) => {
     }
   }, [currentSessionId, history, isInitialLoad]);
 
-  // Mock streaming function to simulate streaming updates
-  const simulateMockStreaming = useCallback((messageId: string) => {
-    console.log('🎭 Starting mock streaming for message:', messageId);
-    
-    // Start streaming
-    startStreaming(messageId);
-    
-    // Mock streaming sequence
-    const mockUpdates = [
-      { type: 'search', message: 'Initializing research query...', delay: 500, progress: 10 },
-      { type: 'search', message: 'Analyzing search parameters...', delay: 1000, progress: 20 },
-      { type: 'source', message: 'Found relevant source: TechCrunch', delay: 1500, progress: 35, data: { source_name: 'TechCrunch', source_url: 'https://techcrunch.com' } },
-      { type: 'source', message: 'Found relevant source: Wired', delay: 2000, progress: 45, data: { source_name: 'Wired', source_url: 'https://wired.com' } },
-      { type: 'snippet', message: 'Analyzing content from TechCrunch...', delay: 2500, progress: 60, data: { snippet_text: 'Recent developments in AI technology show significant progress...' } },
-      { type: 'thought', message: 'Synthesizing information from multiple sources...', delay: 3000, progress: 75 },
-      { type: 'source', message: 'Found relevant source: MIT Technology Review', delay: 3500, progress: 85, data: { source_name: 'MIT Technology Review', source_url: 'https://technologyreview.com' } },
-      { type: 'thought', message: 'Finalizing comprehensive analysis...', delay: 4000, progress: 95 }
-    ];
-
-    mockUpdates.forEach((update, index) => {
-      setTimeout(() => {
-        console.log(`🎭 Adding mock update ${index + 1}:`, update.type, update.message);
-        addStreamingUpdate(messageId, update.type as any, update.message, {
-          progress_percentage: update.progress,
-          ...update.data
-        });
-      }, update.delay);
-    });
-
-    // Stop streaming after all updates
-    setTimeout(() => {
-      console.log('🎭 Stopping mock streaming for message:', messageId);
-      stopStreaming();
-      
-      // Update the message with final content
-      setMessages(prev => 
-        prev.map(msg => 
-          msg.id === messageId 
-            ? { 
-                ...msg, 
-                text: `# Mock Research Results
-
-Based on comprehensive analysis from multiple sources, here are the key findings:
-
-## Key Insights
-- Technology trends are rapidly evolving
-- AI adoption is accelerating across industries
-- Market opportunities are expanding globally
-
-## Sources Consulted
-- [TechCrunch](https://techcrunch.com)
-- [Wired](https://wired.com)  
-- [MIT Technology Review](https://technologyreview.com)
-
-This mock streaming demonstration shows how the overlay will appear during real research queries.`,
-                metadata: { messageType: 'completed_report' as const }
-              }
-            : msg
-        )
-      );
-    }, 5000);
-  }, [startStreaming, addStreamingUpdate, stopStreaming]);
-
   const handleSendMessage = useCallback(async (text?: string, messageText?: string, selectedModel?: string) => {
     const finalMessageText = text || messageText;
     if (!finalMessageText || finalMessageText.trim() === '') return;
@@ -185,34 +122,10 @@ This mock streaming demonstration shows how the overlay will appear during real 
     
     try {
       let aiResponseText: string;
-      let shouldUseMockStreaming = false;
 
-      // Route to Stratix if model is 'stratix' or use mock streaming for demonstration
+      // Route to Stratix if model is 'stratix'
       if (selectedModel === 'stratix') {
-        // Create streaming message immediately
-        const streamingMessageId = uuidv4();
-        const streamingMessage: Message = {
-          id: streamingMessageId,
-          text: "🔍 **Starting Research...**\n\nInitializing comprehensive analysis...",
-          sender: 'ai',
-          timestamp: new Date(),
-          metadata: { messageType: 'progress_update' }
-        };
-        
-        // Add message to UI first
-        setMessages(prev => [...prev, streamingMessage]);
-        setIsTyping(false); // Stop typing indicator since we now have a streaming message
-        
-        // Start mock streaming after a brief delay to ensure UI renders
-        setTimeout(() => {
-          simulateMockStreaming(streamingMessageId);
-        }, 100);
-        
-        // Save initial message to history
-        if (currentSessionId) {
-          await addMessage(`AI: Starting research analysis...`);
-        }
-        return; // Exit early since mock streaming handles the rest
+        aiResponseText = await handleStratixRequest(finalMessageText, currentSessionId);
       } else {
         // Use existing N8N webhook for all other models
         let contextMessage = finalMessageText;
@@ -228,12 +141,14 @@ This mock streaming demonstration shows how the overlay will appear during real 
         text: aiResponseText,
         sender: 'ai',
         timestamp: new Date(),
-        metadata: { messageType: 'standard' },
+        metadata: selectedModel === 'stratix' ? {
+          messageType: aiResponseText.includes('Starting Stratix Research') ? 'progress_update' : 'stratix_conversation'
+        } : { messageType: 'standard' },
       };
       
       setMessages(prev => [...prev, aiResponse]);
       
-      // Save AI response to history
+      // Save AI response to history without showing prefix to user
       if (currentSessionId) {
         try {
           console.log('💾 Saving AI response to chat history...', aiResponseText.length, 'characters');
@@ -241,6 +156,7 @@ This mock streaming demonstration shows how the overlay will appear during real 
           console.log('✅ Successfully saved AI response to chat history');
         } catch (error) {
           console.error('❌ Failed to save AI response to chat history:', error);
+          // Don't throw - the message is already shown to user
         }
       }
     } catch (error) {
@@ -255,7 +171,7 @@ This mock streaming demonstration shows how the overlay will appear during real 
     } finally {
       setIsTyping(false);
     }
-  }, [currentSessionId, addMessage, isConfigured, sendMessageToN8n, canvasState, simulateMockStreaming]);
+  }, [currentSessionId, addMessage, isConfigured, sendMessageToN8n, canvasState]);
 
   const handleStratixRequest = useCallback(async (prompt: string, sessionId: string | null): Promise<string> => {
     if (!sessionId) {
