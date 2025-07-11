@@ -289,6 +289,8 @@ export const useMessages = (currentSessionId: string | null) => {
         setMessages(prev => {
           const newMessages = [...prev, streamingMessage];
           console.log('🎯 Messages after adding streaming message:', newMessages.map(m => ({ id: m.id, sender: m.sender, text: m.text.substring(0, 50) })));
+          console.log('🎯 Streaming message ID that should be found in ChatArea:', streamingMessageId);
+          console.log('🎯 All message IDs in current array:', newMessages.map(m => m.id));
           return newMessages;
         });
         
