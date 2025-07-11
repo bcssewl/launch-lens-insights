@@ -194,12 +194,27 @@ export const useMessages = (currentSessionId: string | null) => {
         hasMessage: !!data.message,
         analysisDepth: data.analysis_depth,
         methodology: data.methodology,
+        finalAnswer: data.final_answer,
         keys: Object.keys(data)
       });
 
-      // Check if backend initiated research project
-      if (data.projectId && (data.analysis_depth === "research" || data.methodology !== "Conversational Response")) {
-        console.log('Backend initiated research project:', data.projectId);
+      // ONLY start research if explicitly indicated by backend
+      // Must have both projectId AND explicit research indicators
+      const isExplicitResearch = data.projectId && (
+        data.analysis_depth === "research" || 
+        data.analysis_depth === "deep_research" ||
+        (data.methodology && data.methodology !== "Conversational Response" && data.methodology !== "Direct Response")
+      );
+
+      // Safety check: Never start research for simple conversational inputs
+      const isSimpleConversation = /^(hello|hi|hey|how are you|thanks|thank you|good|great|ok|okay)[\s\?\.!]*$/i.test(prompt.trim());
+      
+      if (isExplicitResearch && !isSimpleConversation) {
+        console.log('Backend explicitly requested research project:', data.projectId);
+        console.log('Research indicators:', { 
+          analysis_depth: data.analysis_depth, 
+          methodology: data.methodology 
+        });
         startStratixStream(data.projectId);
         
         return `🔍 **Starting Stratix Research...**
@@ -207,10 +222,14 @@ export const useMessages = (currentSessionId: string | null) => {
 Initializing comprehensive market research and analysis.`;
       }
       
-      // For everything else (including conversations), return backend response directly
+      // For ALL other cases (conversations, direct responses), return backend response
       if (data.response || data.message || data.final_answer) {
         const backendResponse = data.response || data.message || data.final_answer;
-        console.log('Displaying backend response directly (conversational or other)');
+        console.log('Displaying backend response directly - Type:', {
+          methodology: data.methodology,
+          analysis_depth: data.analysis_depth,
+          hasProjectId: !!data.projectId
+        });
         return backendResponse;
       }
       
