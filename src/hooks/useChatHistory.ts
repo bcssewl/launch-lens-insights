@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -57,7 +56,14 @@ export const useChatHistory = (sessionId: string | null) => {
   };
 
   const addMessage = async (message: string) => {
-    if (!sessionId) return null;
+    if (!sessionId) {
+      console.warn('useChatHistory: No sessionId provided for addMessage');
+      return null;
+    }
+
+    console.log('useChatHistory: Adding message to session:', sessionId);
+    console.log('useChatHistory: Message preview:', message.substring(0, 200) + '...');
+    console.log('useChatHistory: Message length:', message.length);
 
     try {
       const { data, error } = await supabase
@@ -71,12 +77,16 @@ export const useChatHistory = (sessionId: string | null) => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('useChatHistory: Database error when saving message:', error);
+        throw error;
+      }
 
+      console.log('useChatHistory: Successfully saved message with ID:', data.id);
       setHistory(prev => [...prev, data]);
       return data;
     } catch (error) {
-      console.error('Error adding message to history:', error);
+      console.error('useChatHistory: Error adding message to history:', error);
       toast({
         title: "Error",
         description: "Failed to save message",

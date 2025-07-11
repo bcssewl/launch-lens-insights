@@ -135,7 +135,14 @@ export const useMessages = (currentSessionId: string | null) => {
       
       // Save AI response to history without showing prefix to user
       if (currentSessionId) {
-        await addMessage(`AI: ${aiResponseText}`);
+        try {
+          console.log('Saving AI response to chat history...', aiResponseText.length, 'characters');
+          await addMessage(`AI: ${aiResponseText}`);
+          console.log('Successfully saved AI response to chat history');
+        } catch (error) {
+          console.error('Failed to save AI response to chat history:', error);
+          // Don't throw - the message is already shown to user
+        }
       }
     } catch (error) {
       console.error('useMessages: Error sending message:', error);
@@ -268,7 +275,7 @@ Initializing comprehensive market research and analysis.`;
                 // Final result received - replace progress with final result
                 const finalAnswer = eventData?.final_answer || eventData?.content;
                 if (finalAnswer) {
-                  formatStratixResults(finalAnswer, eventData, projectId).then(formattedText => {
+                  formatStratixResults(finalAnswer, eventData, projectId).then(async formattedText => {
                     const finalResponse: Message = {
                       id: uuidv4(),
                       text: formattedText,
@@ -280,6 +287,18 @@ Initializing comprehensive market research and analysis.`;
                       }
                     };
                     
+                    // CRITICAL: Save to chat history BEFORE updating UI
+                    if (currentSessionId) {
+                      try {
+                        console.log('Saving Stratix report to chat history...', formattedText.length, 'characters');
+                        await addMessage(`AI: ${formattedText}`);
+                        console.log('Successfully saved Stratix report to chat history');
+                      } catch (error) {
+                        console.error('Failed to save Stratix report to chat history:', error);
+                        // Don't throw - still update UI even if save fails
+                      }
+                    }
+                    
                     setMessages(prev => {
                       // Remove progress message and add final result
                       const filteredMessages = progressMessageId 
@@ -287,11 +306,6 @@ Initializing comprehensive market research and analysis.`;
                         : prev;
                       return [...filteredMessages, finalResponse];
                     });
-                    
-                    // Save final response to history
-                    if (currentSessionId) {
-                      addMessage(`AI: ${finalResponse.text}`);
-                    }
                   });
                 }
                 
@@ -329,7 +343,7 @@ Initializing comprehensive market research and analysis.`;
               .single();
             
             if (result && !currentProgress.includes('Research Report')) {
-              formatStratixResults(result.content, result, projectId).then(formattedText => {
+              formatStratixResults(result.content, result, projectId).then(async formattedText => {
                 const finalResponse: Message = {
                   id: uuidv4(),
                   text: formattedText,
@@ -341,16 +355,24 @@ Initializing comprehensive market research and analysis.`;
                   }
                 };
                 
+                // CRITICAL: Save to chat history BEFORE updating UI
+                if (currentSessionId) {
+                  try {
+                    console.log('Saving final Stratix result to chat history...', formattedText.length, 'characters');
+                    await addMessage(`AI: ${formattedText}`);
+                    console.log('Successfully saved final Stratix result to chat history');
+                  } catch (error) {
+                    console.error('Failed to save final Stratix result to chat history:', error);
+                    // Don't throw - still update UI even if save fails
+                  }
+                }
+                
                 setMessages(prev => {
                   const filteredMessages = progressMessageId 
                     ? prev.filter(msg => msg.id !== progressMessageId)
                     : prev;
                   return [...filteredMessages, finalResponse];
                 });
-                
-                if (currentSessionId) {
-                  addMessage(`AI: ${finalResponse.text}`);
-                }
               });
             }
             
