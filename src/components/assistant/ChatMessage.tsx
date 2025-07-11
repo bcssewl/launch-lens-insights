@@ -16,7 +16,7 @@ export interface ChatMessageData {
   timestamp: string;
   metadata?: {
     isCompleted?: boolean;
-    messageType?: 'progress_update' | 'completed_report' | 'standard';
+    messageType?: 'progress_update' | 'completed_report' | 'standard' | 'stratix_conversation';
   };
 }
 
