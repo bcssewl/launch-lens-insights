@@ -94,7 +94,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                   isStreamingForMessage: !!isStreamingForMessage,
                   getUpdatesForMessage: !!getUpdatesForMessage,
                   getProgressForMessage: !!getProgressForMessage
-                }
+                },
+                messageText: msg.text.substring(0, 50)
               });
 
               // Transform raw updates into structured format

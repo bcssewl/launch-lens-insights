@@ -51,6 +51,7 @@ export const useStreamingOverlay = () => {
   const isStreamingRef = useRef<boolean>(false);
   const updatesRef = useRef<StreamingUpdate[]>([]);
   const sourcesRef = useRef<Array<{ name: string; url: string; type?: string; confidence?: number }>>([]);
+  const streamingUpdatesRef = useRef<Record<string, StreamingUpdate[]>>({});
 
   const startStreaming = useCallback((messageId: string) => {
     console.log('🎬 StreamingOverlay: STARTING streaming for message:', messageId);
@@ -104,6 +105,12 @@ export const useStreamingOverlay = () => {
 
     // Update refs immediately (synchronous)
     updatesRef.current = [...updatesRef.current, newUpdate];
+    
+    // Also store in message-specific updates
+    if (!streamingUpdatesRef.current[effectiveMessageId]) {
+      streamingUpdatesRef.current[effectiveMessageId] = [];
+    }
+    streamingUpdatesRef.current[effectiveMessageId] = [...streamingUpdatesRef.current[effectiveMessageId], newUpdate];
 
     // Update sources ref if needed
     if (normalizedType === 'source' && data?.source_name && data?.source_url) {
@@ -215,7 +222,9 @@ export const useStreamingOverlay = () => {
       isStreamingFromState: streamingState.isStreaming,
       hasUpdatesInRef,
       hasUpdatesInState: streamingState.updates.length,
-      result
+      isCurrentMessage,
+      result,
+      allCurrentUpdates: Object.keys(streamingUpdatesRef.current)
     });
     
     return result;

@@ -283,7 +283,11 @@ export const useMessages = (currentSessionId: string | null) => {
         
         // Add message to UI first
         console.log('📝 Adding streaming message to UI immediately with ID:', streamingMessageId);
-        setMessages(prev => [...prev, streamingMessage]);
+        setMessages(prev => {
+          const newMessages = [...prev, streamingMessage];
+          console.log('🎯 Messages after adding streaming message:', newMessages.map(m => ({ id: m.id, sender: m.sender, text: m.text.substring(0, 50) })));
+          return newMessages;
+        });
         
         // CRITICAL: Wait for React render cycle to complete before starting overlay
         setTimeout(() => {
