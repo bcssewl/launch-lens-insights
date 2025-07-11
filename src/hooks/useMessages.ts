@@ -163,13 +163,13 @@ export const useMessages = (currentSessionId: string | null) => {
 
   const handleStratixRequest = useCallback(async (prompt: string, sessionId: string | null): Promise<string> => {
     if (!sessionId) {
-      throw new Error('Session ID required for Stratix research');
+      throw new Error('Session ID required for Stratix communication');
     }
 
     try {
-      console.log('Sending message to Stratix agent...');
+      console.log('Routing ALL input to Stratix backend...');
       
-      // Use supabase.functions.invoke to properly handle authentication
+      // Send ALL user input to backend - let backend decide conversation vs research
       const { data, error } = await supabase.functions.invoke('stratix-router', {
         body: {
           prompt,
@@ -187,32 +187,19 @@ export const useMessages = (currentSessionId: string | null) => {
         throw new Error(data.error);
       }
 
-      // Debug: Log the response structure to understand what we're getting
-      console.log('Stratix response structure:', {
+      // Debug: Log the response structure
+      console.log('Stratix response received:', {
         hasProjectId: !!data.projectId,
-        hasDirectResponse: !!data.isDirectResponse,
         hasResponse: !!data.response,
         hasMessage: !!data.message,
-        needsResearch: !!data.needsResearch,
+        analysisDepth: data.analysis_depth,
+        methodology: data.methodology,
         keys: Object.keys(data)
       });
 
-      // Check if this is a simple conversation response or research project
-      // Priority 1: Explicit direct response flag
-      if (data.isDirectResponse && data.response) {
-        console.log('Stratix provided direct response, no research needed');
-        return data.response;
-      }
-      
-      // Priority 2: Explicit "no research needed" flag or simple response without projectId
-      if ((data.needsResearch === false) || (data.response && !data.projectId)) {
-        console.log('Stratix provided simple response without research');
-        return data.response || data.message;
-      }
-      
-      // Priority 3: Check for projectId AND explicit research indication
-      if (data.projectId && (data.needsResearch === true || data.startResearch === true)) {
-        console.log('Stratix initiated research project:', data.projectId);
+      // Check if backend initiated research project
+      if (data.projectId && (data.analysis_depth === "research" || data.methodology !== "Conversational Response")) {
+        console.log('Backend initiated research project:', data.projectId);
         startStratixStream(data.projectId);
         
         return `🔍 **Starting Stratix Research...**
@@ -220,18 +207,18 @@ export const useMessages = (currentSessionId: string | null) => {
 Initializing comprehensive market research and analysis.`;
       }
       
-      // Priority 4: Fallback - if we have any response text, use it directly
-      if (data.response || data.message) {
-        console.log('Stratix provided fallback response without research indicators');
-        return data.response || data.message;
+      // For everything else (including conversations), return backend response directly
+      if (data.response || data.message || data.final_answer) {
+        const backendResponse = data.response || data.message || data.final_answer;
+        console.log('Displaying backend response directly (conversational or other)');
+        return backendResponse;
       }
       
-      // Priority 5: Last resort - provide helpful default message
-      console.log('Stratix response format unclear, providing default message');
-      return "Hello! I'm Stratix, your research assistant. I can help with market research, competitive analysis, or just have a conversation. What would you like to discuss?";
+      // If no response from backend, this is an error
+      throw new Error('No response received from Stratix backend');
 
     } catch (error) {
-      console.error('Stratix request error:', error);
+      console.error('Stratix communication error:', error);
       throw new Error(`Failed to communicate with Stratix: ${error.message}`);
     }
   }, []);
