@@ -854,6 +854,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      cleanup_stuck_stratix_projects: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       create_report_share: {
         Args: {
           p_report_id: string
