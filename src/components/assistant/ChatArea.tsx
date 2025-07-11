@@ -89,7 +89,12 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                 sender: msg.sender,
                 isStreaming,
                 rawUpdatesCount: rawUpdates.length,
-                sampleUpdates: rawUpdates.slice(0, 2) // Show first 2 updates
+                sampleUpdates: rawUpdates.slice(0, 2), // Show first 2 updates
+                hasStreamingFunctions: {
+                  isStreamingForMessage: !!isStreamingForMessage,
+                  getUpdatesForMessage: !!getUpdatesForMessage,
+                  getProgressForMessage: !!getProgressForMessage
+                }
               });
 
               // Transform raw updates into structured format

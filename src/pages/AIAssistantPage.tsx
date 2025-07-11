@@ -48,6 +48,8 @@ const AIAssistantPage: React.FC = () => {
     handleCanvasPdfDownload,
     isStreamingForMessage,
     getUpdatesForMessage,
+    getSourcesForMessage,
+    getProgressForMessage,
     streamingState
   } = useMessages(currentSessionId);
   const [editedCanvasContent, setEditedCanvasContent] = useState(canvasState.content);
@@ -240,6 +242,8 @@ const AIAssistantPage: React.FC = () => {
               onCanvasPrint={handleCanvasPrint}
               isStreamingForMessage={isStreamingForMessage}
               getUpdatesForMessage={getUpdatesForMessage}
+              getSourcesForMessage={getSourcesForMessage}
+              getProgressForMessage={getProgressForMessage}
             />
           </div>
         </SidebarInset>
