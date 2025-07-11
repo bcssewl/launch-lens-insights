@@ -267,24 +267,13 @@ export const useMessages = (currentSessionId: string | null) => {
   const handleStreamingRequest = useCallback(async (prompt: string, sessionId: string): Promise<string> => {
     return new Promise((resolve, reject) => {
       try {
-        // Create a unique ID for this streaming message
+        // Create a unique ID for tracking streaming updates
         const streamingMessageId = uuidv4();
         
-        // Show immediate feedback
-        const streamingIndicator = "🔍 **Initializing Research Stream...**\n\nConnecting to research specialists...";
+        // DON'T add a message to UI here - let the main function handle it
+        // Just start the streaming process and return the final result
         
-        // Add the streaming message to the UI
-        const streamingMessage: Message = {
-          id: streamingMessageId,
-          text: streamingIndicator,
-          sender: 'ai',
-          timestamp: new Date(),
-          metadata: { messageType: 'progress_update' }
-        };
-        
-        setMessages(prev => [...prev, streamingMessage]);
-        
-        // Start streaming overlay for this message
+        // Start streaming overlay for this message (will be used later)
         startStreaming(streamingMessageId);
         
         // Connect to WebSocket
@@ -368,15 +357,7 @@ export const useMessages = (currentSessionId: string | null) => {
                   }
                 }
                 
-                // Update the streaming message with the final response
-                setMessages(prev => 
-                  prev.map(msg => 
-                    msg.id === streamingMessageId 
-                      ? { ...msg, text: finalResponse, metadata: { messageType: 'completed_report' } }
-                      : msg
-                  )
-                );
-                
+                // Just resolve with the final response - don't update messages here
                 resolve(finalResponse);
                 break;
                 
