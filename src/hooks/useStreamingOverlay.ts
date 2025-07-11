@@ -49,23 +49,27 @@ export const useStreamingOverlay = () => {
   const streamingUpdateRef = useRef<(messageId: string, type: string, message: string, data?: any) => void>();
 
   const startStreaming = useCallback((messageId: string) => {
-    console.log('🎬 StreamingOverlay: Starting streaming for message:', messageId);
-    setStreamingState({
-      isStreaming: true,
-      updates: [],
-      currentMessageId: messageId,
-      sources: [],
-      currentPhase: 'initializing',
-      progress: 0
+    console.log('🎬 StreamingOverlay: STARTING streaming for message:', messageId);
+    setStreamingState(prev => {
+      const newState = {
+        isStreaming: true,
+        updates: [],
+        currentMessageId: messageId,
+        sources: [],
+        currentPhase: 'initializing',
+        progress: 0
+      };
+      console.log('🎬 StreamingOverlay: STARTED streaming state:', newState);
+      return newState;
     });
   }, []);
 
   const addStreamingUpdate = useCallback((messageId: string, type: string, message: string, data?: any) => {
-    console.log('📡 StreamingOverlay: Adding update for message:', messageId, 'type:', type, 'message:', message, 'data:', data);
+    console.log('📡 StreamingOverlay: Adding update for message:', messageId, 'type:', type, 'message:', message);
     
     setStreamingState(prev => {
       // Debug logging for state matching
-      console.log('🔍 StreamingOverlay: Current state messageId:', prev.currentMessageId, 'Incoming messageId:', messageId);
+      console.log('🔍 StreamingOverlay: Current state messageId:', prev.currentMessageId, 'Incoming messageId:', messageId, 'isStreaming:', prev.isStreaming);
       
       // Only add updates for the current streaming message
       if (prev.currentMessageId !== messageId) {
@@ -106,19 +110,19 @@ export const useStreamingOverlay = () => {
       switch (normalizedType) {
         case 'search':
           currentPhase = 'searching';
-          progress = 10;
+          progress = Math.max(progress, 10);
           break;
         case 'source':
           currentPhase = 'discovering';
-          progress = Math.min(progress + 15, 60);
+          progress = Math.max(progress, Math.min(progress + 15, 60));
           break;
         case 'snippet':
           currentPhase = 'analyzing';
-          progress = Math.min(progress + 10, 80);
+          progress = Math.max(progress, Math.min(progress + 10, 80));
           break;
         case 'thought':
           currentPhase = 'synthesizing';
-          progress = data?.progress_percentage || Math.min(progress + 5, 95);
+          progress = Math.max(progress, data?.progress_percentage || Math.min(progress + 5, 95));
           break;
         case 'complete':
           currentPhase = 'complete';
@@ -135,7 +139,8 @@ export const useStreamingOverlay = () => {
         updates: [...prev.updates, newUpdate],
         sources: newSources,
         currentPhase,
-        progress
+        progress,
+        isStreaming: true // Ensure streaming stays true until stopped
       };
 
       console.log('✅ StreamingOverlay: Updated state:', {
@@ -143,7 +148,8 @@ export const useStreamingOverlay = () => {
         updateCount: newState.updates.length,
         currentPhase: newState.currentPhase,
         progress: newState.progress,
-        sourcesCount: newState.sources.length
+        sourcesCount: newState.sources.length,
+        isStreaming: newState.isStreaming
       });
 
       return newState;
@@ -152,7 +158,14 @@ export const useStreamingOverlay = () => {
 
   const stopStreaming = useCallback(() => {
     console.log('🛑 StreamingOverlay: Stopping streaming');
-    // Clear streaming state after a short delay to allow final animation
+    setStreamingState(prev => ({
+      ...prev,
+      isStreaming: false,
+      currentPhase: 'complete',
+      progress: 100
+    }));
+    
+    // Clear streaming state after a delay to allow final animation
     setTimeout(() => {
       console.log('🧹 StreamingOverlay: Cleaning up streaming state');
       setStreamingState({
@@ -168,7 +181,7 @@ export const useStreamingOverlay = () => {
 
   const isStreamingForMessage = useCallback((messageId: string) => {
     const isStreaming = streamingState.isStreaming && streamingState.currentMessageId === messageId;
-    console.log('🤔 StreamingOverlay: isStreamingForMessage check:', messageId, 'result:', isStreaming, 'currentMessageId:', streamingState.currentMessageId);
+    console.log('🤔 StreamingOverlay: isStreamingForMessage check:', messageId, 'result:', isStreaming, 'currentMessageId:', streamingState.currentMessageId, 'isStreaming:', streamingState.isStreaming);
     return isStreaming;
   }, [streamingState.isStreaming, streamingState.currentMessageId]);
 
