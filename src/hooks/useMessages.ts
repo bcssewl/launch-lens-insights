@@ -167,358 +167,86 @@ export const useMessages = (currentSessionId: string | null) => {
     }
 
     try {
-      console.log('Routing ALL input to Stratix backend...');
+      console.log('Routing to Stratix backend:', prompt);
       
-      // Send ALL user input to backend - let backend decide conversation vs research
-      const { data, error } = await supabase.functions.invoke('stratix-router', {
-        body: {
-          prompt,
-          sessionId,
-          deepDive: false // Could be made configurable
-        }
-      });
-
-      if (error) {
-        console.error('Stratix request error:', error);
-        throw new Error(`Stratix request failed: ${error.message}`);
-      }
+      // Check if this is a simple conversation that should get instant response
+      const isSimpleConversation = /^(hello|hi|hey|how are you|how\'s it going|thanks|thank you|good|great|ok|okay|what are you|who are you)[\s\?\.!]*$/i.test(prompt.trim());
       
-      if (data.error) {
-        throw new Error(data.error);
-      }
-
-      // Debug: Log the response structure
-      console.log('Stratix response received:', {
-        hasProjectId: !!data.projectId,
-        hasResponse: !!data.response,
-        hasMessage: !!data.message,
-        analysisDepth: data.analysis_depth,
-        methodology: data.methodology,
-        finalAnswer: data.final_answer,
-        keys: Object.keys(data)
-      });
-
-      // ONLY start research if explicitly indicated by backend
-      // Must have both projectId AND explicit research indicators
-      const isExplicitResearch = data.projectId && (
-        data.analysis_depth === "research" || 
-        data.analysis_depth === "deep_research" ||
-        (data.methodology && data.methodology !== "Conversational Response" && data.methodology !== "Direct Response")
-      );
-
-      // Safety check: Never start research for simple conversational inputs
-      const isSimpleConversation = /^(hello|hi|hey|how are you|thanks|thank you|good|great|ok|okay)[\s\?\.!]*$/i.test(prompt.trim());
-      
-      if (isExplicitResearch && !isSimpleConversation) {
-        console.log('Backend explicitly requested research project:', data.projectId);
-        console.log('Research indicators:', { 
-          analysis_depth: data.analysis_depth, 
-          methodology: data.methodology 
-        });
-        startStratixStream(data.projectId);
+      if (isSimpleConversation) {
+        console.log('Using /chat endpoint for simple conversation');
         
-        return `🔍 **Starting Stratix Research...**
-
-Initializing comprehensive market research and analysis.`;
-      }
-      
-      // For ALL other cases (conversations, direct responses), return backend response
-      if (data.response || data.message || data.final_answer) {
-        const backendResponse = data.response || data.message || data.final_answer;
-        console.log('Displaying backend response directly - Type:', {
-          methodology: data.methodology,
-          analysis_depth: data.analysis_depth,
-          hasProjectId: !!data.projectId
+        // Use chat endpoint for instant conversational response
+        const response = await fetch('https://ai-agent-research-optivise-production.up.railway.app/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: prompt })
         });
-        return backendResponse;
-      }
+
+        if (!response.ok) {
+          throw new Error(`Chat API error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('Chat response received:', data);
+        
+        return data.answer || data.response || "Hello! I'm Stratix, your research assistant. How can I help you today?";
+      } 
       
-      // If no response from backend, this is an error
-      throw new Error('No response received from Stratix backend');
+      // For complex queries, check if they need real-time streaming or simple research
+      else {
+        console.log('Using /research endpoint for complex query');
+        
+        // For now, use the research endpoint - we can add WebSocket streaming later
+        const response = await fetch('https://ai-agent-research-optivise-production.up.railway.app/research', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: prompt })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Research API error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        console.log('Research response received:', {
+          hasAnswer: !!data.answer,
+          methodology: data.methodology,
+          analysisDepth: data.analysis_depth,
+          agentsConsulted: data.agents_consulted?.length || 0,
+          confidence: data.confidence
+        });
+
+        // Format the research response with metadata
+        let formattedResponse = data.answer || "Research completed successfully.";
+        
+        // Add methodology information for transparency
+        if (data.methodology && data.methodology !== "Conversational Response") {
+          formattedResponse += `\n\n---\n**Research Method:** ${data.methodology}`;
+          
+          if (data.agents_consulted && data.agents_consulted.length > 0) {
+            formattedResponse += `\n**Agents Consulted:** ${data.agents_consulted.join(', ')}`;
+          }
+          
+          if (data.confidence) {
+            const confidencePercent = Math.round(data.confidence * 100);
+            formattedResponse += `\n**Confidence Level:** ${confidencePercent}%`;
+          }
+        }
+        
+        return formattedResponse;
+      }
 
     } catch (error) {
-      console.error('Stratix communication error:', error);
-      throw new Error(`Failed to communicate with Stratix: ${error.message}`);
-    }
-  }, []);
-
-  const startStratixStream = useCallback((projectId: string) => {
-    console.log('Starting Stratix stream for project:', projectId);
-    
-    let pollInterval: NodeJS.Timeout;
-    let timeoutInterval: NodeJS.Timeout;
-    let lastEventTime = new Date().toISOString();
-    let progressMessageId: string | null = null;
-    let currentProgress = '';
-    
-    // Add a timeout to prevent infinite polling for simple conversations
-    timeoutInterval = setTimeout(() => {
-      console.log('Research polling timeout - stopping and providing fallback message');
-      clearInterval(pollInterval);
-      updateProgressMessage(`❌ **Research Timeout**\n\nThis request might be better suited for a direct conversation. Let me respond directly instead of running research.`);
-    }, 30000); // 30 second timeout
-    
-    const updateProgressMessage = (newContent: string) => {
-      currentProgress = newContent;
-      setMessages(prev => {
-        if (!progressMessageId) {
-          // Create new progress message
-          const progressMessage: Message = {
-            id: uuidv4(),
-            text: newContent,
-            sender: 'ai',
-            timestamp: new Date(),
-            metadata: {
-              messageType: 'progress_update'
-            }
-          };
-          progressMessageId = progressMessage.id;
-          return [...prev, progressMessage];
-        } else {
-          // Update existing progress message
-          return prev.map(msg => 
-            msg.id === progressMessageId 
-              ? { ...msg, text: newContent, timestamp: new Date() }
-              : msg
-          );
-        }
-      });
-    };
-    
-    const pollForUpdates = async () => {
-      try {
-        // Get new events from the project
-        const { data: events, error } = await supabase
-          .from('stratix_events')
-          .select('*')
-          .eq('project_id', projectId)
-          .gt('created_at', lastEventTime)
-          .order('created_at', { ascending: true });
-
-        if (error) {
-          console.error('Error fetching Stratix events:', error);
-          return;
-        }
-
-        // Process new events
-        if (events && events.length > 0) {
-          for (const event of events) {
-            const eventData = event.event_data as any;
-            console.log('Stratix event:', eventData);
-
-            // Handle different event types with real-time updates
-            switch (eventData?.type) {
-              case 'agent_start':
-                updateProgressMessage(`🤖 **${eventData.agent || 'Research Agent'} Activated**\n\n${eventData.message || 'Starting analysis...'}`);
-                break;
-                
-              case 'source_discovered':
-                updateProgressMessage(`${currentProgress}\n\n📖 **Source Found:** ${eventData.source_name}\n*${eventData.agent || 'Agent'} is analyzing this source...*`);
-                break;
-                
-              case 'agent_progress':
-                updateProgressMessage(`${currentProgress}\n\n⚡ **${eventData.agent || 'Agent'} Update:** ${eventData.message || 'Processing...'}`);
-                break;
-                
-              case 'intermediate_result':
-                updateProgressMessage(`${currentProgress}\n\n📊 **Preliminary Finding:**\n${eventData.content || eventData.message}`);
-                break;
-                
-              case 'research_complete':
-                // Final result received - replace progress with final result
-                const finalAnswer = eventData?.final_answer || eventData?.content;
-                if (finalAnswer) {
-                  formatStratixResults(finalAnswer, eventData, projectId).then(async formattedText => {
-                    const finalResponse: Message = {
-                      id: uuidv4(),
-                      text: formattedText,
-                      sender: 'ai',
-                      timestamp: new Date(),
-                      metadata: {
-                        isCompleted: true,
-                        messageType: 'completed_report'
-                      }
-                    };
-                    
-                    // CRITICAL: Save to chat history BEFORE updating UI
-                    if (currentSessionId) {
-                      try {
-                        console.log('Saving Stratix report to chat history...', formattedText.length, 'characters');
-                        await addMessage(`AI: ${formattedText}`);
-                        console.log('Successfully saved Stratix report to chat history');
-                      } catch (error) {
-                        console.error('Failed to save Stratix report to chat history:', error);
-                        // Don't throw - still update UI even if save fails
-                      }
-                    }
-                    
-                    setMessages(prev => {
-                      // Remove progress message and add final result
-                      const filteredMessages = progressMessageId 
-                        ? prev.filter(msg => msg.id !== progressMessageId)
-                        : prev;
-                      return [...filteredMessages, finalResponse];
-                    });
-                  });
-                }
-                
-                // Stop polling when research is complete
-                clearInterval(pollInterval);
-                clearTimeout(timeoutInterval);
-                return;
-                
-              default:
-                // Handle any other event types
-                if (eventData.message) {
-                  updateProgressMessage(`${currentProgress}\n\n🔄 **Research Update:** ${eventData.message}`);
-                }
-                break;
-            }
-            
-            // Update last event time to newest event's timestamp
-            lastEventTime = event.created_at;
-          }
-        }
-
-        // Check if project is complete or in error state
-        const { data: project } = await supabase
-          .from('stratix_projects')
-          .select('status')
-          .eq('id', projectId)
-          .single();
-
-        if (project) {
-          if (project.status === 'done') {
-            // Get final result if we haven't received it via events
-            const { data: result } = await supabase
-              .from('stratix_results')
-              .select('*')
-              .eq('project_id', projectId)
-              .single();
-            
-            if (result && !currentProgress.includes('Research Report')) {
-              formatStratixResults(result.content, result, projectId).then(async formattedText => {
-                const finalResponse: Message = {
-                  id: uuidv4(),
-                  text: formattedText,
-                  sender: 'ai',
-                  timestamp: new Date(),
-                  metadata: {
-                    isCompleted: true,
-                    messageType: 'completed_report'
-                  }
-                };
-                
-                // CRITICAL: Save to chat history BEFORE updating UI
-                if (currentSessionId) {
-                  try {
-                    console.log('Saving final Stratix result to chat history...', formattedText.length, 'characters');
-                    await addMessage(`AI: ${formattedText}`);
-                    console.log('Successfully saved final Stratix result to chat history');
-                  } catch (error) {
-                    console.error('Failed to save final Stratix result to chat history:', error);
-                    // Don't throw - still update UI even if save fails
-                  }
-                }
-                
-                setMessages(prev => {
-                  const filteredMessages = progressMessageId 
-                    ? prev.filter(msg => msg.id !== progressMessageId)
-                    : prev;
-                  return [...filteredMessages, finalResponse];
-                });
-              });
-            }
-            
-            clearInterval(pollInterval);
-            clearTimeout(timeoutInterval);
-          } else if (project.status === 'error') {
-            console.log('Research project failed, providing helpful error message');
-            updateProgressMessage(`❌ **Unable to Complete Research**\n\nThis request might not require research, or there was a technical issue. For simple questions or conversations, I can respond directly without research. Please try rephrasing your message or ask me something specific about market research, competitive analysis, or business insights.`);
-            clearInterval(pollInterval);
-            clearTimeout(timeoutInterval);
-          }
-        }
-      } catch (error) {
-        console.error('Error polling Stratix updates:', error);
-      }
-    };
-
-    // Poll every 1.5 seconds for updates (slightly faster for better UX)
-    pollInterval = setInterval(pollForUpdates, 1500);
-    
-    // Initial poll
-    pollForUpdates();
-
-    // Clean up on component unmount
-    return () => {
-      clearInterval(pollInterval);
-      clearTimeout(timeoutInterval);
-    };
-  }, [currentSessionId, addMessage]);
-
-  const formatStratixResults = useCallback(async (content: string, eventData?: any, projectId?: string): Promise<string> => {
-    let formattedResponse = "# 📊 Stratix Research Report\n\n";
-    
-    // Add the main content
-    formattedResponse += content + "\n\n";
-    
-    // Add metadata if available
-    if (eventData) {
-      formattedResponse += "## Research Details\n\n";
+      console.error('Stratix backend communication error:', error);
       
-      if (eventData.confidence) {
-        const confidence = Math.round((eventData.confidence || 0) * 100);
-        const confidenceIcon = confidence >= 85 ? '🟢' : confidence >= 70 ? '🟡' : '🔴';
-        formattedResponse += `${confidenceIcon} **Research Confidence:** ${confidence}%\n\n`;
-      }
-      
-      if (eventData.agents_consulted && Array.isArray(eventData.agents_consulted)) {
-        formattedResponse += "**🤖 Agents Consulted:** " + eventData.agents_consulted.join(', ') + "\n\n";
-      }
-      
-      if (eventData.methodology) {
-        formattedResponse += "**📋 Methodology:** " + eventData.methodology + "\n\n";
-      }
-      
-      if (eventData.processing_time) {
-        const timeInSeconds = Math.round(eventData.processing_time / 1000);
-        formattedResponse += `**⏱️ Processing Time:** ${timeInSeconds} seconds\n\n`;
+      // Provide helpful error message based on the error type
+      if (error.message.includes('Failed to fetch')) {
+        throw new Error('Unable to connect to Stratix backend. Please check your internet connection.');
+      } else {
+        throw new Error(`Stratix error: ${error.message}`);
       }
     }
-    
-    // Try to get citations if projectId is available
-    if (projectId || eventData?.project_id) {
-      try {
-        const { data: citations } = await supabase
-          .from('stratix_citations')
-          .select('*')
-          .eq('project_id', projectId || eventData.project_id)
-          .eq('clickable', true);
-        
-        if (citations && citations.length > 0) {
-          formattedResponse += "## 📚 Sources & References\n\n";
-          citations.forEach((citation, index) => {
-            if (citation.source_url) {
-              formattedResponse += `${index + 1}. **[${citation.source_name}](${citation.source_url})**`;
-            } else {
-              formattedResponse += `${index + 1}. **${citation.source_name}**`;
-            }
-            if (citation.agent) {
-              formattedResponse += ` *(via ${citation.agent})*`;
-            }
-            formattedResponse += "\n";
-          });
-          formattedResponse += "\n";
-        }
-      } catch (error) {
-        console.error('Error fetching citations:', error);
-      }
-    }
-    
-    formattedResponse += "---\n\n*✅ Research completed by Stratix Research Agent*";
-    
-    return formattedResponse;
   }, []);
 
   const handleClearConversation = useCallback(() => {
