@@ -178,6 +178,9 @@ async function processRailwayResearch(
           timeout_minutes: 8 // Give Railway 8 minutes to complete
         }
       }));
+      
+      // Also poll the Railway status endpoint for additional progress info
+      pollRailwayStatus(projectId, sessionId, supabase);
     };
 
     ws.onmessage = async (event) => {
@@ -368,6 +371,59 @@ async function processRailwayResearch(
       .update({ status: 'error' })
       .eq('id', projectId);
   }
+}
+
+async function pollRailwayStatus(projectId: string, sessionId: string, supabase: any) {
+  const railwayUrl = Deno.env.get('STRATIX_RAILWAY_URL');
+  if (!railwayUrl) return;
+  
+  const statusUrl = `${railwayUrl}/stream/status/${sessionId}`;
+  let isCompleted = false;
+  
+  // Poll every 2 seconds for status updates
+  const statusInterval = setInterval(async () => {
+    try {
+      const response = await fetch(statusUrl, {
+        headers: { 'accept': 'application/json' }
+      });
+      
+      if (response.ok) {
+        const statusData = await response.json();
+        
+        // Store status update as an event
+        await supabase
+          .from('stratix_events')
+          .insert({
+            project_id: projectId,
+            event_type: 'status_update',
+            event_data: {
+              type: 'status_update',
+              status: statusData.status,
+              current_phase: statusData.current_phase,
+              progress_percentage: statusData.progress_percentage,
+              estimated_completion: statusData.estimated_completion,
+              timestamp: statusData.timestamp,
+              message: `${statusData.current_phase}: ${statusData.progress_percentage}% complete`
+            }
+          });
+          
+        // Stop polling if completed
+        if (statusData.status !== 'active') {
+          isCompleted = true;
+          clearInterval(statusInterval);
+        }
+      }
+    } catch (error) {
+      console.error('Error polling Railway status:', error);
+    }
+  }, 2000);
+  
+  // Clean up after 10 minutes
+  setTimeout(() => {
+    if (!isCompleted) {
+      clearInterval(statusInterval);
+    }
+  }, 600000);
 }
 
 // Old functions removed - now using Railway agent directly
