@@ -77,11 +77,20 @@ export const useMessages = (currentSessionId: string | null) => {
         
         const lines = entry.message.split('\n');
         const isUser = lines[0].startsWith('USER:');
-        const text = isUser ? lines[0].substring(5).trim() : lines.slice(1).join('\n').trim();
+        const isAI = lines[0].startsWith('AI:');
+        
+        let text = '';
+        if (isUser) {
+          text = lines[0].substring(5).trim(); // Remove "USER: " prefix
+        } else if (isAI) {
+          text = lines[0].substring(3).trim(); // Remove "AI: " prefix
+        } else {
+          text = entry.message.trim(); // Use full message if no prefix
+        }
         
         // Don't render empty AI messages
         if (!isUser && (!text || text.trim() === '')) {
-          console.log(`Skipping empty AI message at index ${index}`);
+          console.log(`Skipping empty AI message at index ${index}:`, { text, originalMessage: entry.message });
           return null;
         }
         
@@ -89,7 +98,7 @@ export const useMessages = (currentSessionId: string | null) => {
           id: `history-${index}`,
           text,
           sender: isUser ? 'user' : 'ai',
-          timestamp: new Date(Date.now() - (history.length - index) * 1000),
+          timestamp: new Date(entry.created_at), // Use actual database timestamp
         } as Message;
       }).filter(Boolean); // Remove null entries
       
