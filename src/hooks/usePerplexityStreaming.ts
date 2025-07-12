@@ -1,5 +1,8 @@
 import { useState, useCallback, useRef } from 'react';
 
+// Configuration constants
+const STREAMING_TIMEOUT_MS = 300000; // 5 minutes for complex research and report generation
+
 interface StreamingEvent {
   type: 'connection_confirmed' | 'search' | 'thought' | 'source' | 'snippet' | 'complete' | 'error';
   timestamp: string;
@@ -188,14 +191,14 @@ export const usePerplexityStreaming = () => {
         timeoutRef.current = null;
       }
 
-      // Set timeout for the streaming request (120 seconds as per backend spec)
+      // Set timeout for the streaming request (300 seconds for complex research)
       timeoutRef.current = window.setTimeout(() => {
-        console.log('⏰ Streaming timeout reached');
+        console.log('⏰ Streaming timeout reached after 5 minutes');
         if (wsRef.current) {
           wsRef.current.close();
         }
         reject(new Error('Streaming timeout - falling back to REST API'));
-      }, 120000);
+      }, STREAMING_TIMEOUT_MS);
 
       try {
         const wsUrl = 'wss://ai-agent-research-optivise-production.up.railway.app/stream';

@@ -6,6 +6,9 @@ import { useChatHistory } from '@/hooks/useChatHistory';
 import { usePerplexityStreaming } from '@/hooks/usePerplexityStreaming';
 import { supabase } from '@/integrations/supabase/client';
 
+// Configuration constants
+const WEBSOCKET_TIMEOUT_MS = 300000; // 5 minutes for complex processing
+
 interface StreamingMessage extends Message {
   isStreaming?: boolean;
   streamingData?: {
@@ -294,7 +297,7 @@ export const useMessages = (currentSessionId: string | null) => {
                 ws.close();
                 reject(new Error('Timeout waiting for Stratix response'));
               }
-            }, 120000); // 120 seconds as per backend spec
+            }, WEBSOCKET_TIMEOUT_MS); // 5 minutes for complex processing
             
             ws.onopen = () => {
               console.log('📡 Connected to Stratix for simple query');
