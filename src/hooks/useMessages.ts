@@ -211,66 +211,75 @@ export const useMessages = (currentSessionId: string | null) => {
             
             const timeout = setTimeout(() => {
               if (!hasReceivedResponse) {
+                console.log('⏰ Timeout waiting for Stratix response');
                 ws.close();
                 reject(new Error('Timeout waiting for Stratix response'));
               }
-            }, 10000); // 10 second timeout
+            }, 15000); // Increased to 15 seconds
             
             ws.onopen = () => {
               console.log('📡 Connected to Stratix for simple query');
               ws.send(JSON.stringify({
                 query: prompt,
-                sessionId: sessionId,
-                type: 'simple_query' // Indicate this is a simple query
+                context: { sessionId: sessionId }
               }));
             };
             
             ws.onmessage = (event) => {
               try {
                 const data = JSON.parse(event.data);
-                console.log('📨 Stratix simple query response:', data);
+                console.log('📨 Stratix simple query response type:', data.type, 'data:', data);
                 
-                // Handle different response formats
+                // Handle all possible response formats from the streaming backend
                 if (data.type === 'content' || data.type === 'content_chunk') {
-                  response += data.data?.content || data.content || '';
+                  response += data.content || data.data?.content || data.message || '';
+                } else if (data.type === 'stream_start') {
+                  console.log('📡 Stream started for simple query');
                 } else if (data.type === 'complete' || data.type === 'research_complete') {
                   hasReceivedResponse = true;
                   clearTimeout(timeout);
                   ws.close();
-                  resolve(response || 'Hello! How can I help you today?');
+                  const finalResponse = response.trim() || 'Hello! How can I help you today?';
+                  console.log('✅ Stratix simple query complete, response:', finalResponse);
+                  resolve(finalResponse);
                 } else if (data.type === 'error') {
                   hasReceivedResponse = true;
                   clearTimeout(timeout);
                   ws.close();
+                  console.error('❌ Stratix backend error:', data.message);
                   reject(new Error(data.message || 'Stratix backend error'));
                 } else if (data.response || data.message) {
                   // Direct response format
                   hasReceivedResponse = true;
                   clearTimeout(timeout);
                   ws.close();
-                  resolve(data.response || data.message);
+                  const directResponse = data.response || data.message;
+                  console.log('✅ Direct Stratix response:', directResponse);
+                  resolve(directResponse);
                 }
-              } catch (error) {
-                console.error('❌ Error parsing Stratix response:', error);
+              } catch (parseError) {
+                console.error('❌ Error parsing Stratix response:', parseError, 'Raw data:', event.data);
               }
             };
             
             ws.onerror = (error) => {
               hasReceivedResponse = true;
               clearTimeout(timeout);
-              console.error('❌ Stratix WebSocket error:', error);
+              console.error('❌ Stratix WebSocket error details:', error);
               reject(new Error('Connection to Stratix backend failed'));
             };
             
-            ws.onclose = () => {
+            ws.onclose = (event) => {
+              console.log('🔌 Stratix WebSocket closed:', event.code, event.reason);
               if (!hasReceivedResponse) {
                 clearTimeout(timeout);
-                reject(new Error('Connection closed before receiving response'));
+                reject(new Error(`Connection closed before receiving response: ${event.code} ${event.reason}`));
               }
             };
             
-          } catch (error) {
-            reject(error);
+          } catch (connectionError) {
+            console.error('❌ Failed to create Stratix WebSocket:', connectionError);
+            reject(connectionError);
           }
         });
       }
