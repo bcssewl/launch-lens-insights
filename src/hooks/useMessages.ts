@@ -95,7 +95,7 @@ export const useMessages = (currentSessionId: string | null) => {
         }
         
         return {
-          id: `history-${index}`,
+          id: entry.id || `history-${index}`, // Use actual database ID if available, fallback to index
           text,
           sender: isUser ? 'user' : 'ai',
           timestamp: new Date(entry.created_at), // Use actual database timestamp
@@ -114,14 +114,16 @@ export const useMessages = (currentSessionId: string | null) => {
           // Find the most recent AI message that might have a canvas document
           const aiMessages = convertedMessages.filter(msg => msg.sender === 'ai');
           
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) return;
+
+          // Check each AI message for canvas documents, starting with the most recent
           for (let i = aiMessages.length - 1; i >= 0; i--) {
             const message = aiMessages[i];
-            const messageId = `history-${convertedMessages.indexOf(message)}`;
+            // Use the actual message ID from the database
+            const messageId = message.id || `history-${i}`;
             
-            console.log('🔍 Checking message for canvas document:', messageId);
-            
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) continue;
+            console.log('🔍 Checking message for canvas document:', messageId, 'from message:', message);
 
             const { data: mapping, error } = await supabase
               .from('message_canvas_documents')
