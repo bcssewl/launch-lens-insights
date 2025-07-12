@@ -96,7 +96,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                 sender: msg.sender,
                 hasStreamingState: !!streamingState,
                 isStreaming: streamingState?.isStreaming,
-                messageText: msg.text.substring(0, 50)
+                messageText: msg.text.substring(0, 50),
+                timestamp: msg.timestamp
               });
 
               return (

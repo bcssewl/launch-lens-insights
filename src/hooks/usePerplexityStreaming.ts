@@ -428,10 +428,11 @@ export const usePerplexityStreaming = () => {
   }, [handleStreamingEvent, resetState, streamingState.isStreaming]);
 
   const stopStreaming = useCallback(() => {
-    console.log('🛑 Stopping streaming');
+    console.log('🛑 Stopping streaming and resetting state');
     
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
     }
     
     if (wsRef.current) {
@@ -439,8 +440,9 @@ export const usePerplexityStreaming = () => {
       wsRef.current = null;
     }
     
-    setStreamingState(prev => ({ ...prev, isStreaming: false }));
-  }, []);
+    // Fully reset the streaming state to prevent interference
+    resetState();
+  }, [resetState]);
 
   return {
     streamingState,

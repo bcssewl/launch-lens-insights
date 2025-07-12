@@ -50,9 +50,18 @@ export const useMessages = (currentSessionId: string | null) => {
     scrollToBottom();
   }, [messages, isTyping, scrollToBottom]);
 
+  // Add a flag to prevent history loading from interfering with new messages
+  const isAddingMessageRef = useRef(false);
+
   // Load messages from history when session changes
   useEffect(() => {
-    console.log('useMessages: Session/History changed - Session:', currentSessionId, 'History length:', history.length, 'Is initial load:', isInitialLoad);
+    console.log('useMessages: Session/History changed - Session:', currentSessionId, 'History length:', history.length, 'Is initial load:', isInitialLoad, 'Adding message:', isAddingMessageRef.current);
+    
+    // Don't reload history if we're currently adding a new message
+    if (isAddingMessageRef.current) {
+      console.log('Skipping history reload while adding message');
+      return;
+    }
     
     if (!isInitialLoad && history.length > 0) {
       console.log('Converting history to messages:', history.slice(0, 3));
@@ -183,24 +192,48 @@ export const useMessages = (currentSessionId: string | null) => {
     try {
       console.log('🎯 Stratix Request - Smart routing for:', prompt);
       
+      // Always reset streaming state at the start of any Stratix request
+      stopStreaming();
+      
       const isResearchQuery = detectResearchQuery(prompt);
       
       if (isResearchQuery) {
         console.log('🚀 Using Perplexity-style streaming for research query');
         return await startStreaming(prompt, sessionId);
       } else {
-        console.log('⚡ Using instant response for simple query');
-        return await handleInstantRequest(prompt);
+        console.log('⚡ Using N8N webhook for simple query (ensuring no streaming interference)');
+        // Use N8N webhook for simple queries to maintain consistency
+        let contextMessage = prompt;
+        if (canvasState.isOpen && canvasState.content) {
+          contextMessage = `Current document content:\n\n${canvasState.content}\n\n---\n\nUser message: ${prompt}`;
+        }
+        
+        const response = await sendMessageToN8n(contextMessage, sessionId);
+        return response || 'I apologize, but I encountered an issue processing your request. Please try again.';
       }
 
     } catch (error) {
       console.error('❌ Stratix communication error:', error);
       
-      // Fallback to instant request
-      console.log('🔄 Falling back to instant request');
-      return await handleInstantRequest(prompt);
+      // Ensure streaming is stopped on error
+      stopStreaming();
+      
+      // Fallback to N8N webhook
+      console.log('🔄 Falling back to N8N webhook');
+      try {
+        let contextMessage = prompt;
+        if (canvasState.isOpen && canvasState.content) {
+          contextMessage = `Current document content:\n\n${canvasState.content}\n\n---\n\nUser message: ${prompt}`;
+        }
+        
+        const fallbackResponse = await sendMessageToN8n(contextMessage, sessionId);
+        return fallbackResponse || 'I apologize, but I encountered an issue processing your request. Please try again.';
+      } catch (fallbackError) {
+        console.error('❌ Fallback also failed:', fallbackError);
+        return 'I apologize, but I\'m having trouble processing your request right now. Please try again in a moment.';
+      }
     }
-  }, [detectResearchQuery, startStreaming, handleInstantRequest]);
+  }, [detectResearchQuery, startStreaming, stopStreaming, canvasState, sendMessageToN8n]);
 
   const handleSendMessage = useCallback(async (text?: string, messageText?: string, selectedModel?: string) => {
     const finalMessageText = text || messageText;
@@ -234,6 +267,11 @@ export const useMessages = (currentSessionId: string | null) => {
     }
 
     setIsTyping(true);
+    
+    // Ensure streaming state is clean before starting
+    if (!detectResearchQuery(finalMessageText) || selectedModel !== 'stratix') {
+      stopStreaming();
+    }
     
     try {
       let aiResponseText: string;
@@ -274,6 +312,8 @@ export const useMessages = (currentSessionId: string | null) => {
       setMessages(prev => {
         const newMessages = [...prev, aiResponse];
         console.log('📝 Updated messages array, new length:', newMessages.length);
+        console.log('📝 Last message:', newMessages[newMessages.length - 1]);
+        console.log('📝 Current streaming state:', streamingState.isStreaming);
         return newMessages;
       });
 
