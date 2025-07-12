@@ -201,15 +201,78 @@ export const useMessages = (currentSessionId: string | null) => {
         console.log('🚀 Using Perplexity-style streaming for research query');
         return await startStreaming(prompt, sessionId);
       } else {
-        console.log('⚡ Using N8N webhook for simple query (ensuring no streaming interference)');
-        // Use N8N webhook for simple queries to maintain consistency
-        let contextMessage = prompt;
-        if (canvasState.isOpen && canvasState.content) {
-          contextMessage = `Current document content:\n\n${canvasState.content}\n\n---\n\nUser message: ${prompt}`;
-        }
-        
-        const response = await sendMessageToN8n(contextMessage, sessionId);
-        return response || 'I apologize, but I encountered an issue processing your request. Please try again.';
+        console.log('⚡ Using Stratix backend for simple query (WebSocket instant)');
+        // For simple queries, use a quick WebSocket connection to ensure it goes through Stratix backend
+        return new Promise((resolve, reject) => {
+          try {
+            const ws = new WebSocket('wss://ai-agent-research-optivise-production.up.railway.app/ws');
+            let response = '';
+            let hasReceivedResponse = false;
+            
+            const timeout = setTimeout(() => {
+              if (!hasReceivedResponse) {
+                ws.close();
+                reject(new Error('Timeout waiting for Stratix response'));
+              }
+            }, 10000); // 10 second timeout
+            
+            ws.onopen = () => {
+              console.log('📡 Connected to Stratix for simple query');
+              ws.send(JSON.stringify({
+                query: prompt,
+                sessionId: sessionId,
+                type: 'simple_query' // Indicate this is a simple query
+              }));
+            };
+            
+            ws.onmessage = (event) => {
+              try {
+                const data = JSON.parse(event.data);
+                console.log('📨 Stratix simple query response:', data);
+                
+                // Handle different response formats
+                if (data.type === 'content' || data.type === 'content_chunk') {
+                  response += data.data?.content || data.content || '';
+                } else if (data.type === 'complete' || data.type === 'research_complete') {
+                  hasReceivedResponse = true;
+                  clearTimeout(timeout);
+                  ws.close();
+                  resolve(response || 'Hello! How can I help you today?');
+                } else if (data.type === 'error') {
+                  hasReceivedResponse = true;
+                  clearTimeout(timeout);
+                  ws.close();
+                  reject(new Error(data.message || 'Stratix backend error'));
+                } else if (data.response || data.message) {
+                  // Direct response format
+                  hasReceivedResponse = true;
+                  clearTimeout(timeout);
+                  ws.close();
+                  resolve(data.response || data.message);
+                }
+              } catch (error) {
+                console.error('❌ Error parsing Stratix response:', error);
+              }
+            };
+            
+            ws.onerror = (error) => {
+              hasReceivedResponse = true;
+              clearTimeout(timeout);
+              console.error('❌ Stratix WebSocket error:', error);
+              reject(new Error('Connection to Stratix backend failed'));
+            };
+            
+            ws.onclose = () => {
+              if (!hasReceivedResponse) {
+                clearTimeout(timeout);
+                reject(new Error('Connection closed before receiving response'));
+              }
+            };
+            
+          } catch (error) {
+            reject(error);
+          }
+        });
       }
 
     } catch (error) {
@@ -218,22 +281,10 @@ export const useMessages = (currentSessionId: string | null) => {
       // Ensure streaming is stopped on error
       stopStreaming();
       
-      // Fallback to N8N webhook
-      console.log('🔄 Falling back to N8N webhook');
-      try {
-        let contextMessage = prompt;
-        if (canvasState.isOpen && canvasState.content) {
-          contextMessage = `Current document content:\n\n${canvasState.content}\n\n---\n\nUser message: ${prompt}`;
-        }
-        
-        const fallbackResponse = await sendMessageToN8n(contextMessage, sessionId);
-        return fallbackResponse || 'I apologize, but I encountered an issue processing your request. Please try again.';
-      } catch (fallbackError) {
-        console.error('❌ Fallback also failed:', fallbackError);
-        return 'I apologize, but I\'m having trouble processing your request right now. Please try again in a moment.';
-      }
+      // For Stratix errors, return a Stratix-appropriate error message
+      return 'I apologize, but I\'m having trouble processing your request right now. Please try again in a moment.';
     }
-  }, [detectResearchQuery, startStreaming, stopStreaming, canvasState, sendMessageToN8n]);
+  }, [detectResearchQuery, startStreaming, stopStreaming]);
 
   const handleSendMessage = useCallback(async (text?: string, messageText?: string, selectedModel?: string) => {
     const finalMessageText = text || messageText;
