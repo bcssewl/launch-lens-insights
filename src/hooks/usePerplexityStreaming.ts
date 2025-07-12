@@ -351,7 +351,7 @@ export const usePerplexityStreaming = () => {
       }, 45000);
 
       try {
-        const wsUrl = 'wss://ai-agent-research-optivise-production.up.railway.app/ws';
+        const wsUrl = 'wss://ai-agent-research-optivise-production.up.railway.app/stream';
         console.log('🔌 Connecting to:', wsUrl);
         
         wsRef.current = new WebSocket(wsUrl);

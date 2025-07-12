@@ -205,7 +205,7 @@ export const useMessages = (currentSessionId: string | null) => {
         // For simple queries, use a quick WebSocket connection to ensure it goes through Stratix backend
         return new Promise((resolve, reject) => {
           try {
-            const ws = new WebSocket('wss://ai-agent-research-optivise-production.up.railway.app/ws');
+            const ws = new WebSocket('wss://ai-agent-research-optivise-production.up.railway.app/stream');
             let response = '';
             let hasReceivedResponse = false;
             
