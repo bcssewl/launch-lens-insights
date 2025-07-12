@@ -83,9 +83,22 @@ export const useMessages = (currentSessionId: string | null) => {
         if (isUser) {
           text = lines[0].substring(5).trim(); // Remove "USER: " prefix
         } else if (isAI) {
-          text = lines[0].substring(3).trim(); // Remove "AI: " prefix
+          // For AI messages, join all lines after removing the AI prefix from first line
+          const firstLineContent = lines[0].substring(3).trim(); // Remove "AI: " prefix
+          const remainingLines = lines.slice(1); // Get all remaining lines
+          text = [firstLineContent, ...remainingLines].join('\n').trim(); // Rejoin everything
         } else {
           text = entry.message.trim(); // Use full message if no prefix
+        }
+        
+        // Enhanced logging for canvas report debugging
+        if (text.includes('## Executive Summary')) {
+          console.log('🎨 Canvas report detected in history restoration:', {
+            messageId: entry.id,
+            contentLength: text.length,
+            hasFullContent: text.includes('## Strategic Analysis'),
+            preview: text.substring(0, 200)
+          });
         }
         
         // Don't render empty AI messages

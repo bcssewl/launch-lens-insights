@@ -20,7 +20,12 @@ const CanvasCompact: React.FC<CanvasCompactProps> = React.memo(({
   onPrint,
   className
 }) => {
-  console.log('CanvasCompact: Rendering compact canvas');
+  console.log('CanvasCompact: Rendering compact canvas', {
+    contentLength: content.length,
+    hasExecutiveSummary: content.includes('## Executive Summary'),
+    hasStrategicAnalysis: content.includes('## Strategic Analysis'),
+    contentPreview: content.substring(0, 100)
+  });
 
   // Memoize handlers to prevent unnecessary re-renders
   const handleExpand = useCallback((e: React.MouseEvent) => {
