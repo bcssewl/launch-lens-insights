@@ -55,16 +55,17 @@ export const useMessages = (currentSessionId: string | null) => {
 
   // Load messages from history when session changes
   useEffect(() => {
-    console.log('useMessages: Session/History changed - Session:', currentSessionId, 'History length:', history.length, 'Is initial load:', isInitialLoad, 'Adding message:', isAddingMessageRef.current);
+    console.log('useMessages: History effect triggered - Session:', currentSessionId, 'History length:', history.length, 'Is initial load:', isInitialLoad, 'Adding message:', isAddingMessageRef.current);
     
     // Don't reload history if we're currently adding a new message
     if (isAddingMessageRef.current) {
-      console.log('Skipping history reload while adding message');
+      console.log('🚫 Skipping history reload while adding message - this prevents message disappearing');
       return;
     }
     
+    // Only reload history on initial load or when switching sessions
     if (!isInitialLoad && history.length > 0) {
-      console.log('Converting history to messages:', history.slice(0, 3));
+      console.log('📚 Converting history to messages:', history.slice(0, 3));
       const convertedMessages = history.map((entry, index) => {
         // Enhanced logging to debug the message conversion
         console.log(`Processing history entry ${index}:`, entry);
@@ -92,10 +93,11 @@ export const useMessages = (currentSessionId: string | null) => {
         } as Message;
       }).filter(Boolean); // Remove null entries
       
+      console.log('🔄 REPLACING messages array with history. Current length:', messages.length, 'New length:', convertedMessages.length + initialMessages.length);
       setMessages([...initialMessages, ...convertedMessages]);
-      console.log('Loaded messages from history:', convertedMessages.length);
+      console.log('✅ Loaded messages from history:', convertedMessages.length);
     } else if (!isInitialLoad && history.length === 0) {
-      console.log('No history found, using initial messages');
+      console.log('🔄 No history found, resetting to initial messages');
       setMessages(initialMessages);
     }
   }, [currentSessionId, history, isInitialLoad]);
@@ -318,6 +320,9 @@ export const useMessages = (currentSessionId: string | null) => {
 
     console.log('🚀 useMessages: Sending message in session:', currentSessionId, 'with model:', selectedModel);
 
+    // Set flag to prevent history reload interference
+    isAddingMessageRef.current = true;
+
     const newUserMessage: Message = {
       id: uuidv4(),
       text: finalMessageText,
@@ -340,6 +345,8 @@ export const useMessages = (currentSessionId: string | null) => {
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, fallbackResponse]);
+      // Reset flag after adding response
+      isAddingMessageRef.current = false;
       return;
     }
 
@@ -407,6 +414,12 @@ export const useMessages = (currentSessionId: string | null) => {
         await addMessage(`AI: ${aiResponseText}`);
       }
 
+      // Reset flag after successfully adding message and saving to database
+      setTimeout(() => {
+        isAddingMessageRef.current = false;
+        console.log('🔓 Reset isAddingMessageRef flag after message completion');
+      }, 1000); // Wait 1 second to ensure database operations complete
+
     } catch (error) {
       console.error('Message sending error:', error);
       
@@ -422,6 +435,9 @@ export const useMessages = (currentSessionId: string | null) => {
         console.log('⚠️ Added error message, new messages length:', newMessages.length);
         return newMessages;
       });
+
+      // Reset flag even on error
+      isAddingMessageRef.current = false;
     } finally {
       setIsTyping(false);
     }
