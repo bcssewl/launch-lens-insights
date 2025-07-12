@@ -2,28 +2,26 @@
 // Matches backend specification for professional streaming experience
 
 export interface StratixStreamingEvent {
-  type: 'connection_confirmed' | 'routing_analysis' | 'research_progress' | 
-        'source_discovered' | 'sources_complete' | 'expert_analysis_started' |
-        'expert_analysis_complete' | 'synthesis_progress' | 'partial_result' | 
-        'complete' | 'error' | 'ping';
-  timestamp: string;
-  message: string;
+  type: string; // Accept any event type from backend (flexible)
+  timestamp?: string;
+  message?: string;
+  connection_id?: string;
   agent?: string;
   agent_name?: string;
   data?: {
-    // Agent routing
+    // Agent routing (optional fields for defensive handling)
     agents?: string[];
     collaboration_pattern?: 'parallel' | 'sequential' | 'collaborative';
     complexity?: 'simple' | 'medium' | 'complex';
     reasoning?: string;
     
-    // Research progress
+    // Research progress (flexible structure)
     content_preview?: string;
     status?: string;
     progress?: number;
     current_phase?: string;
     
-    // Source discovery
+    // Source discovery (defensive handling)
     source_name?: string;
     source_url?: string;
     source_type?: string;
@@ -31,8 +29,8 @@ export interface StratixStreamingEvent {
     sources_found?: number;
     sources?: StratixSource[];
     
-    // Expert analysis
-    confidence?: 'Low' | 'Medium' | 'High';
+    // Expert analysis (flexible)
+    confidence?: string | number; // Can be 'High'/'Medium'/'Low' or numeric
     sources_used?: number;
     
     // Synthesis and partial results
@@ -41,11 +39,14 @@ export interface StratixStreamingEvent {
     total_sections?: number;
     text?: string; // For partial_result streaming
     
-    // Final completion
+    // Final completion (flexible structure)
     final_answer?: string;
     methodology?: string;
-    analysis_depth?: 'basic' | 'comprehensive' | 'expert';
+    analysis_depth?: 'basic' | 'comprehensive' | 'expert' | string;
     session_id?: string;
+    
+    // Handle any additional backend fields
+    [key: string]: any;
   };
 }
 

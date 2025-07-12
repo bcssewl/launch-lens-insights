@@ -40,159 +40,208 @@ export const useStratixStreaming = () => {
       let newState = { ...prev };
 
       events.forEach(event => {
-        switch (event.type) {
-          case 'connection_confirmed':
-            console.log('🔗 Stratix connection confirmed:', event.connection_id);
-            newState.isStreaming = true;
-            newState.currentPhase = 'Connected to Stratix Research Engine';
-            newState.overallProgress = 5;
-            newState.connectionId = event.connection_id;
-            newState.lastHeartbeat = Date.now();
-            break;
+        // Defensive handling for any event type
+        const eventType = event.type?.toLowerCase() || 'unknown';
+        const eventData = event.data || {};
+        const eventMessage = event.message || '';
 
-          case 'routing_analysis':
-            console.log('🎯 Agent routing analysis:', event.data?.agents);
-            newState.currentPhase = `Routing to ${event.data?.agents?.length || 0} specialists`;
-            newState.overallProgress = 15;
-            newState.collaborationMode = event.data?.collaboration_pattern;
-            
-            // Initialize agents based on routing
-            if (event.data?.agents) {
-              newState.activeAgents = event.data.agents.map((agentType, index) => ({
-                id: agentType,
-                name: agentType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
-                role: agentType as any,
-                status: 'idle' as const,
-                progress: 0
-              }));
-            }
-            break;
+        try {
+          switch (eventType) {
+            case 'connection_confirmed':
+            case 'connected':
+              console.log('🔗 Stratix connection confirmed:', event.connection_id);
+              newState.isStreaming = true;
+              newState.currentPhase = eventMessage || 'Connected to Stratix Research Engine';
+              newState.overallProgress = Math.max(5, newState.overallProgress);
+              newState.connectionId = event.connection_id;
+              newState.lastHeartbeat = Date.now();
+              break;
 
-          case 'research_progress':
-            console.log('📊 Research progress:', event.data?.progress);
-            if (event.data?.status) {
-              newState.currentPhase = event.data.status;
-            }
-            if (event.data?.progress) {
-              // Map backend progress to our range (15-70% for research phase)
-              newState.overallProgress = Math.max(15, Math.min(70, 15 + (event.data.progress * 0.55)));
-            }
-            
-            // Update specific agent if mentioned
-            if (event.agent && newState.activeAgents.length > 0) {
-              newState.activeAgents = newState.activeAgents.map(agent => 
-                agent.id === event.agent 
-                  ? { ...agent, status: 'analyzing' as const, progress: event.data?.progress }
-                  : agent
-              );
-            }
-            break;
-
-          case 'source_discovered':
-            console.log('📚 Source discovered:', event.data?.source_name);
-            if (event.data?.source_name && event.data?.source_url) {
-              const newSource: StratixSource = {
-                name: event.data.source_name,
-                url: event.data.source_url,
-                type: (event.data.source_type as any) || 'web',
-                confidence: 0.85, // Default confidence
-                clickable: event.data.clickable !== false,
-                discoveredBy: event.agent_name || event.agent,
-                timestamp: event.timestamp
-              };
+            case 'routing_analysis':
+            case 'agent_selection':
+            case 'agents_selected':
+              console.log('🎯 Agent routing analysis:', eventData.agents);
+              const agentCount = Array.isArray(eventData.agents) ? eventData.agents.length : 0;
+              newState.currentPhase = eventMessage || `Routing to ${agentCount} specialists`;
+              newState.overallProgress = Math.max(15, newState.overallProgress);
+              newState.collaborationMode = eventData.collaboration_pattern;
               
-              // Avoid duplicates
-              const exists = newState.discoveredSources.some(s => s.url === newSource.url);
-              if (!exists) {
-                newState.discoveredSources = [...newState.discoveredSources, newSource];
+              // Initialize agents based on routing (defensive)
+              if (Array.isArray(eventData.agents)) {
+                newState.activeAgents = eventData.agents.map((agentType, index) => ({
+                  id: String(agentType),
+                  name: String(agentType).replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+                  role: agentType as any,
+                  status: 'idle' as const,
+                  progress: 0
+                }));
               }
-            }
-            newState.overallProgress = Math.min(65, newState.overallProgress + 2);
-            break;
+              break;
 
-          case 'sources_complete':
-            console.log('✅ Source discovery complete:', event.data?.sources_found);
-            newState.currentPhase = `Found ${event.data?.sources_found || newState.discoveredSources.length} sources`;
-            newState.overallProgress = 70;
-            break;
+            case 'research_progress':
+            case 'agent_progress':
+            case 'progress_update':
+              console.log('📊 Research progress:', eventData.progress || 'ongoing');
+              if (eventMessage) {
+                newState.currentPhase = eventMessage;
+              } else if (eventData.status) {
+                newState.currentPhase = String(eventData.status);
+              }
+              
+              // Handle progress defensively
+              if (typeof eventData.progress === 'number') {
+                // Map backend progress to our range (15-70% for research phase)
+                newState.overallProgress = Math.max(15, Math.min(70, 15 + (eventData.progress * 0.55)));
+              } else {
+                // Incremental progress if no specific value
+                newState.overallProgress = Math.min(70, newState.overallProgress + 5);
+              }
+              
+              // Update specific agent if mentioned (defensive)
+              const agentId = event.agent || eventData.agent;
+              if (agentId && newState.activeAgents.length > 0) {
+                newState.activeAgents = newState.activeAgents.map(agent => 
+                  agent.id === agentId 
+                    ? { ...agent, status: 'analyzing' as const, progress: eventData.progress || 50 }
+                    : agent
+                );
+              }
+              break;
 
-          case 'expert_analysis_started':
-            console.log('🔬 Expert analysis started:', event.agent_name);
-            newState.currentPhase = `${event.agent_name} analyzing data...`;
-            newState.overallProgress = Math.max(70, newState.overallProgress);
-            
-            // Update agent status
-            if (event.agent && newState.activeAgents.length > 0) {
-              newState.activeAgents = newState.activeAgents.map(agent => 
-                agent.id === event.agent 
-                  ? { ...agent, status: 'analyzing' as const }
-                  : agent
-              );
-            }
-            break;
+            case 'source_discovered':
+            case 'source_found':
+              console.log('📚 Source discovered:', eventData.source_name || 'New source');
+              if (eventData.source_name) {
+                const newSource: StratixSource = {
+                  name: String(eventData.source_name),
+                  url: String(eventData.source_url || ''),
+                  type: (eventData.source_type as any) || 'web',
+                  confidence: typeof eventData.confidence === 'number' ? eventData.confidence : 0.85,
+                  clickable: eventData.clickable !== false && Boolean(eventData.source_url),
+                  discoveredBy: event.agent_name || event.agent || 'Research Agent',
+                  timestamp: event.timestamp || new Date().toISOString()
+                };
+                
+                // Avoid duplicates (defensive)
+                const exists = newState.discoveredSources.some(s => 
+                  s.url === newSource.url || s.name === newSource.name
+                );
+                if (!exists) {
+                  newState.discoveredSources = [...newState.discoveredSources, newSource];
+                }
+              }
+              newState.overallProgress = Math.min(65, newState.overallProgress + 2);
+              break;
 
-          case 'expert_analysis_complete':
-            console.log('✅ Expert analysis complete:', event.agent_name);
-            newState.overallProgress = Math.min(85, newState.overallProgress + 5);
-            
-            // Mark agent as complete
-            if (event.agent && newState.activeAgents.length > 0) {
-              newState.activeAgents = newState.activeAgents.map(agent => 
-                agent.id === event.agent 
-                  ? { ...agent, status: 'complete' as const, progress: 100 }
-                  : agent
-              );
-            }
-            break;
+            case 'sources_complete':
+            case 'source_discovery_complete':
+              console.log('✅ Source discovery complete:', eventData.sources_found || newState.discoveredSources.length);
+              const sourceCount = eventData.sources_found || newState.discoveredSources.length;
+              newState.currentPhase = eventMessage || `Found ${sourceCount} sources`;
+              newState.overallProgress = Math.max(70, newState.overallProgress);
+              break;
 
-          case 'synthesis_progress':
-            console.log('🧠 Synthesis in progress:', event.data?.model);
-            newState.currentPhase = 'Synthesizing insights from all specialists...';
-            newState.overallProgress = Math.max(85, Math.min(95, newState.overallProgress + 2));
-            newState.synthesisModel = event.data?.model;
-            break;
+            case 'expert_analysis_started':
+            case 'analysis_started':
+              console.log('🔬 Expert analysis started:', event.agent_name || event.agent);
+              const analystName = event.agent_name || event.agent || 'Research Specialist';
+              newState.currentPhase = eventMessage || `${analystName} analyzing data...`;
+              newState.overallProgress = Math.max(70, newState.overallProgress);
+              
+              // Update agent status (defensive)
+              const startedAgentId = event.agent || eventData.agent;
+              if (startedAgentId && newState.activeAgents.length > 0) {
+                newState.activeAgents = newState.activeAgents.map(agent => 
+                  agent.id === startedAgentId 
+                    ? { ...agent, status: 'analyzing' as const }
+                    : agent
+                );
+              }
+              break;
 
-          case 'partial_result':
-            console.log('📝 Partial result received, length:', event.data?.text?.length);
-            // ChatGPT-like streaming: append text chunks
-            if (event.data?.text) {
-              newState.partialText += event.data.text;
-            }
-            break;
+            case 'expert_analysis_complete':
+            case 'analysis_complete':
+              console.log('✅ Expert analysis complete:', event.agent_name || event.agent);
+              newState.overallProgress = Math.min(85, newState.overallProgress + 5);
+              
+              // Mark agent as complete (defensive)
+              const completeAgentId = event.agent || eventData.agent;
+              if (completeAgentId && newState.activeAgents.length > 0) {
+                newState.activeAgents = newState.activeAgents.map(agent => 
+                  agent.id === completeAgentId 
+                    ? { ...agent, status: 'complete' as const, progress: 100 }
+                    : agent
+                );
+              }
+              break;
 
-          case 'complete':
-            console.log('✅ Stratix research complete');
-            newState.isStreaming = false;
-            newState.currentPhase = 'Research completed';
-            newState.overallProgress = 100;
-            
-            // Mark all agents as complete
-            newState.activeAgents = newState.activeAgents.map(agent => ({
-              ...agent,
-              status: 'complete' as const,
-              progress: 100
-            }));
-            
-            // Final answer handling
-            if (event.data?.final_answer) {
-              newState.partialText = event.data.final_answer;
-            }
-            break;
+            case 'synthesis_progress':
+            case 'synthesis_start':
+            case 'synthesis_started':
+              console.log('🧠 Synthesis in progress:', eventData.model || 'AI model');
+              newState.currentPhase = eventMessage || 'Synthesizing insights from all specialists...';
+              newState.overallProgress = Math.max(85, Math.min(95, newState.overallProgress + 2));
+              newState.synthesisModel = eventData.model || 'AI Model';
+              break;
 
-          case 'error':
-            console.error('❌ Stratix streaming error:', event.message);
-            newState.isStreaming = false;
-            newState.error = event.message || 'An error occurred during research';
-            newState.currentPhase = 'Error occurred';
-            break;
+            case 'partial_result':
+            case 'streaming_content':
+              console.log('📝 Partial result received, length:', eventData.text?.length || 0);
+              // ChatGPT-like streaming: append text chunks (defensive)
+              if (eventData.text && typeof eventData.text === 'string') {
+                newState.partialText += eventData.text;
+              }
+              break;
 
-          case 'ping':
-            // Update heartbeat for connection health
-            newState.lastHeartbeat = Date.now();
-            break;
+            case 'complete':
+            case 'research_complete':
+            case 'finished':
+              console.log('✅ Stratix research complete');
+              newState.isStreaming = false;
+              newState.currentPhase = eventMessage || 'Research completed';
+              newState.overallProgress = 100;
+              
+              // Mark all agents as complete
+              newState.activeAgents = newState.activeAgents.map(agent => ({
+                ...agent,
+                status: 'complete' as const,
+                progress: 100
+              }));
+              
+              // Final answer handling (defensive)
+              if (eventData.final_answer && typeof eventData.final_answer === 'string') {
+                newState.partialText = eventData.final_answer;
+              }
+              break;
 
-          default:
-            console.warn('⚠️ Unknown Stratix event type:', event.type);
+            case 'error':
+            case 'failed':
+              console.error('❌ Stratix streaming error:', eventMessage);
+              newState.isStreaming = false;
+              newState.error = eventMessage || 'An error occurred during research';
+              newState.currentPhase = 'Error occurred';
+              break;
+
+            case 'ping':
+            case 'heartbeat':
+              // Update heartbeat for connection health
+              newState.lastHeartbeat = Date.now();
+              break;
+
+            default:
+              console.log('📦 Unknown Stratix event type:', eventType, 'Data:', eventData);
+              // For unknown events, try to extract useful information
+              if (eventMessage) {
+                newState.currentPhase = eventMessage;
+              }
+              if (typeof eventData.progress === 'number') {
+                newState.overallProgress = Math.min(95, Math.max(newState.overallProgress, eventData.progress));
+              }
+              break;
+          }
+        } catch (error) {
+          console.error('Error processing Stratix event:', eventType, error);
+          // Don't break the entire flow for one bad event
         }
       });
 

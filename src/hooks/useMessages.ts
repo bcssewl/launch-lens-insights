@@ -288,8 +288,16 @@ export const useMessages = (currentSessionId: string | null) => {
       
       if (isResearchQuery) {
         console.log('🚀 Using enhanced Stratix streaming for research query');
-        return await startStratixStreaming(prompt, sessionId);
-      } else {
+        try {
+          return await startStratixStreaming(prompt, sessionId);
+        } catch (streamingError) {
+          console.warn('⚠️ Stratix streaming failed, falling back to instant mode:', streamingError);
+          // Fall through to instant mode if streaming fails
+        }
+      }
+      
+      // Instant mode for simple queries or streaming fallback
+      {
         console.log('⚡ Using Stratix backend for simple query (WebSocket instant)');
         // For simple queries, use a quick WebSocket connection following exact backend spec
         return new Promise((resolve, reject) => {
