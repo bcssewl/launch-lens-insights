@@ -530,13 +530,74 @@ export const useMessages = (currentSessionId: string | null) => {
     URL.revokeObjectURL(url);
   }, [messages]);
 
-  const handleOpenCanvas = useCallback((messageId: string, content: string) => {
+  const handleOpenCanvas = useCallback(async (messageId: string, content: string) => {
     console.log('useMessages: Opening canvas for message:', messageId);
+    
+    // Set canvas state immediately for UI responsiveness
     setCanvasState({
       isOpen: true,
       messageId,
       content
     });
+
+    // Ensure the canvas document is created and saved to database
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.error('useMessages: User not authenticated for canvas creation');
+        return;
+      }
+
+      // Check if a document already exists for this message
+      const { data: existingMapping } = await supabase
+        .from('message_canvas_documents')
+        .select('document_id')
+        .eq('message_id', messageId)
+        .eq('created_by', user.id)
+        .single();
+
+      if (existingMapping) {
+        console.log('useMessages: Canvas document already exists for message:', messageId);
+        return;
+      }
+
+      // Extract title from content (first heading or fallback)
+      const titleMatch = content.match(/^#\s*(.+)$/m);
+      const title = titleMatch ? titleMatch[1].trim() : 'AI Report';
+
+      // Create the canvas document
+      const { data: newDocument, error: docError } = await supabase
+        .from('canvas_documents')
+        .insert({
+          title,
+          content,
+          created_by: user.id
+        })
+        .select()
+        .single();
+
+      if (docError) {
+        console.error('useMessages: Error creating canvas document:', docError);
+        return;
+      }
+
+      // Create the message-document mapping
+      const { error: mappingError } = await supabase
+        .from('message_canvas_documents')
+        .insert({
+          message_id: messageId,
+          document_id: newDocument.id,
+          created_by: user.id
+        });
+
+      if (mappingError) {
+        console.error('useMessages: Error creating message-document mapping:', mappingError);
+      } else {
+        console.log('useMessages: Successfully created and linked canvas document for message:', messageId);
+      }
+    } catch (error) {
+      console.error('useMessages: Error in handleOpenCanvas:', error);
+    }
   }, []);
 
   const handleCloseCanvas = useCallback(() => {
