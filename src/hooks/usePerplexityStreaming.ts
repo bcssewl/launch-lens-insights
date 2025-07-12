@@ -1,39 +1,25 @@
 import { useState, useCallback, useRef } from 'react';
 
 interface StreamingEvent {
-  type: 'stream_start' | 'agent_progress' | 'source_found' | 'content_chunk' | 'agent_collaboration' | 'research_complete' | 'error' | 
-        // Legacy types for backward compatibility
-        'search' | 'source' | 'snippet' | 'thought' | 'complete' | 'completion_start' | 'completion_chunk';
+  type: 'connection_confirmed' | 'search' | 'thought' | 'source' | 'snippet' | 'complete' | 'error';
   timestamp: string;
   message: string;
+  connection_id?: string;
   data?: {
-    // Research and query data
+    // Search data
     search_queries?: string[];
-    query?: string;
+    progress_percentage?: number;
+    current_phase?: string;
     
-    // Source information (from source_found events)
+    // Source information
     source_name?: string;
     source_url?: string;
     source_type?: string;
     confidence?: number;
-    credibility_score?: number; // 0.0-1.0 as per reference
-    
-    // Agent information
-    agent_name?: string;
-    agent_status?: 'active' | 'complete' | 'waiting' | 'error';
-    agent_progress?: number;
-    collaboration_mode?: 'sequential' | 'parallel' | 'hierarchical';
     
     // Content and completion
     snippet_text?: string;
     content?: string;
-    chunk_index?: number;
-    total_chunks?: number;
-    total_sections?: number;
-    
-    // Progress and phases
-    progress_percentage?: number;
-    current_phase?: string;
     final_answer?: string;
     
     // Final results
@@ -42,19 +28,16 @@ interface StreamingEvent {
       url: string;
       type: string;
       confidence: number;
-      credibility_score?: number;
     }>;
     methodology?: string;
-    analysis_depth?: string;
     
     // Error handling
     error_code?: string;
-    error_message?: string;
-    retry_after?: number;
+    retry_suggested?: boolean;
   };
 }
 
-interface SourceCardProps {
+interface Source {
   name: string;
   url: string;
   type: string;
@@ -65,27 +48,10 @@ interface StreamingState {
   isStreaming: boolean;
   currentPhase: string;
   progress: number;
-  searchQueries: string[];
-  discoveredSources: SourceCardProps[];
-  currentMessage: string;
-  error?: string;
-  
-  // Enhanced agent tracking
-  activeAgents: Array<{
-    name: string;
-    status: 'active' | 'complete' | 'waiting' | 'error';
-    progress: number;
-  }>;
-  collaborationMode: 'sequential' | 'parallel' | 'hierarchical' | null;
-  
-  // Enhanced error handling
-  errorCode?: string;
-  retryAfter?: number;
-  
-  // Chunked completion fields
-  chunkedContent: string;
-  expectedChunks: number;
-  receivedChunks: number;
+  sources: Source[];
+  finalResponse: string;
+  methodology: string;
+  error: string | null;
 }
 
 export const usePerplexityStreaming = () => {
@@ -93,40 +59,32 @@ export const usePerplexityStreaming = () => {
     isStreaming: false,
     currentPhase: '',
     progress: 0,
-    searchQueries: [],
-    discoveredSources: [],
-    currentMessage: '',
-    activeAgents: [],
-    collaborationMode: null,
-    chunkedContent: '',
-    expectedChunks: 1,
-    receivedChunks: 0
+    sources: [],
+    finalResponse: '',
+    methodology: '',
+    error: null
   });
 
   const wsRef = useRef<WebSocket | null>(null);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<number | null>(null);
 
   const resetState = useCallback(() => {
+    console.log('🔄 Resetting streaming state');
     setStreamingState({
       isStreaming: false,
       currentPhase: '',
       progress: 0,
-      searchQueries: [],
-      discoveredSources: [],
-      currentMessage: '',
-      activeAgents: [],
-      collaborationMode: null,
-      chunkedContent: '',
-      expectedChunks: 1,
-      receivedChunks: 0
+      sources: [],
+      finalResponse: '',
+      methodology: '',
+      error: null
     });
   }, []);
 
   const handleStreamingEvent = useCallback((event: StreamingEvent) => {
-    console.log('📡 Perplexity Streaming Event:', {
+    console.log('📨 Processing streaming event:', {
       type: event.type,
       message: event.message?.substring(0, 100),
-      data: event.data,
       timestamp: event.timestamp
     });
 
@@ -134,199 +92,74 @@ export const usePerplexityStreaming = () => {
       const newState = { ...prev };
 
       switch (event.type) {
-        // New proper event types from the backend
-        case 'stream_start':
+        case 'connection_confirmed':
+          console.log('🔗 Connection confirmed:', event.message);
           newState.isStreaming = true;
-          newState.currentPhase = event.message || 'Starting research...';
+          newState.currentPhase = 'Connected to Stratix backend';
           newState.progress = 5;
-          console.log('🎬 Research stream started');
           break;
 
-        case 'agent_progress':
-          const agentName = event.data?.agent_name || 'Research Agent';
-          const agentStatus = event.data?.agent_status || 'active';
-          const agentProgress = event.data?.agent_progress || 0;
-          
-          newState.currentPhase = event.message || `${agentName} working...`;
-          newState.progress = event.data?.progress_percentage || prev.progress + 5;
-          
-          // Update or add agent to tracking
-          const existingAgentIndex = prev.activeAgents.findIndex(a => a.name === agentName);
-          if (existingAgentIndex >= 0) {
-            newState.activeAgents = [...prev.activeAgents];
-            newState.activeAgents[existingAgentIndex] = { name: agentName, status: agentStatus, progress: agentProgress };
-          } else {
-            newState.activeAgents = [...prev.activeAgents, { name: agentName, status: agentStatus, progress: agentProgress }];
-          }
-          
-          if (event.data?.collaboration_mode) {
-            newState.collaborationMode = event.data.collaboration_mode;
-          }
-          
-          console.log('👥 Agent progress:', { agentName, agentStatus, agentProgress });
-          break;
-
-        case 'source_found':
-          const credibilityScore = event.data?.credibility_score || event.data?.confidence || 0.85;
-          const sourceFoundName = event.data?.source_name || event.message;
-          
-          newState.currentPhase = `Found credible source: ${sourceFoundName}`;
-          newState.progress = event.data?.progress_percentage || prev.progress + 10;
-          
-          if (sourceFoundName) {
-            const newSource: SourceCardProps = {
-              name: sourceFoundName,
-              url: event.data?.source_url || '#',
-              type: event.data?.source_type || 'Web Source',
-              confidence: credibilityScore < 1 ? Math.round(credibilityScore * 100) : Math.round(credibilityScore)
-            };
-            console.log('🎯 High-quality source found:', newSource);
-            newState.discoveredSources = [...prev.discoveredSources, newSource];
-          }
-          break;
-
-        case 'agent_collaboration':
-          newState.currentPhase = event.message || 'Agents collaborating...';
-          newState.collaborationMode = event.data?.collaboration_mode || prev.collaborationMode;
-          newState.progress = event.data?.progress_percentage || prev.progress + 5;
-          console.log('🤝 Agent collaboration:', event.data?.collaboration_mode);
-          break;
-
-        case 'content_chunk':
-          // Handle streaming content delivery
-          newState.chunkedContent = prev.chunkedContent + (event.data?.content || '');
-          newState.receivedChunks = prev.receivedChunks + 1;
-          const contentChunkProgress = 80 + (event.data?.chunk_index || 0) / (event.data?.total_chunks || 1) * 15;
-          newState.progress = Math.min(contentChunkProgress, 95);
-          newState.currentPhase = `Delivering results (${event.data?.chunk_index + 1}/${event.data?.total_chunks})...`;
-          console.log('📝 Content chunk received:', event.data?.chunk_index, 'of', event.data?.total_chunks);
-          break;
-
-        case 'research_complete':
-          newState.isStreaming = false;
-          newState.currentPhase = 'Research Complete';
-          newState.progress = 100;
-          
-          // Use chunked content if available, otherwise use final answer
-          const researchCompleteContent = prev.chunkedContent || event.data?.final_answer || event.message || '';
-          newState.currentMessage = researchCompleteContent;
-          
-          // Mark all agents as complete
-          newState.activeAgents = prev.activeAgents.map(agent => ({ ...agent, status: 'complete' as const }));
-          
-          if (event.data?.sources) {
-            newState.discoveredSources = event.data.sources.map(source => ({
-              ...source,
-              confidence: source.credibility_score < 1 ? Math.round(source.credibility_score * 100) : Math.round(source.credibility_score || source.confidence)
-            }));
-          }
-          
-          console.log('✅ Research completed, final content length:', researchCompleteContent.length);
-          console.log('📚 Final sources:', event.data?.sources?.length || 0);
-          break;
-
-        case 'error':
-          newState.error = event.data?.error_message || event.message || 'An error occurred';
-          newState.errorCode = event.data?.error_code;
-          newState.retryAfter = event.data?.retry_after;
-          newState.currentPhase = 'Error occurred';
-          console.error('❌ Research error:', newState.error);
-          break;
-
-        // Legacy event types for backward compatibility
         case 'search':
+          console.log('🔍 Starting research:', event.message);
           newState.currentPhase = event.message || 'Searching for information...';
-          newState.progress = event.data?.progress_percentage || prev.progress + 10;
-          if (event.data?.search_queries) {
-            console.log('🔍 Adding search queries:', event.data.search_queries);
-            newState.searchQueries = [...prev.searchQueries, ...event.data.search_queries];
-          }
-          break;
-
-        case 'source':
-          console.log('📚 Raw source event data:', {
-            fullEvent: event,
-            eventData: event.data,
-            eventMessage: event.message,
-            allFields: Object.keys(event.data || {})
-          });
-          
-          // Use type assertion to access potentially unknown fields
-          const sourceData = event.data as any;
-          
-          newState.currentPhase = `Analyzing source: ${sourceData?.source_name || sourceData?.name || 'Unknown'}`;
-          newState.progress = sourceData?.progress_percentage || prev.progress + 15;
-          
-          // Try different possible field names for source data
-          const sourceName = sourceData?.source_name || sourceData?.name || sourceData?.title || event.message;
-          const sourceUrl = sourceData?.source_url || sourceData?.url || sourceData?.link || sourceData?.href;
-          const sourceType = sourceData?.source_type || sourceData?.type || sourceData?.category || 'Web Source';
-          const sourceConfidence = sourceData?.confidence || sourceData?.score || sourceData?.relevance;
-          
-          if (sourceName) {
-            const newSource: SourceCardProps = {
-              name: sourceName,
-              url: sourceUrl || '#',
-              type: sourceType,
-              confidence: typeof sourceConfidence === 'number' 
-                ? (sourceConfidence < 1 ? Math.round(sourceConfidence * 100) : Math.round(sourceConfidence))
-                : 85
-            };
-            console.log('📚 Processed source for display:', newSource);
-            newState.discoveredSources = [...prev.discoveredSources, newSource];
-          } else {
-            console.log('⚠️ No source name found in event data');
-          }
-          break;
-
-        case 'snippet':
-          newState.currentPhase = 'Analyzing relevant information...';
-          newState.progress = event.data?.progress_percentage || prev.progress + 10;
-          console.log('📄 Processing snippet:', event.data?.snippet_text?.substring(0, 100));
+          newState.progress = event.data?.progress_percentage || 15;
           break;
 
         case 'thought':
-          newState.currentPhase = event.message || 'Processing insights...';
-          newState.progress = event.data?.progress_percentage || prev.progress + 15;
-          console.log('💭 AI thought:', event.message?.substring(0, 100));
+          console.log('💭 AI thinking:', event.message);
+          newState.currentPhase = event.message || 'Analyzing information...';
+          newState.progress = event.data?.progress_percentage || 40;
           break;
 
-        case 'completion_start':
-          // Prepare for receiving chunked content
-          newState.chunkedContent = '';
-          newState.expectedChunks = event.data?.total_sections || 1;
-          newState.receivedChunks = 0;
-          newState.currentPhase = 'Finalizing analysis...';
-          newState.progress = 90;
-          console.log('🎬 Starting completion with', newState.expectedChunks, 'expected chunks');
+        case 'source':
+          console.log('📄 Source found:', event.data?.source_name);
+          if (event.data?.source_name && event.data?.source_url) {
+            const sourceInfo: Source = {
+              name: event.data.source_name,
+              url: event.data.source_url,
+              type: event.data.source_type || 'web',
+              confidence: event.data.confidence || 0.85
+            };
+            newState.sources = [...prev.sources, sourceInfo];
+          }
+          newState.currentPhase = `Found source: ${event.data?.source_name || 'New source'}`;
+          newState.progress = event.data?.progress_percentage || 60;
           break;
 
-        case 'completion_chunk':
-          // Append chunk to accumulated content
-          newState.chunkedContent = prev.chunkedContent + (event.data?.content || '');
-          newState.receivedChunks = prev.receivedChunks + 1;
-          const chunkProgress = 90 + (event.data?.chunk_index || 0) / (event.data?.total_chunks || 1) * 10;
-          newState.progress = Math.min(chunkProgress, 99);
-          newState.currentPhase = `Delivering section ${(event.data?.chunk_index || 0) + 1}...`;
-          console.log('🧩 Received chunk', event.data?.chunk_index + 1, 'of', event.data?.total_chunks);
-          console.log('📝 Chunk content length:', event.data?.content?.length || 0);
-          console.log('📚 Total accumulated content length:', newState.chunkedContent.length);
+        case 'snippet':
+          console.log('📝 Content analysis:', event.message);
+          newState.currentPhase = event.message || 'Analyzing content...';
+          newState.progress = event.data?.progress_percentage || 80;
           break;
 
         case 'complete':
+          console.log('✅ Research complete');
           newState.isStreaming = false;
-          newState.currentPhase = 'Complete';
+          newState.currentPhase = 'Research completed';
           newState.progress = 100;
-          // Use chunked content if available, otherwise use direct content
-          const finalContent = prev.chunkedContent || event.data?.final_answer || event.message || '';
-          newState.currentMessage = finalContent;
-          console.log('✅ Final response length:', newState.currentMessage.length);
-          console.log('📚 Final sources count:', event.data?.sources?.length || 0);
-          console.log('🧩 Used chunked content:', !!prev.chunkedContent);
+          
+          if (event.data?.final_answer) {
+            newState.finalResponse = event.data.final_answer;
+          }
+          
           if (event.data?.sources) {
-            newState.discoveredSources = event.data.sources;
+            newState.sources = event.data.sources;
+          }
+          
+          if (event.data?.methodology) {
+            newState.methodology = event.data.methodology;
           }
           break;
+
+        case 'error':
+          console.error('❌ Streaming error:', event.message);
+          newState.isStreaming = false;
+          newState.error = event.message || 'An error occurred during streaming';
+          newState.currentPhase = 'Error occurred';
+          break;
+
+        default:
+          console.warn('⚠️ Unknown event type:', event.type);
       }
 
       return newState;
@@ -334,21 +167,25 @@ export const usePerplexityStreaming = () => {
   }, []);
 
   const startStreaming = useCallback(async (query: string, sessionId: string): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      console.log('🚀 Starting Perplexity-style streaming for:', query);
-      
-      resetState();
-      setStreamingState(prev => ({ ...prev, isStreaming: true }));
+    console.log('🚀 Starting Perplexity-style streaming for query:', query);
+    
+    resetState();
 
-      // Setup connection timeout (45 seconds)
-      timeoutRef.current = setTimeout(() => {
-        console.error('⏰ WebSocket timeout after 45 seconds');
+    return new Promise((resolve, reject) => {
+      // Clear any existing timeout
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+
+      // Set timeout for the streaming request (120 seconds as per backend spec)
+      timeoutRef.current = window.setTimeout(() => {
+        console.log('⏰ Streaming timeout reached');
         if (wsRef.current) {
           wsRef.current.close();
         }
-        setStreamingState(prev => ({ ...prev, error: 'Connection timeout' }));
         reject(new Error('Streaming timeout - falling back to REST API'));
-      }, 45000);
+      }, 120000);
 
       try {
         const wsUrl = 'wss://ai-agent-research-optivise-production.up.railway.app/stream';
@@ -359,6 +196,7 @@ export const usePerplexityStreaming = () => {
         wsRef.current.onopen = () => {
           console.log('✅ WebSocket connected');
           
+          // Send query with exact backend format
           const payload = {
             query,
             context: { sessionId }
@@ -379,53 +217,47 @@ export const usePerplexityStreaming = () => {
             });
             handleStreamingEvent(data);
 
-            // If complete, resolve with the final answer
+            // Resolve when we get the complete event
             if (data.type === 'complete') {
-              if (timeoutRef.current) {
-                clearTimeout(timeoutRef.current);
-              }
-              const finalAnswer = data.data?.final_answer || data.message || 'Research completed';
-              console.log('✅ Streaming complete, resolving with:', finalAnswer.substring(0, 100));
+              clearTimeout(timeoutRef.current!);
+              timeoutRef.current = null;
+              
+              const finalAnswer = data.data?.final_answer || 'Research completed successfully.';
+              console.log('✅ Streaming completed with response:', finalAnswer.substring(0, 100));
               resolve(finalAnswer);
             }
           } catch (error) {
-            console.error('❌ Error parsing WebSocket message:', error, 'Raw data:', event.data);
-            setStreamingState(prev => ({ ...prev, error: 'Message parsing error' }));
+            console.error('❌ Error parsing streaming event:', error);
+            console.log('Raw event data:', event.data);
           }
         };
 
         wsRef.current.onerror = (error) => {
           console.error('❌ WebSocket error:', error);
-          if (timeoutRef.current) {
-            clearTimeout(timeoutRef.current);
-          }
-          setStreamingState(prev => ({ ...prev, error: 'Connection error' }));
+          clearTimeout(timeoutRef.current!);
+          timeoutRef.current = null;
           reject(new Error('WebSocket connection failed'));
         };
 
         wsRef.current.onclose = (event) => {
           console.log('🔌 WebSocket closed:', event.code, event.reason);
-          if (timeoutRef.current) {
-            clearTimeout(timeoutRef.current);
-          }
+          clearTimeout(timeoutRef.current!);
+          timeoutRef.current = null;
           
-          // Only reject if we haven't resolved yet
-          if (streamingState.isStreaming) {
-            setStreamingState(prev => ({ ...prev, isStreaming: false }));
-            reject(new Error('WebSocket connection closed unexpectedly'));
+          if (event.code !== 1000) {
+            // Unexpected close
+            reject(new Error(`WebSocket closed unexpectedly: ${event.code} ${event.reason}`));
           }
         };
 
       } catch (error) {
-        console.error('❌ WebSocket setup error:', error);
-        if (timeoutRef.current) {
-          clearTimeout(timeoutRef.current);
-        }
-        setStreamingState(prev => ({ ...prev, error: 'Setup error' }));
+        console.error('❌ Failed to establish WebSocket connection:', error);
+        clearTimeout(timeoutRef.current!);
+        timeoutRef.current = null;
         reject(error);
       }
     });
-  }, [handleStreamingEvent, resetState, streamingState.isStreaming]);
+  }, [handleStreamingEvent, resetState]);
 
   const stopStreaming = useCallback(() => {
     console.log('🛑 Stopping streaming and resetting state');

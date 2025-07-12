@@ -202,7 +202,7 @@ export const useMessages = (currentSessionId: string | null) => {
         return await startStreaming(prompt, sessionId);
       } else {
         console.log('⚡ Using Stratix backend for simple query (WebSocket instant)');
-        // For simple queries, use a quick WebSocket connection to ensure it goes through Stratix backend
+        // For simple queries, use a quick WebSocket connection following exact backend spec
         return new Promise((resolve, reject) => {
           try {
             const ws = new WebSocket('wss://ai-agent-research-optivise-production.up.railway.app/stream');
@@ -215,10 +215,11 @@ export const useMessages = (currentSessionId: string | null) => {
                 ws.close();
                 reject(new Error('Timeout waiting for Stratix response'));
               }
-            }, 15000); // Increased to 15 seconds
+            }, 120000); // 120 seconds as per backend spec
             
             ws.onopen = () => {
               console.log('📡 Connected to Stratix for simple query');
+              // Send with exact backend format
               ws.send(JSON.stringify({
                 query: prompt,
                 context: { sessionId: sessionId }
@@ -230,32 +231,48 @@ export const useMessages = (currentSessionId: string | null) => {
                 const data = JSON.parse(event.data);
                 console.log('📨 Stratix simple query response type:', data.type, 'data:', data);
                 
-                // Handle all possible response formats from the streaming backend
-                if (data.type === 'content' || data.type === 'content_chunk') {
-                  response += data.content || data.data?.content || data.message || '';
-                } else if (data.type === 'stream_start') {
-                  console.log('📡 Stream started for simple query');
-                } else if (data.type === 'complete' || data.type === 'research_complete') {
-                  hasReceivedResponse = true;
-                  clearTimeout(timeout);
-                  ws.close();
-                  const finalResponse = response.trim() || 'Hello! How can I help you today?';
-                  console.log('✅ Stratix simple query complete, response:', finalResponse);
-                  resolve(finalResponse);
-                } else if (data.type === 'error') {
-                  hasReceivedResponse = true;
-                  clearTimeout(timeout);
-                  ws.close();
-                  console.error('❌ Stratix backend error:', data.message);
-                  reject(new Error(data.message || 'Stratix backend error'));
-                } else if (data.response || data.message) {
-                  // Direct response format
-                  hasReceivedResponse = true;
-                  clearTimeout(timeout);
-                  ws.close();
-                  const directResponse = data.response || data.message;
-                  console.log('✅ Direct Stratix response:', directResponse);
-                  resolve(directResponse);
+                // Handle backend event types exactly as specified
+                switch (data.type) {
+                  case 'connection_confirmed':
+                    console.log('🔗 Connection confirmed for simple query');
+                    break;
+                    
+                  case 'search':
+                    console.log('🔍 Search phase for simple query');
+                    break;
+                    
+                  case 'thought':
+                    console.log('💭 Thought phase for simple query');
+                    break;
+                    
+                  case 'source':
+                    console.log('� Source found for simple query');
+                    break;
+                    
+                  case 'snippet':
+                    console.log('📝 Snippet analysis for simple query');
+                    break;
+                    
+                  case 'complete':
+                    hasReceivedResponse = true;
+                    clearTimeout(timeout);
+                    ws.close();
+                    
+                    const finalResponse = data.data?.final_answer || data.message || 'Hello! How can I help you today?';
+                    console.log('✅ Stratix simple query complete, response:', finalResponse);
+                    resolve(finalResponse);
+                    break;
+                    
+                  case 'error':
+                    hasReceivedResponse = true;
+                    clearTimeout(timeout);
+                    ws.close();
+                    console.error('❌ Stratix backend error:', data.message);
+                    reject(new Error(data.message || 'Stratix backend error'));
+                    break;
+                    
+                  default:
+                    console.warn('⚠️ Unknown event type for simple query:', data.type);
                 }
               } catch (parseError) {
                 console.error('❌ Error parsing Stratix response:', parseError, 'Raw data:', event.data);
