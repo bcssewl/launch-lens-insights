@@ -7,7 +7,9 @@ import CopyButton from './CopyButton';
 import MarkdownRenderer from './MarkdownRenderer';
 import CanvasCompact from './CanvasCompact';
 import StreamingOverlay from './StreamingOverlay';
+import StratixStreamingOverlay from './StratixStreamingOverlay';
 import { isReportMessage } from '@/utils/reportDetection';
+import type { StratixStreamingState } from '@/types/stratixStreaming';
 
 export interface ChatMessageData {
   id: string;
@@ -44,6 +46,8 @@ interface ChatMessageProps {
     phase: string;
     progress: number;
   };
+  // Enhanced Stratix streaming support
+  stratixStreamingState?: StratixStreamingState;
 }
 
 const ChatMessage: React.FC<ChatMessageProps> = ({ 
@@ -54,7 +58,8 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
   isStreaming = false,
   streamingUpdates = [],
   streamingSources = [],
-  streamingProgress = { phase: '', progress: 0 }
+  streamingProgress = { phase: '', progress: 0 },
+  stratixStreamingState
 }) => {
   const isAi = message.sender === 'ai';
   const isReport = isAi && isReportMessage(message.text, message.metadata);
@@ -68,11 +73,12 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
     streamingSourcesCount: streamingSources.length,
     streamingProgress,
     isReport,
+    hasStratixStreaming: !!stratixStreamingState?.isStreaming,
     messageText: message.text?.substring(0, 100) + (message.text?.length > 100 ? '...' : '')
   });
 
-  // Don't render AI messages with empty or whitespace-only content
-  if (isAi && (!message.text || message.text.trim() === '')) {
+  // Don't render AI messages with empty or whitespace-only content unless streaming
+  if (isAi && (!message.text || message.text.trim() === '') && !stratixStreamingState?.isStreaming) {
     console.log('🚫 Skipping empty AI message:', message.id);
     return null;
   }
@@ -108,8 +114,17 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
               : "bg-primary/90 backdrop-blur-md border border-primary/30 text-primary-foreground rounded-tr-sm shadow-glass hover:bg-primary/95"
           )}
         >
-          {/* Enhanced Streaming Overlay for AI messages */}
-          {isAi && (isStreaming || streamingUpdates.length > 0) && (
+          {/* Enhanced Stratix Streaming Overlay for AI messages */}
+          {isAi && stratixStreamingState?.isStreaming && (
+            <StratixStreamingOverlay
+              isVisible={stratixStreamingState.isStreaming}
+              streamingState={stratixStreamingState}
+              className="z-10"
+            />
+          )}
+
+          {/* Fallback to legacy streaming overlay if Stratix not available */}
+          {isAi && !stratixStreamingState?.isStreaming && (isStreaming || streamingUpdates.length > 0) && (
             <StreamingOverlay
               isVisible={isStreaming}
               updates={streamingUpdates}

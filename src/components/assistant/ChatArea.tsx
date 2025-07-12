@@ -8,6 +8,7 @@ import EnhancedChatInput from '@/components/assistant/EnhancedChatInput';
 import StreamingProgress from '@/components/assistant/StreamingProgress';
 import StreamingError from '@/components/assistant/StreamingError';
 import { Message } from '@/constants/aiAssistant';
+import type { StratixStreamingState } from '@/types/stratixStreaming';
 
 interface ChatAreaProps {
   messages: Message[];
@@ -41,6 +42,8 @@ interface ChatAreaProps {
     activeAgents?: string[];
     collaborationMode?: string;
   };
+  // Enhanced Stratix streaming support
+  stratixStreamingState?: StratixStreamingState;
 }
 
 const ChatArea: React.FC<ChatAreaProps> = ({
@@ -52,7 +55,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   onOpenCanvas,
   onCanvasDownload,
   onCanvasPrint,
-  streamingState
+  streamingState,
+  stratixStreamingState
 }) => {
   const hasConversation = messages.length > 1 || isTyping;
 
@@ -82,8 +86,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
               />
             )}
 
-            {/* Show Perplexity-style streaming progress */}
-            {streamingState?.isStreaming && (
+            {/* Show legacy Perplexity-style streaming progress (fallback) */}
+            {streamingState?.isStreaming && !stratixStreamingState?.isStreaming && (
               <StreamingProgress
                 currentPhase={streamingState.currentPhase}
                 progress={streamingState.progress}
@@ -100,6 +104,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                 messageId: msg.id,
                 sender: msg.sender,
                 hasStreamingState: !!streamingState,
+                hasStratixStreaming: !!stratixStreamingState?.isStreaming,
                 isStreaming: streamingState?.isStreaming,
                 messageText: msg.text.substring(0, 50),
                 timestamp: msg.timestamp
@@ -112,11 +117,13 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                   onOpenCanvas={onOpenCanvas}
                   onCanvasDownload={onCanvasDownload}
                   onCanvasPrint={onCanvasPrint}
-                  // Simplified props for new system
-                  isStreaming={false} // Individual message streaming removed
+                  // Legacy streaming support (fallback)
+                  isStreaming={false}
                   streamingUpdates={[]}
                   streamingSources={[]}
                   streamingProgress={{ phase: '', progress: 0 }}
+                  // Enhanced Stratix streaming support
+                  stratixStreamingState={stratixStreamingState}
                 />
               );
             })}

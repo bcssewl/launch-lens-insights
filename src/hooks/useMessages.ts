@@ -4,6 +4,7 @@ import { Message, initialMessages, formatTimestamp } from '@/constants/aiAssista
 import { useN8nWebhook } from '@/hooks/useN8nWebhook';
 import { useChatHistory } from '@/hooks/useChatHistory';
 import { usePerplexityStreaming } from '@/hooks/usePerplexityStreaming';
+import { useStratixStreaming } from '@/hooks/useStratixStreaming';
 import { supabase } from '@/integrations/supabase/client';
 
 // Configuration constants
@@ -40,8 +41,13 @@ export const useMessages = (currentSessionId: string | null) => {
   const { sendMessageToN8n, isConfigured } = useN8nWebhook();
   const { history, addMessage, isInitialLoad } = useChatHistory(currentSessionId);
   
-  // Initialize Perplexity-style streaming
+  // Initialize both streaming systems
   const { streamingState, startStreaming, stopStreaming } = usePerplexityStreaming();
+  const { 
+    streamingState: stratixStreamingState, 
+    startStreaming: startStratixStreaming, 
+    stopStreaming: stopStratixStreaming 
+  } = useStratixStreaming();
 
   const scrollToBottom = useCallback(() => {
     if (viewportRef.current) {
@@ -265,23 +271,24 @@ export const useMessages = (currentSessionId: string | null) => {
     }
   }, [currentSessionId]);
 
-  // Handle Stratix requests with smart routing
+  // Handle Stratix requests with enhanced streaming
   const handleStratixRequest = useCallback(async (prompt: string, sessionId: string | null): Promise<string> => {
     if (!sessionId) {
       throw new Error('Session ID required for Stratix communication');
     }
 
     try {
-      console.log('🎯 Stratix Request - Smart routing for:', prompt);
+      console.log('🎯 Enhanced Stratix Request - Smart routing for:', prompt);
       
-      // Always reset streaming state at the start of any Stratix request
+      // Reset both streaming systems
       stopStreaming();
+      stopStratixStreaming();
       
       const isResearchQuery = detectResearchQuery(prompt);
       
       if (isResearchQuery) {
-        console.log('🚀 Using Perplexity-style streaming for research query');
-        return await startStreaming(prompt, sessionId);
+        console.log('🚀 Using enhanced Stratix streaming for research query');
+        return await startStratixStreaming(prompt, sessionId);
       } else {
         console.log('⚡ Using Stratix backend for simple query (WebSocket instant)');
         // For simple queries, use a quick WebSocket connection following exact backend spec
@@ -673,8 +680,10 @@ export const useMessages = (currentSessionId: string | null) => {
     handleCanvasPrint,
     handleCanvasPdfDownload,
     streamingState,
+    stratixStreamingState,
     // Provide streaming state for components that need it
-    isStreamingForMessage: () => streamingState.isStreaming,
-    getStreamingState: () => streamingState
+    isStreamingForMessage: () => streamingState.isStreaming || stratixStreamingState.isStreaming,
+    getStreamingState: () => streamingState,
+    getStratixStreamingState: () => stratixStreamingState
   };
 };

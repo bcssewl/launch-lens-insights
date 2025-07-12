@@ -46,7 +46,8 @@ const AIAssistantPage: React.FC = () => {
     handleCanvasDownload,
     handleCanvasPrint,
     handleCanvasPdfDownload,
-    streamingState
+    streamingState,
+    stratixStreamingState
   } = useMessages(currentSessionId);
   const [editedCanvasContent, setEditedCanvasContent] = useState(canvasState.content);
 
@@ -188,6 +189,7 @@ const AIAssistantPage: React.FC = () => {
         onCanvasDownload={handleCanvasDownload} 
         onCanvasPrint={handleCanvasPrint}
         streamingState={streamingState}
+        stratixStreamingState={stratixStreamingState}
       />
     );
   }
@@ -236,6 +238,7 @@ const AIAssistantPage: React.FC = () => {
               onCanvasDownload={handleCanvasDownload} 
               onCanvasPrint={handleCanvasPrint}
               streamingState={streamingState}
+              stratixStreamingState={stratixStreamingState}
             />
           </div>
         </SidebarInset>
