@@ -105,6 +105,59 @@ export const useMessages = (currentSessionId: string | null) => {
       console.log('🔄 REPLACING messages array with history. Current length:', messages.length, 'New length:', convertedMessages.length + initialMessages.length);
       setMessages([...initialMessages, ...convertedMessages]);
       console.log('✅ Loaded messages from history:', convertedMessages.length);
+      
+      // Check for canvas documents associated with AI messages and restore the latest one
+      const restoreCanvasFromHistory = async () => {
+        try {
+          console.log('🎨 Checking for canvas documents to restore...');
+          
+          // Find the most recent AI message that might have a canvas document
+          const aiMessages = convertedMessages.filter(msg => msg.sender === 'ai');
+          
+          for (let i = aiMessages.length - 1; i >= 0; i--) {
+            const message = aiMessages[i];
+            const messageId = `history-${convertedMessages.indexOf(message)}`;
+            
+            console.log('🔍 Checking message for canvas document:', messageId);
+            
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) continue;
+
+            const { data: mapping, error } = await supabase
+              .from('message_canvas_documents')
+              .select(`
+                document_id,
+                canvas_documents (
+                  id,
+                  title,
+                  content,
+                  created_at,
+                  updated_at,
+                  created_by
+                )
+              `)
+              .eq('message_id', messageId)
+              .eq('created_by', user.id)
+              .single();
+
+            if (!error && mapping && mapping.canvas_documents) {
+              console.log('🎨 Found canvas document to restore:', mapping.canvas_documents.id);
+              setCanvasState({
+                isOpen: false, // Don't auto-open, just restore the association
+                messageId,
+                content: mapping.canvas_documents.content
+              });
+              break; // Use the most recent canvas document
+            }
+          }
+        } catch (err) {
+          console.error('❌ Error restoring canvas from history:', err);
+        }
+      };
+      
+      // Restore canvas documents after a short delay to ensure messages are loaded
+      setTimeout(restoreCanvasFromHistory, 100);
+      
     } else if (!isInitialLoad && history.length === 0) {
       console.log('🔄 No history found, resetting to initial messages');
       setMessages(initialMessages);
