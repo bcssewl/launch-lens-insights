@@ -108,11 +108,11 @@ const StreamingTestComponent: React.FC = () => {
       )}
 
       {/* Final Response and Sources */}
-      {streamingState.currentMessage && !streamingState.isStreaming && (
+      {streamingState.finalResponse && !streamingState.isStreaming && (
         <div className="bg-white rounded-lg shadow-sm border p-6">
           <h3 className="text-lg font-semibold mb-3">Final Response:</h3>
           <div className="prose max-w-none">
-            <p className="text-gray-700 whitespace-pre-wrap">{streamingState.currentMessage}</p>
+            <p className="text-gray-700 whitespace-pre-wrap">{streamingState.finalResponse}</p>
           </div>
           
           {streamingState.discoveredSources.length > 0 && (

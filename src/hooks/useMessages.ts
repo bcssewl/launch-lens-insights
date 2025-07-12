@@ -357,6 +357,8 @@ export const useMessages = (currentSessionId: string | null) => {
       if (selectedModel === 'stratix') {
         console.log('🎯 Using Stratix model with Perplexity-style streaming');
         aiResponseText = await handleStratixRequest(finalMessageText, currentSessionId);
+        // Ensure streaming state is fully reset after Stratix completion
+        stopStreaming();
       } else {
         // Use existing N8N webhook for all other models
         let contextMessage = finalMessageText;
@@ -391,6 +393,12 @@ export const useMessages = (currentSessionId: string | null) => {
         console.log('📝 Updated messages array, new length:', newMessages.length);
         console.log('📝 Last message:', newMessages[newMessages.length - 1]);
         console.log('📝 Current streaming state:', streamingState.isStreaming);
+        
+        // For Stratix responses, ensure streaming overlay is not interfering
+        if (selectedModel === 'stratix') {
+          console.log('🎯 Stratix response added, streaming state should be reset');
+        }
+        
         return newMessages;
       });
 

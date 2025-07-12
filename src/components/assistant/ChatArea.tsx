@@ -28,6 +28,9 @@ interface ChatAreaProps {
     isStreaming: boolean;
     currentPhase: string;
     progress: number;
+    error?: string | null;
+    errorCode?: string;
+    retryAfter?: number;
     searchQueries: string[];
     discoveredSources: Array<{
       name: string;
@@ -35,6 +38,8 @@ interface ChatAreaProps {
       type: string;
       confidence: number;
     }>;
+    activeAgents?: string[];
+    collaborationMode?: string;
   };
 }
 
@@ -84,8 +89,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                 progress={streamingState.progress}
                 searchQueries={streamingState.searchQueries}
                 discoveredSources={streamingState.discoveredSources}
-                activeAgents={streamingState.activeAgents}
-                collaborationMode={streamingState.collaborationMode}
+                activeAgents={streamingState.activeAgents?.map(name => ({ name, status: 'active' as const, progress: 50 })) || []}
+                collaborationMode={streamingState.collaborationMode as 'sequential' | 'parallel' | 'hierarchical' | null}
                 isVisible={true}
               />
             )}

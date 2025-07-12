@@ -52,6 +52,12 @@ interface StreamingState {
   finalResponse: string;
   methodology: string;
   error: string | null;
+  errorCode?: string;
+  retryAfter?: number;
+  searchQueries: string[];
+  discoveredSources: Source[];
+  activeAgents?: string[];
+  collaborationMode?: string;
 }
 
 export const usePerplexityStreaming = () => {
@@ -62,7 +68,9 @@ export const usePerplexityStreaming = () => {
     sources: [],
     finalResponse: '',
     methodology: '',
-    error: null
+    error: null,
+    searchQueries: [],
+    discoveredSources: []
   });
 
   const wsRef = useRef<WebSocket | null>(null);
@@ -77,7 +85,9 @@ export const usePerplexityStreaming = () => {
       sources: [],
       finalResponse: '',
       methodology: '',
-      error: null
+      error: null,
+      searchQueries: [],
+      discoveredSources: []
     });
   }, []);
 
