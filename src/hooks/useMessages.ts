@@ -3,7 +3,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { Message, initialMessages, formatTimestamp } from '@/constants/aiAssistant';
 import { useN8nWebhook } from '@/hooks/useN8nWebhook';
 import { useChatHistory } from '@/hooks/useChatHistory';
-import { usePerplexityStreaming } from '@/hooks/usePerplexityStreaming';
 import { useStratixStreaming } from '@/hooks/useStratixStreaming';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -41,8 +40,7 @@ export const useMessages = (currentSessionId: string | null) => {
   const { sendMessageToN8n, isConfigured } = useN8nWebhook();
   const { history, addMessage, isInitialLoad } = useChatHistory(currentSessionId);
   
-  // Initialize both streaming systems
-  const { streamingState, startStreaming, stopStreaming } = usePerplexityStreaming();
+  // Only use Stratix streaming now
   const { 
     streamingState: stratixStreamingState, 
     startStreaming: startStratixStreaming, 
@@ -188,232 +186,38 @@ export const useMessages = (currentSessionId: string | null) => {
     }
   }, [currentSessionId, history, isInitialLoad]);
 
-  // Smart detection logic for when to use streaming (Perplexity-style research)
-  const detectResearchQuery = useCallback((prompt: string): boolean => {
-    const trimmedPrompt = prompt.trim().toLowerCase();
-    
-    // Simple conversations - never stream
-    const simplePatterns = [
-      /^(hello|hi|hey|good morning|good afternoon)[\s\?\.!]*$/,
-      /^(how are you|how\'s it going|what\'s up)[\s\?\.!]*$/,
-      /^(thanks|thank you|thx|ty)[\s\?\.!]*$/,
-      /^(ok|okay|alright|good|great|cool)[\s\?\.!]*$/,
-      /^(who are you|what are you|what can you do)[\s\?\.!]*$/,
-      /^(bye|goodbye|see you|talk later)[\s\?\.!]*$/
-    ];
-    
-    if (simplePatterns.some(pattern => pattern.test(trimmedPrompt))) {
-      return false;
-    }
-    
-    // Research indicators - use streaming
-    const researchKeywords = [
-      'analyze', 'research', 'competitive', 'market', 'strategy', 'trends',
-      'industry', 'growth', 'opportunities', 'insights', 'report', 'study',
-      'comparison', 'evaluation', 'assessment', 'forecast', 'outlook',
-      'landscape', 'ecosystem', 'regulations', 'compliance'
-    ];
-    
-    const hasResearchKeywords = researchKeywords.some(keyword => 
-      trimmedPrompt.includes(keyword)
-    );
-    
-    // Complex query indicators
-    const isLongQuery = prompt.length > 30;
-    const hasQuestionWords = /\b(what|how|why|when|where|which|should|could|would)\b/i.test(prompt);
-    
-    return hasResearchKeywords || (isLongQuery && hasQuestionWords);
-  }, []);
-
-  // Handle instant responses for simple queries
-  const handleInstantRequest = useCallback(async (prompt: string): Promise<string> => {
-    try {
-      console.log('⚡ Making instant request to Stratix API');
-      
-      // Try the correct endpoint first
-      let response = await fetch('https://ai-agent-research-optivise-production.up.railway.app/instant', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: prompt,
-          sessionId: currentSessionId || 'instant-session'
-        }),
-      });
-
-      // If that fails, try the chat endpoint
-      if (!response.ok) {
-        console.log('⚡ Instant endpoint failed, trying chat endpoint');
-        response = await fetch('https://ai-agent-research-optivise-production.up.railway.app/chat', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            message: prompt,
-            sessionId: currentSessionId || 'instant-session'
-          }),
-        });
-      }
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      return data.response || data.message || 'Response received successfully.';
-      
-    } catch (error) {
-      console.error('❌ Instant request failed:', error);
-      // Return a more helpful error message that won't disappear
-      return `Hello! I'm having trouble connecting to my advanced AI service right now, but I'm still here to help. Feel free to ask me anything about business strategy, market analysis, or startup advice and I'll do my best to assist you.`;
-    }
-  }, [currentSessionId]);
-
-  // Handle Stratix requests with enhanced streaming
+  // Always use Stratix for research queries - no model detection needed
   const handleStratixRequest = useCallback(async (prompt: string, sessionId: string | null): Promise<string> => {
     if (!sessionId) {
       throw new Error('Session ID required for Stratix communication');
     }
 
     try {
-      console.log('🎯 Enhanced Stratix Request - Smart routing for:', prompt);
+      console.log('🎯 Using new Stratix agent for:', prompt.substring(0, 100));
       
-      // Reset both streaming systems
-      stopStreaming();
+      // Stop any existing streaming
       stopStratixStreaming();
       
-      const isResearchQuery = detectResearchQuery(prompt);
-      
-      if (isResearchQuery) {
-        console.log('🚀 Using enhanced Stratix streaming for research query');
-        try {
-          return await startStratixStreaming(prompt, sessionId);
-        } catch (streamingError) {
-          console.warn('⚠️ Stratix streaming failed, falling back to instant mode:', streamingError);
-          // Fall through to instant mode if streaming fails
-        }
-      }
-      
-      // Instant mode for simple queries or streaming fallback
-      {
-        console.log('⚡ Using Stratix backend for simple query (WebSocket instant)');
-        // For simple queries, use a quick WebSocket connection following exact backend spec
-        return new Promise((resolve, reject) => {
-          try {
-            const ws = new WebSocket('wss://ai-agent-research-optivise-production.up.railway.app/stream');
-            let response = '';
-            let hasReceivedResponse = false;
-            
-            const timeout = setTimeout(() => {
-              if (!hasReceivedResponse) {
-                console.log('⏰ Timeout waiting for Stratix response');
-                ws.close();
-                reject(new Error('Timeout waiting for Stratix response'));
-              }
-            }, WEBSOCKET_TIMEOUT_MS); // 5 minutes for complex processing
-            
-            ws.onopen = () => {
-              console.log('📡 Connected to Stratix for simple query');
-              // Send with exact backend format
-              ws.send(JSON.stringify({
-                query: prompt,
-                context: { sessionId: sessionId }
-              }));
-            };
-            
-            ws.onmessage = (event) => {
-              try {
-                const data = JSON.parse(event.data);
-                console.log('📨 Stratix simple query response type:', data.type, 'data:', data);
-                
-                // Handle backend event types exactly as specified
-                switch (data.type) {
-                  case 'connection_confirmed':
-                    console.log('🔗 Connection confirmed for simple query');
-                    break;
-                    
-                  case 'search':
-                    console.log('🔍 Search phase for simple query');
-                    break;
-                    
-                  case 'thought':
-                    console.log('💭 Thought phase for simple query');
-                    break;
-                    
-                  case 'source':
-                    console.log('� Source found for simple query');
-                    break;
-                    
-                  case 'snippet':
-                    console.log('📝 Snippet analysis for simple query');
-                    break;
-                    
-                  case 'complete':
-                    hasReceivedResponse = true;
-                    clearTimeout(timeout);
-                    ws.close();
-                    
-                    const finalResponse = data.data?.final_answer || data.message || 'Hello! How can I help you today?';
-                    console.log('✅ Stratix simple query complete, response:', finalResponse);
-                    resolve(finalResponse);
-                    break;
-                    
-                  case 'error':
-                    hasReceivedResponse = true;
-                    clearTimeout(timeout);
-                    ws.close();
-                    console.error('❌ Stratix backend error:', data.message);
-                    reject(new Error(data.message || 'Stratix backend error'));
-                    break;
-                    
-                  default:
-                    console.warn('⚠️ Unknown event type for simple query:', data.type);
-                }
-              } catch (parseError) {
-                console.error('❌ Error parsing Stratix response:', parseError, 'Raw data:', event.data);
-              }
-            };
-            
-            ws.onerror = (error) => {
-              hasReceivedResponse = true;
-              clearTimeout(timeout);
-              console.error('❌ Stratix WebSocket error details:', error);
-              reject(new Error('Connection to Stratix backend failed'));
-            };
-            
-            ws.onclose = (event) => {
-              console.log('🔌 Stratix WebSocket closed:', event.code, event.reason);
-              if (!hasReceivedResponse) {
-                clearTimeout(timeout);
-                reject(new Error(`Connection closed before receiving response: ${event.code} ${event.reason}`));
-              }
-            };
-            
-          } catch (connectionError) {
-            console.error('❌ Failed to create Stratix WebSocket:', connectionError);
-            reject(connectionError);
-          }
-        });
-      }
+      // Use the new Stratix streaming directly
+      return await startStratixStreaming(prompt, sessionId);
 
     } catch (error) {
       console.error('❌ Stratix communication error:', error);
       
       // Ensure streaming is stopped on error
-      stopStreaming();
+      stopStratixStreaming();
       
-      // For Stratix errors, return a Stratix-appropriate error message
+      // Return a helpful error message
       return 'I apologize, but I\'m having trouble processing your request right now. Please try again in a moment.';
     }
-  }, [detectResearchQuery, startStreaming, stopStreaming]);
+  }, [startStratixStreaming, stopStratixStreaming]);
 
-  const handleSendMessage = useCallback(async (text?: string, messageText?: string, selectedModel?: string) => {
+  // Simplified message handling - always use Stratix
+  const handleSendMessage = useCallback(async (text?: string, messageText?: string) => {
     const finalMessageText = text || messageText;
     if (!finalMessageText || finalMessageText.trim() === '') return;
 
-    console.log('🚀 useMessages: Sending message in session:', currentSessionId, 'with model:', selectedModel);
+    console.log('🚀 useMessages: Sending message to Stratix in session:', currentSessionId);
 
     // Set flag to prevent history reload interference
     isAddingMessageRef.current = true;
@@ -447,59 +251,41 @@ export const useMessages = (currentSessionId: string | null) => {
 
     setIsTyping(true);
     
-    // Ensure streaming state is clean before starting
-    if (!detectResearchQuery(finalMessageText) || selectedModel !== 'stratix') {
-      stopStreaming();
-    }
-    
     try {
       let aiResponseText: string;
 
-      // Route to Stratix if model is 'stratix'
-      if (selectedModel === 'stratix') {
-        console.log('🎯 Using Stratix model with Perplexity-style streaming');
-        aiResponseText = await handleStratixRequest(finalMessageText, currentSessionId);
-        // Ensure streaming state is fully reset after Stratix completion
-        stopStreaming();
-      } else {
-        // Use existing N8N webhook for all other models
-        let contextMessage = finalMessageText;
-        if (canvasState.isOpen && canvasState.content) {
-          contextMessage = `Current document content:\n\n${canvasState.content}\n\n---\n\nUser message: ${finalMessageText}`;
-        }
-        
-        console.log('📨 Sending to N8N webhook...');
-        aiResponseText = await sendMessageToN8n(contextMessage, currentSessionId);
+      // Always use Stratix now
+      console.log('🎯 Using Stratix agent for all requests');
+      
+      let contextMessage = finalMessageText;
+      if (canvasState.isOpen && canvasState.content) {
+        contextMessage = `Current document content:\n\n${canvasState.content}\n\n---\n\nUser message: ${finalMessageText}`;
       }
+      
+      aiResponseText = await handleStratixRequest(contextMessage, currentSessionId);
       
       // Don't create message if response is empty
       if (!aiResponseText || aiResponseText.trim() === '') {
-        console.warn('Received empty response from AI service');
+        console.warn('Received empty response from Stratix service');
         aiResponseText = "I apologize, but I didn't receive a proper response. Please try asking your question again.";
       }
       
-      console.log('✅ Creating AI response message with text:', aiResponseText.substring(0, 100) + '...');
+      console.log('✅ Creating Stratix response message with text:', aiResponseText.substring(0, 100) + '...');
       
       const aiResponse: Message = {
         id: uuidv4(),
         text: aiResponseText,
         sender: 'ai',
         timestamp: new Date(),
-        metadata: selectedModel === 'stratix' ? {
+        metadata: {
           messageType: 'stratix_conversation'
-        } : { messageType: 'standard' },
+        },
       };
       
       setMessages(prev => {
         const newMessages = [...prev, aiResponse];
         console.log('📝 Updated messages array, new length:', newMessages.length);
         console.log('📝 Last message:', newMessages[newMessages.length - 1]);
-        console.log('📝 Current streaming state:', streamingState.isStreaming);
-        
-        // For Stratix responses, ensure streaming overlay is not interfering
-        if (selectedModel === 'stratix') {
-          console.log('🎯 Stratix response added, streaming state should be reset');
-        }
         
         return newMessages;
       });
@@ -520,7 +306,7 @@ export const useMessages = (currentSessionId: string | null) => {
       
       const errorResponse: Message = {
         id: uuidv4(),
-        text: `I'm having trouble accessing my full capabilities right now, but I'm still here to help! Please feel free to ask me about business strategy, market analysis, or any startup-related questions.`,
+        text: `I'm having trouble accessing my capabilities right now, but I'm still here to help! Please feel free to ask me about business strategy, market analysis, or any startup-related questions.`,
         sender: 'ai',
         timestamp: new Date(),
       };
@@ -536,13 +322,13 @@ export const useMessages = (currentSessionId: string | null) => {
     } finally {
       setIsTyping(false);
     }
-  }, [currentSessionId, addMessage, isConfigured, canvasState, sendMessageToN8n, handleStratixRequest]);
+  }, [currentSessionId, addMessage, isConfigured, canvasState, handleStratixRequest]);
 
   const handleClearConversation = useCallback(() => {
     console.log('useMessages: Clearing conversation');
     setMessages(initialMessages);
-    stopStreaming();
-  }, [stopStreaming]);
+    stopStratixStreaming();
+  }, [stopStratixStreaming]);
 
   const handleDownloadChat = useCallback(() => {
     const chatContent = messages
@@ -687,11 +473,12 @@ export const useMessages = (currentSessionId: string | null) => {
     handleCanvasDownload,
     handleCanvasPrint,
     handleCanvasPdfDownload,
-    streamingState,
+    // Only return Stratix streaming state now
+    streamingState: { isStreaming: false, currentPhase: '', progress: 0, error: null, searchQueries: [], discoveredSources: [] },
     stratixStreamingState,
     // Provide streaming state for components that need it
-    isStreamingForMessage: () => streamingState.isStreaming || stratixStreamingState.isStreaming,
-    getStreamingState: () => streamingState,
+    isStreamingForMessage: () => stratixStreamingState.isStreaming,
+    getStreamingState: () => ({ isStreaming: false, currentPhase: '', progress: 0, error: null, searchQueries: [], discoveredSources: [] }),
     getStratixStreamingState: () => stratixStreamingState
   };
 };

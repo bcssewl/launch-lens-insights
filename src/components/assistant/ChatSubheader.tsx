@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Maximize2, Minimize2 } from 'lucide-react';
 import QuickActionsDropdown from '@/components/assistant/QuickActionsDropdown';
 import ChatSessionsDropdown from '@/components/assistant/ChatSessionsDropdown';
-import ModelSelectionDropdown, { AIModel } from '@/components/assistant/ModelSelectionDropdown';
 
 interface ChatSubheaderProps {
   isConfigured: boolean;
@@ -14,8 +13,6 @@ interface ChatSubheaderProps {
   onDownloadChat: () => void;
   onClearConversation: () => void;
   onSessionSelect: (sessionId: string) => void;
-  selectedModel: string;
-  onModelSelect: (modelId: string) => void;
 }
 
 const ChatSubheader: React.FC<ChatSubheaderProps> = ({
@@ -25,24 +22,13 @@ const ChatSubheader: React.FC<ChatSubheaderProps> = ({
   onToggleFullscreen,
   onDownloadChat,
   onClearConversation,
-  onSessionSelect,
-  selectedModel,
-  onModelSelect
+  onSessionSelect
 }) => {
-  const handleModelSelect = (model: AIModel) => {
-    onModelSelect(model.id);
-  };
-
   return (
     <div className="flex items-center space-x-4">
-      {/* AI Assistant title with model dropdown */}
+      {/* AI Assistant title - simplified without model selection */}
       <div className="flex items-center space-x-2">
         <h1 className="text-lg font-semibold text-foreground">AI Assistant</h1>
-        <span className="text-muted-foreground">•</span>
-        <ModelSelectionDropdown 
-          selectedModel={selectedModel}
-          onModelSelect={handleModelSelect}
-        />
       </div>
       
       <div className="flex items-center space-x-2">

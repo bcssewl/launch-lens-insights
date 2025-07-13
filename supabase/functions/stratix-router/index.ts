@@ -12,16 +12,6 @@ interface StratixRequest {
   deepDive?: boolean;
 }
 
-interface APIResponse {
-  data: any;
-  source_meta: {
-    source: string;
-    timestamp: string;
-    confidence: number;
-  };
-  cost_ms: number;
-}
-
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -34,7 +24,7 @@ Deno.serve(async (req) => {
 
     const { prompt, sessionId, deepDive = false }: StratixRequest = await req.json();
     
-    console.log('Stratix Router: Processing request', { prompt, sessionId, deepDive });
+    console.log('New Stratix Router: Processing request', { prompt, sessionId, deepDive });
 
     // Create a new Stratix project
     const { data: project, error: projectError } = await supabase
@@ -56,8 +46,8 @@ Deno.serve(async (req) => {
 
     console.log('Created Stratix project:', project.id);
 
-    // Start the Railway agent research process in the background
-    EdgeRuntime.waitUntil(processRailwayResearch(supabase, project.id!, prompt, sessionId));
+    // Start the new Railway agent research process in the background
+    EdgeRuntime.waitUntil(processNewRailwayResearch(supabase, project.id!, prompt, sessionId));
 
     // Return immediate response with project ID for streaming
     return new Response(JSON.stringify({
@@ -69,7 +59,7 @@ Deno.serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('Stratix Router Error:', error);
+    console.error('New Stratix Router Error:', error);
     return new Response(JSON.stringify({ 
       error: error.message || 'Internal server error' 
     }), {
@@ -89,7 +79,7 @@ async function getUserIdFromSession(supabase: any, sessionId: string): Promise<s
   return session?.user_id || '00000000-0000-0000-0000-000000000000';
 }
 
-async function processRailwayResearch(
+async function processNewRailwayResearch(
   supabase: any, 
   projectId: string, 
   prompt: string, 
@@ -110,9 +100,9 @@ async function processRailwayResearch(
   };
   
   try {
-    console.log('Starting Railway research process for:', projectId);
+    console.log('Starting new Railway research process for:', projectId);
     
-    // Validate request size to prevent overwhelming Railway
+    // Validate request size
     if (prompt.length > 10000) {
       throw new Error('Request too large. Please try with a shorter prompt.');
     }
@@ -123,25 +113,26 @@ async function processRailwayResearch(
       .update({ status: 'running' })
       .eq('id', projectId);
 
-    const railwayUrl = Deno.env.get('STRATIX_RAILWAY_URL');
-    if (!railwayUrl) {
-      throw new Error('STRATIX_RAILWAY_URL not configured');
-    }
-
-    // For streaming research, use WebSocket
-    const wsUrl = railwayUrl.replace('https://', 'wss://').replace('http://', 'ws://') + '/stream';
-    console.log('Connecting to Railway WebSocket:', wsUrl);
+    // Use new Railway URL with user ID pattern
+    const railwayUrl = 'https://web-production-06ef2.up.railway.app';
+    
+    // Get user ID from session
+    const userId = await getUserIdFromSession(supabase, sessionId);
+    
+    // For streaming research, use WebSocket with user ID
+    const wsUrl = `wss://web-production-06ef2.up.railway.app/ws/${userId}`;
+    console.log('Connecting to new Railway WebSocket:', wsUrl);
     
     // Set connection timeout (30 seconds)
     connectionTimeout = setTimeout(() => {
-      console.error('Railway WebSocket connection timeout');
+      console.error('New Railway WebSocket connection timeout');
       cleanup();
       throw new Error('Connection timeout - Railway agent did not respond');
     }, 30000);
     
     // Set overall request timeout (10 minutes for large requests)
     requestTimeout = setTimeout(async () => {
-      console.error('Railway research request timeout');
+      console.error('New Railway research request timeout');
       cleanup();
       await supabase
         .from('stratix_projects')
@@ -152,7 +143,7 @@ async function processRailwayResearch(
     ws = new WebSocket(wsUrl);
     
     ws.onopen = () => {
-      console.log('Connected to Railway agent');
+      console.log('Connected to new Railway agent');
       
       // Clear connection timeout since we're connected
       if (connectionTimeout) {
@@ -167,20 +158,12 @@ async function processRailwayResearch(
         }
       }, 30000); // Ping every 30 seconds
       
-      // Send the actual research request with limits
+      // Send the actual research request with new format
       ws.send(JSON.stringify({
-        query: prompt,
-        context: {
-          platform: "optivise",
-          session_id: sessionId,
-          request_id: projectId,
-          max_response_size: 50000, // Set reasonable limits
-          timeout_minutes: 8 // Give Railway 8 minutes to complete
-        }
+        message: prompt,
+        provider: 'openai', // Default to OpenAI, let agent handle selection
+        session_id: null // Start new session for each request
       }));
-      
-      // Also poll the Railway status endpoint for additional progress info
-      pollRailwayStatus(projectId, sessionId, supabase);
     };
 
     ws.onmessage = async (event) => {
@@ -192,7 +175,7 @@ async function processRailwayResearch(
           return;
         }
         
-        console.log('Railway message:', message);
+        console.log('New Railway message:', message);
         
         // Store event for streaming - always store raw event first
         await supabase
@@ -203,96 +186,66 @@ async function processRailwayResearch(
             event_data: message
           });
 
-        // Handle different message types and create additional events for better UX
+        // Handle different message types from new agent
         switch (message.type) {
-          case 'agent_start':
-            // Create a clear agent start event
+          case 'session_id':
+            // Store session ID for future reference
             await supabase
               .from('stratix_events')
               .insert({
                 project_id: projectId,
-                event_type: 'agent_start',
+                event_type: 'session_established',
                 event_data: {
-                  type: 'agent_start',
-                  agent: message.agent || 'Research Agent',
-                  message: message.message || `${message.agent || 'Research Agent'} is starting analysis...`
+                  type: 'session_established',
+                  session_id: message.session_id,
+                  message: 'Research session established'
                 }
               });
             break;
             
-          case 'source_discovered':
-            // Store citation
-            await supabase
-              .from('stratix_citations')
-              .insert({
-                project_id: projectId,
-                source_name: message.source_name,
-                source_url: message.source_url,
-                agent: message.agent,
-                clickable: message.clickable !== false
-              });
-            break;
-            
-          case 'progress_update':
-          case 'agent_progress':
-            // Create progress update event
+          case 'stream_start':
+            // Research has started
             await supabase
               .from('stratix_events')
               .insert({
                 project_id: projectId,
-                event_type: 'agent_progress',
+                event_type: 'research_started',
                 event_data: {
-                  type: 'agent_progress',
-                  agent: message.agent || 'Research Agent',
-                  message: message.message || message.content || 'Analyzing data...'
+                  type: 'research_started',
+                  message: 'Research analysis has begun'
                 }
               });
             break;
             
-          case 'intermediate_result':
-            // Create intermediate result event
+          case 'stream_chunk':
+            // Streaming content chunk
             await supabase
               .from('stratix_events')
               .insert({
                 project_id: projectId,
-                event_type: 'intermediate_result',
+                event_type: 'content_chunk',
                 event_data: {
-                  type: 'intermediate_result',
-                  content: message.content || message.message,
-                  agent: message.agent
+                  type: 'content_chunk',
+                  content: message.content,
+                  message: 'Streaming research content...'
                 }
               });
             break;
             
-          case 'research_complete':
-            // Store final result
+          case 'stream_end':
+            // Research completed
             await supabase
               .from('stratix_results')
               .insert({
                 project_id: projectId,
-                content: message.final_answer || message.content,
-                agents_consulted: message.agents_consulted || [],
-                primary_agent: message.primary_agent,
-                confidence: message.confidence,
-                methodology: message.methodology,
-                processing_time: message.processing_time,
-                analysis_depth: message.analysis_depth
+                content: message.final_answer || 'Research completed',
+                agents_consulted: ['new_railway_agent'],
+                primary_agent: 'new_railway_agent',
+                confidence: 0.9,
+                methodology: 'Advanced AI Research',
+                processing_time: Date.now(),
+                analysis_depth: 'comprehensive'
               });
-            
-            // Store clickable sources
-            if (message.clickable_sources) {
-              for (const source of message.clickable_sources) {
-                await supabase
-                  .from('stratix_citations')
-                  .insert({
-                    project_id: projectId,
-                    source_name: source.name,
-                    source_url: source.url,
-                    source_type: source.type || 'Research',
-                    clickable: true
-                  });
-              }
-            }
             
             // Update project status to done
             await supabase
@@ -301,6 +254,27 @@ async function processRailwayResearch(
                 status: 'done',
                 completed_at: new Date().toISOString()
               })
+              .eq('id', projectId);
+            
+            ws.close();
+            break;
+            
+          case 'error':
+            // Handle error from new agent
+            await supabase
+              .from('stratix_events')
+              .insert({
+                project_id: projectId,
+                event_type: 'error',
+                event_data: {
+                  type: 'error',
+                  message: message.message || 'Unknown error occurred'
+                }
+              });
+            
+            await supabase
+              .from('stratix_projects')
+              .update({ status: 'error' })
               .eq('id', projectId);
             
             ws.close();
@@ -316,20 +290,19 @@ async function processRailwayResearch(
                   event_type: 'general_update',
                   event_data: {
                     type: 'general_update',
-                    message: message.message || message.content,
-                    agent: message.agent
+                    message: message.message || message.content
                   }
                 });
             }
             break;
         }
       } catch (error) {
-        console.error('Error processing Railway message:', error);
+        console.error('Error processing new Railway message:', error);
       }
     };
 
     ws.onerror = async (error) => {
-      console.error('Railway WebSocket error:', error);
+      console.error('New Railway WebSocket error:', error);
       cleanup();
       
       // Update status to error
@@ -340,7 +313,7 @@ async function processRailwayResearch(
     };
 
     ws.onclose = async (event) => {
-      console.log('Railway WebSocket closed', { code: event.code, reason: event.reason });
+      console.log('New Railway WebSocket closed', { code: event.code, reason: event.reason });
       cleanup();
       
       // If closed without completion, mark as error
@@ -359,10 +332,10 @@ async function processRailwayResearch(
       }
     };
 
-    console.log('Railway research initiated for:', projectId);
+    console.log('New Railway research initiated for:', projectId);
 
   } catch (error) {
-    console.error('Railway research error:', error);
+    console.error('New Railway research error:', error);
     cleanup();
     
     // Update status to error
@@ -372,58 +345,3 @@ async function processRailwayResearch(
       .eq('id', projectId);
   }
 }
-
-async function pollRailwayStatus(projectId: string, sessionId: string, supabase: any) {
-  const railwayUrl = Deno.env.get('STRATIX_RAILWAY_URL');
-  if (!railwayUrl) return;
-  
-  const statusUrl = `${railwayUrl}/stream/status/${sessionId}`;
-  let isCompleted = false;
-  
-  // Poll every 2 seconds for status updates
-  const statusInterval = setInterval(async () => {
-    try {
-      const response = await fetch(statusUrl, {
-        headers: { 'accept': 'application/json' }
-      });
-      
-      if (response.ok) {
-        const statusData = await response.json();
-        
-        // Store status update as an event
-        await supabase
-          .from('stratix_events')
-          .insert({
-            project_id: projectId,
-            event_type: 'status_update',
-            event_data: {
-              type: 'status_update',
-              status: statusData.status,
-              current_phase: statusData.current_phase,
-              progress_percentage: statusData.progress_percentage,
-              estimated_completion: statusData.estimated_completion,
-              timestamp: statusData.timestamp,
-              message: `${statusData.current_phase}: ${statusData.progress_percentage}% complete`
-            }
-          });
-          
-        // Stop polling if completed
-        if (statusData.status !== 'active') {
-          isCompleted = true;
-          clearInterval(statusInterval);
-        }
-      }
-    } catch (error) {
-      console.error('Error polling Railway status:', error);
-    }
-  }, 2000);
-  
-  // Clean up after 10 minutes
-  setTimeout(() => {
-    if (!isCompleted) {
-      clearInterval(statusInterval);
-    }
-  }, 600000);
-}
-
-// Old functions removed - now using Railway agent directly

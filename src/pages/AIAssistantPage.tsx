@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { AppSidebar } from '@/components/AppSidebar';
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
@@ -14,12 +15,10 @@ import { useMessages } from '@/hooks/useMessages';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTheme } from 'next-themes';
 import { Loader2 } from 'lucide-react';
-import type { AIModel } from '@/components/assistant/ModelSelectionDropdown';
 
 const AIAssistantPage: React.FC = () => {
   const isMobile = useIsMobile();
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [selectedModel, setSelectedModel] = useState<string>('best');
   const { theme } = useTheme();
 
   const {
@@ -89,10 +88,9 @@ const AIAssistantPage: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isFullscreen]);
 
-  const handleSendMessageWithSession = async (text: string, attachments?: any[], modelOverride?: string) => {
-    // Use the modelOverride if provided, otherwise use the current selectedModel
-    const modelToUse = modelOverride || selectedModel;
-    console.log('AIAssistantPage: Sending message with session:', currentSessionId, 'model:', modelToUse);
+  // Simplified message handling - no model selection needed
+  const handleSendMessageWithSession = async (text: string, attachments?: any[]) => {
+    console.log('AIAssistantPage: Sending message with session:', currentSessionId);
 
     // Create session if none exists
     if (!currentSessionId) {
@@ -108,9 +106,9 @@ const AIAssistantPage: React.FC = () => {
       await new Promise(resolve => setTimeout(resolve, 200));
       
       // Now send the message with the new session
-      handleSendMessage(text, undefined, modelToUse);
+      handleSendMessage(text);
     } else {
-      handleSendMessage(text, undefined, modelToUse);
+      handleSendMessage(text);
     }
   };
 
@@ -140,12 +138,6 @@ const AIAssistantPage: React.FC = () => {
     console.log('AIAssistantPage: Canvas content updated');
     setEditedCanvasContent(newContent);
     // TODO: You might want to save this to the backend or update the original message
-  };
-
-  // Fixed model selection handler
-  const handleModelSelect = (modelId: string) => {
-    console.log('AIAssistantPage: Model selected:', modelId);
-    setSelectedModel(modelId);
   };
 
   // Show loading state while history is being loaded
@@ -182,7 +174,6 @@ const AIAssistantPage: React.FC = () => {
         onClearConversation={handleClearConversationWithHistory} 
         onSessionSelect={handleSessionSelect} 
         onToggleFullscreen={toggleFullscreen}
-        selectedModel={selectedModel}
         canvasState={canvasState} 
         onOpenCanvas={handleOpenCanvas} 
         onCloseCanvas={handleCloseCanvas} 
@@ -218,8 +209,6 @@ const AIAssistantPage: React.FC = () => {
                   onDownloadChat={handleDownloadChat} 
                   onClearConversation={handleClearConversationWithHistory} 
                   onSessionSelect={handleSessionSelect}
-                  selectedModel={selectedModel}
-                  onModelSelect={handleModelSelect}
                 />
               </div>
             </div>
@@ -232,7 +221,6 @@ const AIAssistantPage: React.FC = () => {
               isTyping={isTyping} 
               viewportRef={viewportRef} 
               onSendMessage={handleSendMessageWithSession}
-              selectedModel={selectedModel}
               onOpenCanvas={handleOpenCanvas} 
               onCloseCanvas={handleCloseCanvas} 
               onCanvasDownload={handleCanvasDownload} 
@@ -256,7 +244,6 @@ const AIAssistantPage: React.FC = () => {
         isTyping={isTyping} 
         viewportRef={viewportRef} 
         onSendMessage={handleSendMessageWithSession}
-        selectedModel={selectedModel}
         canvasState={canvasState} 
         onOpenCanvas={handleOpenCanvas} 
         onCloseCanvas={handleCloseCanvas} 
