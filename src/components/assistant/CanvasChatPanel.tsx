@@ -56,6 +56,7 @@ const CanvasChatPanel: React.FC<CanvasChatPanelProps> = ({
             onSendMessage={onSendMessage} 
             isTyping={isTyping}
             isCompact={true}
+            selectedModel={selectedModel}
           />
         </div>
       </div>

@@ -1,6 +1,4 @@
-
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import type { 
   StratixStreamingEvent, 
   StratixSource, 
@@ -8,10 +6,10 @@ import type {
   StratixStreamingState 
 } from '@/types/stratixStreaming';
 
-// Configuration constants
+// Configuration constants with throttling for smooth UX
 const STREAMING_TIMEOUT_MS = 300000; // 5 minutes for complex research
 const HEARTBEAT_INTERVAL = 30000; // 30 seconds keep-alive
-const EVENT_THROTTLE_MS = 100; // Throttle UI updates for performance
+const EVENT_THROTTLE_MS = 100; // Throttle UI updates to 60fps for performance
 
 export const useStratixStreaming = () => {
   const [streamingState, setStreamingState] = useState<StratixStreamingState>({
@@ -30,13 +28,6 @@ export const useStratixStreaming = () => {
   const heartbeatRef = useRef<number | null>(null);
   const eventQueueRef = useRef<StratixStreamingEvent[]>([]);
   const throttleRef = useRef<number | null>(null);
-  const sessionIdRef = useRef<string | null>(null);
-
-  // Get current user ID for WebSocket connection
-  const getCurrentUserId = useCallback(async (): Promise<string> => {
-    const { data: { user } } = await supabase.auth.getUser();
-    return user?.id || 'anonymous';
-  }, []);
 
   // Process event queue with throttling for smooth performance
   const processEventQueue = useCallback(() => {
@@ -49,56 +40,159 @@ export const useStratixStreaming = () => {
       let newState = { ...prev };
 
       events.forEach(event => {
-        const eventType = event.type?.toLowerCase() || 'unknown';
+        switch (event.type) {
+          case 'connection_confirmed':
+            console.log('🔗 Stratix connection confirmed:', event.connection_id);
+            newState.isStreaming = true;
+            newState.currentPhase = 'Connected to Stratix Research Engine';
+            newState.overallProgress = 5;
+            newState.connectionId = event.connection_id;
+            newState.lastHeartbeat = Date.now();
+            break;
 
-        try {
-          switch (eventType) {
-            case 'session_id':
-              console.log('🔗 Stratix session established:', event.session_id);
-              sessionIdRef.current = event.session_id || null;
-              newState.isStreaming = true;
-              newState.currentPhase = 'Connected to Stratix Research Engine';
-              newState.overallProgress = 5;
-              newState.lastHeartbeat = Date.now();
-              break;
+          case 'routing_analysis':
+            console.log('🎯 Agent routing analysis:', event.data?.agents);
+            newState.currentPhase = `Routing to ${event.data?.agents?.length || 0} specialists`;
+            newState.overallProgress = 15;
+            newState.collaborationMode = event.data?.collaboration_pattern;
+            
+            // Initialize agents based on routing
+            if (event.data?.agents) {
+              newState.activeAgents = event.data.agents.map((agentType, index) => ({
+                id: agentType,
+                name: agentType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+                role: agentType as any,
+                status: 'idle' as const,
+                progress: 0
+              }));
+            }
+            break;
 
-            case 'stream_start':
-              console.log('🚀 Stratix streaming started');
-              newState.currentPhase = 'Starting research analysis...';
-              newState.overallProgress = Math.max(15, newState.overallProgress);
-              break;
+          case 'research_progress':
+            console.log('📊 Research progress:', event.data?.progress);
+            if (event.data?.status) {
+              newState.currentPhase = event.data.status;
+            }
+            if (event.data?.progress) {
+              // Map backend progress to our range (15-70% for research phase)
+              newState.overallProgress = Math.max(15, Math.min(70, 15 + (event.data.progress * 0.55)));
+            }
+            
+            // Update specific agent if mentioned
+            if (event.agent && newState.activeAgents.length > 0) {
+              newState.activeAgents = newState.activeAgents.map(agent => 
+                agent.id === event.agent 
+                  ? { ...agent, status: 'analyzing' as const, progress: event.data?.progress }
+                  : agent
+              );
+            }
+            break;
 
-            case 'stream_chunk':
-              console.log('📝 Stratix chunk received, length:', event.content?.length || 0);
-              if (event.content && typeof event.content === 'string') {
-                newState.partialText += event.content;
+          case 'source_discovered':
+            console.log('📚 Source discovered:', event.data?.source_name);
+            if (event.data?.source_name && event.data?.source_url) {
+              const newSource: StratixSource = {
+                name: event.data.source_name,
+                url: event.data.source_url,
+                type: (event.data.source_type as any) || 'web',
+                confidence: 0.85, // Default confidence
+                clickable: event.data.clickable !== false,
+                discoveredBy: event.agent_name || event.agent,
+                timestamp: event.timestamp
+              };
+              
+              // Avoid duplicates
+              const exists = newState.discoveredSources.some(s => s.url === newSource.url);
+              if (!exists) {
+                newState.discoveredSources = [...newState.discoveredSources, newSource];
               }
-              newState.overallProgress = Math.min(90, newState.overallProgress + 1);
-              break;
+            }
+            newState.overallProgress = Math.min(65, newState.overallProgress + 2);
+            break;
 
-            case 'stream_end':
-              console.log('✅ Stratix streaming completed');
-              newState.isStreaming = false;
-              newState.currentPhase = 'Research completed';
-              newState.overallProgress = 100;
-              break;
+          case 'sources_complete':
+            console.log('✅ Source discovery complete:', event.data?.sources_found);
+            newState.currentPhase = `Found ${event.data?.sources_found || newState.discoveredSources.length} sources`;
+            newState.overallProgress = 70;
+            break;
 
-            case 'error':
-              console.error('❌ Stratix streaming error:', event.message);
-              newState.isStreaming = false;
-              newState.error = event.message || 'An error occurred during research';
-              newState.currentPhase = 'Error occurred';
-              break;
+          case 'expert_analysis_started':
+            console.log('🔬 Expert analysis started:', event.agent_name);
+            newState.currentPhase = `${event.agent_name} analyzing data...`;
+            newState.overallProgress = Math.max(70, newState.overallProgress);
+            
+            // Update agent status
+            if (event.agent && newState.activeAgents.length > 0) {
+              newState.activeAgents = newState.activeAgents.map(agent => 
+                agent.id === event.agent 
+                  ? { ...agent, status: 'analyzing' as const }
+                  : agent
+              );
+            }
+            break;
 
-            default:
-              console.log('📦 Unknown Stratix event type:', eventType);
-              if (event.message) {
-                newState.currentPhase = event.message;
-              }
-              break;
-          }
-        } catch (error) {
-          console.error('Error processing Stratix event:', eventType, error);
+          case 'expert_analysis_complete':
+            console.log('✅ Expert analysis complete:', event.agent_name);
+            newState.overallProgress = Math.min(85, newState.overallProgress + 5);
+            
+            // Mark agent as complete
+            if (event.agent && newState.activeAgents.length > 0) {
+              newState.activeAgents = newState.activeAgents.map(agent => 
+                agent.id === event.agent 
+                  ? { ...agent, status: 'complete' as const, progress: 100 }
+                  : agent
+              );
+            }
+            break;
+
+          case 'synthesis_progress':
+            console.log('🧠 Synthesis in progress:', event.data?.model);
+            newState.currentPhase = 'Synthesizing insights from all specialists...';
+            newState.overallProgress = Math.max(85, Math.min(95, newState.overallProgress + 2));
+            newState.synthesisModel = event.data?.model;
+            break;
+
+          case 'partial_result':
+            console.log('📝 Partial result received, length:', event.data?.text?.length);
+            // ChatGPT-like streaming: append text chunks
+            if (event.data?.text) {
+              newState.partialText += event.data.text;
+            }
+            break;
+
+          case 'complete':
+            console.log('✅ Stratix research complete');
+            newState.isStreaming = false;
+            newState.currentPhase = 'Research completed';
+            newState.overallProgress = 100;
+            
+            // Mark all agents as complete
+            newState.activeAgents = newState.activeAgents.map(agent => ({
+              ...agent,
+              status: 'complete' as const,
+              progress: 100
+            }));
+            
+            // Final answer handling
+            if (event.data?.final_answer) {
+              newState.partialText = event.data.final_answer;
+            }
+            break;
+
+          case 'error':
+            console.error('❌ Stratix streaming error:', event.message);
+            newState.isStreaming = false;
+            newState.error = event.message || 'An error occurred during research';
+            newState.currentPhase = 'Error occurred';
+            break;
+
+          case 'ping':
+            // Update heartbeat for connection health
+            newState.lastHeartbeat = Date.now();
+            break;
+
+          default:
+            console.warn('⚠️ Unknown Stratix event type:', event.type);
         }
       });
 
@@ -130,7 +224,6 @@ export const useStratixStreaming = () => {
       lastHeartbeat: Date.now()
     });
     eventQueueRef.current = [];
-    sessionIdRef.current = null;
   }, []);
 
   const startStreaming = useCallback(async (query: string, sessionId: string): Promise<string> => {
@@ -138,7 +231,7 @@ export const useStratixStreaming = () => {
     
     resetState();
 
-    return new Promise(async (resolve, reject) => {
+    return new Promise((resolve, reject) => {
       // Clear any existing connections
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
@@ -160,14 +253,13 @@ export const useStratixStreaming = () => {
       }, STREAMING_TIMEOUT_MS);
 
       try {
-        const userId = await getCurrentUserId();
-        const wsUrl = `wss://web-production-06ef2.up.railway.app/ws/${userId}`;
-        console.log('🔌 Connecting to new Stratix WebSocket:', wsUrl);
+        const wsUrl = 'wss://ai-agent-research-optivise-production.up.railway.app/stream';
+        console.log('🔌 Connecting to Stratix WebSocket:', wsUrl);
         
         wsRef.current = new WebSocket(wsUrl);
 
         wsRef.current.onopen = () => {
-          console.log('✅ New Stratix WebSocket connected');
+          console.log('✅ Stratix WebSocket connected');
           
           // Set up heartbeat to maintain connection
           heartbeatRef.current = window.setInterval(() => {
@@ -176,11 +268,14 @@ export const useStratixStreaming = () => {
             }
           }, HEARTBEAT_INTERVAL);
           
-          // Send query with new format
+          // Send query with Stratix format
           const payload = {
-            message: query,
-            provider: 'openai', // Let the agent handle provider selection
-            session_id: sessionIdRef.current // Use existing session if available
+            query: query,
+            context: { 
+              sessionId: sessionId,
+              platform: 'Stratix',
+              timestamp: new Date().toISOString()
+            }
           };
           
           console.log('📤 Sending Stratix query:', payload);
@@ -194,13 +289,13 @@ export const useStratixStreaming = () => {
             console.log('📋 Parsed Stratix event:', {
               type: data.type,
               message: data.message?.substring(0, 100),
-              content: data.content?.substring(0, 100)
+              agent: data.agent_name || data.agent
             });
             
             queueEvent(data);
 
-            // Resolve when we get the stream_end event
-            if (data.type === 'stream_end') {
+            // Resolve when we get the complete event
+            if (data.type === 'complete') {
               if (timeoutRef.current) {
                 clearTimeout(timeoutRef.current);
                 timeoutRef.current = null;
@@ -211,8 +306,8 @@ export const useStratixStreaming = () => {
                 heartbeatRef.current = null;
               }
               
-              const finalAnswer = streamingState.partialText || 'Research completed successfully.';
-              console.log('✅ New Stratix streaming completed with response length:', finalAnswer.length);
+              const finalAnswer = data.data?.final_answer || streamingState.partialText || 'Research completed successfully.';
+              console.log('✅ Stratix streaming completed with response length:', finalAnswer.length);
               resolve(finalAnswer);
             }
           } catch (error) {
@@ -222,7 +317,7 @@ export const useStratixStreaming = () => {
         };
 
         wsRef.current.onerror = (error) => {
-          console.error('❌ New Stratix WebSocket error:', error);
+          console.error('❌ Stratix WebSocket error:', error);
           if (timeoutRef.current) {
             clearTimeout(timeoutRef.current);
             timeoutRef.current = null;
@@ -235,7 +330,7 @@ export const useStratixStreaming = () => {
         };
 
         wsRef.current.onclose = (event) => {
-          console.log('🔌 New Stratix WebSocket closed:', event.code, event.reason);
+          console.log('🔌 Stratix WebSocket closed:', event.code, event.reason);
           if (timeoutRef.current) {
             clearTimeout(timeoutRef.current);
             timeoutRef.current = null;
@@ -246,12 +341,13 @@ export const useStratixStreaming = () => {
           }
           
           if (event.code !== 1000 && event.code !== 1005) {
+            // Unexpected close
             reject(new Error(`WebSocket closed unexpectedly: ${event.code} ${event.reason}`));
           }
         };
 
       } catch (error) {
-        console.error('❌ Failed to establish new Stratix WebSocket connection:', error);
+        console.error('❌ Failed to establish Stratix WebSocket connection:', error);
         if (timeoutRef.current) {
           clearTimeout(timeoutRef.current);
           timeoutRef.current = null;
@@ -259,7 +355,7 @@ export const useStratixStreaming = () => {
         reject(error);
       }
     });
-  }, [getCurrentUserId, queueEvent, resetState, streamingState.partialText]);
+  }, [queueEvent, resetState, streamingState.partialText]);
 
   const stopStreaming = useCallback(() => {
     console.log('🛑 Stopping Stratix streaming');

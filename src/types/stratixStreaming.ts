@@ -2,29 +2,28 @@
 // Matches backend specification for professional streaming experience
 
 export interface StratixStreamingEvent {
-  type: 'session_id' | 'stream_start' | 'stream_chunk' | 'stream_end' | 'error' | string;
-  timestamp?: string;
-  message?: string;
-  connection_id?: string;
+  type: 'connection_confirmed' | 'routing_analysis' | 'research_progress' | 
+        'source_discovered' | 'sources_complete' | 'expert_analysis_started' |
+        'expert_analysis_complete' | 'synthesis_progress' | 'partial_result' | 
+        'complete' | 'error' | 'ping';
+  timestamp: string;
+  message: string;
   agent?: string;
   agent_name?: string;
-  // New Railway agent fields
-  session_id?: string;
-  content?: string;
   data?: {
-    // Agent routing (optional fields for defensive handling)
+    // Agent routing
     agents?: string[];
     collaboration_pattern?: 'parallel' | 'sequential' | 'collaborative';
     complexity?: 'simple' | 'medium' | 'complex';
     reasoning?: string;
     
-    // Research progress (flexible structure)
+    // Research progress
     content_preview?: string;
     status?: string;
     progress?: number;
     current_phase?: string;
     
-    // Source discovery (defensive handling)
+    // Source discovery
     source_name?: string;
     source_url?: string;
     source_type?: string;
@@ -32,8 +31,8 @@ export interface StratixStreamingEvent {
     sources_found?: number;
     sources?: StratixSource[];
     
-    // Expert analysis (flexible)
-    confidence?: string | number; // Can be 'High'/'Medium'/'Low' or numeric
+    // Expert analysis
+    confidence?: 'Low' | 'Medium' | 'High';
     sources_used?: number;
     
     // Synthesis and partial results
@@ -42,14 +41,11 @@ export interface StratixStreamingEvent {
     total_sections?: number;
     text?: string; // For partial_result streaming
     
-    // Final completion (flexible structure)
+    // Final completion
     final_answer?: string;
     methodology?: string;
-    analysis_depth?: 'basic' | 'comprehensive' | 'expert' | string;
+    analysis_depth?: 'basic' | 'comprehensive' | 'expert';
     session_id?: string;
-    
-    // Handle any additional backend fields
-    [key: string]: any;
   };
 }
 

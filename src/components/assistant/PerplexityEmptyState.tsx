@@ -9,13 +9,15 @@ import AttachmentOptionsDropdown from './AttachmentOptionsDropdown';
 import ProjectSelectionModal from './ProjectSelectionModal';
 import LocalFileUploader from './LocalFileUploader';
 import AttachmentsList from './AttachmentsList';
-
+import ModelSelectionDropdown, { AIModel } from './ModelSelectionDropdown';
 
 interface PerplexityEmptyStateProps {
-  onSendMessage: (message: string, attachments?: any[]) => void;
+  onSendMessage: (message: string, attachments?: any[], selectedModel?: string) => void;
+  selectedModel: string;
 }
 const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
-  onSendMessage
+  onSendMessage,
+  selectedModel: parentSelectedModel
 }) => {
   const {
     isRecording,
@@ -35,8 +37,10 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
   } = useFileAttachments();
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [showLocalUploader, setShowLocalUploader] = useState(false);
+  // Use the model from parent, but allow local override for this component
+  const [localSelectedModel, setLocalSelectedModel] = useState<string>(parentSelectedModel);
   const handlePromptClick = (prompt: string) => {
-    onSendMessage(prompt, attachedFiles);
+    onSendMessage(prompt, attachedFiles, localSelectedModel);
   };
   const handleVoiceRecording = () => {
     if (isRecording) {
@@ -50,6 +54,10 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
       handlePromptClick(e.currentTarget.value);
       e.currentTarget.value = '';
     }
+  };
+  const handleModelSelect = (model: AIModel) => {
+    setLocalSelectedModel(model.id);
+    console.log('Selected AI model:', model.name);
   };
   return <TooltipProvider>
       <div className="flex flex-col items-center justify-center min-h-[70vh] px-6 py-12 text-center max-w-4xl mx-auto bg-transparent">
@@ -85,7 +93,7 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
               <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground">
                 <Target className="h-5 w-5" />
               </Button>
-              
+              <ModelSelectionDropdown selectedModel={localSelectedModel} onModelSelect={handleModelSelect} />
             </div>
 
             {/* Right Side Button Group */}
