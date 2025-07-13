@@ -2,12 +2,15 @@
 // Matches backend specification for professional streaming experience
 
 export interface StratixStreamingEvent {
-  type: string; // Accept any event type from backend (flexible)
+  type: 'session_id' | 'stream_start' | 'stream_chunk' | 'stream_end' | 'error' | string;
   timestamp?: string;
   message?: string;
   connection_id?: string;
   agent?: string;
   agent_name?: string;
+  // New Railway agent fields
+  session_id?: string;
+  content?: string;
   data?: {
     // Agent routing (optional fields for defensive handling)
     agents?: string[];
