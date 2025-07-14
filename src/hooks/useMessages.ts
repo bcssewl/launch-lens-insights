@@ -238,19 +238,28 @@ export const useMessages = (currentSessionId: string | null) => {
     try {
       console.log('🔬 Making Algeon request with message:', message);
       
+      // Get the current user from Supabase
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+      
       const response = await fetch(API_ENDPOINTS.algeon, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          user_id: user.id, // Use actual Supabase user ID
           message: message,
-          session_id: sessionId || null,
-          provider: null // Let agent decide the best provider
+          session_id: sessionId || null
         })
       });
 
       if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Algeon API error:', errorData);
+        
         // Handle specific error codes
         if (response.status === 500) {
           throw new Error("The research agent is experiencing issues. Please try again.");
@@ -259,7 +268,7 @@ export const useMessages = (currentSessionId: string | null) => {
         } else if (response.status === 404) {
           throw new Error("Research agent endpoint not found.");
         }
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        throw new Error(`HTTP ${response.status}: ${JSON.stringify(errorData)}`);
       }
 
       const data = await response.json();
