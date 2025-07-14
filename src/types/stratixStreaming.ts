@@ -10,6 +10,7 @@ export interface StratixStreamingEvent {
   message: string;
   agent?: string;
   agent_name?: string;
+  connection_id?: string;
   data?: {
     // Agent routing
     agents?: string[];

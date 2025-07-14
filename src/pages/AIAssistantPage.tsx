@@ -189,7 +189,6 @@ const AIAssistantPage: React.FC = () => {
         onCanvasDownload={handleCanvasDownload} 
         onCanvasPrint={handleCanvasPrint}
         streamingState={streamingState}
-        stratixStreamingState={stratixStreamingState}
       />
     );
   }

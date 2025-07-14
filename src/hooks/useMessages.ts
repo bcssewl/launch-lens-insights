@@ -10,6 +10,14 @@ import { supabase } from '@/integrations/supabase/client';
 // Configuration constants
 const WEBSOCKET_TIMEOUT_MS = 300000; // 5 minutes for complex processing
 
+// API Endpoints
+const API_ENDPOINTS = {
+  openai: 'https://api.openai.com/v1/chat/completions',
+  anthropic: 'https://api.anthropic.com/v1/messages',
+  algeon: 'https://web-production-06ef2.up.railway.app/chat',
+  // ... other endpoints
+};
+
 interface StreamingMessage extends Message {
   isStreaming?: boolean;
   streamingData?: {
@@ -223,6 +231,60 @@ export const useMessages = (currentSessionId: string | null) => {
     const hasQuestionWords = /\b(what|how|why|when|where|which|should|could|would)\b/i.test(prompt);
     
     return hasResearchKeywords || (isLongQuery && hasQuestionWords);
+  }, []);
+
+  // Handle Algeon agent requests
+  const handleAlegeonRequest = useCallback(async (message: string, sessionId?: string | null): Promise<string> => {
+    try {
+      console.log('🔬 Making Algeon request with message:', message);
+      
+      const response = await fetch(API_ENDPOINTS.algeon, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: message,
+          session_id: sessionId || null,
+          provider: null // Let agent decide the best provider
+        })
+      });
+
+      if (!response.ok) {
+        // Handle specific error codes
+        if (response.status === 500) {
+          throw new Error("The research agent is experiencing issues. Please try again.");
+        } else if (response.status === 422) {
+          throw new Error("Invalid request format. Please check your message.");
+        } else if (response.status === 404) {
+          throw new Error("Research agent endpoint not found.");
+        }
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      // Handle Algeon response format
+      const processedResponse = {
+        content: data.response || 'No response received', // Map 'response' to 'content'
+        model: `algeon-${data.provider || 'auto'}`, // Show which provider was used
+        session_id: data.session_id,
+        metadata: {
+          latency: data.latency,
+          actual_provider: data.provider,
+          routing_info: data.provider ? `Routed to ${data.provider} for this task type` : 'Auto-routed by agent',
+          tokens: data.tokens,
+          cost: data.cost
+        }
+      };
+      
+      console.log('🔬 Algeon response processed:', processedResponse);
+      return processedResponse.content;
+      
+    } catch (error) {
+      console.error('❌ Algeon request failed:', error);
+      throw error;
+    }
   }, []);
 
   // Handle instant responses for simple queries
@@ -447,8 +509,13 @@ export const useMessages = (currentSessionId: string | null) => {
     try {
       let aiResponseText: string;
 
+      // Route to Algeon if model is 'algeon'
+      if (selectedModel === 'algeon') {
+        console.log('🔬 Using Algeon model');
+        aiResponseText = await handleAlegeonRequest(finalMessageText, currentSessionId);
+      }
       // Route to Stratix if model is 'stratix'
-      if (selectedModel === 'stratix') {
+      else if (selectedModel === 'stratix') {
         console.log('🎯 Using Stratix model with Perplexity-style streaming');
         aiResponseText = await handleStratixRequest(finalMessageText, currentSessionId);
         // Ensure streaming state is fully reset after Stratix completion
