@@ -331,17 +331,15 @@ export const useAlegeonStreaming = () => {
               allKeys: Object.keys(data)
             });
 
-            // Process citations from every message, not just complete ones
+            // Process citations from the specific fields you mentioned
             const foundCitations = processMessageForCitations(data);
             if (foundCitations.length > 0) {
-              console.log('📎 Successfully extracted citations, updating state immediately:', foundCitations);
+              console.log('📎 Successfully extracted citations:', foundCitations);
               accumulatedCitationsRef.current = foundCitations;
-              
-              // Update streaming state immediately when citations are found
               setStreamingState(prev => ({
                 ...prev,
                 citations: foundCitations,
-                finalCitations: foundCitations // Also set finalCitations for immediate use
+                finalCitations: foundCitations
               }));
             }
 
@@ -358,10 +356,7 @@ export const useAlegeonStreaming = () => {
                   ...prev,
                   rawText: accumulatedTextRef.current,
                   currentText: accumulatedTextRef.current,
-                  hasContent: true,
-                  // Keep existing citations
-                  citations: prev.citations.length > 0 ? prev.citations : accumulatedCitationsRef.current,
-                  finalCitations: prev.finalCitations.length > 0 ? prev.finalCitations : accumulatedCitationsRef.current
+                  hasContent: true
                 }));
               }
             }
