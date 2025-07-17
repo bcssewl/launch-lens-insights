@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { cn } from '@/lib/utils';
 import ChatMessage, { type ChatMessageData } from './ChatMessage';
@@ -21,6 +20,11 @@ interface ChatAreaProps {
   viewportRef: React.RefObject<HTMLDivElement>;
   onSendMessage: (text: string, attachments?: any[], modelOverride?: string, researchType?: string) => void;
   selectedModel: string;
+  canvasState?: {
+    isOpen: boolean;
+    messageId: string | null;
+    content: string;
+  };
   onOpenCanvas?: (messageId: string, content: string) => void;
   onCloseCanvas?: () => void;
   onCanvasDownload?: () => void;
@@ -49,6 +53,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   viewportRef,
   onSendMessage,
   selectedModel,
+  canvasState,
   onOpenCanvas,
   onCloseCanvas,
   onCanvasDownload,
