@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect, useCallback, useReducer } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Message, initialMessages, formatTimestamp } from '@/constants/aiAssistant';
@@ -618,7 +619,7 @@ export const useMessages = (currentSessionId: string | null) => {
           metadata: { messageType: 'stratix_conversation' },
         };
         
-        setMessages(prev => [...prev, aiResponse]);
+        dispatch({ type: 'ADD_MESSAGE', payload: aiResponse });
         
         // Save AI response to history
         if (currentSessionId) {
@@ -648,7 +649,7 @@ export const useMessages = (currentSessionId: string | null) => {
           metadata: { messageType: 'standard' },
         };
         
-        setMessages(prev => [...prev, aiResponse]);
+        dispatch({ type: 'ADD_MESSAGE', payload: aiResponse });
 
         // Save AI response to history
         if (currentSessionId) {
@@ -683,7 +684,7 @@ export const useMessages = (currentSessionId: string | null) => {
 
   const handleClearConversation = useCallback(() => {
     console.log('useMessages: Clearing conversation');
-    setMessages(initialMessages);
+    dispatch({ type: 'SET_MESSAGES', payload: initialMessages as ExtendedMessage[] });
     stopStreaming();
     stopAlegeonStreaming();
   }, [stopStreaming, stopAlegeonStreaming]);
