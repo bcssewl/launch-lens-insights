@@ -31,7 +31,7 @@ export const useOptimizedStreaming = () => {
   const animationRef = useRef<number | null>(null);
   const lastUpdateRef = useRef<number>(0);
   const isAnimatingRef = useRef<boolean>(false);
-  const batchSizeRef = useRef<number>(8); // Characters per batch
+  const batchSizeRef = useRef<number>(1); // Characters per batch for smooth typing
   const isCompletedRef = useRef<boolean>(false); // Track completion to prevent duplicates
 
   // Optimized typewriter animation using RAF with batching
@@ -40,9 +40,9 @@ export const useOptimizedStreaming = () => {
     const buffer = bufferRef.current;
     const displayed = displayedRef.current;
     
-    // Target: 25-30 chars/sec with batching every 5-10 chars
-    // Update every ~300ms with 8 chars = ~27 chars/sec
-    if (now - lastUpdateRef.current < 300) {
+    // Target: 30 chars/sec exactly
+    // Update every ~33ms with 1 char = 30 chars/sec
+    if (now - lastUpdateRef.current < 33) {
       if (buffer.length > displayed.length) {
         animationRef.current = requestAnimationFrame(typewriterAnimation);
       }
@@ -50,7 +50,7 @@ export const useOptimizedStreaming = () => {
     }
 
     if (buffer.length > displayed.length) {
-      // Reveal batch of characters (8 chars for smooth 27 chars/sec)
+      // Reveal single character for smooth 30 chars/sec typing effect
       const charsToReveal = Math.min(batchSizeRef.current, buffer.length - displayed.length);
       const newDisplayed = buffer.slice(0, displayed.length + charsToReveal);
       
