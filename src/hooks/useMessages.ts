@@ -157,8 +157,8 @@ export const useMessages = (sessionId: string | null) => {
       if (researchType === 'algeon') {
         console.log('🔬 useMessages: Starting Algeon streaming');
         
-        // Start Algeon streaming
-        alegeonStreaming.startStreaming();
+        // Start Algeon streaming with proper arguments
+        alegeonStreaming.startStreaming(text.trim(), 'comprehensive');
         
         // Add streaming message
         const streamingMessage: Message = {
@@ -406,6 +406,12 @@ export const useMessages = (sessionId: string | null) => {
       updates: [],
       sources: [],
       progress: { phase: '', progress: 0 },
+      currentPhase: '',
+      overallProgress: 0,
+      activeAgents: [],
+      discoveredSources: [],
+      searchQueries: [],
+      collaborationMode: 'single'
     },
     alegeonStreamingState: alegeonStreaming.streamingState,
   };

@@ -34,3 +34,11 @@ export interface StreamingProgress {
   phase: string;
   progress: number;
 }
+
+export const suggestedPromptsData = [
+  { text: "Analyze my startup idea" },
+  { text: "Market research for my product" },
+  { text: "Competitive analysis" },
+  { text: "Business model suggestions" },
+  { text: "Growth strategies" }
+];
