@@ -1,5 +1,5 @@
 
-export const isReportMessage = (content: string, metadata?: { isCompleted?: boolean; messageType?: string; streamedBy?: string }): boolean => {
+export const isReportMessage = (content: string, metadata?: { isCompleted?: boolean; messageType?: string }): boolean => {
   // If we have metadata indicating this is a completed report, check for that first
   if (metadata?.isCompleted === true || metadata?.messageType === 'completed_report') {
     return true;
@@ -7,12 +7,6 @@ export const isReportMessage = (content: string, metadata?: { isCompleted?: bool
   
   // If it's explicitly marked as progress update, don't treat as report
   if (metadata?.messageType === 'progress_update') {
-    return false;
-  }
-  
-  // NEW: If content was streamed by Algeon, don't immediately show as canvas report
-  // Let users read the full streamed content first
-  if (metadata?.streamedBy === 'algeon') {
     return false;
   }
   
@@ -28,7 +22,7 @@ export const isReportMessage = (content: string, metadata?: { isCompleted?: bool
   }
   
   // For other types of reports (business validation, etc.), use word count as before
-  // but exclude obvious progress indicators and Algeon streamed content
+  // but exclude obvious progress indicators
   const wordCount = content.trim().split(/\s+/).length;
   const hasProgressIndicators = content.includes('⚡') || content.includes('📊 **Preliminary') || content.includes('**Agent Update:**');
   

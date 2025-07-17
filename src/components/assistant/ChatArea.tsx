@@ -1,24 +1,22 @@
+
 import React from 'react';
-import { cn } from '@/lib/utils';
-import ChatMessage, { type ChatMessageData } from './ChatMessage';
-import TypingIndicator from './TypingIndicator';
-import ChatEmptyState from './ChatEmptyState';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import ChatMessage from '@/components/assistant/ChatMessage';
+import TypingIndicator from '@/components/assistant/TypingIndicator';
+import PerplexityEmptyState from '@/components/assistant/PerplexityEmptyState';
+import EnhancedChatInput from '@/components/assistant/EnhancedChatInput';
+import StreamingProgress from '@/components/assistant/StreamingProgress';
+import StreamingError from '@/components/assistant/StreamingError';
+import AlegeonStreamingOverlay from '@/components/assistant/AlegeonStreamingOverlay';
+import { Message } from '@/constants/aiAssistant';
 import type { StratixStreamingState } from '@/types/stratixStreaming';
 import type { AlegeonStreamingState } from '@/hooks/useAlegeonStreaming';
-import { formatTimestamp } from '@/constants/aiAssistant';
-
-interface StreamingUpdate {
-  type: 'search' | 'source' | 'snippet' | 'thought' | 'complete';
-  message: string;
-  timestamp: number;
-  data?: any;
-}
 
 interface ChatAreaProps {
-  messages: any[]; // Accept any messages and convert them internally
+  messages: Message[];
   isTyping: boolean;
   viewportRef: React.RefObject<HTMLDivElement>;
-  onSendMessage: (text: string, attachments?: any[], modelOverride?: string, researchType?: string) => void;
+  onSendMessage: (message: string, attachments?: any[], selectedModel?: string) => void;
   selectedModel: string;
   canvasState?: {
     isOpen: boolean;
@@ -31,19 +29,24 @@ interface ChatAreaProps {
   onCanvasPrint?: () => void;
   streamingState?: {
     isStreaming: boolean;
-    updates?: StreamingUpdate[];
-    sources?: Array<{
+    currentPhase: string;
+    progress: number;
+    error?: string | null;
+    errorCode?: string;
+    retryAfter?: number;
+    searchQueries: string[];
+    discoveredSources: Array<{
       name: string;
       url: string;
-      type?: string;
-      confidence?: number;
+      type: string;
+      confidence: number;
     }>;
-    progress?: {
-      phase: string;
-      progress: number;
-    };
+    activeAgents?: string[];
+    collaborationMode?: string;
   };
+  // Enhanced Stratix streaming support
   stratixStreamingState?: StratixStreamingState;
+  // Algeon streaming support
   alegeonStreamingState?: AlegeonStreamingState;
 }
 
@@ -53,80 +56,112 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   viewportRef,
   onSendMessage,
   selectedModel,
-  canvasState,
   onOpenCanvas,
-  onCloseCanvas,
   onCanvasDownload,
   onCanvasPrint,
   streamingState,
   stratixStreamingState,
   alegeonStreamingState
 }) => {
-  const displayMessages = messages.filter(msg => msg.id !== 'initial');
+  const hasConversation = messages.length > 1 || isTyping;
 
-  // Convert Message[] to ChatMessageData[] format
-  const convertedMessages: ChatMessageData[] = displayMessages.map(message => ({
-    ...message,
-    timestamp: typeof message.timestamp === 'string' ? message.timestamp : formatTimestamp(message.timestamp)
-  }));
-
-  // Enhanced debug logging
-  console.log('🎯 ChatArea: Rendering with streaming states:', {
-    stratixStreaming: stratixStreamingState?.isStreaming,
-    alegeonStreaming: alegeonStreamingState?.isStreaming,
-    messagesCount: convertedMessages.length,
-    isTyping
-  });
+  if (!hasConversation) {
+    return (
+      <div className="flex flex-col flex-1 min-h-0 w-full relative bg-transparent">
+        <PerplexityEmptyState 
+          onSendMessage={onSendMessage}
+          selectedModel={selectedModel}
+        />
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-col h-full bg-transparent">
-      {/* Messages Container - Scrollable */}
-      <div 
-        ref={viewportRef}
-        className="flex-1 overflow-y-auto px-6 pb-6 pt-4 space-y-6 scroll-smooth"
-        style={{ scrollBehavior: 'smooth' }}
-      >
-        {convertedMessages.length === 0 ? (
-          <ChatEmptyState />
-        ) : (
-          <>
-            {convertedMessages.map((message) => (
-              <ChatMessage
-                key={message.id}
-                message={message}
-                onOpenCanvas={onOpenCanvas}
-                onCanvasDownload={onCanvasDownload}
-                onCanvasPrint={onCanvasPrint}
-                isStreaming={streamingState?.isStreaming || false}
-                streamingUpdates={streamingState?.updates || []}
-                streamingSources={streamingState?.sources || []}
-                streamingProgress={streamingState?.progress || { phase: '', progress: 0 }}
-                stratixStreamingState={stratixStreamingState}
-                alegeonStreamingState={alegeonStreamingState}
+    <div className="h-full flex flex-col relative bg-background/10 backdrop-blur-sm">
+      <div className="flex-1 overflow-hidden">
+        <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
+          <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
+            {/* Show streaming error if present */}
+            {streamingState?.error && (
+              <StreamingError
+                error={streamingState.error}
+                errorCode={streamingState.errorCode}
+                retryAfter={streamingState.retryAfter}
+                isVisible={true}
               />
-            ))}
-            
-            {/* Show typing indicator when AI is generating response */}
-            {isTyping && (
-              <div className="flex items-start gap-3 w-full">
-                <div className="w-8 h-8 flex-shrink-0 mt-1">
-                  {/* AI Avatar placeholder for typing */}
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                    <span className="text-white text-xs font-medium">AI</span>
-                  </div>
-                </div>
-                <div className="flex-1">
-                  <TypingIndicator />
-                </div>
-              </div>
             )}
-          </>
-        )}
+
+            {/* Show legacy Perplexity-style streaming progress (fallback) */}
+            {streamingState?.isStreaming && !stratixStreamingState?.isStreaming && (
+              <StreamingProgress
+                currentPhase={streamingState.currentPhase}
+                progress={streamingState.progress}
+                searchQueries={streamingState.searchQueries}
+                discoveredSources={streamingState.discoveredSources}
+                activeAgents={streamingState.activeAgents?.map(name => ({ name, status: 'active' as const, progress: 50 })) || []}
+                collaborationMode={streamingState.collaborationMode as 'sequential' | 'parallel' | 'hierarchical' | null}
+                isVisible={true}
+              />
+            )}
+
+            {messages.map((msg) => {
+              console.log('🔄 ChatArea: Rendering message', {
+                messageId: msg.id,
+                sender: msg.sender,
+                hasStreamingState: !!streamingState,
+                hasStratixStreaming: !!stratixStreamingState?.isStreaming,
+                isStreaming: streamingState?.isStreaming,
+                messageText: msg.text.substring(0, 50),
+                timestamp: msg.timestamp
+              });
+
+              return (
+                <ChatMessage 
+                  key={msg.id} 
+                  message={{ ...msg, timestamp: formatTimestamp(msg.timestamp) }}
+                  onOpenCanvas={onOpenCanvas}
+                  onCanvasDownload={onCanvasDownload}
+                  onCanvasPrint={onCanvasPrint}
+                  // Legacy streaming support (fallback)
+                  isStreaming={false}
+                  streamingUpdates={[]}
+                  streamingSources={[]}
+                  streamingProgress={{ phase: '', progress: 0 }}
+                  // Enhanced Stratix streaming support
+                  stratixStreamingState={stratixStreamingState}
+                />
+              );
+            })}
+            {isTyping && <TypingIndicator />}
+          </div>
+          <div className="h-24" />
+        </ScrollArea>
       </div>
 
-      {/* Chat Input - Fixed at bottom, passed through from parent */}
+      <div className="absolute bottom-0 left-0 right-0">
+        {/* Algeon Streaming Overlay */}
+        {alegeonStreamingState && (alegeonStreamingState.isStreaming || alegeonStreamingState.currentText || alegeonStreamingState.error) && (
+          <div className="max-w-4xl mx-auto px-6">
+            <AlegeonStreamingOverlay streamingState={alegeonStreamingState} />
+          </div>
+        )}
+        
+        <div className="max-w-4xl mx-auto px-6 py-4">
+          <EnhancedChatInput 
+            onSendMessage={onSendMessage} 
+            isTyping={isTyping}
+            isCompact={true}
+            selectedModel={selectedModel}
+          />
+        </div>
+      </div>
     </div>
   );
+};
+
+// Helper function moved from constants
+const formatTimestamp = (timestamp: Date): string => {
+  return timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
 
 export default ChatArea;

@@ -5,7 +5,6 @@ import { FloatingElements } from '@/components/landing/FloatingElements';
 import DashboardHeader from '@/components/DashboardHeader';
 import MobileDashboardHeader from '@/components/mobile/MobileDashboardHeader';
 import ChatArea from '@/components/assistant/ChatArea';
-import EnhancedChatInput from '@/components/assistant/EnhancedChatInput';
 import CanvasView from '@/components/assistant/CanvasView';
 import FullscreenChatLayout from '@/components/assistant/FullscreenChatLayout';
 import ChatSubheader from '@/components/assistant/ChatSubheader';
@@ -151,22 +150,6 @@ const AIAssistantPage: React.FC = () => {
     setSelectedModel(modelId);
   };
 
-  // Convert streamingState to match ChatArea expectations
-  const convertedStreamingState = streamingState ? {
-    isStreaming: streamingState.isStreaming,
-    updates: [], // Can be populated if needed
-    sources: streamingState.discoveredSources?.map(source => ({
-      name: source.name,
-      url: source.url,
-      type: source.type,
-      confidence: source.confidence
-    })) || [],
-    progress: {
-      phase: streamingState.currentPhase,
-      progress: streamingState.progress
-    }
-  } : undefined;
-
   // Show loading state while history is being loaded
   if (isLoadingHistory) {
     return (
@@ -244,34 +227,21 @@ const AIAssistantPage: React.FC = () => {
           )}
           
           {/* Main chat area - takes remaining height */}
-          <div className="flex-1 min-h-0 bg-transparent flex flex-col">
-            <div className="flex-1 min-h-0">
-              <ChatArea 
-                messages={messages} 
-                isTyping={isTyping} 
-                viewportRef={viewportRef} 
-                onSendMessage={handleSendMessageWithSession}
-                selectedModel={selectedModel}
-                canvasState={canvasState}
-                onOpenCanvas={handleOpenCanvas} 
-                onCloseCanvas={handleCloseCanvas} 
-                onCanvasDownload={handleCanvasDownload} 
-                onCanvasPrint={handleCanvasPrint}
-                streamingState={convertedStreamingState}
-                stratixStreamingState={stratixStreamingState}
-                alegeonStreamingState={alegeonStreamingState}
-              />
-            </div>
-            
-            {/* Fixed Chat Input at bottom */}
-            <div className="flex-shrink-0 px-6 py-4 border-t border-border/50 bg-background/80 backdrop-blur-sm">
-              <EnhancedChatInput
-                onSendMessage={handleSendMessageWithSession}
-                isTyping={isTyping}
-                isCompact={false}
-                selectedModel={selectedModel}
-              />
-            </div>
+          <div className="flex-1 min-h-0 bg-transparent">
+            <ChatArea 
+              messages={messages} 
+              isTyping={isTyping} 
+              viewportRef={viewportRef} 
+              onSendMessage={handleSendMessageWithSession}
+              selectedModel={selectedModel}
+              onOpenCanvas={handleOpenCanvas} 
+              onCloseCanvas={handleCloseCanvas} 
+              onCanvasDownload={handleCanvasDownload} 
+              onCanvasPrint={handleCanvasPrint}
+              streamingState={streamingState}
+              stratixStreamingState={stratixStreamingState}
+              alegeonStreamingState={alegeonStreamingState}
+            />
           </div>
         </SidebarInset>
       </SidebarProvider>

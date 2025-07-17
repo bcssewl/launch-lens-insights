@@ -366,7 +366,7 @@ export const useMessages = (currentSessionId: string | null) => {
                     break;
                     
                   case 'source':
-                    console.log('📄 Source found for simple query');
+                    console.log('� Source found for simple query');
                     break;
                     
                   case 'snippet':
@@ -513,10 +513,7 @@ export const useMessages = (currentSessionId: string | null) => {
         text: aiResponseText,
         sender: 'ai',
         timestamp: new Date(),
-        metadata: selectedModel === 'algeon' ? {
-          messageType: 'standard',
-          streamedBy: 'algeon'
-        } : selectedModel === 'stratix' ? {
+        metadata: selectedModel === 'stratix' ? {
           messageType: 'stratix_conversation'
         } : { messageType: 'standard' },
       };

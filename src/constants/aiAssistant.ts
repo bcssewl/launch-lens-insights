@@ -9,7 +9,6 @@ export interface Message {
   metadata?: {
     isCompleted?: boolean;
     messageType?: 'progress_update' | 'completed_report' | 'standard' | 'stratix_conversation';
-    streamedBy?: 'algeon' | 'stratix' | 'perplexity';
   };
 }
 

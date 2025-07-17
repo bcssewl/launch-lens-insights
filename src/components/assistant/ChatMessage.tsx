@@ -8,10 +8,8 @@ import MarkdownRenderer from './MarkdownRenderer';
 import CanvasCompact from './CanvasCompact';
 import StreamingOverlay from './StreamingOverlay';
 import StratixStreamingOverlay from './StratixStreamingOverlay';
-import AlegeonStreamingOverlay from './AlegeonStreamingOverlay';
 import { isReportMessage } from '@/utils/reportDetection';
 import type { StratixStreamingState } from '@/types/stratixStreaming';
-import type { AlegeonStreamingState } from '@/hooks/useAlegeonStreaming';
 
 export interface ChatMessageData {
   id: string;
@@ -21,7 +19,6 @@ export interface ChatMessageData {
   metadata?: {
     isCompleted?: boolean;
     messageType?: 'progress_update' | 'completed_report' | 'standard' | 'stratix_conversation';
-    streamedBy?: 'algeon' | 'stratix' | 'perplexity';
   };
 }
 
@@ -49,9 +46,8 @@ interface ChatMessageProps {
     phase: string;
     progress: number;
   };
-  // Enhanced streaming support
+  // Enhanced Stratix streaming support
   stratixStreamingState?: StratixStreamingState;
-  alegeonStreamingState?: AlegeonStreamingState;
 }
 
 const ChatMessage: React.FC<ChatMessageProps> = ({ 
@@ -63,12 +59,10 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
   streamingUpdates = [],
   streamingSources = [],
   streamingProgress = { phase: '', progress: 0 },
-  stratixStreamingState,
-  alegeonStreamingState
+  stratixStreamingState
 }) => {
   const isAi = message.sender === 'ai';
   const isReport = isAi && isReportMessage(message.text, message.metadata);
-  const isAlegeonStreamed = message.metadata?.streamedBy === 'algeon';
 
   // Enhanced debug logging
   console.log('💬 ChatMessage: Rendering message', {
@@ -79,14 +73,12 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
     streamingSourcesCount: streamingSources.length,
     streamingProgress,
     isReport,
-    isAlegeonStreamed,
     hasStratixStreaming: !!stratixStreamingState?.isStreaming,
-    hasAlegeonStreaming: !!alegeonStreamingState?.isStreaming,
     messageText: message.text?.substring(0, 100) + (message.text?.length > 100 ? '...' : '')
   });
 
   // Don't render AI messages with empty or whitespace-only content unless streaming
-  if (isAi && (!message.text || message.text.trim() === '') && !stratixStreamingState?.isStreaming && !alegeonStreamingState?.isStreaming) {
+  if (isAi && (!message.text || message.text.trim() === '') && !stratixStreamingState?.isStreaming) {
     console.log('🚫 Skipping empty AI message:', message.id);
     return null;
   }
@@ -95,14 +87,6 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
     if (onOpenCanvas) {
       onOpenCanvas(message.id, message.text);
     }
-  };
-
-  // Format timestamp properly - handle both Date objects and strings
-  const formatTimestamp = (timestamp: Date | string) => {
-    if (typeof timestamp === 'string') {
-      return timestamp;
-    }
-    return timestamp.toLocaleTimeString();
   };
 
   return (
@@ -130,16 +114,8 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
               : "bg-primary/90 backdrop-blur-md border border-primary/30 text-primary-foreground rounded-tr-sm shadow-glass hover:bg-primary/95"
           )}
         >
-          {/* Enhanced Algeon Streaming Overlay for AI messages */}
-          {isAi && alegeonStreamingState?.isStreaming && (
-            <AlegeonStreamingOverlay
-              streamingState={alegeonStreamingState}
-              className="z-10"
-            />
-          )}
-
           {/* Enhanced Stratix Streaming Overlay for AI messages */}
-          {isAi && stratixStreamingState?.isStreaming && !alegeonStreamingState?.isStreaming && (
+          {isAi && stratixStreamingState?.isStreaming && (
             <StratixStreamingOverlay
               isVisible={stratixStreamingState.isStreaming}
               streamingState={stratixStreamingState}
@@ -147,8 +123,8 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
             />
           )}
 
-          {/* Fallback to legacy streaming overlay if neither Stratix nor Algeon is available */}
-          {isAi && !stratixStreamingState?.isStreaming && !alegeonStreamingState?.isStreaming && (isStreaming || streamingUpdates.length > 0) && (
+          {/* Fallback to legacy streaming overlay if Stratix not available */}
+          {isAi && !stratixStreamingState?.isStreaming && (isStreaming || streamingUpdates.length > 0) && (
             <StreamingOverlay
               isVisible={isStreaming}
               updates={streamingUpdates}
@@ -167,8 +143,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
           <div className={cn("text-sm leading-relaxed", isAi && "pr-8")}>
             {isAi ? (
               <>
-                {/* Show canvas compact for reports, but NOT for Algeon streamed content */}
-                {isReport && !isAlegeonStreamed ? (
+                {isReport ? (
                   <CanvasCompact
                     content={message.text}
                     onExpand={handleCanvasExpand}
@@ -176,20 +151,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                     onPrint={onCanvasPrint}
                   />
                 ) : (
-                  <>
-                    <MarkdownRenderer content={message.text} />
-                    {/* Add option to expand to canvas for Algeon content if it's substantial */}
-                    {isAlegeonStreamed && message.text.length > 500 && (
-                      <div className="mt-3 pt-3 border-t border-border/20">
-                        <button
-                          onClick={handleCanvasExpand}
-                          className="text-xs text-muted-foreground hover:text-foreground transition-colors underline"
-                        >
-                          View in Canvas Format
-                        </button>
-                      </div>
-                    )}
-                  </>
+                  <MarkdownRenderer content={message.text} />
                 )}
               </>
             ) : (
@@ -201,7 +163,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
           "text-xs mt-1 opacity-70 px-1",
           isAi ? "text-muted-foreground" : "text-muted-foreground"
         )}>
-          {formatTimestamp(message.timestamp)}
+          {message.timestamp}
         </p>
       </div>
       {!isAi && (
