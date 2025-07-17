@@ -29,7 +29,7 @@ export const isReportMessage = (content: string, metadata?: { isCompleted?: bool
     const hasProgressIndicators = content.includes('⚡') || content.includes('📊 **Preliminary') || content.includes('**Agent Update:**');
     
     // Only convert to canvas if it's a substantial report without progress indicators
-    return wordCount >= 500 && !hasProgressIndicators && metadata?.messageType === 'completed_report';
+    return wordCount >= 750 && !hasProgressIndicators && metadata?.messageType === 'completed_report';
   }
   
   // For other types of reports (business validation, etc.), use word count as before
@@ -38,7 +38,7 @@ export const isReportMessage = (content: string, metadata?: { isCompleted?: bool
   const hasProgressIndicators = content.includes('⚡') || content.includes('📊 **Preliminary') || content.includes('**Agent Update:**');
   
   // Increased threshold and stricter requirements
-  return wordCount >= 400 && !hasProgressIndicators && metadata?.messageType === 'completed_report';
+  return wordCount >= 750 && !hasProgressIndicators && metadata?.messageType === 'completed_report';
 };
 
 export const getReportPreview = (content: string, maxLength: number = 200): string => {
