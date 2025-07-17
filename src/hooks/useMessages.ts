@@ -612,9 +612,9 @@ export const useMessages = (currentSessionId: string | null) => {
     try {
       let aiResponseText: string;
 
-      // Route to Algeon if model is 'algeon' OR for research queries with 'best' model
-      if (selectedModel === 'algeon' || (selectedModel === 'best' && detectResearchQuery(finalMessageText))) {
-        console.log('🔬 Using Algeon model with typewriter animation');
+      // Route to Algeon if model is 'algeon'
+      if (selectedModel === 'algeon') {
+        console.log('🔬 Using Algeon model');
         aiResponseText = await handleAlegeonRequest(finalMessageText, researchType, currentSessionId);
         // Note: Final message handling is done in the useEffect above
       }
