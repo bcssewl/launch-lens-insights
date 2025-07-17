@@ -49,8 +49,8 @@ export const useMessages = (currentSessionId: string | null) => {
   const { sendMessageToN8n, isConfigured } = useN8nWebhook();
   const { history, addMessage, isInitialLoad } = useChatHistory(currentSessionId);
   
-  // Initialize both streaming systems
-  const { streamingState, startStreaming, stopStreaming } = usePerplexityStreaming();
+  // Initialize streaming systems
+  const { streamingState, startStreaming, stopStreaming } = usePerplexityStreaming(); // This now includes Algeon support
   const { 
     streamingState: stratixStreamingState, 
     startStreaming: startStratixStreaming, 
@@ -234,84 +234,21 @@ export const useMessages = (currentSessionId: string | null) => {
   }, []);
 
   // Handle Algeon agent requests via WebSocket streaming
+  // Handle Algeon requests using the updated streaming implementation
   const handleAlegeonRequest = useCallback(async (message: string, sessionId?: string | null): Promise<string> => {
     try {
-      console.log('🔬 Starting Algeon WebSocket streaming for message:', message);
+      console.log('🔬 Starting Algeon streaming for message:', message.substring(0, 100));
       
-      // Create WebSocket connection directly
-      return new Promise((resolve, reject) => {
-        const wsUrl = 'wss://opti-agent3-wrappers.up.railway.app/api/research/stream';
-        console.log('🔌 Connecting to Algeon WebSocket:', wsUrl);
-        
-        const socket = new WebSocket(wsUrl);
-        let responseText = "";
-        
-        // Set up event handlers
-        socket.onopen = () => {
-          console.log('✅ Algeon WebSocket connected');
-          socket.send(JSON.stringify({
-            query: message,
-            research_type: "quick_facts",
-            scope: "global",
-            depth: "executive_summary"
-          }));
-        };
-        
-        socket.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data);
-            console.log('📨 Algeon message:', data);
-            
-            // Handle content chunks
-            if (data.type === "chunk" && data.content) {
-              responseText += data.content;
-              console.log('📝 Current response length:', responseText.length);
-            }
-            
-            // Handle completion
-            if (data.finish_reason === "stop" || data.type === "complete") {
-              console.log('✅ Algeon streaming completed');
-              socket.close();
-              resolve(responseText || 'Research completed successfully.');
-            }
-            
-            // Handle errors
-            if (data.type === "error") {
-              console.error('❌ Algeon error:', data.message);
-              socket.close();
-              reject(new Error(data.message || 'Research failed'));
-            }
-          } catch (e) {
-            console.error("❌ Error processing Algeon WebSocket message:", e);
-          }
-        };
-        
-        socket.onclose = (event) => {
-          console.log("🔌 Algeon WebSocket connection closed:", event.code);
-          if (event.code !== 1000 && responseText === "") {
-            reject(new Error("Connection closed unexpectedly"));
-          }
-        };
-        
-        socket.onerror = (error) => {
-          console.error("❌ Algeon WebSocket error:", error);
-          reject(new Error("Connection error. Please try again."));
-        };
-        
-        // Set a timeout for the connection
-        setTimeout(() => {
-          if (socket.readyState === WebSocket.CONNECTING || socket.readyState === WebSocket.OPEN) {
-            socket.close();
-            reject(new Error("Request timeout. Please try again."));
-          }
-        }, 300000); // 5 minutes timeout
-      });
+      // Use the updated streaming implementation with proper research_type detection
+      return await startStreaming(message, sessionId || 'default-session');
       
     } catch (error) {
-      console.error('❌ Algeon request failed:', error);
-      throw error;
+      console.error('❌ Algeon streaming failed:', error);
+      
+      // Fallback error message
+      return 'I apologize, but I encountered an issue with the Algeon research system. The connection may have been interrupted. Please try again or select a different model.';
     }
-  }, []);
+  }, [startStreaming]);
 
   // Handle instant responses for simple queries
   const handleInstantRequest = useCallback(async (prompt: string): Promise<string> => {

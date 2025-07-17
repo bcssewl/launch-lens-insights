@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { detectAlgeonResearchType, type AlgeonResearchType } from '@/utils/algeonResearchTypes';
 
 // Configuration constants
 const STREAMING_TIMEOUT_MS = 300000; // 5 minutes for complex research
@@ -50,8 +51,11 @@ export const useAlegeonStreaming = () => {
     });
   }, []);
 
-  const startStreaming = useCallback(async (query: string, researchType: string = 'quick_facts'): Promise<string> => {
+  const startStreaming = useCallback(async (query: string, researchType?: AlgeonResearchType): Promise<string> => {
+    // Auto-detect research type if not provided
+    const detectedType = researchType || detectAlgeonResearchType(query);
     console.log('🚀 Starting Algeon streaming for query:', query.substring(0, 100));
+    console.log('📋 Using research type:', detectedType);
     
     resetState();
 
@@ -98,12 +102,14 @@ export const useAlegeonStreaming = () => {
             }
           }, HEARTBEAT_INTERVAL);
           
-          // Send query with Algeon format
+          // Send query with Algeon format using the detected research type
           const payload = {
             query: query,
-            research_type: researchType,
+            research_type: detectedType, // This will now be a valid enum value
             scope: "global",
-            depth: "executive_summary"
+            depth: "executive_summary",
+            urgency: "medium",
+            stream: true
           };
           
           console.log('📤 Sending Algeon query:', payload);
