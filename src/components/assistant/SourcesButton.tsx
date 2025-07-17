@@ -20,13 +20,7 @@ const SourcesButton: React.FC<SourcesButtonProps> = ({
   onClick,
   className
 }) => {
-  console.log('🔘 SourcesButton: Rendering button', {
-    citationsCount: citations.length,
-    hasOnClick: !!onClick
-  });
-
   if (!citations || citations.length === 0) {
-    console.log('🔘 SourcesButton: No citations, not rendering');
     return null;
   }
 
@@ -34,7 +28,7 @@ const SourcesButton: React.FC<SourcesButtonProps> = ({
     <button
       onClick={onClick}
       className={cn(
-        "inline-flex items-center gap-1.5 px-3 py-1.5 mt-2",
+        "inline-flex items-center gap-1.5 px-2 py-1 mt-2",
         "text-xs font-medium text-muted-foreground hover:text-foreground",
         "bg-muted/30 hover:bg-muted/50 rounded-md border border-border/50",
         "transition-colors duration-200",

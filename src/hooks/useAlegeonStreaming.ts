@@ -6,31 +6,7 @@ import { detectAlgeonResearchType, type AlgeonResearchType } from '@/utils/algeo
 const STREAMING_TIMEOUT_MS = 300000; // 5 minutes for complex research
 const HEARTBEAT_INTERVAL = 30000; // 30 seconds keep-alive
 
-// API Source structure from the schema
-interface APISource {
-  url: string;
-  title: string;
-  snippet: string;
-  source_num: number;
-}
-
-// Complete API Response structure
-interface ResearchResponseCollapse {
-  content: string;
-  sources: APISource[];
-  citations: string[];
-  usage?: object;
-  model_used?: string;
-  research_type?: string;
-  is_complete?: boolean;
-  error?: string | null;
-  citations_count?: number;
-  credibility_score?: number;
-  processing_time?: number;
-  metadata?: object;
-}
-
-// Event types from the Algeon WebSocket
+// Event types from the Algeon WebSocket - Updated to match backend exact format
 interface AlegeonStreamingEvent {
   type: string;
   content?: string;
@@ -43,15 +19,13 @@ interface AlegeonStreamingEvent {
   }>;
   usage?: object;
   error?: string | null;
-  message?: string;
-  // New: complete response structure
-  response?: ResearchResponseCollapse;
+  message?: string; // for error messages
 }
 
 export interface AlegeonStreamingState {
   isStreaming: boolean;
   currentText: string;
-  rawText: string;
+  rawText: string; // Full text buffer for typewriter
   citations: Array<{
     name: string;
     url: string;
@@ -59,6 +33,7 @@ export interface AlegeonStreamingState {
   }>;
   error: string | null;
   isComplete: boolean;
+  // New fields for better state management
   finalCitations: Array<{
     name: string;
     url: string;
@@ -87,40 +62,11 @@ export const useAlegeonStreaming = () => {
     reject: (reason?: any) => void;
   } | null>(null);
   
+  // Use ref to track accumulated text to avoid React state async issues
   const accumulatedTextRef = useRef<string>('');
   const accumulatedCitationsRef = useRef<Array<{ name: string; url: string; type?: string }>>([]);
   const messageCountRef = useRef<number>(0);
   const hasResolvedRef = useRef<boolean>(false);
-
-  // Transform API sources to our citation format
-  const transformSourcesToCitations = useCallback((sources: APISource[], citationUrls: string[] = []) => {
-    console.log('🔄 Transforming API sources to citations:', { sourcesCount: sources.length, citationUrlsCount: citationUrls.length });
-    
-    const citations: Array<{ name: string; url: string; type?: string }> = [];
-    
-    // Process sources array
-    sources.forEach((source, index) => {
-      citations.push({
-        name: source.title || `Source ${source.source_num || index + 1}`,
-        url: source.url,
-        type: 'web'
-      });
-    });
-    
-    // Add any additional citation URLs that aren't in sources
-    citationUrls.forEach((url, index) => {
-      if (!citations.find(c => c.url === url)) {
-        citations.push({
-          name: `Citation ${citations.length + 1}`,
-          url: url,
-          type: 'web'
-        });
-      }
-    });
-    
-    console.log('✅ Transformed citations:', citations);
-    return citations;
-  }, []);
 
   const cleanup = useCallback(() => {
     console.log('🧹 Cleaning up Algeon WebSocket connection');
@@ -145,6 +91,7 @@ export const useAlegeonStreaming = () => {
       wsRef.current = null;
     }
     
+    // Reset refs
     accumulatedTextRef.current = '';
     accumulatedCitationsRef.current = [];
     messageCountRef.current = 0;
@@ -189,6 +136,7 @@ export const useAlegeonStreaming = () => {
         hasContent: false
       }));
 
+      // Set overall timeout
       timeoutRef.current = window.setTimeout(() => {
         console.log('⏰ Algeon streaming timeout reached after 5 minutes');
         if (!hasResolvedRef.current) {
@@ -220,26 +168,21 @@ export const useAlegeonStreaming = () => {
             }
           }, HEARTBEAT_INTERVAL);
           
-          // Updated payload to match API specification
           const payload = {
             query: query,
             research_type: detectedType,
-            scope: "general", // Changed from "global" to match API spec
-            depth: "detailed", // Changed from "executive_summary" to get more citations
+            scope: "global",
+            depth: "executive_summary", 
             urgency: "medium",
-            source_preferences: ["academic", "news", "reports", "web"], // Added for citation-rich sources
-            tone: "professional",
-            max_tokens: 4000,
-            timeframe: "recent",
-            model: "gpt-4o", // Explicit model selection
+            stream: true
           };
           
-          console.log('📤 Sending research request with updated payload:', payload);
+          console.log('📤 Sending research request:', payload);
           wsRef.current.send(JSON.stringify(payload));
         };
 
         wsRef.current.onmessage = (event) => {
-          console.log('📨 Raw WebSocket message:', event.data);
+          console.log('Received WebSocket message:', event.data);
           
           try {
             const data: AlegeonStreamingEvent = JSON.parse(event.data);
@@ -252,16 +195,15 @@ export const useAlegeonStreaming = () => {
               isComplete: data.is_complete,
               finishReason: data.finish_reason,
               error: data.error,
-              citationsCount: data.citations?.length || 0,
-              hasResponse: !!data.response
+              citationsCount: data.citations?.length || 0
             });
 
             if (data.type === 'chunk') {
-              // Handle streaming content
               if (data.content) {
                 accumulatedTextRef.current += data.content;
                 console.log(`📝 Accumulated text length: ${accumulatedTextRef.current.length}`);
                 
+                // Update streaming state with raw text for typewriter effect
                 setStreamingState(prev => ({
                   ...prev,
                   rawText: accumulatedTextRef.current,
@@ -270,7 +212,7 @@ export const useAlegeonStreaming = () => {
                 }));
               }
 
-              // Handle legacy citations format (fallback)
+              // Store citations as they come in
               if (data.citations && data.citations.length > 0) {
                 accumulatedCitationsRef.current = data.citations;
                 setStreamingState(prev => ({
@@ -280,38 +222,14 @@ export const useAlegeonStreaming = () => {
                 }));
               }
               
-              // Check for completion with complete response structure
+              // Check for completion
               if (data.is_complete === true) {
-                console.log('✅ Stream completion detected');
-                
-                let finalCitations = accumulatedCitationsRef.current;
-                
-                // NEW: Handle complete response structure with sources and citations
-                if (data.response) {
-                  console.log('🔍 Processing complete response structure:', {
-                    sourcesCount: data.response.sources?.length || 0,
-                    citationsCount: data.response.citations?.length || 0,
-                    content: data.response.content?.substring(0, 100) + '...'
-                  });
-                  
-                  // Use content from response if available
-                  if (data.response.content) {
-                    accumulatedTextRef.current = data.response.content;
-                  }
-                  
-                  // Transform API sources to our citation format
-                  if (data.response.sources && data.response.sources.length > 0) {
-                    finalCitations = transformSourcesToCitations(
-                      data.response.sources, 
-                      data.response.citations || []
-                    );
-                    accumulatedCitationsRef.current = finalCitations;
-                    console.log('🎯 Extracted citations from API response:', finalCitations);
-                  }
-                }
+                console.log('✅ Stream completion detected via is_complete flag');
                 
                 if (!hasResolvedRef.current) {
                   hasResolvedRef.current = true;
+                  
+                  const finalCitations = data.citations || accumulatedCitationsRef.current;
                   
                   setStreamingState(prev => ({
                     ...prev,
@@ -327,8 +245,7 @@ export const useAlegeonStreaming = () => {
                   const finalResult = accumulatedTextRef.current || 'Research completed successfully.';
                   console.log('✅ Resolving with final result and citations:', {
                     textLength: finalResult.length,
-                    citationsCount: finalCitations.length,
-                    citationsPreview: finalCitations.slice(0, 3).map(c => ({ name: c.name, url: c.url }))
+                    citationsCount: finalCitations.length
                   });
                   resolve({ text: finalResult, citations: finalCitations });
                   cleanup();
@@ -412,7 +329,7 @@ export const useAlegeonStreaming = () => {
         }
       }
     });
-  }, [resetState, cleanup, transformSourcesToCitations]);
+  }, [resetState, cleanup]);
 
   const stopStreaming = useCallback(() => {
     console.log('🛑 Stopping Algeon streaming by user');
@@ -424,6 +341,7 @@ export const useAlegeonStreaming = () => {
     cleanup();
   }, [cleanup]);
 
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
       stopStreaming();
