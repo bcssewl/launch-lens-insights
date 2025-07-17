@@ -88,15 +88,17 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
     (alegeonStreamingState.isComplete && message.metadata?.messageType === 'completed_report')
   );
 
-  // Enhanced citation detection - check both streaming state and message data
-  const availableCitations = message.alegeonCitations || 
+  // FIXED: Enhanced citation detection - prioritize streaming citations and show them immediately
+  const availableCitations = 
+    // First priority: Current streaming citations (show during streaming)
+    (alegeonStreamingState?.citations?.length ? alegeonStreamingState.citations : null) ||
+    // Second priority: Final citations from completed streaming
     (alegeonStreamingState?.finalCitations?.length ? alegeonStreamingState.finalCitations : null) ||
-    (alegeonStreamingState?.citations?.length ? alegeonStreamingState.citations : null);
+    // Third priority: Message-level citations
+    (message.alegeonCitations?.length ? message.alegeonCitations : null);
 
-  // Check if this is a completed Algeon message with citations
-  const isAlegeonCompleted = isAi && 
-    message.metadata?.messageType === 'completed_report' && 
-    availableCitations && availableCitations.length > 0;
+  // FIXED: Check if we should show citations for any AI message with available citations
+  const shouldShowCitations = isAi && availableCitations && availableCitations.length > 0;
 
   // Enhanced debug logging
   console.log('💬 ChatMessage: Rendering message', {
@@ -105,7 +107,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
     isStreaming,
     isStreamingMessage,
     showAlegeonStreaming,
-    isAlegeonCompleted,
+    shouldShowCitations,
     availableCitationsCount: availableCitations?.length || 0,
     messageCitationsCount: message.alegeonCitations?.length || 0,
     streamingCitationsCount: alegeonStreamingState?.citations?.length || 0,
@@ -212,7 +214,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                         onDownload={onCanvasDownload}
                         onPrint={onCanvasPrint}
                       />
-                    ) : isAlegeonCompleted && availableCitations ? (
+                    ) : shouldShowCitations ? (
                       <CitationAwareRenderer
                         content={message.text}
                         citations={availableCitations}
