@@ -5,13 +5,11 @@ import { detectAlgeonResearchType, type AlgeonResearchType } from '@/utils/algeo
 // Configuration constants
 const STREAMING_TIMEOUT_MS = 300000; // 5 minutes for complex research
 const HEARTBEAT_INTERVAL = 30000; // 30 seconds keep-alive
-const TYPEWRITER_SPEED = 30; // characters per second
 
-// Enhanced Event types from the Algeon WebSocket - Updated for new format
+// Event types from the Algeon WebSocket - Updated to match backend exact format
 interface AlegeonStreamingEvent {
   type: string;
-  content?: string; // Single character for typewriter effect
-  accumulated_content?: string; // Full content so far
+  content?: string;
   is_complete?: boolean;
   finish_reason?: string | null;
   citations?: Array<{
@@ -22,17 +20,12 @@ interface AlegeonStreamingEvent {
   usage?: object;
   error?: string | null;
   message?: string; // for error messages
-  progress?: {
-    current_char: number;
-    total_chars: number;
-  };
 }
 
 export interface AlegeonStreamingState {
   isStreaming: boolean;
   currentText: string;
   rawText: string; // Full text buffer for typewriter
-  typewriterText: string; // Text being displayed with typewriter effect
   citations: Array<{
     name: string;
     url: string;
@@ -40,18 +33,13 @@ export interface AlegeonStreamingState {
   }>;
   error: string | null;
   isComplete: boolean;
-  // Enhanced fields for better state management
+  // New fields for better state management
   finalCitations: Array<{
     name: string;
     url: string;
     type?: string;
   }>;
   hasContent: boolean;
-  progress: {
-    current_char: number;
-    total_chars: number;
-    percentage: number;
-  };
 }
 
 export const useAlegeonStreaming = () => {
@@ -59,17 +47,11 @@ export const useAlegeonStreaming = () => {
     isStreaming: false,
     currentText: '',
     rawText: '',
-    typewriterText: '',
     citations: [],
     error: null,
     isComplete: false,
     finalCitations: [],
     hasContent: false,
-    progress: {
-      current_char: 0,
-      total_chars: 0,
-      percentage: 0
-    }
   });
 
   const wsRef = useRef<WebSocket | null>(null);
@@ -80,9 +62,9 @@ export const useAlegeonStreaming = () => {
     reject: (reason?: any) => void;
   } | null>(null);
   
-  // Use refs to track streaming state without React async issues
+  // Use ref to track accumulated text to avoid React state async issues
   const accumulatedTextRef = useRef<string>('');
-  const typewriterIntervalRef = useRef<number | null>(null);
+  const accumulatedCitationsRef = useRef<Array<{ name: string; url: string; type?: string }>>([]);
   const messageCountRef = useRef<number>(0);
   const hasResolvedRef = useRef<boolean>(false);
 
@@ -96,10 +78,6 @@ export const useAlegeonStreaming = () => {
     if (heartbeatRef.current) {
       clearInterval(heartbeatRef.current);
       heartbeatRef.current = null;
-    }
-    if (typewriterIntervalRef.current) {
-      clearInterval(typewriterIntervalRef.current);
-      typewriterIntervalRef.current = null;
     }
     if (wsRef.current) {
       wsRef.current.onopen = null;
@@ -115,6 +93,7 @@ export const useAlegeonStreaming = () => {
     
     // Reset refs
     accumulatedTextRef.current = '';
+    accumulatedCitationsRef.current = [];
     messageCountRef.current = 0;
     hasResolvedRef.current = false;
     promiseRef.current = null;
@@ -126,49 +105,14 @@ export const useAlegeonStreaming = () => {
       isStreaming: false,
       currentText: '',
       rawText: '',
-      typewriterText: '',
       citations: [],
       error: null,
       isComplete: false,
       finalCitations: [],
       hasContent: false,
-      progress: {
-        current_char: 0,
-        total_chars: 0,
-        percentage: 0
-      }
     });
     cleanup();
   }, [cleanup]);
-
-  // Typewriter effect for accumulated content
-  const startTypewriter = useCallback((targetText: string) => {
-    if (typewriterIntervalRef.current) {
-      clearInterval(typewriterIntervalRef.current);
-    }
-
-    let currentIndex = 0;
-    const charsPerInterval = Math.max(1, Math.round(TYPEWRITER_SPEED / 10)); // 10 intervals per second
-    
-    typewriterIntervalRef.current = window.setInterval(() => {
-      if (currentIndex < targetText.length) {
-        const nextIndex = Math.min(currentIndex + charsPerInterval, targetText.length);
-        const displayText = targetText.slice(0, nextIndex);
-        
-        setStreamingState(prev => ({
-          ...prev,
-          typewriterText: displayText
-        }));
-        
-        currentIndex = nextIndex;
-      } else {
-        if (typewriterIntervalRef.current) {
-          clearInterval(typewriterIntervalRef.current);
-          typewriterIntervalRef.current = null;
-        }
-      }
-    }, 100); // 10 times per second for smooth typewriter effect
-  }, []);
 
   const startStreaming = useCallback(async (query: string, researchType?: AlgeonResearchType): Promise<{ text: string; citations: Array<{ name: string; url: string; type?: string }> }> => {
     const detectedType = researchType || detectAlgeonResearchType(query);
@@ -181,6 +125,7 @@ export const useAlegeonStreaming = () => {
       promiseRef.current = { resolve, reject };
       hasResolvedRef.current = false;
       accumulatedTextRef.current = '';
+      accumulatedCitationsRef.current = [];
       messageCountRef.current = 0;
 
       setStreamingState(prev => ({ 
@@ -197,9 +142,10 @@ export const useAlegeonStreaming = () => {
         if (!hasResolvedRef.current) {
           hasResolvedRef.current = true;
           const finalText = accumulatedTextRef.current;
+          const finalCitations = accumulatedCitationsRef.current;
           if (finalText) {
             console.log('⏰ Timeout but have content, resolving with:', finalText.substring(0, 100));
-            resolve({ text: finalText, citations: [] });
+            resolve({ text: finalText, citations: finalCitations });
           } else {
             reject(new Error('Streaming timeout - research taking longer than expected'));
           }
@@ -245,73 +191,63 @@ export const useAlegeonStreaming = () => {
             console.log(`📨 Message #${messageCountRef.current}:`, {
               type: data.type,
               hasContent: !!data.content,
-              hasAccumulatedContent: !!data.accumulated_content,
-              accumulatedLength: data.accumulated_content?.length || 0,
+              contentLength: data.content?.length || 0,
               isComplete: data.is_complete,
               finishReason: data.finish_reason,
               error: data.error,
-              citationsCount: data.citations?.length || 0,
-              progress: data.progress
+              citationsCount: data.citations?.length || 0
             });
 
             if (data.type === 'chunk') {
-              // Use accumulated_content as source of truth
-              if (data.accumulated_content !== undefined) {
-                accumulatedTextRef.current = data.accumulated_content;
+              if (data.content) {
+                accumulatedTextRef.current += data.content;
+                console.log(`📝 Accumulated text length: ${accumulatedTextRef.current.length}`);
                 
-                // Update state with new accumulated content
+                // Update streaming state with raw text for typewriter effect
                 setStreamingState(prev => ({
                   ...prev,
-                  rawText: data.accumulated_content!,
-                  currentText: data.accumulated_content!,
-                  hasContent: data.accumulated_content!.length > 0,
-                  progress: data.progress ? {
-                    current_char: data.progress.current_char,
-                    total_chars: data.progress.total_chars,
-                    percentage: data.progress.total_chars > 0 
-                      ? Math.round((data.progress.current_char / data.progress.total_chars) * 100)
-                      : 0
-                  } : prev.progress
+                  rawText: accumulatedTextRef.current,
+                  currentText: accumulatedTextRef.current,
+                  hasContent: true
                 }));
+              }
 
-                // Start typewriter effect for new content
-                if (data.accumulated_content.length > 0) {
-                  startTypewriter(data.accumulated_content);
-                }
+              // Store citations as they come in
+              if (data.citations && data.citations.length > 0) {
+                accumulatedCitationsRef.current = data.citations;
+                setStreamingState(prev => ({
+                  ...prev,
+                  citations: data.citations || [],
+                  finalCitations: data.citations || []
+                }));
               }
               
-              // Handle completion - only when is_complete is true
+              // Check for completion
               if (data.is_complete === true) {
                 console.log('✅ Stream completion detected via is_complete flag');
-                
-                if (typewriterIntervalRef.current) {
-                  clearInterval(typewriterIntervalRef.current);
-                  typewriterIntervalRef.current = null;
-                }
                 
                 if (!hasResolvedRef.current) {
                   hasResolvedRef.current = true;
                   
-                  const finalText = data.accumulated_content || accumulatedTextRef.current;
-                  const finalCitations = data.citations || [];
+                  const finalCitations = data.citations || accumulatedCitationsRef.current;
                   
                   setStreamingState(prev => ({
                     ...prev,
                     isStreaming: false,
                     isComplete: true,
-                    currentText: finalText,
-                    rawText: finalText,
-                    typewriterText: finalText,
+                    currentText: accumulatedTextRef.current,
+                    rawText: accumulatedTextRef.current,
                     citations: finalCitations,
                     finalCitations: finalCitations,
                     hasContent: true
                   }));
                   
+                  const finalResult = accumulatedTextRef.current || 'Research completed successfully.';
                   console.log('✅ Resolving with final result and citations:', {
-                    textLength: finalText.length,
+                    textLength: finalResult.length,
                     citationsCount: finalCitations.length
                   });
-                  resolve({ text: finalText, citations: finalCitations });
+                  resolve({ text: finalResult, citations: finalCitations });
                   cleanup();
                 }
               }
@@ -359,18 +295,19 @@ export const useAlegeonStreaming = () => {
           if (!hasResolvedRef.current) {
             hasResolvedRef.current = true;
             const finalText = accumulatedTextRef.current;
+            const finalCitations = accumulatedCitationsRef.current;
             
             if (finalText && finalText.length > 50 && (event.code === 1000 || event.wasClean)) {
-              console.log('✅ Normal closure with content, resolving with accumulated text');
+              console.log('✅ Normal closure with content, resolving with accumulated text and citations');
               setStreamingState(prev => ({
                 ...prev,
                 isComplete: true,
                 currentText: finalText,
                 rawText: finalText,
-                typewriterText: finalText,
+                finalCitations: finalCitations,
                 hasContent: true
               }));
-              resolve({ text: finalText, citations: [] });
+              resolve({ text: finalText, citations: finalCitations });
             } else if (event.code === 1006) {
               reject(new Error('Connection lost unexpectedly'));
             } else if (!finalText) {
@@ -392,7 +329,7 @@ export const useAlegeonStreaming = () => {
         }
       }
     });
-  }, [resetState, cleanup, startTypewriter]);
+  }, [resetState, cleanup]);
 
   const stopStreaming = useCallback(() => {
     console.log('🛑 Stopping Algeon streaming by user');
