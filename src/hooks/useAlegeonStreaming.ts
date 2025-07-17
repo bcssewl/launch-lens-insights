@@ -135,49 +135,63 @@ export const useAlegeonStreaming = () => {
             const data: AlegeonStreamingEvent = JSON.parse(event.data);
             console.log('📨 Received Algeon event:', data.type);
             
-            switch (data.type) {
-              case 'chunk':
-                if (data.content) {
-                  setStreamingState(prev => ({
-                    ...prev,
-                    currentText: prev.currentText + data.content
-                  }));
-                }
-                break;
+            setStreamingState(prev => {
+              const newState = { ...prev };
+              let shouldResolve = false;
+              let shouldReject = false;
+              let resolveValue = '';
+              let rejectValue: Error | undefined;
 
-              case 'complete':
-                console.log('✅ Algeon streaming completed');
-                if (!hasResolved) {
-                  hasResolved = true;
-                  const finalText = streamingState.currentText || 'Research completed successfully.';
-                  setStreamingState(prev => ({
-                    ...prev,
-                    isStreaming: false,
-                    citations: data.citations || []
-                  }));
-                  resolve(finalText);
-                  // Don't cleanup immediately - let the connection close naturally
-                  setTimeout(() => cleanup(), 1000);
-                }
-                break;
+              switch (data.type) {
+                case 'chunk':
+                  if (data.content) {
+                    newState.currentText += data.content;
+                  }
+                  break;
 
-              case 'error':
-                console.error('❌ Algeon streaming error:', data.message);
-                if (!hasResolved) {
-                  hasResolved = true;
-                  setStreamingState(prev => ({
-                    ...prev,
-                    isStreaming: false,
-                    error: data.message || 'An error occurred during research'
-                  }));
-                  reject(new Error(data.message || 'Research failed'));
-                  setTimeout(() => cleanup(), 1000);
-                }
-                break;
+                case 'complete':
+                  console.log('✅ Algeon streaming completed');
+                  if (!hasResolved) {
+                    hasResolved = true;
+                    newState.isStreaming = false;
+                    if (data.citations && data.citations.length > 0) {
+                      newState.citations = data.citations;
+                    }
+                    shouldResolve = true;
+                    resolveValue = newState.currentText || 'Research completed successfully.';
+                  }
+                  break;
 
-              default:
-                console.warn('⚠️ Unknown Algeon event type:', data.type);
-            }
+                case 'error':
+                  console.error('❌ Algeon streaming error:', data.message);
+                  if (!hasResolved) {
+                    hasResolved = true;
+                    newState.isStreaming = false;
+                    newState.error = data.message || 'An error occurred during research';
+                    shouldReject = true;
+                    rejectValue = new Error(data.message || 'Research failed');
+                  }
+                  break;
+
+                default:
+                  console.warn('⚠️ Unknown Algeon event type:', data.type);
+              }
+              
+              // Handle promise resolution/rejection after state update
+              if (shouldResolve) {
+                setTimeout(() => {
+                  resolve(resolveValue);
+                  cleanup();
+                }, 1000);
+              } else if (shouldReject) {
+                setTimeout(() => {
+                  reject(rejectValue);
+                  cleanup();
+                }, 1000);
+              }
+
+              return newState;
+            });
             
           } catch (error) {
             console.error('❌ Error parsing Algeon event:', error, event.data);
