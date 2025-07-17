@@ -31,42 +31,29 @@ export const useOptimizedStreaming = () => {
   const animationRef = useRef<number | null>(null);
   const lastUpdateRef = useRef<number>(0);
   const isAnimatingRef = useRef<boolean>(false);
-  const batchSizeRef = useRef<number>(3); // 3 characters per batch for more visible typing
+  const TYPEWRITER_SPEED = 30; // chars per second
   const isCompletedRef = useRef<boolean>(false); // Track completion to prevent duplicates
 
-  // Optimized typewriter animation using RAF with batching
+  // Smooth typewriter animation - updates every frame at 30 chars/sec
   const typewriterAnimation = useCallback(() => {
-    const now = Date.now();
     const buffer = bufferRef.current;
     const displayed = displayedRef.current;
-    
-    // Target: 30 chars/sec exactly - but make it more visible
-    // Update every ~100ms with 3 chars = 30 chars/sec (more visible chunks)
-    if (now - lastUpdateRef.current < 100) {
-      if (buffer.length > displayed.length) {
-        animationRef.current = requestAnimationFrame(typewriterAnimation);
-      }
-      return;
-    }
 
     if (buffer.length > displayed.length) {
-      // Reveal 3 characters for visible typing effect
-      const charsToReveal = Math.min(batchSizeRef.current, buffer.length - displayed.length);
+      // Reveal ~0.5 characters per frame (30 chars/sec ÷ 60fps)
+      const charsToReveal = Math.ceil(TYPEWRITER_SPEED / 60);
       const newDisplayed = buffer.slice(0, displayed.length + charsToReveal);
       
-      console.log(`⌨️ Typewriter: ${displayed.length} → ${newDisplayed.length} (${charsToReveal} chars)`);
-      
       displayedRef.current = newDisplayed;
-      lastUpdateRef.current = now;
 
-      // Batch state update for better performance - only update every batch
+      // Update state every frame for smooth animation
       setStreamingState(prev => ({
         ...prev,
         displayedText: newDisplayed,
         progress: Math.min(95, (newDisplayed.length / Math.max(buffer.length, 1)) * 100)
       }));
 
-      // Continue animation
+      // Continue animation on next frame
       animationRef.current = requestAnimationFrame(typewriterAnimation);
     } else {
       // Animation complete
