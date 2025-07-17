@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { detectAlgeonResearchType, type AlgeonResearchType } from '@/utils/algeonResearchTypes';
 
@@ -279,7 +280,7 @@ export const useAlegeonStreaming = () => {
             }
           }, HEARTBEAT_INTERVAL);
           
-          // Enhanced payload with citation-friendly parameters
+          // Enhanced payload with citation-friendly parameters and correct model for quick_facts
           const payload = {
             query: query,
             research_type: detectedType,
@@ -287,7 +288,7 @@ export const useAlegeonStreaming = () => {
             depth: "detailed",
             urgency: "medium",
             source_preferences: ["academic", "news", "reports", "official"],
-            model: "gpt-4",
+            model: detectedType === "quick_facts" ? "sonar" : "gpt-4", // Use sonar for quick_facts
             tone: "professional",
             max_tokens: 4000,
             timeframe: "recent"
@@ -361,13 +362,9 @@ export const useAlegeonStreaming = () => {
               }
             }
 
-            // Check for completion using multiple indicators (separate from chunk processing)
-            if (data.is_complete === true || data.finish_reason || data.type === 'complete') {
-              console.log('✅ Stream completion detected:', {
-                isComplete: data.is_complete,
-                finishReason: data.finish_reason,
-                type: data.type
-              });
+            // ONLY complete when is_complete is explicitly true - DO NOT use other completion indicators
+            if (data.is_complete === true) {
+              console.log('✅ Stream completion detected with is_complete: true');
               
               if (!hasResolvedRef.current) {
                 hasResolvedRef.current = true;
@@ -408,6 +405,7 @@ export const useAlegeonStreaming = () => {
                 cleanup();
               }
             }
+            // Continue streaming for any other message types - only stop on is_complete: true or error
             
           } catch (parseError) {
             console.error('❌ Error parsing WebSocket message:', parseError, event.data);

@@ -12,7 +12,7 @@ export type AlgeonResearchType =
 
 // Map of research types to their corresponding AI models
 const RESEARCH_TYPE_MODELS: Record<AlgeonResearchType, string> = {
-  'quick_facts': 'Sonar',
+  'quick_facts': 'sonar', // Updated to use sonar for quick facts
   'market_sizing': 'Sonar Pro',
   'competitive_analysis': 'Sonar Reasoning Pro',
   'regulatory_scan': 'Sonar Pro',
