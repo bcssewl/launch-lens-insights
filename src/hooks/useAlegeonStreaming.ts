@@ -11,18 +11,19 @@ interface AlegeonStreamingEvent {
   content?: string;
   is_complete?: boolean;
   finish_reason?: string | null;
-  citations?: Array<{
-    name: string;
-    url: string;
-    type?: string;
-  }>;
-  // Enhanced fields from API schema
+  // Specific fields mentioned by user - these are the primary citation sources
   sources?: Array<{
     url: string;
     title: string;
     snippet?: string;
     source_num?: number;
-    credibility_score?: number;
+  }>;
+  citations?: string[]; // Array of citation URLs
+  // Legacy citation format for backward compatibility
+  citation_urls?: Array<{
+    name: string;
+    url: string;
+    type?: string;
   }>;
   metadata?: {
     citations_count?: number;
@@ -42,13 +43,8 @@ interface AlegeonStreamingEvent {
       title: string;
       snippet?: string;
       source_num?: number;
-      credibility_score?: number;
     }>;
-    citations?: Array<{
-      name: string;
-      url: string;
-      type?: string;
-    }>;
+    citations?: string[];
   };
   final_answer?: string;
   search_results?: any[];
@@ -101,40 +97,72 @@ export const useAlegeonStreaming = () => {
   const messageCountRef = useRef<number>(0);
   const hasResolvedRef = useRef<boolean>(false);
 
-  // Enhanced citation transformation function
-  const transformSourcesToCitations = useCallback((sources: any[]): Array<{ name: string; url: string; type?: string }> => {
+  // Enhanced citation transformation function - specifically for the API schema you mentioned
+  const transformApiSourcesToCitations = useCallback((sources: any[]): Array<{ name: string; url: string; type?: string }> => {
     if (!sources || !Array.isArray(sources)) return [];
     
     return sources.map((source, index) => ({
-      name: source.title || source.name || `Source ${index + 1}`,
+      name: source.title || `Source ${(source.source_num || index) + 1}`,
       url: source.url || '',
-      type: source.type || 'web'
+      type: 'web'
     })).filter(citation => citation.url); // Only include citations with valid URLs
   }, []);
 
-  // Enhanced message processing function
+  // Transform citation URLs array to citation objects
+  const transformCitationUrlsToCitations = useCallback((citationUrls: string[]): Array<{ name: string; url: string; type?: string }> => {
+    if (!citationUrls || !Array.isArray(citationUrls)) return [];
+    
+    return citationUrls.map((url, index) => ({
+      name: `Citation ${index + 1}`,
+      url: url,
+      type: 'web'
+    })).filter(citation => citation.url);
+  }, []);
+
+  // Enhanced message processing function - looks for the specific fields you mentioned
   const processMessageForCitations = useCallback((data: AlegeonStreamingEvent): Array<{ name: string; url: string; type?: string }> => {
     let foundCitations: Array<{ name: string; url: string; type?: string }> = [];
 
-    // Check multiple possible locations for citations/sources
-    if (data.citations && Array.isArray(data.citations)) {
-      foundCitations = [...foundCitations, ...data.citations];
+    console.log('📎 Processing message for citations. Available fields:', {
+      hasSources: !!data.sources,
+      sourcesCount: data.sources?.length || 0,
+      hasCitations: !!data.citations,
+      citationsCount: data.citations?.length || 0,
+      hasResponseSources: !!data.response?.sources,
+      responseCitationsCount: data.response?.citations?.length || 0,
+      hasLegacyCitations: !!data.citation_urls,
+      legacyCitationsCount: data.citation_urls?.length || 0,
+      rawSources: data.sources,
+      rawCitations: data.citations
+    });
+
+    // 1. PRIMARY: Look for the specific 'sources' field you mentioned
+    if (data.sources && Array.isArray(data.sources)) {
+      console.log('📎 Found sources in main data.sources:', data.sources);
+      foundCitations = [...foundCitations, ...transformApiSourcesToCitations(data.sources)];
     }
 
-    if (data.sources && Array.isArray(data.sources)) {
-      foundCitations = [...foundCitations, ...transformSourcesToCitations(data.sources)];
+    // 2. SECONDARY: Look for the specific 'citations' field (URL array) you mentioned
+    if (data.citations && Array.isArray(data.citations)) {
+      console.log('📎 Found citations array in data.citations:', data.citations);
+      foundCitations = [...foundCitations, ...transformCitationUrlsToCitations(data.citations)];
+    }
+
+    // 3. Check response.sources and response.citations
+    if (data.response?.sources && Array.isArray(data.response.sources)) {
+      console.log('📎 Found sources in data.response.sources:', data.response.sources);
+      foundCitations = [...foundCitations, ...transformApiSourcesToCitations(data.response.sources)];
     }
 
     if (data.response?.citations && Array.isArray(data.response.citations)) {
-      foundCitations = [...foundCitations, ...data.response.citations];
+      console.log('📎 Found citations in data.response.citations:', data.response.citations);
+      foundCitations = [...foundCitations, ...transformCitationUrlsToCitations(data.response.citations)];
     }
 
-    if (data.response?.sources && Array.isArray(data.response.sources)) {
-      foundCitations = [...foundCitations, ...transformSourcesToCitations(data.response.sources)];
-    }
-
-    if (data.metadata?.sources && Array.isArray(data.metadata.sources)) {
-      foundCitations = [...foundCitations, ...transformSourcesToCitations(data.metadata.sources)];
+    // 4. Legacy format for backward compatibility
+    if (data.citation_urls && Array.isArray(data.citation_urls)) {
+      console.log('📎 Found legacy citation_urls:', data.citation_urls);
+      foundCitations = [...foundCitations, ...data.citation_urls];
     }
 
     // Remove duplicates based on URL
@@ -142,8 +170,14 @@ export const useAlegeonStreaming = () => {
       index === self.findIndex(c => c.url === citation.url)
     );
 
+    console.log('📎 Final processed citations:', {
+      totalFound: foundCitations.length,
+      uniqueCount: uniqueCitations.length,
+      citations: uniqueCitations
+    });
+
     return uniqueCitations;
-  }, [transformSourcesToCitations]);
+  }, [transformApiSourcesToCitations, transformCitationUrlsToCitations]);
 
   const cleanup = useCallback(() => {
     console.log('🧹 Cleaning up Algeon WebSocket connection');
@@ -249,14 +283,14 @@ export const useAlegeonStreaming = () => {
           const payload = {
             query: query,
             research_type: detectedType,
-            scope: "general", // Changed from "global" to match API schema
-            depth: "detailed", // Changed from "executive_summary" for more comprehensive responses
+            scope: "general",
+            depth: "detailed",
             urgency: "medium",
-            source_preferences: ["academic", "news", "reports", "official"], // Added for better citations
-            model: "gpt-4", // Added model specification
-            tone: "professional", // Added tone
-            max_tokens: 4000, // Added reasonable token limit
-            timeframe: "recent" // Added timeframe
+            source_preferences: ["academic", "news", "reports", "official"],
+            model: "gpt-4",
+            tone: "professional",
+            max_tokens: 4000,
+            timeframe: "recent"
           };
           
           console.log('📤 Sending enhanced research request:', payload);
@@ -270,26 +304,37 @@ export const useAlegeonStreaming = () => {
             const data: AlegeonStreamingEvent = JSON.parse(event.data);
             messageCountRef.current += 1;
             
-            // Enhanced logging to capture all fields
-            console.log(`📨 Message #${messageCountRef.current} - Complete structure:`, {
+            // COMPREHENSIVE logging to capture all fields and the complete raw structure
+            console.log(`📨 Message #${messageCountRef.current} - COMPLETE RAW DATA:`, data);
+            console.log(`📨 Message #${messageCountRef.current} - Analysis:`, {
               type: data.type,
               hasContent: !!data.content,
               contentLength: data.content?.length || 0,
               isComplete: data.is_complete,
               finishReason: data.finish_reason,
               error: data.error,
-              citationsCount: data.citations?.length || 0,
+              // Specific fields you mentioned
+              hasSources: !!data.sources,
               sourcesCount: data.sources?.length || 0,
-              hasMetadata: !!data.metadata,
-              hasResponse: !!data.response,
-              allKeys: Object.keys(data),
-              rawData: data // Log the complete raw data
+              sourcesData: data.sources,
+              hasCitations: !!data.citations,
+              citationsCount: data.citations?.length || 0,
+              citationsData: data.citations,
+              // Response nested fields
+              hasResponseSources: !!data.response?.sources,
+              responseSourcesCount: data.response?.sources?.length || 0,
+              responseSourcesData: data.response?.sources,
+              hasResponseCitations: !!data.response?.citations,
+              responseCitationsCount: data.response?.citations?.length || 0,
+              responseCitationsData: data.response?.citations,
+              // All available keys
+              allKeys: Object.keys(data)
             });
 
-            // Process citations from multiple possible locations
+            // Process citations from the specific fields you mentioned
             const foundCitations = processMessageForCitations(data);
             if (foundCitations.length > 0) {
-              console.log('📎 Found citations in message:', foundCitations);
+              console.log('📎 Successfully extracted citations:', foundCitations);
               accumulatedCitationsRef.current = foundCitations;
               setStreamingState(prev => ({
                 ...prev,
