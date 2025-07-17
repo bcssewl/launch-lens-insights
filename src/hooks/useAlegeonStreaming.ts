@@ -87,13 +87,17 @@ export const useAlegeonStreaming = () => {
 
     return new Promise((resolve, reject) => {
       promiseRef.current = { resolve, reject };
+      let hasResolved = false; // Track if promise is already resolved
 
       setStreamingState(prev => ({ ...prev, isStreaming: true }));
 
       timeoutRef.current = window.setTimeout(() => {
         console.log('⏰ Algeon streaming timeout reached after 5 minutes');
-        cleanup();
-        reject(new Error('Streaming timeout - research taking longer than expected'));
+        if (!hasResolved) {
+          hasResolved = true;
+          reject(new Error('Streaming timeout - research taking longer than expected'));
+          cleanup();
+        }
       }, STREAMING_TIMEOUT_MS);
 
       try {
@@ -101,9 +105,11 @@ export const useAlegeonStreaming = () => {
         console.log('🔌 Connecting to Algeon WebSocket:', wsUrl);
         
         wsRef.current = new WebSocket(wsUrl);
+        let connectionEstablished = false;
 
         wsRef.current.onopen = () => {
           console.log('✅ Algeon WebSocket connected');
+          connectionEstablished = true;
           
           heartbeatRef.current = window.setInterval(() => {
             if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -115,7 +121,7 @@ export const useAlegeonStreaming = () => {
             query: query,
             research_type: detectedType,
             scope: "global",
-            depth: "executive_summary",
+            depth: "executive_summary", 
             urgency: "medium",
             stream: true
           };
@@ -127,6 +133,7 @@ export const useAlegeonStreaming = () => {
         wsRef.current.onmessage = (event) => {
           try {
             const data: AlegeonStreamingEvent = JSON.parse(event.data);
+            console.log('📨 Received Algeon event:', data.type);
             
             setStreamingState(prev => {
               const newState = { ...prev };
@@ -144,32 +151,43 @@ export const useAlegeonStreaming = () => {
 
                 case 'complete':
                   console.log('✅ Algeon streaming completed');
-                  newState.isStreaming = false;
-                  if (data.citations && data.citations.length > 0) {
-                    newState.citations = data.citations;
+                  if (!hasResolved) {
+                    hasResolved = true;
+                    newState.isStreaming = false;
+                    if (data.citations && data.citations.length > 0) {
+                      newState.citations = data.citations;
+                    }
+                    shouldResolve = true;
+                    resolveValue = newState.currentText || 'Research completed successfully.';
                   }
-                  shouldResolve = true;
-                  resolveValue = newState.currentText || 'Research completed successfully.';
                   break;
 
                 case 'error':
                   console.error('❌ Algeon streaming error:', data.message);
-                  newState.isStreaming = false;
-                  newState.error = data.message || 'An error occurred during research';
-                  shouldReject = true;
-                  rejectValue = new Error(data.message || 'Research failed');
+                  if (!hasResolved) {
+                    hasResolved = true;
+                    newState.isStreaming = false;
+                    newState.error = data.message || 'An error occurred during research';
+                    shouldReject = true;
+                    rejectValue = new Error(data.message || 'Research failed');
+                  }
                   break;
 
                 default:
                   console.warn('⚠️ Unknown Algeon event type:', data.type);
               }
               
+              // Handle promise resolution/rejection after state update
               if (shouldResolve) {
-                promiseRef.current?.resolve(resolveValue);
-                cleanup();
+                setTimeout(() => {
+                  resolve(resolveValue);
+                  cleanup();
+                }, 1000);
               } else if (shouldReject) {
-                promiseRef.current?.reject(rejectValue);
-                cleanup();
+                setTimeout(() => {
+                  reject(rejectValue);
+                  cleanup();
+                }, 1000);
               }
 
               return newState;
@@ -177,17 +195,31 @@ export const useAlegeonStreaming = () => {
             
           } catch (error) {
             console.error('❌ Error parsing Algeon event:', error, event.data);
-            setStreamingState(prev => ({ ...prev, isStreaming: false, error: 'Failed to parse server message.' }));
-            promiseRef.current?.reject(new Error('Failed to parse server message.'));
-            cleanup();
+            if (!hasResolved) {
+              hasResolved = true;
+              setStreamingState(prev => ({ 
+                ...prev, 
+                isStreaming: false, 
+                error: 'Failed to parse server message.' 
+              }));
+              reject(new Error('Failed to parse server message.'));
+              cleanup();
+            }
           }
         };
 
         wsRef.current.onerror = (errorEvent) => {
           console.error('❌ Algeon WebSocket error:', errorEvent);
-          setStreamingState(prev => ({ ...prev, isStreaming: false, error: 'WebSocket connection failed.' }));
-          promiseRef.current?.reject(new Error('WebSocket connection failed'));
-          cleanup();
+          if (!hasResolved) {
+            hasResolved = true;
+            setStreamingState(prev => ({ 
+              ...prev, 
+              isStreaming: false, 
+              error: 'WebSocket connection failed.' 
+            }));
+            reject(new Error('WebSocket connection failed'));
+            cleanup();
+          }
         };
 
         wsRef.current.onclose = (event) => {
@@ -195,13 +227,15 @@ export const useAlegeonStreaming = () => {
           
           setStreamingState(prev => ({ ...prev, isStreaming: false }));
           
-          // If the promise is still pending, it means we closed unexpectedly.
-          if (promiseRef.current) {
-            // 1000 is normal closure, if we get this without a 'complete' event, it's an issue.
-            if (event.code === 1000) {
-                 promiseRef.current.reject(new Error('Connection closed by server without completing research.'));
+          // Only reject if we haven't resolved/rejected already
+          if (!hasResolved) {
+            hasResolved = true;
+            if (!connectionEstablished) {
+              reject(new Error('Failed to establish connection to research service'));
+            } else if (event.code === 1000) {
+              reject(new Error('Connection closed by server without completing research.'));
             } else {
-                 promiseRef.current.reject(new Error(`WebSocket closed unexpectedly: ${event.code} ${event.reason || 'No reason given'}`));
+              reject(new Error(`WebSocket closed unexpectedly: ${event.code} ${event.reason || 'No reason given'}`));
             }
           }
           cleanup();
@@ -209,8 +243,11 @@ export const useAlegeonStreaming = () => {
 
       } catch (error) {
         console.error('❌ Failed to establish Algeon WebSocket connection:', error);
-        promiseRef.current?.reject(error);
-        cleanup();
+        if (!hasResolved) {
+          hasResolved = true;
+          reject(error);
+          cleanup();
+        }
       }
     });
   }, [resetState, cleanup]);
