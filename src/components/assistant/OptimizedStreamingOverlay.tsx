@@ -116,19 +116,24 @@ const OptimizedStreamingOverlay: React.FC<OptimizedStreamingOverlayProps> = memo
           </div>
         </div>
 
-        {/* Current Text Preview - Optimized Display */}
+        {/* Current Text Preview - Optimized Display with enhanced typewriter effect */}
         {displayedText && displayedText.length > 0 && (
           <div className="bg-background/40 backdrop-blur-sm border border-border/30 rounded-lg p-3">
-            <div className="text-sm text-foreground/90 leading-relaxed">
-              {/* Show preview with smooth reveal */}
-              {displayedText.length > 300 
-                ? displayedText.substring(0, 300) + '...' 
-                : displayedText
-              }
+            <div className="text-sm text-foreground/90 leading-relaxed relative">
+              {/* Show preview with smooth reveal - optimized for better performance */}
+              <span className="whitespace-pre-wrap">
+                {displayedText.length > 300 
+                  ? displayedText.substring(0, 300) + '...' 
+                  : displayedText
+                }
+              </span>
               
-              {/* Blinking cursor during streaming */}
+              {/* Enhanced blinking cursor during streaming */}
               {isStreaming && !isComplete && (
-                <span className="animate-pulse ml-1 text-blue-500">▍</span>
+                <span 
+                  className="inline-block w-[0.4em] h-[1.2em] align-middle ml-[1px] animate-[pulse_1s_ease-in-out_infinite] bg-primary"
+                  style={{ verticalAlign: 'text-bottom' }}
+                />
               )}
             </div>
           </div>

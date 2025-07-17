@@ -34,37 +34,31 @@ export const useOptimizedStreaming = () => {
   const batchSizeRef = useRef<number>(1); // Characters per batch for smooth typing
   const isCompletedRef = useRef<boolean>(false); // Track completion to prevent duplicates
 
-  // Optimized typewriter animation using RAF with batching
+  // Optimized typewriter animation using RAF with precise character-per-frame calculation
   const typewriterAnimation = useCallback(() => {
-    const now = Date.now();
     const buffer = bufferRef.current;
     const displayed = displayedRef.current;
-    
-    // Target: 30 chars/sec exactly
-    // Update every ~33ms with 1 char = 30 chars/sec
-    if (now - lastUpdateRef.current < 33) {
-      if (buffer.length > displayed.length) {
-        animationRef.current = requestAnimationFrame(typewriterAnimation);
-      }
-      return;
-    }
 
+    // Only continue if we have text to reveal
     if (buffer.length > displayed.length) {
-      // Reveal single character for smooth 30 chars/sec typing effect
-      const charsToReveal = Math.min(batchSizeRef.current, buffer.length - displayed.length);
+      // Calculate characters per frame for exact 30 chars/sec at 60fps
+      const TYPEWRITER_SPEED = 30; // chars/sec
+      const CHARS_PER_FRAME = TYPEWRITER_SPEED / 60; // ~0.5 chars per frame at 60fps
+      
+      // Use Math.ceil to ensure we show at least one character every few frames
+      const charsToReveal = Math.max(1, Math.ceil(CHARS_PER_FRAME));
       const newDisplayed = buffer.slice(0, displayed.length + charsToReveal);
       
       displayedRef.current = newDisplayed;
-      lastUpdateRef.current = now;
-
-      // Batch state update for better performance - only update every batch
+      
+      // Update state with new displayed text
       setStreamingState(prev => ({
         ...prev,
         displayedText: newDisplayed,
         progress: Math.min(95, (newDisplayed.length / Math.max(buffer.length, 1)) * 100)
       }));
 
-      // Continue animation
+      // Continue animation loop
       animationRef.current = requestAnimationFrame(typewriterAnimation);
     } else {
       // Animation complete
@@ -75,17 +69,27 @@ export const useOptimizedStreaming = () => {
   // Start typewriter animation when new content is buffered
   const startTypewriter = useCallback(() => {
     if (!isAnimatingRef.current && bufferRef.current.length > displayedRef.current.length) {
+      console.log('🎬 Starting typewriter animation');
       isAnimatingRef.current = true;
+      
+      // Cancel any existing animation frame before starting a new one
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+      
+      // Start the animation loop
       animationRef.current = requestAnimationFrame(typewriterAnimation);
     }
   }, [typewriterAnimation]);
 
-  // Process incoming 450-character chunks efficiently
+  // Process incoming chunks efficiently
   const processChunk = useCallback((chunk: string) => {
-    // Add entire 450-char chunk to buffer
+    // Add chunk to buffer
     bufferRef.current += chunk;
     
-    // Update buffered text state only when we receive chunks (not per character)
+    console.log(`📝 Received chunk (${chunk.length} chars), buffer now: ${bufferRef.current.length} chars`);
+    
+    // Update buffered text state
     setStreamingState(prev => ({
       ...prev,
       bufferedText: bufferRef.current

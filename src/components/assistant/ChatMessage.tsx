@@ -139,8 +139,8 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
                 : "bg-primary/90 backdrop-blur-md border border-primary/30 text-primary-foreground rounded-tr-sm shadow-glass hover:bg-primary/95"
             )}
           >
-            {/* Optimized Algeon Streaming Overlay */}
-            {showAlegeonStreaming && isStreamingMessage && (
+            {/* Optimized Algeon Streaming Overlay - Enhanced typewriter animation */}
+            {showAlegeonStreaming && (
               <OptimizedStreamingOverlay
                 streamingState={alegeonStreamingState!}
                 className="absolute inset-0 z-20 rounded-2xl"
@@ -228,21 +228,30 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
     </>
   );
 }, (prevProps, nextProps) => {
-  // Custom comparison to prevent unnecessary re-renders
-  const prevMessage = prevProps.message;
-  const nextMessage = nextProps.message;
+  // Optimized comparison to prevent unnecessary re-renders
+  // This is critical for smooth typewriter animation
+  
+  // First, check if message IDs are the same (most basic check)
+  if (prevProps.message.id !== nextProps.message.id) {
+    return false; // Different messages, should re-render
+  }
+  
+  // Then check streaming state transitions for Algeon
   const prevAlgeonState = prevProps.alegeonStreamingState;
   const nextAlgeonState = nextProps.alegeonStreamingState;
   
-  // Only re-render if essential props change
+  // If Algeon streaming is active, only update when displayedText changes
+  if (nextAlgeonState?.isStreaming) {
+    if (!prevAlgeonState?.isStreaming) return false; // Streaming just started
+    if (prevAlgeonState.displayedText !== nextAlgeonState.displayedText) return false; // Text changed
+    return true; // Otherwise don't re-render during streaming
+  }
+  
+  // For non-streaming messages, check basic properties
   return (
-    prevMessage.id === nextMessage.id &&
-    prevMessage.text === nextMessage.text &&
-    prevMessage.isStreaming === nextMessage.isStreaming &&
+    prevProps.message.text === nextProps.message.text &&
     prevProps.isStreaming === nextProps.isStreaming &&
-    prevAlgeonState?.isStreaming === nextAlgeonState?.isStreaming &&
-    prevAlgeonState?.displayedText === nextAlgeonState?.displayedText &&
-    prevAlgeonState?.isComplete === nextAlgeonState?.isComplete
+    (prevAlgeonState?.isComplete === nextAlgeonState?.isComplete)
   );
 });
 
