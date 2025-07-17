@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { detectAlgeonResearchType, type AlgeonResearchType } from '@/utils/algeonResearchTypes';
 import { useOptimizedStreaming } from './useOptimizedStreaming';
@@ -48,7 +49,8 @@ export const useAlegeonStreaming = () => {
     processCitations,
     completeStreaming,
     startStreaming,
-    setError
+    setError,
+    reset
   } = useOptimizedStreaming();
 
   const wsRef = useRef<WebSocket | null>(null);
@@ -59,6 +61,7 @@ export const useAlegeonStreaming = () => {
     reject: (reason?: any) => void;
   } | null>(null);
   const hasResolvedRef = useRef<boolean>(false);
+  const requestCompletedRef = useRef<boolean>(false); // Track request completion
 
   // Transform optimized state to legacy format for compatibility
   const alegeonStreamingState: AlegeonStreamingState = {
@@ -94,11 +97,16 @@ export const useAlegeonStreaming = () => {
   }, []);
 
   const resetState = useCallback(() => {
+    console.log('🔄 Resetting Algeon streaming state');
     cleanup();
-  }, [cleanup]);
+    reset(); // Use the new reset method
+    requestCompletedRef.current = false; // Reset completion flag
+  }, [cleanup, reset]);
 
   const startStreamingRequest = useCallback(async (query: string, researchType?: AlgeonResearchType): Promise<{ text: string; citations: Array<{ name: string; url: string; type?: string }> }> => {
     const detectedType = researchType || detectAlgeonResearchType(query);
+    
+    console.log('🚀 Starting Algeon streaming request for:', query.substring(0, 50));
     
     resetState();
     startStreaming();
@@ -106,6 +114,7 @@ export const useAlegeonStreaming = () => {
     return new Promise((resolve, reject) => {
       promiseRef.current = { resolve, reject };
       hasResolvedRef.current = false;
+      requestCompletedRef.current = false;
 
       // Set overall timeout
       timeoutRef.current = window.setTimeout(() => {
@@ -160,8 +169,11 @@ export const useAlegeonStreaming = () => {
                 processCitations(data.citations);
               }
               
-              // Check for completion
-              if (data.is_complete === true) {
+              // Check for completion - prevent duplicate handling
+              if (data.is_complete === true && !requestCompletedRef.current) {
+                console.log('✅ Algeon request completed');
+                requestCompletedRef.current = true;
+                
                 if (!hasResolvedRef.current) {
                   hasResolvedRef.current = true;
                   
@@ -169,6 +181,12 @@ export const useAlegeonStreaming = () => {
                   const finalText = streamingState.bufferedText || streamingState.displayedText;
                   
                   completeStreaming();
+                  
+                  // Reset state after a delay to prevent interference
+                  setTimeout(() => {
+                    reset();
+                  }, 1000);
+                  
                   resolve({ text: finalText, citations: finalCitations });
                   cleanup();
                 }
@@ -204,6 +222,12 @@ export const useAlegeonStreaming = () => {
             
             if (finalText && finalText.length > 50 && (event.code === 1000 || event.wasClean)) {
               completeStreaming();
+              
+              // Reset state after completion
+              setTimeout(() => {
+                reset();
+              }, 1000);
+              
               resolve({ text: finalText, citations: finalCitations });
             } else if (event.code === 1006) {
               reject(new Error('Connection lost unexpectedly'));
@@ -223,7 +247,7 @@ export const useAlegeonStreaming = () => {
         }
       }
     });
-  }, [streamingState, processChunk, processCitations, completeStreaming, startStreaming, setError, resetState, cleanup]);
+  }, [streamingState, processChunk, processCitations, completeStreaming, startStreaming, setError, resetState, cleanup, reset]);
 
   const stopStreaming = useCallback(() => {
     if (!hasResolvedRef.current && promiseRef.current) {

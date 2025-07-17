@@ -2,7 +2,9 @@
 export const isReportMessage = (content: string, metadata?: { isCompleted?: boolean; messageType?: string }): boolean => {
   // If we have metadata indicating this is a completed report, check for that first
   if (metadata?.isCompleted === true || metadata?.messageType === 'completed_report') {
-    return true;
+    // Additional check: ensure it's substantial content, not just a completion flag
+    const wordCount = content.trim().split(/\s+/).length;
+    return wordCount >= 100; // More selective - require substantial content
   }
   
   // If it's explicitly marked as progress update, don't treat as report
@@ -21,12 +23,22 @@ export const isReportMessage = (content: string, metadata?: { isCompleted?: bool
     return hasCompletionIndicators;
   }
   
+  // For Algeon reports, be more selective about auto-canvas conversion
+  if (content.includes('# ') || content.includes('## ')) {
+    const wordCount = content.trim().split(/\s+/).length;
+    const hasProgressIndicators = content.includes('⚡') || content.includes('📊 **Preliminary') || content.includes('**Agent Update:**');
+    
+    // Only convert to canvas if it's a substantial report without progress indicators
+    return wordCount >= 500 && !hasProgressIndicators && metadata?.messageType === 'completed_report';
+  }
+  
   // For other types of reports (business validation, etc.), use word count as before
-  // but exclude obvious progress indicators
+  // but exclude obvious progress indicators and require more substantial content
   const wordCount = content.trim().split(/\s+/).length;
   const hasProgressIndicators = content.includes('⚡') || content.includes('📊 **Preliminary') || content.includes('**Agent Update:**');
   
-  return wordCount >= 300 && !hasProgressIndicators;
+  // Increased threshold and stricter requirements
+  return wordCount >= 400 && !hasProgressIndicators && metadata?.messageType === 'completed_report';
 };
 
 export const getReportPreview = (content: string, maxLength: number = 200): string => {

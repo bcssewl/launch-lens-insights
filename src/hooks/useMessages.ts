@@ -91,6 +91,7 @@ export const useMessages = (currentSessionId: string | null) => {
   // Consistent streaming message ID
   const STREAMING_MESSAGE_ID = 'algeon-streaming-message';
   const isAddingMessageRef = useRef(false);
+  const processedCompletionsRef = useRef<Set<string>>(new Set()); // Track processed completions
 
   // Improved scroll behavior - only auto-scroll when user is near bottom
   const scrollToBottom = useCallback(() => {
@@ -117,14 +118,17 @@ export const useMessages = (currentSessionId: string | null) => {
     scrollToBottom();
   }, [messages.length, isTyping, scrollToBottom]);
 
-  // Enhanced Algeon streaming message management
+  // Enhanced Algeon streaming message management with duplicate prevention
   useEffect(() => {
+    const currentBufferedText = alegeonStreamingState.bufferedText;
+    const completionKey = `${currentBufferedText.substring(0, 100)}-${alegeonStreamingState.isComplete}`;
+    
     if (alegeonStreamingState.isStreaming && alegeonStreamingState.hasContent) {
       console.log('📝 Managing Algeon streaming message - isStreaming:', alegeonStreamingState.isStreaming);
       
       const streamingMessage: ExtendedMessage = {
         id: STREAMING_MESSAGE_ID,
-        text: alegeonStreamingState.bufferedText || 'Initializing Algeon research...',
+        text: currentBufferedText || 'Initializing Algeon research...',
         sender: 'ai',
         timestamp: new Date(),
         isStreaming: true,
@@ -137,13 +141,16 @@ export const useMessages = (currentSessionId: string | null) => {
       
       dispatch({ type: 'ADD_STREAMING_MESSAGE', payload: streamingMessage });
       
-    } else if (alegeonStreamingState.isComplete && alegeonStreamingState.bufferedText) {
+    } else if (alegeonStreamingState.isComplete && currentBufferedText && !processedCompletionsRef.current.has(completionKey)) {
       console.log('✅ Algeon streaming completed, replacing with final message');
+      
+      // Mark this completion as processed
+      processedCompletionsRef.current.add(completionKey);
       
       // Create final message with citations preserved
       const finalMessage: ExtendedMessage = {
         id: uuidv4(),
-        text: alegeonStreamingState.bufferedText,
+        text: currentBufferedText,
         sender: 'ai',
         timestamp: new Date(),
         metadata: {
@@ -159,14 +166,19 @@ export const useMessages = (currentSessionId: string | null) => {
       });
       
       // Save final message to history with citations metadata
-      if (currentSessionId && alegeonStreamingState.bufferedText) {
-        const messageWithCitations = `AI: ${alegeonStreamingState.bufferedText}${
+      if (currentSessionId && currentBufferedText) {
+        const messageWithCitations = `AI: ${currentBufferedText}${
           alegeonStreamingState.finalCitations.length > 0 
             ? `\n\nCitations: ${JSON.stringify(alegeonStreamingState.finalCitations)}`
             : ''
         }`;
         addMessage(messageWithCitations);
       }
+      
+      // Clean up processed completions after a delay to prevent memory leaks
+      setTimeout(() => {
+        processedCompletionsRef.current.delete(completionKey);
+      }, 5000);
     }
   }, [
     alegeonStreamingState.isStreaming, 
@@ -594,6 +606,9 @@ export const useMessages = (currentSessionId: string | null) => {
     // Remove any existing streaming messages
     dispatch({ type: 'REMOVE_STREAMING_MESSAGE', payload: STREAMING_MESSAGE_ID });
     
+    // Clear processed completions for new request
+    processedCompletionsRef.current.clear();
+    
     try {
       let aiResponseText: string;
 
@@ -686,6 +701,8 @@ export const useMessages = (currentSessionId: string | null) => {
     dispatch({ type: 'SET_MESSAGES', payload: initialMessages as ExtendedMessage[] });
     stopStreaming();
     stopAlegeonStreaming();
+    // Clear processed completions on conversation clear
+    processedCompletionsRef.current.clear();
   }, [stopStreaming, stopAlegeonStreaming]);
 
   const handleDownloadChat = useCallback(() => {

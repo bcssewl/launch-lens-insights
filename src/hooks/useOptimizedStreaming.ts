@@ -32,6 +32,7 @@ export const useOptimizedStreaming = () => {
   const lastUpdateRef = useRef<number>(0);
   const isAnimatingRef = useRef<boolean>(false);
   const batchSizeRef = useRef<number>(8); // Characters per batch
+  const isCompletedRef = useRef<boolean>(false); // Track completion to prevent duplicates
 
   // Optimized typewriter animation using RAF with batching
   const typewriterAnimation = useCallback(() => {
@@ -104,6 +105,15 @@ export const useOptimizedStreaming = () => {
 
   // Complete streaming and show all remaining text
   const completeStreaming = useCallback(() => {
+    // Prevent duplicate completion
+    if (isCompletedRef.current) {
+      console.log('🚫 Streaming already completed, ignoring duplicate completion');
+      return;
+    }
+    
+    console.log('✅ Completing streaming - final text length:', bufferRef.current.length);
+    isCompletedRef.current = true;
+    
     // Ensure all buffered text is displayed immediately
     displayedRef.current = bufferRef.current;
     
@@ -125,10 +135,13 @@ export const useOptimizedStreaming = () => {
 
   // Start streaming with clean state
   const startStreaming = useCallback(() => {
+    console.log('🚀 Starting streaming with clean state');
+    
     // Reset all state
     bufferRef.current = '';
     displayedRef.current = '';
     isAnimatingRef.current = false;
+    isCompletedRef.current = false; // Reset completion flag
     
     if (animationRef.current) {
       cancelAnimationFrame(animationRef.current);
@@ -161,6 +174,35 @@ export const useOptimizedStreaming = () => {
       animationRef.current = null;
     }
     isAnimatingRef.current = false;
+    isCompletedRef.current = false;
+  }, []);
+
+  // Reset all streaming state - NEW METHOD
+  const reset = useCallback(() => {
+    console.log('🔄 Resetting streaming state completely');
+    
+    // Reset all refs
+    bufferRef.current = '';
+    displayedRef.current = '';
+    isAnimatingRef.current = false;
+    isCompletedRef.current = false;
+    
+    // Cancel any ongoing animation
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+      animationRef.current = null;
+    }
+
+    // Reset state
+    setStreamingState({
+      isStreaming: false,
+      displayedText: '',
+      bufferedText: '',
+      citations: [],
+      error: null,
+      isComplete: false,
+      progress: 0,
+    });
   }, []);
 
   // Cleanup on unmount
@@ -178,6 +220,7 @@ export const useOptimizedStreaming = () => {
     processCitations,
     completeStreaming,
     startStreaming,
-    setError
+    setError,
+    reset // NEW METHOD
   };
 };
