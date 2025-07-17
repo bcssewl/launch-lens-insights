@@ -80,8 +80,11 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
   // Check if this is a streaming message
   const isStreamingMessage = message.isStreaming || (message.metadata?.messageType === 'progress_update' && !message.metadata?.isCompleted);
   
-  // For Algeon streaming, show the overlay only if this is the active streaming message
-  const showAlegeonStreaming = isAi && alegeonStreamingState && isStreamingMessage && alegeonStreamingState.isStreaming;
+  // For Algeon streaming, show the overlay if this is the streaming message
+  const showAlegeonStreaming = isAi && alegeonStreamingState && (
+    (alegeonStreamingState.isStreaming && isStreamingMessage) ||
+    (alegeonStreamingState.isComplete && message.metadata?.messageType === 'completed_report')
+  );
 
   // Enhanced citation detection
   const availableCitations = message.alegeonCitations || 
@@ -93,13 +96,8 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
     message.metadata?.messageType === 'completed_report' && 
     availableCitations && availableCitations.length > 0;
 
-  // Don't render AI messages with empty content unless actively streaming
+  // Don't render AI messages with empty content unless streaming
   if (isAi && (!message.text || message.text.trim() === '') && !showAlegeonStreaming && !stratixStreamingState?.isStreaming) {
-    return null;
-  }
-
-  // Don't render duplicate or incomplete streaming messages
-  if (isStreamingMessage && (!alegeonStreamingState?.isStreaming || message.text.trim() === '')) {
     return null;
   }
 
@@ -230,32 +228,22 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
     </>
   );
 }, (prevProps, nextProps) => {
-  // Enhanced comparison to prevent unnecessary re-renders
+  // Custom comparison to prevent unnecessary re-renders
   const prevMessage = prevProps.message;
   const nextMessage = nextProps.message;
   const prevAlgeonState = prevProps.alegeonStreamingState;
   const nextAlgeonState = nextProps.alegeonStreamingState;
   
-  // Check for meaningful changes only
-  const messageChanged = 
-    prevMessage.id !== nextMessage.id ||
-    prevMessage.text !== nextMessage.text ||
-    prevMessage.isStreaming !== nextMessage.isStreaming ||
-    JSON.stringify(prevMessage.metadata) !== JSON.stringify(nextMessage.metadata) ||
-    JSON.stringify(prevMessage.alegeonCitations) !== JSON.stringify(nextMessage.alegeonCitations);
-
-  const streamingChanged = 
-    prevAlgeonState?.isStreaming !== nextAlgeonState?.isStreaming ||
-    prevAlgeonState?.displayedText !== nextAlgeonState?.displayedText ||
-    prevAlgeonState?.isComplete !== nextAlgeonState?.isComplete ||
-    prevAlgeonState?.error !== nextAlgeonState?.error;
-
-  const otherPropsChanged = 
-    prevProps.isStreaming !== nextProps.isStreaming ||
-    prevProps.stratixStreamingState?.isStreaming !== nextProps.stratixStreamingState?.isStreaming;
-
-  // Only re-render if there are meaningful changes
-  return !messageChanged && !streamingChanged && !otherPropsChanged;
+  // Only re-render if essential props change
+  return (
+    prevMessage.id === nextMessage.id &&
+    prevMessage.text === nextMessage.text &&
+    prevMessage.isStreaming === nextMessage.isStreaming &&
+    prevProps.isStreaming === nextProps.isStreaming &&
+    prevAlgeonState?.isStreaming === nextAlgeonState?.isStreaming &&
+    prevAlgeonState?.displayedText === nextAlgeonState?.displayedText &&
+    prevAlgeonState?.isComplete === nextAlgeonState?.isComplete
+  );
 });
 
 ChatMessage.displayName = 'ChatMessage';
