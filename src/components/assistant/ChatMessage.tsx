@@ -1,11 +1,12 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import AIAvatar from './AIAvatar';
 import UserAvatar from './UserAvatar';
 import CopyButton from './CopyButton';
 import MarkdownRenderer from './MarkdownRenderer';
 import CitationAwareRenderer from './CitationAwareRenderer';
+import SourcesSidebar from './SourcesSidebar';
 import CanvasCompact from './CanvasCompact';
 import StreamingOverlay from './StreamingOverlay';
 import StratixStreamingOverlay from './StratixStreamingOverlay';
@@ -73,6 +74,8 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
   stratixStreamingState,
   alegeonStreamingState
 }) => {
+  const [isSourcesSidebarOpen, setIsSourcesSidebarOpen] = useState(false);
+  
   const isAi = message.sender === 'ai';
   const isReport = isAi && isReportMessage(message.text, message.metadata);
   
@@ -125,107 +128,127 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
     }
   };
 
+  const handleSourcesClick = () => {
+    setIsSourcesSidebarOpen(true);
+  };
+
+  const handleSourcesSidebarClose = () => {
+    setIsSourcesSidebarOpen(false);
+  };
+
   return (
-    <div
-      className={cn(
-        "flex items-start gap-3 w-full transition-all duration-300",
-        isAi ? "justify-start" : "justify-end"
-      )}
-      style={{
-        width: '100%',
-      }}
-    >
-      {isAi && (
-        <AIAvatar className="w-8 h-8 flex-shrink-0 mt-1" />
-      )}
+    <>
+      <div
+        className={cn(
+          "flex items-start gap-3 w-full transition-all duration-300",
+          isAi ? "justify-start" : "justify-end"
+        )}
+        style={{
+          width: '100%',
+        }}
+      >
+        {isAi && (
+          <AIAvatar className="w-8 h-8 flex-shrink-0 mt-1" />
+        )}
 
-      <div className={cn("flex flex-col", isAi ? "items-start" : "items-end")}>
-        <div
-          className={cn(
-            "group relative transition-all duration-300",
-            'max-w-[90vw] sm:max-w-[80vw] md:max-w-xl lg:max-w-2xl xl:max-w-3xl',
-            "p-3 rounded-2xl",
-            isAi 
-              ? "bg-white/10 backdrop-blur-md border border-white/20 text-foreground rounded-tl-sm shadow-glass hover:bg-white/15 hover:border-white/30"
-              : "bg-primary/90 backdrop-blur-md border border-primary/30 text-primary-foreground rounded-tr-sm shadow-glass hover:bg-primary/95"
-          )}
-        >
-          {/* Algeon Streaming Overlay - Show for streaming messages only */}
-          {showAlegeonStreaming && isStreamingMessage && (
-            <AlegeonStreamingOverlay
-              streamingState={alegeonStreamingState!}
-              className="absolute inset-0 z-20 rounded-2xl"
-            />
-          )}
+        <div className={cn("flex flex-col", isAi ? "items-start" : "items-end")}>
+          <div
+            className={cn(
+              "group relative transition-all duration-300",
+              'max-w-[90vw] sm:max-w-[80vw] md:max-w-xl lg:max-w-2xl xl:max-w-3xl',
+              "p-3 rounded-2xl",
+              isAi 
+                ? "bg-white/10 backdrop-blur-md border border-white/20 text-foreground rounded-tl-sm shadow-glass hover:bg-white/15 hover:border-white/30"
+                : "bg-primary/90 backdrop-blur-md border border-primary/30 text-primary-foreground rounded-tr-sm shadow-glass hover:bg-primary/95"
+            )}
+          >
+            {/* Algeon Streaming Overlay - Show for streaming messages only */}
+            {showAlegeonStreaming && isStreamingMessage && (
+              <AlegeonStreamingOverlay
+                streamingState={alegeonStreamingState!}
+                className="absolute inset-0 z-20 rounded-2xl"
+              />
+            )}
 
-          {/* Enhanced Stratix Streaming Overlay for AI messages */}
-          {isAi && stratixStreamingState?.isStreaming && (
-            <StratixStreamingOverlay
-              isVisible={stratixStreamingState.isStreaming}
-              streamingState={stratixStreamingState}
-              className="z-10"
-            />
-          )}
+            {/* Enhanced Stratix Streaming Overlay for AI messages */}
+            {isAi && stratixStreamingState?.isStreaming && (
+              <StratixStreamingOverlay
+                isVisible={stratixStreamingState.isStreaming}
+                streamingState={stratixStreamingState}
+                className="z-10"
+              />
+            )}
 
-          {/* Fallback to legacy streaming overlay if neither Stratix nor Algeon streaming */}
-          {isAi && !stratixStreamingState?.isStreaming && !showAlegeonStreaming && (isStreaming || streamingUpdates.length > 0) && (
-            <StreamingOverlay
-              isVisible={isStreaming}
-              updates={streamingUpdates}
-              sources={streamingSources}
-              progress={streamingProgress}
-              className="z-10"
-            />
-          )}
+            {/* Fallback to legacy streaming overlay if neither Stratix nor Algeon streaming */}
+            {isAi && !stratixStreamingState?.isStreaming && !showAlegeonStreaming && (isStreaming || streamingUpdates.length > 0) && (
+              <StreamingOverlay
+                isVisible={isStreaming}
+                updates={streamingUpdates}
+                sources={streamingSources}
+                progress={streamingProgress}
+                className="z-10"
+              />
+            )}
 
-          {/* Copy button - only show when not streaming */}
-          {isAi && !showAlegeonStreaming && !stratixStreamingState?.isStreaming && (
-            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-              <CopyButton content={message.text} />
-            </div>
-          )}
+            {/* Copy button - only show when not streaming */}
+            {isAi && !showAlegeonStreaming && !stratixStreamingState?.isStreaming && (
+              <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                <CopyButton content={message.text} />
+              </div>
+            )}
 
-          {/* Message content - hide when showing streaming overlay for streaming messages */}
-          {!(showAlegeonStreaming && isStreamingMessage) && (
-            <div className={cn(
-              "text-sm leading-relaxed", 
-              isAi && !stratixStreamingState?.isStreaming && "pr-8"
-            )}>
-              {isAi ? (
-                <>
-                  {isReport && !isStreamingMessage ? (
-                    <CanvasCompact
-                      content={message.text}
-                      onExpand={handleCanvasExpand}
-                      onDownload={onCanvasDownload}
-                      onPrint={onCanvasPrint}
-                    />
-                  ) : isAlegeonCompleted && availableCitations ? (
-                    <CitationAwareRenderer
-                      content={message.text}
-                      citations={availableCitations}
-                    />
-                  ) : (
-                    <MarkdownRenderer content={message.text} />
-                  )}
-                </>
-              ) : (
-                <p className="whitespace-pre-wrap">{message.text}</p>
-              )}
-            </div>
-          )}
+            {/* Message content - hide when showing streaming overlay for streaming messages */}
+            {!(showAlegeonStreaming && isStreamingMessage) && (
+              <div className={cn(
+                "text-sm leading-relaxed", 
+                isAi && !stratixStreamingState?.isStreaming && "pr-8"
+              )}>
+                {isAi ? (
+                  <>
+                    {isReport && !isStreamingMessage ? (
+                      <CanvasCompact
+                        content={message.text}
+                        onExpand={handleCanvasExpand}
+                        onDownload={onCanvasDownload}
+                        onPrint={onCanvasPrint}
+                      />
+                    ) : isAlegeonCompleted && availableCitations ? (
+                      <CitationAwareRenderer
+                        content={message.text}
+                        citations={availableCitations}
+                        onSourcesClick={handleSourcesClick}
+                      />
+                    ) : (
+                      <MarkdownRenderer content={message.text} />
+                    )}
+                  </>
+                ) : (
+                  <p className="whitespace-pre-wrap">{message.text}</p>
+                )}
+              </div>
+            )}
+          </div>
+          <p className={cn(
+            "text-xs mt-1 opacity-70 px-1",
+            isAi ? "text-muted-foreground" : "text-muted-foreground"
+          )}>
+            {message.timestamp}
+          </p>
         </div>
-        <p className={cn(
-          "text-xs mt-1 opacity-70 px-1",
-          isAi ? "text-muted-foreground" : "text-muted-foreground"
-        )}>
-          {message.timestamp}
-        </p>
+        {!isAi && (
+          <UserAvatar className="h-8 w-8 flex-shrink-0 mt-1" />
+        )}
       </div>
-      {!isAi && (
-        <UserAvatar className="h-8 w-8 flex-shrink-0 mt-1" />
+
+      {/* Sources Sidebar */}
+      {availableCitations && availableCitations.length > 0 && (
+        <SourcesSidebar
+          isOpen={isSourcesSidebarOpen}
+          onClose={handleSourcesSidebarClose}
+          citations={availableCitations}
+        />
       )}
-    </div>
+    </>
   );
 };
 

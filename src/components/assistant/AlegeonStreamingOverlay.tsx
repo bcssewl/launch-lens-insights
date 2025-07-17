@@ -25,7 +25,7 @@ const AlegeonStreamingOverlay: React.FC<AlegeonStreamingOverlayProps> = ({
 
   // Use typewriter effect for smooth character-by-character display
   const { displayedText, isTyping } = useTypewriter(rawText, {
-    speed: 12, // Slightly slower for readability
+    speed: 3, // Very smooth streaming
     enabled: isStreaming && !isComplete
   });
 
@@ -65,8 +65,8 @@ const AlegeonStreamingOverlay: React.FC<AlegeonStreamingOverlayProps> = ({
     if (isComplete) return 100;
     if (isStreaming && rawText) {
       // More realistic progress calculation
-      const baseProgress = Math.min(80, (rawText.length / 1500) * 70);
-      const typingProgress = rawText.length > 0 ? (displayedText.length / rawText.length) * 20 : 0;
+      const baseProgress = Math.min(85, (rawText.length / 2000) * 75);
+      const typingProgress = rawText.length > 0 ? (displayedText.length / rawText.length) * 15 : 0;
       return baseProgress + typingProgress;
     }
     return 15;
@@ -96,7 +96,7 @@ const AlegeonStreamingOverlay: React.FC<AlegeonStreamingOverlayProps> = ({
       "p-4 transition-all duration-300 shadow-sm",
       className
     )}>
-      <div className="space-y-4">
+      <div className="space-y-3">
         {/* Main Status */}
         <div className="flex items-center gap-3">
           {/* Animated Icon */}
@@ -151,17 +151,24 @@ const AlegeonStreamingOverlay: React.FC<AlegeonStreamingOverlayProps> = ({
           </div>
         </div>
 
-        {/* Current Text Preview with Typewriter Effect - More compact */}
+        {/* Current Text Preview with Smooth Typewriter Effect */}
         {textToShow && textToShow.length > 0 && (
           <div className="bg-background/40 backdrop-blur-sm border border-border/30 rounded-lg p-3">
-            <div className="text-sm text-foreground/90 leading-relaxed line-clamp-3">
-              {textToShow.length > 200 
-                ? textToShow.substring(0, 200) + '...' 
-                : textToShow
-              }
+            <div className="text-sm text-foreground/90 leading-relaxed">
+              {/* Show limited preview during streaming, full content when complete */}
+              {isComplete ? (
+                textToShow.length > 300 
+                  ? textToShow.substring(0, 300) + '...' 
+                  : textToShow
+              ) : (
+                displayedText.length > 200 
+                  ? displayedText.substring(0, 200) + '...' 
+                  : displayedText
+              )}
+              
               {/* Blinking cursor during typewriter effect */}
               {isTyping && (
-                <span className="animate-pulse ml-1 text-blue-500">|</span>
+                <span className="animate-pulse ml-1 text-blue-500">▍</span>
               )}
             </div>
           </div>

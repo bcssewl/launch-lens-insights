@@ -10,14 +10,14 @@ export const useTypewriter = (
   targetText: string, 
   options: UseTypewriterOptions = {}
 ) => {
-  const { speed = 8, enabled = true } = options; // Faster speed for smoother experience
+  const { speed = 3, enabled = true } = options; // Very fast for smooth experience
   const [displayedText, setDisplayedText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const intervalRef = useRef<number | null>(null);
   const targetTextRef = useRef(targetText);
   const currentIndexRef = useRef(0);
   const lastUpdateRef = useRef(0);
-  const debounceTimeoutRef = useRef<number | null>(null);
+  const rafRef = useRef<number | null>(null);
 
   // Update target text reference
   useEffect(() => {
@@ -29,8 +29,10 @@ export const useTypewriter = (
     const currentIndex = currentIndexRef.current;
     
     if (currentIndex < currentTarget.length) {
-      setDisplayedText(currentTarget.slice(0, currentIndex + 1));
-      currentIndexRef.current += 1;
+      // Type multiple characters at once for very smooth experience
+      const charsToAdd = Math.min(3, currentTarget.length - currentIndex);
+      setDisplayedText(currentTarget.slice(0, currentIndex + charsToAdd));
+      currentIndexRef.current += charsToAdd;
     } else {
       setIsTyping(false);
       if (intervalRef.current) {
@@ -52,21 +54,16 @@ export const useTypewriter = (
       clearInterval(intervalRef.current);
     }
     
-    // Use interval instead of recursive timeouts for smoother performance
+    // Use faster interval for smooth streaming
     intervalRef.current = window.setInterval(typeCharacter, speed);
   }, [targetText, speed, enabled, typeCharacter]);
 
-  // Enhanced effect with debouncing and smart updates
+  // Enhanced effect with better performance
   useEffect(() => {
     if (!enabled) {
       setDisplayedText(targetText);
       setIsTyping(false);
       return;
-    }
-
-    // Clear existing debounce timeout
-    if (debounceTimeoutRef.current) {
-      clearTimeout(debounceTimeoutRef.current);
     }
 
     // Clear existing interval
@@ -77,15 +74,19 @@ export const useTypewriter = (
     const now = Date.now();
     const timeSinceLastUpdate = now - lastUpdateRef.current;
 
-    // If text is significantly longer or it's been a while, restart typewriter
-    if (targetText.length > displayedText.length + 20 || timeSinceLastUpdate > 100) {
-      // Debounce rapid updates
-      debounceTimeoutRef.current = window.setTimeout(() => {
+    // If text changed significantly or it's been a while, restart
+    if (targetText.length > displayedText.length + 50 || timeSinceLastUpdate > 100) {
+      // Use RAF for better performance
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+      }
+      
+      rafRef.current = requestAnimationFrame(() => {
         startTypewriter();
         lastUpdateRef.current = Date.now();
-      }, 10);
-    } else if (targetText !== displayedText && !isTyping) {
-      // For small changes, continue from current position
+      });
+    } else if (targetText !== displayedText && !isTyping && targetText.length > displayedText.length) {
+      // Continue from current position for small changes
       currentIndexRef.current = displayedText.length;
       setIsTyping(true);
       intervalRef.current = window.setInterval(typeCharacter, speed);
@@ -98,8 +99,8 @@ export const useTypewriter = (
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current);
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
       }
     };
   }, []);

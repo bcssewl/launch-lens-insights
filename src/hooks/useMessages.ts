@@ -91,25 +91,25 @@ export const useMessages = (currentSessionId: string | null) => {
 
   // Consistent streaming message ID
   const STREAMING_MESSAGE_ID = 'algeon-streaming-message';
-  const lastScrollTimeRef = useRef<number>(0);
   const isAddingMessageRef = useRef(false);
 
-  // Smart scroll function with performance optimization
+  // Improved scroll behavior - only auto-scroll when user is near bottom
   const scrollToBottom = useCallback(() => {
-    const now = Date.now();
-    if (now - lastScrollTimeRef.current < 100) return; // Throttle scrolling
-    
     if (viewportRef.current) {
-      // Use requestAnimationFrame for smooth scrolling
-      requestAnimationFrame(() => {
-        if (viewportRef.current) {
-          viewportRef.current.scrollTo({ 
-            top: viewportRef.current.scrollHeight, 
-            behavior: 'smooth' 
-          });
-          lastScrollTimeRef.current = Date.now();
-        }
-      });
+      const { scrollTop, scrollHeight, clientHeight } = viewportRef.current;
+      const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+      
+      // Only auto-scroll if user is within 100px of bottom
+      if (distanceFromBottom <= 100) {
+        requestAnimationFrame(() => {
+          if (viewportRef.current) {
+            viewportRef.current.scrollTo({ 
+              top: viewportRef.current.scrollHeight, 
+              behavior: 'smooth' 
+            });
+          }
+        });
+      }
     }
   }, []);
 
