@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { cn } from '@/lib/utils';
 import ChatMessage, { type ChatMessageData } from './ChatMessage';
@@ -5,6 +6,7 @@ import TypingIndicator from './TypingIndicator';
 import ChatEmptyState from './ChatEmptyState';
 import type { StratixStreamingState } from '@/types/stratixStreaming';
 import type { AlegeonStreamingState } from '@/hooks/useAlegeonStreaming';
+import { formatTimestamp } from '@/constants/aiAssistant';
 
 interface StreamingUpdate {
   type: 'search' | 'source' | 'snippet' | 'thought' | 'complete';
@@ -14,7 +16,7 @@ interface StreamingUpdate {
 }
 
 interface ChatAreaProps {
-  messages: ChatMessageData[];
+  messages: any[]; // Accept any messages and convert them internally
   isTyping: boolean;
   viewportRef: React.RefObject<HTMLDivElement>;
   onSendMessage: (text: string, attachments?: any[], modelOverride?: string, researchType?: string) => void;
@@ -25,14 +27,14 @@ interface ChatAreaProps {
   onCanvasPrint?: () => void;
   streamingState?: {
     isStreaming: boolean;
-    updates: StreamingUpdate[];
-    sources: Array<{
+    updates?: StreamingUpdate[];
+    sources?: Array<{
       name: string;
       url: string;
       type?: string;
       confidence?: number;
     }>;
-    progress: {
+    progress?: {
       phase: string;
       progress: number;
     };
@@ -57,11 +59,17 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 }) => {
   const displayMessages = messages.filter(msg => msg.id !== 'initial');
 
+  // Convert Message[] to ChatMessageData[] format
+  const convertedMessages: ChatMessageData[] = displayMessages.map(message => ({
+    ...message,
+    timestamp: typeof message.timestamp === 'string' ? message.timestamp : formatTimestamp(message.timestamp)
+  }));
+
   // Enhanced debug logging
   console.log('🎯 ChatArea: Rendering with streaming states:', {
     stratixStreaming: stratixStreamingState?.isStreaming,
     alegeonStreaming: alegeonStreamingState?.isStreaming,
-    messagesCount: displayMessages.length,
+    messagesCount: convertedMessages.length,
     isTyping
   });
 
@@ -73,18 +81,18 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         className="flex-1 overflow-y-auto px-6 pb-6 pt-4 space-y-6 scroll-smooth"
         style={{ scrollBehavior: 'smooth' }}
       >
-        {displayMessages.length === 0 ? (
+        {convertedMessages.length === 0 ? (
           <ChatEmptyState />
         ) : (
           <>
-            {displayMessages.map((message) => (
+            {convertedMessages.map((message) => (
               <ChatMessage
                 key={message.id}
                 message={message}
                 onOpenCanvas={onOpenCanvas}
                 onCanvasDownload={onCanvasDownload}
                 onCanvasPrint={onCanvasPrint}
-                isStreaming={streamingState?.isStreaming}
+                isStreaming={streamingState?.isStreaming || false}
                 streamingUpdates={streamingState?.updates || []}
                 streamingSources={streamingState?.sources || []}
                 streamingProgress={streamingState?.progress || { phase: '', progress: 0 }}

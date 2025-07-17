@@ -3,7 +3,7 @@ import React from 'react';
 import ChatSubheader from '@/components/assistant/ChatSubheader';
 import ChatArea from '@/components/assistant/ChatArea';
 import { FloatingElements } from '@/components/landing/FloatingElements';
-import { Message } from '@/constants/aiAssistant';
+import { Message, formatTimestamp } from '@/constants/aiAssistant';
 
 interface FullscreenChatLayoutProps {
   messages: Message[];
@@ -59,6 +59,22 @@ const FullscreenChatLayout: React.FC<FullscreenChatLayoutProps> = ({
   onCanvasPrint,
   streamingState
 }) => {
+  // Convert streamingState to match ChatArea expectations
+  const convertedStreamingState = streamingState ? {
+    isStreaming: streamingState.isStreaming,
+    updates: [], // Empty for now, can be populated if needed
+    sources: streamingState.discoveredSources.map(source => ({
+      name: source.name,
+      url: source.url,
+      type: source.type,
+      confidence: source.confidence
+    })),
+    progress: {
+      phase: streamingState.currentPhase,
+      progress: streamingState.progress
+    }
+  } : undefined;
+
   return (
     <div className="min-h-screen flex w-full apple-hero relative">
       {/* Floating Elements at the root level */}
@@ -88,7 +104,7 @@ const FullscreenChatLayout: React.FC<FullscreenChatLayoutProps> = ({
           onCloseCanvas={onCloseCanvas}
           onCanvasDownload={onCanvasDownload}
           onCanvasPrint={onCanvasPrint}
-          streamingState={streamingState}
+          streamingState={convertedStreamingState}
         />
       </div>
     </div>

@@ -97,6 +97,14 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
     }
   };
 
+  // Format timestamp properly - handle both Date objects and strings
+  const formatTimestamp = (timestamp: Date | string) => {
+    if (typeof timestamp === 'string') {
+      return timestamp;
+    }
+    return timestamp.toLocaleTimeString();
+  };
+
   return (
     <div
       className={cn(
@@ -193,7 +201,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
           "text-xs mt-1 opacity-70 px-1",
           isAi ? "text-muted-foreground" : "text-muted-foreground"
         )}>
-          {message.timestamp}
+          {formatTimestamp(message.timestamp)}
         </p>
       </div>
       {!isAi && (

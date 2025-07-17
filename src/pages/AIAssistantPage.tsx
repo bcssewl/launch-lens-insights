@@ -150,6 +150,22 @@ const AIAssistantPage: React.FC = () => {
     setSelectedModel(modelId);
   };
 
+  // Convert streamingState to match ChatArea expectations
+  const convertedStreamingState = streamingState ? {
+    isStreaming: streamingState.isStreaming,
+    updates: [], // Can be populated if needed
+    sources: streamingState.discoveredSources?.map(source => ({
+      name: source.name,
+      url: source.url,
+      type: source.type,
+      confidence: source.confidence
+    })) || [],
+    progress: {
+      phase: streamingState.currentPhase,
+      progress: streamingState.progress
+    }
+  } : undefined;
+
   // Show loading state while history is being loaded
   if (isLoadingHistory) {
     return (
@@ -238,7 +254,7 @@ const AIAssistantPage: React.FC = () => {
               onCloseCanvas={handleCloseCanvas} 
               onCanvasDownload={handleCanvasDownload} 
               onCanvasPrint={handleCanvasPrint}
-              streamingState={streamingState}
+              streamingState={convertedStreamingState}
               stratixStreamingState={stratixStreamingState}
               alegeonStreamingState={alegeonStreamingState}
             />
