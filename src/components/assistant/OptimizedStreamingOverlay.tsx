@@ -153,6 +153,19 @@ const OptimizedStreamingOverlay: React.FC<OptimizedStreamingOverlayProps> = memo
       </div>
     </div>
   );
+}, (prevProps, nextProps) => {
+  // Custom comparison to avoid unnecessary re-renders
+  const prev = prevProps.streamingState;
+  const next = nextProps.streamingState;
+  
+  return (
+    prev.isStreaming === next.isStreaming &&
+    prev.displayedText === next.displayedText &&
+    prev.isComplete === next.isComplete &&
+    prev.error === next.error &&
+    prev.progress === next.progress &&
+    prev.citations.length === next.citations.length
+  );
 });
 
 OptimizedStreamingOverlay.displayName = 'OptimizedStreamingOverlay';

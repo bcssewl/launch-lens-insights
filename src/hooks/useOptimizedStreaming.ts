@@ -30,17 +30,18 @@ export const useOptimizedStreaming = () => {
   const displayedRef = useRef<string>('');
   const animationRef = useRef<number | null>(null);
   const lastUpdateRef = useRef<number>(0);
-  const wsRef = useRef<WebSocket | null>(null);
   const isAnimatingRef = useRef<boolean>(false);
+  const batchSizeRef = useRef<number>(8); // Characters per batch
 
-  // Optimized typewriter animation using RAF
+  // Optimized typewriter animation using RAF with batching
   const typewriterAnimation = useCallback(() => {
     const now = Date.now();
     const buffer = bufferRef.current;
     const displayed = displayedRef.current;
     
-    // Only update every 50ms for smooth but efficient animation
-    if (now - lastUpdateRef.current < 50) {
+    // Target: 25-30 chars/sec with batching every 5-10 chars
+    // Update every ~300ms with 8 chars = ~27 chars/sec
+    if (now - lastUpdateRef.current < 300) {
       if (buffer.length > displayed.length) {
         animationRef.current = requestAnimationFrame(typewriterAnimation);
       }
@@ -48,14 +49,14 @@ export const useOptimizedStreaming = () => {
     }
 
     if (buffer.length > displayed.length) {
-      // Reveal 8-12 characters per frame for smooth animation
-      const charsToReveal = Math.min(10, buffer.length - displayed.length);
+      // Reveal batch of characters (8 chars for smooth 27 chars/sec)
+      const charsToReveal = Math.min(batchSizeRef.current, buffer.length - displayed.length);
       const newDisplayed = buffer.slice(0, displayed.length + charsToReveal);
       
       displayedRef.current = newDisplayed;
       lastUpdateRef.current = now;
 
-      // Batch state update for better performance
+      // Batch state update for better performance - only update every batch
       setStreamingState(prev => ({
         ...prev,
         displayedText: newDisplayed,
@@ -78,12 +79,12 @@ export const useOptimizedStreaming = () => {
     }
   }, [typewriterAnimation]);
 
-  // Process incoming 450-character chunks
+  // Process incoming 450-character chunks efficiently
   const processChunk = useCallback((chunk: string) => {
-    // Add chunk directly to buffer
+    // Add entire 450-char chunk to buffer
     bufferRef.current += chunk;
     
-    // Update buffered text state (less frequently)
+    // Update buffered text state only when we receive chunks (not per character)
     setStreamingState(prev => ({
       ...prev,
       bufferedText: bufferRef.current
@@ -93,7 +94,7 @@ export const useOptimizedStreaming = () => {
     startTypewriter();
   }, [startTypewriter]);
 
-  // Process citations
+  // Process citations (batched, not per character)
   const processCitations = useCallback((citations: Array<{ name: string; url: string; type?: string }>) => {
     setStreamingState(prev => ({
       ...prev,
@@ -101,9 +102,9 @@ export const useOptimizedStreaming = () => {
     }));
   }, []);
 
-  // Complete streaming
+  // Complete streaming and show all remaining text
   const completeStreaming = useCallback(() => {
-    // Ensure all buffered text is displayed
+    // Ensure all buffered text is displayed immediately
     displayedRef.current = bufferRef.current;
     
     setStreamingState(prev => ({
@@ -114,6 +115,7 @@ export const useOptimizedStreaming = () => {
       progress: 100
     }));
 
+    // Clean up animation
     if (animationRef.current) {
       cancelAnimationFrame(animationRef.current);
       animationRef.current = null;
@@ -121,9 +123,9 @@ export const useOptimizedStreaming = () => {
     isAnimatingRef.current = false;
   }, []);
 
-  // Start streaming
+  // Start streaming with clean state
   const startStreaming = useCallback(() => {
-    // Reset state
+    // Reset all state
     bufferRef.current = '';
     displayedRef.current = '';
     isAnimatingRef.current = false;
@@ -144,7 +146,7 @@ export const useOptimizedStreaming = () => {
     });
   }, []);
 
-  // Set error
+  // Set error and cleanup
   const setError = useCallback((error: string) => {
     setStreamingState(prev => ({
       ...prev,
@@ -153,6 +155,7 @@ export const useOptimizedStreaming = () => {
       isComplete: false
     }));
 
+    // Clean up animation
     if (animationRef.current) {
       cancelAnimationFrame(animationRef.current);
       animationRef.current = null;

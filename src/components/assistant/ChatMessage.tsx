@@ -227,6 +227,23 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
       )}
     </>
   );
+}, (prevProps, nextProps) => {
+  // Custom comparison to prevent unnecessary re-renders
+  const prevMessage = prevProps.message;
+  const nextMessage = nextProps.message;
+  const prevAlgeonState = prevProps.alegeonStreamingState;
+  const nextAlgeonState = nextProps.alegeonStreamingState;
+  
+  // Only re-render if essential props change
+  return (
+    prevMessage.id === nextMessage.id &&
+    prevMessage.text === nextMessage.text &&
+    prevMessage.isStreaming === nextMessage.isStreaming &&
+    prevProps.isStreaming === nextProps.isStreaming &&
+    prevAlgeonState?.isStreaming === nextAlgeonState?.isStreaming &&
+    prevAlgeonState?.displayedText === nextAlgeonState?.displayedText &&
+    prevAlgeonState?.isComplete === nextAlgeonState?.isComplete
+  );
 });
 
 ChatMessage.displayName = 'ChatMessage';
