@@ -251,7 +251,7 @@ export const useMessages = (currentSessionId: string | null) => {
           console.log('✅ Algeon WebSocket connected');
           socket.send(JSON.stringify({
             query: message,
-            research_type: "comprehensive",
+            research_type: "quick_facts",
             scope: "global",
             depth: "executive_summary"
           }));

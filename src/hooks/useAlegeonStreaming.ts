@@ -50,7 +50,7 @@ export const useAlegeonStreaming = () => {
     });
   }, []);
 
-  const startStreaming = useCallback(async (query: string, researchType: string = 'comprehensive'): Promise<string> => {
+  const startStreaming = useCallback(async (query: string, researchType: string = 'quick_facts'): Promise<string> => {
     console.log('🚀 Starting Algeon streaming for query:', query.substring(0, 100));
     
     resetState();

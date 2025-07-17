@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ArrowRight, Send, Mic, Plus, Paperclip } from 'lucide-react';
 import AttachmentOptionsDropdown from './AttachmentOptionsDropdown';
+import ResearchTypeSelector from './ResearchTypeSelector';
 
 interface ChatInputControlsProps {
   isCompact: boolean;
@@ -11,10 +12,13 @@ interface ChatInputControlsProps {
   isRecording: boolean;
   isProcessing: boolean;
   inputValue: string;
+  selectedModel: string;
+  researchType?: string;
   onVoiceRecording: () => void;
   onSendMessage: () => void;
   onDatabaseSelect: () => void;
   onLocalFileSelect: () => void;
+  onResearchTypeChange?: (type: string) => void;
 }
 
 const ChatInputControls: React.FC<ChatInputControlsProps> = ({
@@ -23,10 +27,13 @@ const ChatInputControls: React.FC<ChatInputControlsProps> = ({
   isRecording,
   isProcessing,
   inputValue,
+  selectedModel,
+  researchType = 'quick_facts',
   onVoiceRecording,
   onSendMessage,
   onDatabaseSelect,
   onLocalFileSelect,
+  onResearchTypeChange,
 }) => {
   const iconSize = isCompact ? 'h-3 w-3' : 'h-4 w-4';
   const buttonSize = isCompact ? 'h-8 w-8' : 'h-10 w-10';
@@ -46,6 +53,14 @@ const ChatInputControls: React.FC<ChatInputControlsProps> = ({
           <Paperclip className={iconSize} />
         </Button>
       </AttachmentOptionsDropdown>
+      
+      {selectedModel === 'algeon' && onResearchTypeChange && (
+        <ResearchTypeSelector
+          selectedType={researchType}
+          onTypeChange={onResearchTypeChange}
+          isCompact={isCompact}
+        />
+      )}
       
       <Tooltip>
         <TooltipTrigger asChild>
