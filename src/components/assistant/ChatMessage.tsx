@@ -10,7 +10,7 @@ import SourcesSidebar from './SourcesSidebar';
 import CanvasCompact from './CanvasCompact';
 import StreamingOverlay from './StreamingOverlay';
 import StratixStreamingOverlay from './StratixStreamingOverlay';
-import AlegeonStreamingOverlay from './AlegeonStreamingOverlay';
+import OptimizedStreamingOverlay from './OptimizedStreamingOverlay';
 import { isReportMessage } from '@/utils/reportDetection';
 import type { StratixStreamingState } from '@/types/stratixStreaming';
 import type { AlegeonStreamingState } from '@/hooks/useAlegeonStreaming';
@@ -24,7 +24,6 @@ export interface ChatMessageData {
     isCompleted?: boolean;
     messageType?: 'progress_update' | 'completed_report' | 'standard' | 'stratix_conversation';
   };
-  // Enhanced citation support
   alegeonCitations?: Array<{
     name: string;
     url: string;
@@ -57,12 +56,11 @@ interface ChatMessageProps {
     phase: string;
     progress: number;
   };
-  // Enhanced streaming support
   stratixStreamingState?: StratixStreamingState;
   alegeonStreamingState?: AlegeonStreamingState;
 }
 
-const ChatMessage: React.FC<ChatMessageProps> = ({ 
+const ChatMessage: React.FC<ChatMessageProps> = React.memo(({ 
   message, 
   onOpenCanvas,
   onCanvasDownload,
@@ -82,13 +80,13 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
   // Check if this is a streaming message
   const isStreamingMessage = message.isStreaming || (message.metadata?.messageType === 'progress_update' && !message.metadata?.isCompleted);
   
-  // For Algeon streaming, show the streaming overlay if this is the streaming message
+  // For Algeon streaming, show the overlay if this is the streaming message
   const showAlegeonStreaming = isAi && alegeonStreamingState && (
     (alegeonStreamingState.isStreaming && isStreamingMessage) ||
     (alegeonStreamingState.isComplete && message.metadata?.messageType === 'completed_report')
   );
 
-  // Enhanced citation detection - check both streaming state and message data
+  // Enhanced citation detection
   const availableCitations = message.alegeonCitations || 
     (alegeonStreamingState?.finalCitations?.length ? alegeonStreamingState.finalCitations : null) ||
     (alegeonStreamingState?.citations?.length ? alegeonStreamingState.citations : null);
@@ -98,27 +96,8 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
     message.metadata?.messageType === 'completed_report' && 
     availableCitations && availableCitations.length > 0;
 
-  // Enhanced debug logging
-  console.log('💬 ChatMessage: Rendering message', {
-    messageId: message.id,
-    sender: message.sender,
-    isStreaming,
-    isStreamingMessage,
-    showAlegeonStreaming,
-    isAlegeonCompleted,
-    availableCitationsCount: availableCitations?.length || 0,
-    messageCitationsCount: message.alegeonCitations?.length || 0,
-    streamingCitationsCount: alegeonStreamingState?.citations?.length || 0,
-    finalCitationsCount: alegeonStreamingState?.finalCitations?.length || 0,
-    messageType: message.metadata?.messageType,
-    isReport,
-    hasStratixStreaming: !!stratixStreamingState?.isStreaming,
-    messageText: message.text?.substring(0, 100) + (message.text?.length > 100 ? '...' : '')
-  });
-
-  // Don't render AI messages with empty or whitespace-only content unless streaming
+  // Don't render AI messages with empty content unless streaming
   if (isAi && (!message.text || message.text.trim() === '') && !showAlegeonStreaming && !stratixStreamingState?.isStreaming) {
-    console.log('🚫 Skipping empty AI message:', message.id);
     return null;
   }
 
@@ -143,9 +122,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
           "flex items-start gap-3 w-full transition-all duration-300",
           isAi ? "justify-start" : "justify-end"
         )}
-        style={{
-          width: '100%',
-        }}
+        style={{ width: '100%' }}
       >
         {isAi && (
           <AIAvatar className="w-8 h-8 flex-shrink-0 mt-1" />
@@ -162,15 +139,15 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                 : "bg-primary/90 backdrop-blur-md border border-primary/30 text-primary-foreground rounded-tr-sm shadow-glass hover:bg-primary/95"
             )}
           >
-            {/* Algeon Streaming Overlay - Show for streaming messages only */}
+            {/* Optimized Algeon Streaming Overlay */}
             {showAlegeonStreaming && isStreamingMessage && (
-              <AlegeonStreamingOverlay
+              <OptimizedStreamingOverlay
                 streamingState={alegeonStreamingState!}
                 className="absolute inset-0 z-20 rounded-2xl"
               />
             )}
 
-            {/* Enhanced Stratix Streaming Overlay for AI messages */}
+            {/* Stratix Streaming Overlay */}
             {isAi && stratixStreamingState?.isStreaming && (
               <StratixStreamingOverlay
                 isVisible={stratixStreamingState.isStreaming}
@@ -179,7 +156,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
               />
             )}
 
-            {/* Fallback to legacy streaming overlay if neither Stratix nor Algeon streaming */}
+            {/* Fallback streaming overlay */}
             {isAi && !stratixStreamingState?.isStreaming && !showAlegeonStreaming && (isStreaming || streamingUpdates.length > 0) && (
               <StreamingOverlay
                 isVisible={isStreaming}
@@ -190,14 +167,14 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
               />
             )}
 
-            {/* Copy button - only show when not streaming */}
+            {/* Copy button */}
             {isAi && !showAlegeonStreaming && !stratixStreamingState?.isStreaming && (
               <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                 <CopyButton content={message.text} />
               </div>
             )}
 
-            {/* Message content - hide when showing streaming overlay for streaming messages */}
+            {/* Message content */}
             {!(showAlegeonStreaming && isStreamingMessage) && (
               <div className={cn(
                 "text-sm leading-relaxed", 
@@ -250,6 +227,8 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
       )}
     </>
   );
-};
+});
+
+ChatMessage.displayName = 'ChatMessage';
 
 export default ChatMessage;
