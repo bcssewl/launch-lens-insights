@@ -33,6 +33,13 @@ export interface AlegeonStreamingState {
   }>;
   error: string | null;
   isComplete: boolean;
+  // New fields for better state management
+  finalCitations: Array<{
+    name: string;
+    url: string;
+    type?: string;
+  }>;
+  hasContent: boolean;
 }
 
 export const useAlegeonStreaming = () => {
@@ -43,18 +50,21 @@ export const useAlegeonStreaming = () => {
     citations: [],
     error: null,
     isComplete: false,
+    finalCitations: [],
+    hasContent: false,
   });
 
   const wsRef = useRef<WebSocket | null>(null);
   const timeoutRef = useRef<number | null>(null);
   const heartbeatRef = useRef<number | null>(null);
   const promiseRef = useRef<{
-    resolve: (value: string) => void;
+    resolve: (value: { text: string; citations: Array<{ name: string; url: string; type?: string }> }) => void;
     reject: (reason?: any) => void;
   } | null>(null);
   
   // Use ref to track accumulated text to avoid React state async issues
   const accumulatedTextRef = useRef<string>('');
+  const accumulatedCitationsRef = useRef<Array<{ name: string; url: string; type?: string }>>([]);
   const messageCountRef = useRef<number>(0);
   const hasResolvedRef = useRef<boolean>(false);
 
@@ -83,6 +93,7 @@ export const useAlegeonStreaming = () => {
     
     // Reset refs
     accumulatedTextRef.current = '';
+    accumulatedCitationsRef.current = [];
     messageCountRef.current = 0;
     hasResolvedRef.current = false;
     promiseRef.current = null;
@@ -97,11 +108,13 @@ export const useAlegeonStreaming = () => {
       citations: [],
       error: null,
       isComplete: false,
+      finalCitations: [],
+      hasContent: false,
     });
     cleanup();
   }, [cleanup]);
 
-  const startStreaming = useCallback(async (query: string, researchType?: AlgeonResearchType): Promise<string> => {
+  const startStreaming = useCallback(async (query: string, researchType?: AlgeonResearchType): Promise<{ text: string; citations: Array<{ name: string; url: string; type?: string }> }> => {
     const detectedType = researchType || detectAlgeonResearchType(query);
     console.log('🚀 Starting Algeon streaming for query:', query.substring(0, 100));
     console.log('📋 Using research type:', detectedType);
@@ -112,13 +125,15 @@ export const useAlegeonStreaming = () => {
       promiseRef.current = { resolve, reject };
       hasResolvedRef.current = false;
       accumulatedTextRef.current = '';
+      accumulatedCitationsRef.current = [];
       messageCountRef.current = 0;
 
       setStreamingState(prev => ({ 
         ...prev, 
         isStreaming: true,
         isComplete: false,
-        error: null 
+        error: null,
+        hasContent: false
       }));
 
       // Set overall timeout
@@ -127,9 +142,10 @@ export const useAlegeonStreaming = () => {
         if (!hasResolvedRef.current) {
           hasResolvedRef.current = true;
           const finalText = accumulatedTextRef.current;
+          const finalCitations = accumulatedCitationsRef.current;
           if (finalText) {
             console.log('⏰ Timeout but have content, resolving with:', finalText.substring(0, 100));
-            resolve(finalText);
+            resolve({ text: finalText, citations: finalCitations });
           } else {
             reject(new Error('Streaming timeout - research taking longer than expected'));
           }
@@ -178,7 +194,8 @@ export const useAlegeonStreaming = () => {
               contentLength: data.content?.length || 0,
               isComplete: data.is_complete,
               finishReason: data.finish_reason,
-              error: data.error
+              error: data.error,
+              citationsCount: data.citations?.length || 0
             });
 
             if (data.type === 'chunk') {
@@ -190,7 +207,18 @@ export const useAlegeonStreaming = () => {
                 setStreamingState(prev => ({
                   ...prev,
                   rawText: accumulatedTextRef.current,
-                  currentText: accumulatedTextRef.current // This will be overridden by typewriter
+                  currentText: accumulatedTextRef.current,
+                  hasContent: true
+                }));
+              }
+
+              // Store citations as they come in
+              if (data.citations && data.citations.length > 0) {
+                accumulatedCitationsRef.current = data.citations;
+                setStreamingState(prev => ({
+                  ...prev,
+                  citations: data.citations || [],
+                  finalCitations: data.citations || []
                 }));
               }
               
@@ -201,18 +229,25 @@ export const useAlegeonStreaming = () => {
                 if (!hasResolvedRef.current) {
                   hasResolvedRef.current = true;
                   
+                  const finalCitations = data.citations || accumulatedCitationsRef.current;
+                  
                   setStreamingState(prev => ({
                     ...prev,
                     isStreaming: false,
                     isComplete: true,
                     currentText: accumulatedTextRef.current,
                     rawText: accumulatedTextRef.current,
-                    citations: data.citations || prev.citations
+                    citations: finalCitations,
+                    finalCitations: finalCitations,
+                    hasContent: true
                   }));
                   
                   const finalResult = accumulatedTextRef.current || 'Research completed successfully.';
-                  console.log('✅ Resolving with final result:', finalResult.substring(0, 100));
-                  resolve(finalResult);
+                  console.log('✅ Resolving with final result and citations:', {
+                    textLength: finalResult.length,
+                    citationsCount: finalCitations.length
+                  });
+                  resolve({ text: finalResult, citations: finalCitations });
                   cleanup();
                 }
               }
@@ -260,16 +295,19 @@ export const useAlegeonStreaming = () => {
           if (!hasResolvedRef.current) {
             hasResolvedRef.current = true;
             const finalText = accumulatedTextRef.current;
+            const finalCitations = accumulatedCitationsRef.current;
             
             if (finalText && finalText.length > 50 && (event.code === 1000 || event.wasClean)) {
-              console.log('✅ Normal closure with content, resolving with accumulated text');
+              console.log('✅ Normal closure with content, resolving with accumulated text and citations');
               setStreamingState(prev => ({
                 ...prev,
                 isComplete: true,
                 currentText: finalText,
-                rawText: finalText
+                rawText: finalText,
+                finalCitations: finalCitations,
+                hasContent: true
               }));
-              resolve(finalText);
+              resolve({ text: finalText, citations: finalCitations });
             } else if (event.code === 1006) {
               reject(new Error('Connection lost unexpectedly'));
             } else if (!finalText) {

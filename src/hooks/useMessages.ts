@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useReducer } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Message, initialMessages, formatTimestamp } from '@/constants/aiAssistant';
 import { useN8nWebhook } from '@/hooks/useN8nWebhook';
@@ -11,31 +11,56 @@ import { supabase } from '@/integrations/supabase/client';
 // Configuration constants
 const WEBSOCKET_TIMEOUT_MS = 300000; // 5 minutes for complex processing
 
-// API Endpoints
-const API_ENDPOINTS = {
-  openai: 'https://api.openai.com/v1/chat/completions',
-  anthropic: 'https://api.anthropic.com/v1/messages',
-  algeon: 'https://web-production-06ef2.up.railway.app/chat',
-  // ... other endpoints
-};
-
-interface StreamingMessage extends Message {
+// Extended Message interface for internal use
+interface ExtendedMessage extends Message {
   isStreaming?: boolean;
-  streamingData?: {
-    phase: string;
-    progress: number;
-    sources: Array<{
-      name: string;
-      url: string;
-      type: string;
-      confidence: number;
-    }>;
-    searchQueries: string[];
-  };
+  alegeonCitations?: Array<{
+    name: string;
+    url: string;
+    type?: string;
+  }>;
+}
+
+// Actions for message state management using useReducer
+type MessageAction = 
+  | { type: 'SET_MESSAGES'; payload: ExtendedMessage[] }
+  | { type: 'ADD_MESSAGE'; payload: ExtendedMessage }
+  | { type: 'ADD_STREAMING_MESSAGE'; payload: ExtendedMessage }
+  | { type: 'REPLACE_STREAMING_WITH_FINAL'; payload: { finalMessage: ExtendedMessage; streamingId: string } }
+  | { type: 'REMOVE_STREAMING_MESSAGE'; payload: string }
+  | { type: 'UPDATE_STREAMING_MESSAGE'; payload: { id: string; updates: Partial<ExtendedMessage> } };
+
+function messageReducer(state: ExtendedMessage[], action: MessageAction): ExtendedMessage[] {
+  switch (action.type) {
+    case 'SET_MESSAGES':
+      return action.payload;
+    case 'ADD_MESSAGE':
+      return [...state, action.payload];
+    case 'ADD_STREAMING_MESSAGE':
+      // Remove any existing streaming message first
+      const withoutStreaming = state.filter(msg => !msg.isStreaming);
+      return [...withoutStreaming, action.payload];
+    case 'REPLACE_STREAMING_WITH_FINAL':
+      return state.map(msg => 
+        msg.id === action.payload.streamingId 
+          ? action.payload.finalMessage 
+          : msg
+      );
+    case 'REMOVE_STREAMING_MESSAGE':
+      return state.filter(msg => msg.id !== action.payload);
+    case 'UPDATE_STREAMING_MESSAGE':
+      return state.map(msg => 
+        msg.id === action.payload.id 
+          ? { ...msg, ...action.payload.updates }
+          : msg
+      );
+    default:
+      return state;
+  }
 }
 
 export const useMessages = (currentSessionId: string | null) => {
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
+  const [messages, dispatch] = useReducer(messageReducer, initialMessages as ExtendedMessage[]);
   const [isTyping, setIsTyping] = useState(false);
   const [canvasState, setCanvasState] = useState<{
     isOpen: boolean;
@@ -63,102 +88,109 @@ export const useMessages = (currentSessionId: string | null) => {
     stopStreaming: stopAlegeonStreaming 
   } = useAlegeonStreaming();
 
-  // Track streaming message ID - use consistent ID for entire session
-  const streamingMessageIdRef = useRef<string | null>(null);
+  // Consistent streaming message ID
   const STREAMING_MESSAGE_ID = 'algeon-streaming-message';
+  const lastScrollTimeRef = useRef<number>(0);
+  const isAddingMessageRef = useRef(false);
 
+  // Smart scroll function with performance optimization
   const scrollToBottom = useCallback(() => {
+    const now = Date.now();
+    if (now - lastScrollTimeRef.current < 100) return; // Throttle scrolling
+    
     if (viewportRef.current) {
-      viewportRef.current.scrollTo({ top: viewportRef.current.scrollHeight, behavior: 'smooth' });
+      // Use requestAnimationFrame for smooth scrolling
+      requestAnimationFrame(() => {
+        if (viewportRef.current) {
+          viewportRef.current.scrollTo({ 
+            top: viewportRef.current.scrollHeight, 
+            behavior: 'smooth' 
+          });
+          lastScrollTimeRef.current = Date.now();
+        }
+      });
     }
   }, []);
 
+  // Only scroll on actual message changes, not streaming updates
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isTyping, scrollToBottom]);
+  }, [messages.length, isTyping, scrollToBottom]);
 
-  // Add a flag to prevent history loading from interfering with new messages
-  const isAddingMessageRef = useRef(false);
-
-  // Enhanced streaming message management for Algeon
+  // Enhanced Algeon streaming message management
   useEffect(() => {
-    if (alegeonStreamingState.isStreaming) {
+    if (alegeonStreamingState.isStreaming && alegeonStreamingState.hasContent) {
       console.log('📝 Managing Algeon streaming message - isStreaming:', alegeonStreamingState.isStreaming);
       
-      setMessages(prev => {
-        // Remove any existing streaming message
-        const withoutStreaming = prev.filter(msg => msg.id !== STREAMING_MESSAGE_ID);
-        
-        // Only add streaming message if we have content or if we're actively streaming
-        if (alegeonStreamingState.rawText || alegeonStreamingState.isStreaming) {
-          const streamingMessage: Message = {
-            id: STREAMING_MESSAGE_ID,
-            text: alegeonStreamingState.rawText || 'Initializing Algeon research...',
-            sender: 'ai',
-            timestamp: new Date(),
-            metadata: {
-              messageType: 'progress_update',
-              isCompleted: false
-            }
-          };
-          
-          return [...withoutStreaming, streamingMessage];
-        }
-        
-        return withoutStreaming;
-      });
+      const streamingMessage: ExtendedMessage = {
+        id: STREAMING_MESSAGE_ID,
+        text: alegeonStreamingState.rawText || 'Initializing Algeon research...',
+        sender: 'ai',
+        timestamp: new Date(),
+        isStreaming: true,
+        metadata: {
+          messageType: 'progress_update',
+          isCompleted: false
+        },
+        alegeonCitations: alegeonStreamingState.citations
+      };
+      
+      dispatch({ type: 'ADD_STREAMING_MESSAGE', payload: streamingMessage });
+      
     } else if (alegeonStreamingState.isComplete && alegeonStreamingState.rawText) {
       console.log('✅ Algeon streaming completed, replacing with final message');
       
-      // Replace streaming message with final message
-      setMessages(prev => {
-        const withoutStreaming = prev.filter(msg => msg.id !== STREAMING_MESSAGE_ID);
-        
-        const finalMessage: Message = {
-          id: uuidv4(),
-          text: alegeonStreamingState.rawText,
-          sender: 'ai',
-          timestamp: new Date(),
-          metadata: {
-            messageType: 'completed_report',
-            isCompleted: true
-          }
-        };
-        
-        return [...withoutStreaming, finalMessage];
+      // Create final message with citations preserved
+      const finalMessage: ExtendedMessage = {
+        id: uuidv4(),
+        text: alegeonStreamingState.rawText,
+        sender: 'ai',
+        timestamp: new Date(),
+        metadata: {
+          messageType: 'completed_report',
+          isCompleted: true
+        },
+        alegeonCitations: alegeonStreamingState.finalCitations
+      };
+      
+      dispatch({ 
+        type: 'REPLACE_STREAMING_WITH_FINAL', 
+        payload: { finalMessage, streamingId: STREAMING_MESSAGE_ID }
       });
       
-      // Save final message to history
+      // Save final message to history with citations metadata
       if (currentSessionId && alegeonStreamingState.rawText) {
-        addMessage(`AI: ${alegeonStreamingState.rawText}`);
+        const messageWithCitations = `AI: ${alegeonStreamingState.rawText}${
+          alegeonStreamingState.finalCitations.length > 0 
+            ? `\n\nCitations: ${JSON.stringify(alegeonStreamingState.finalCitations)}`
+            : ''
+        }`;
+        addMessage(messageWithCitations);
       }
-      
-      // Clear streaming message ID
-      streamingMessageIdRef.current = null;
     }
   }, [
     alegeonStreamingState.isStreaming, 
     alegeonStreamingState.rawText, 
     alegeonStreamingState.isComplete,
+    alegeonStreamingState.hasContent,
+    alegeonStreamingState.citations,
+    alegeonStreamingState.finalCitations,
     currentSessionId,
     addMessage
   ]);
 
   // Load messages from history when session changes
   useEffect(() => {
-    console.log('useMessages: History effect triggered - Session:', currentSessionId, 'History length:', history.length, 'Is initial load:', isInitialLoad, 'Adding message:', isAddingMessageRef.current);
+    console.log('useMessages: History effect triggered - Session:', currentSessionId, 'History length:', history.length, 'Is initial load:', isInitialLoad);
     
-    // Don't reload history if we're currently adding a new message
     if (isAddingMessageRef.current) {
-      console.log('🚫 Skipping history reload while adding message - this prevents message disappearing');
+      console.log('🚫 Skipping history reload while adding message');
       return;
     }
     
-    // Only reload history on initial load or when switching sessions
     if (!isInitialLoad && history.length > 0) {
       console.log('📚 Converting history to messages:', history.slice(0, 3));
       const convertedMessages = history.map((entry, index) => {
-        // Enhanced logging to debug the message conversion
         console.log(`Processing history entry ${index}:`, entry);
         
         if (!entry.message || typeof entry.message !== 'string') {
@@ -171,46 +203,61 @@ export const useMessages = (currentSessionId: string | null) => {
         const isAI = lines[0].startsWith('AI:');
         
         let text = '';
+        let alegeonCitations: Array<{ name: string; url: string; type?: string }> = [];
+        
         if (isUser) {
-          text = lines[0].substring(5).trim(); // Remove "USER: " prefix
+          text = lines[0].substring(5).trim();
         } else if (isAI) {
-          // For AI messages, join all lines after removing the AI prefix from first line
-          const firstLineContent = lines[0].substring(3).trim(); // Remove "AI: " prefix
-          const remainingLines = lines.slice(1); // Get all remaining lines
-          text = [firstLineContent, ...remainingLines].join('\n').trim(); // Rejoin everything
+          const firstLineContent = lines[0].substring(3).trim();
+          
+          // Check for citations in the message
+          const citationLineIndex = lines.findIndex(line => line.startsWith('Citations: '));
+          if (citationLineIndex !== -1) {
+            // Extract citations
+            try {
+              const citationData = lines[citationLineIndex].substring(11); // Remove "Citations: "
+              alegeonCitations = JSON.parse(citationData);
+              // Remove citation line from content
+              const contentLines = lines.slice(1, citationLineIndex);
+              text = [firstLineContent, ...contentLines].join('\n').trim();
+            } catch (e) {
+              console.warn('Failed to parse citations from history:', e);
+              text = [firstLineContent, ...lines.slice(1)].join('\n').trim();
+            }
+          } else {
+            text = [firstLineContent, ...lines.slice(1)].join('\n').trim();
+          }
         } else {
-          text = entry.message.trim(); // Use full message if no prefix
+          text = entry.message.trim();
         }
         
-        // Enhanced logging for canvas report debugging
-        if (text.includes('## Executive Summary')) {
-          console.log('🎨 Canvas report detected in history restoration:', {
-            messageId: entry.id,
-            contentLength: text.length,
-            hasFullContent: text.includes('## Strategic Analysis'),
-            preview: text.substring(0, 200)
-          });
-        }
-        
-        // Don't render empty AI messages
         if (!isUser && (!text || text.trim() === '')) {
-          console.log(`Skipping empty AI message at index ${index}:`, { text, originalMessage: entry.message });
+          console.log(`Skipping empty AI message at index ${index}`);
           return null;
         }
         
-        return {
-          id: entry.id || `history-${index}`, // Use actual database ID if available, fallback to index
+        const message: ExtendedMessage = {
+          id: entry.id || `history-${index}`,
           text,
           sender: isUser ? 'user' : 'ai',
-          timestamp: new Date(entry.created_at), // Use actual database timestamp
-        } as Message;
-      }).filter(Boolean); // Remove null entries
+          timestamp: new Date(entry.created_at),
+          alegeonCitations: alegeonCitations.length > 0 ? alegeonCitations : undefined
+        };
+        
+        if (alegeonCitations.length > 0) {
+          console.log('📎 Restored message with citations:', {
+            messageId: message.id,
+            citationsCount: alegeonCitations.length
+          });
+        }
+        
+        return message;
+      }).filter(Boolean) as ExtendedMessage[];
       
-      console.log('🔄 REPLACING messages array with history. Current length:', messages.length, 'New length:', convertedMessages.length + initialMessages.length);
-      setMessages([...initialMessages, ...convertedMessages]);
+      console.log('🔄 REPLACING messages array with history');
+      dispatch({ type: 'SET_MESSAGES', payload: [...initialMessages as ExtendedMessage[], ...convertedMessages] });
       console.log('✅ Loaded messages from history:', convertedMessages.length);
       
-      // Check for canvas documents associated with AI messages and restore the latest one
       const restoreCanvasFromHistory = async () => {
         try {
           console.log('🎨 Checking for canvas documents to restore...');
@@ -266,11 +313,10 @@ export const useMessages = (currentSessionId: string | null) => {
       
     } else if (!isInitialLoad && history.length === 0) {
       console.log('🔄 No history found, resetting to initial messages');
-      setMessages(initialMessages);
+      dispatch({ type: 'SET_MESSAGES', payload: initialMessages as ExtendedMessage[] });
     }
   }, [currentSessionId, history, isInitialLoad]);
 
-  // Smart detection logic for when to use streaming (Perplexity-style research)
   const detectResearchQuery = useCallback((prompt: string): boolean => {
     const trimmedPrompt = prompt.trim().toLowerCase();
     
@@ -307,35 +353,28 @@ export const useMessages = (currentSessionId: string | null) => {
     return hasResearchKeywords || (isLongQuery && hasQuestionWords);
   }, []);
 
-  // Handle Algeon requests using the dedicated Algeon streaming implementation
+  // Handle Algeon requests with enhanced citation support
   const handleAlegeonRequest = useCallback(async (message: string, researchType?: string, sessionId?: string | null): Promise<string> => {
     try {
       console.log('🔬 Starting Algeon streaming for message:', message.substring(0, 100));
-      console.log('📋 Research type:', researchType);
       
-      // Create streaming message ID
-      streamingMessageIdRef.current = STREAMING_MESSAGE_ID;
-      
-      // Use the dedicated Algeon streaming implementation with explicit research type
+      // Use the enhanced Algeon streaming implementation
       const result = await startAlegeonStreaming(message, researchType as any);
       
-      // Clear streaming message ID when done
-      streamingMessageIdRef.current = null;
+      console.log('✅ Algeon request completed:', {
+        textLength: result.text.length,
+        citationsCount: result.citations.length
+      });
       
-      return result;
+      return result.text;
       
     } catch (error) {
       console.error('❌ Algeon streaming failed:', error);
-      
-      // Clear streaming message ID on error
-      streamingMessageIdRef.current = null;
-      
-      // Fallback error message
-      return 'I apologize, but I encountered an issue with the Algeon research system. The connection may have been interrupted. Please try again or select a different model.';
+      dispatch({ type: 'REMOVE_STREAMING_MESSAGE', payload: STREAMING_MESSAGE_ID });
+      return 'I apologize, but I encountered an issue with the Algeon research system. Please try again or select a different model.';
     }
   }, [startAlegeonStreaming]);
 
-  // Handle instant responses for simple queries
   const handleInstantRequest = useCallback(async (prompt: string): Promise<string> => {
     try {
       console.log('⚡ Making instant request to Stratix API');
@@ -515,19 +554,18 @@ export const useMessages = (currentSessionId: string | null) => {
     const finalMessageText = text || messageText;
     if (!finalMessageText || finalMessageText.trim() === '') return;
 
-    console.log('🚀 useMessages: Sending message in session:', currentSessionId, 'with model:', selectedModel, 'research type:', researchType);
+    console.log('🚀 useMessages: Sending message with model:', selectedModel);
 
-    // Set flag to prevent history reload interference
     isAddingMessageRef.current = true;
 
-    const newUserMessage: Message = {
+    const newUserMessage: ExtendedMessage = {
       id: uuidv4(),
       text: finalMessageText,
       sender: 'user',
       timestamp: new Date(),
     };
     
-    setMessages(prev => [...prev, newUserMessage]);
+    dispatch({ type: 'ADD_MESSAGE', payload: newUserMessage });
 
     // Save user message to history
     if (currentSessionId) {
@@ -535,13 +573,13 @@ export const useMessages = (currentSessionId: string | null) => {
     }
 
     if (!isConfigured) {
-      const fallbackResponse: Message = {
+      const fallbackResponse: ExtendedMessage = {
         id: uuidv4(),
         text: "The AI service is not configured properly. Please contact support for assistance.",
         sender: 'ai',
         timestamp: new Date(),
       };
-      setMessages(prev => [...prev, fallbackResponse]);
+      dispatch({ type: 'ADD_MESSAGE', payload: fallbackResponse });
       isAddingMessageRef.current = false;
       return;
     }
@@ -553,19 +591,17 @@ export const useMessages = (currentSessionId: string | null) => {
     stopStratixStreaming();
     stopAlegeonStreaming();
     
-    // Clear any existing streaming messages
-    setMessages(prev => prev.filter(msg => msg.id !== STREAMING_MESSAGE_ID));
+    // Remove any existing streaming messages
+    dispatch({ type: 'REMOVE_STREAMING_MESSAGE', payload: STREAMING_MESSAGE_ID });
     
     try {
       let aiResponseText: string;
 
       // Route to Algeon if model is 'algeon'
       if (selectedModel === 'algeon') {
-        console.log('🔬 Using Algeon model with research type:', researchType);
-        streamingMessageIdRef.current = STREAMING_MESSAGE_ID;
-        aiResponseText = await startAlegeonStreaming(finalMessageText, researchType as any);
-        // Note: Final message handling is now done in the useEffect above
-        streamingMessageIdRef.current = null;
+        console.log('🔬 Using Algeon model');
+        aiResponseText = await handleAlegeonRequest(finalMessageText, researchType, currentSessionId);
+        // Note: Final message handling is done in the useEffect above
       }
       // Route to Stratix if model is 'stratix'
       else if (selectedModel === 'stratix') {
@@ -620,39 +656,36 @@ export const useMessages = (currentSessionId: string | null) => {
         }
       }
 
-      // Reset flag after successfully adding message and saving to database
+      // Reset flag after successful completion
       setTimeout(() => {
         isAddingMessageRef.current = false;
-        console.log('🔓 Reset isAddingMessageRef flag after message completion');
+        console.log('🔓 Reset isAddingMessageRef flag');
       }, 1000);
 
     } catch (error) {
       console.error('Message sending error:', error);
       
-      // Remove any streaming message on error
-      setMessages(prev => prev.filter(msg => msg.id !== STREAMING_MESSAGE_ID));
-      streamingMessageIdRef.current = null;
+      dispatch({ type: 'REMOVE_STREAMING_MESSAGE', payload: STREAMING_MESSAGE_ID });
       
-      const errorResponse: Message = {
+      const errorResponse: ExtendedMessage = {
         id: uuidv4(),
         text: `I'm having trouble accessing my full capabilities right now, but I'm still here to help! Please feel free to ask me about business strategy, market analysis, or any startup-related questions.`,
         sender: 'ai',
         timestamp: new Date(),
       };
       
-      setMessages(prev => [...prev, errorResponse]);
+      dispatch({ type: 'ADD_MESSAGE', payload: errorResponse });
       isAddingMessageRef.current = false;
     } finally {
       setIsTyping(false);
     }
-  }, [currentSessionId, addMessage, isConfigured, canvasState, sendMessageToN8n, handleStratixRequest, startAlegeonStreaming, stopStreaming, stopStratixStreaming, stopAlegeonStreaming]);
+  }, [currentSessionId, addMessage, isConfigured, canvasState, handleAlegeonRequest, stopStreaming, stopStratixStreaming, stopAlegeonStreaming, sendMessageToN8n, handleStratixRequest]);
 
   const handleClearConversation = useCallback(() => {
     console.log('useMessages: Clearing conversation');
     setMessages(initialMessages);
     stopStreaming();
     stopAlegeonStreaming();
-    streamingMessageIdRef.current = null;
   }, [stopStreaming, stopAlegeonStreaming]);
 
   const handleDownloadChat = useCallback(() => {
@@ -784,7 +817,7 @@ export const useMessages = (currentSessionId: string | null) => {
   }, [handleCanvasDownload]);
 
   return {
-    messages,
+    messages: messages as Message[], // Cast back to Message[] for external use
     isTyping,
     isLoadingHistory: isInitialLoad,
     viewportRef,

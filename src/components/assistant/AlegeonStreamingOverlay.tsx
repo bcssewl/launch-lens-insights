@@ -4,10 +4,8 @@ import { cn } from '@/lib/utils';
 import { 
   Search, 
   Brain, 
-  FileText, 
-  Globe,
   Sparkles,
-  ExternalLink,
+  Globe,
   Loader2
 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
@@ -27,7 +25,7 @@ const AlegeonStreamingOverlay: React.FC<AlegeonStreamingOverlayProps> = ({
 
   // Use typewriter effect for smooth character-by-character display
   const { displayedText, isTyping } = useTypewriter(rawText, {
-    speed: 15, // Faster typewriter for better UX
+    speed: 12, // Slightly slower for readability
     enabled: isStreaming && !isComplete
   });
 
@@ -45,7 +43,7 @@ const AlegeonStreamingOverlay: React.FC<AlegeonStreamingOverlayProps> = ({
     if (error) return Brain;
     if (isComplete) return Sparkles;
     if (isStreaming) return Search;
-    return FileText;
+    return Brain;
   };
 
   const getIconColor = () => {
@@ -66,12 +64,12 @@ const AlegeonStreamingOverlay: React.FC<AlegeonStreamingOverlayProps> = ({
     if (error) return 0;
     if (isComplete) return 100;
     if (isStreaming && rawText) {
-      // Estimate progress based on content length and typing progress
-      const baseProgress = Math.min(70, (rawText.length / 2000) * 60);
-      const typingProgress = rawText.length > 0 ? (displayedText.length / rawText.length) * 30 : 0;
+      // More realistic progress calculation
+      const baseProgress = Math.min(80, (rawText.length / 1500) * 70);
+      const typingProgress = rawText.length > 0 ? (displayedText.length / rawText.length) * 20 : 0;
       return baseProgress + typingProgress;
     }
-    return 10;
+    return 15;
   };
 
   const IconComponent = getIcon();
@@ -153,12 +151,12 @@ const AlegeonStreamingOverlay: React.FC<AlegeonStreamingOverlayProps> = ({
           </div>
         </div>
 
-        {/* Current Text Preview with Typewriter Effect */}
+        {/* Current Text Preview with Typewriter Effect - More compact */}
         {textToShow && textToShow.length > 0 && (
           <div className="bg-background/40 backdrop-blur-sm border border-border/30 rounded-lg p-3">
-            <div className="text-sm text-foreground/90 leading-relaxed">
-              {textToShow.length > 300 
-                ? textToShow.substring(0, 300) + '...' 
+            <div className="text-sm text-foreground/90 leading-relaxed line-clamp-3">
+              {textToShow.length > 200 
+                ? textToShow.substring(0, 200) + '...' 
                 : textToShow
               }
               {/* Blinking cursor during typewriter effect */}
@@ -169,7 +167,7 @@ const AlegeonStreamingOverlay: React.FC<AlegeonStreamingOverlayProps> = ({
           </div>
         )}
 
-        {/* Citations Count Only (detailed citations will be shown in the main content) */}
+        {/* Simplified Citations Count */}
         {citations.length > 0 && (
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Globe className="w-3 h-3" />
