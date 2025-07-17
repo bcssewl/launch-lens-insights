@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { detectAlgeonResearchType, type AlgeonResearchType } from '@/utils/algeonResearchTypes';
 
@@ -315,40 +314,40 @@ export const useAlegeonStreaming = () => {
                   hasContent: true
                 }));
               }
+            }
+
+            // Check for completion using multiple indicators (separate from chunk processing)
+            if (data.is_complete === true || data.finish_reason || data.type === 'complete') {
+              console.log('✅ Stream completion detected:', {
+                isComplete: data.is_complete,
+                finishReason: data.finish_reason,
+                type: data.type
+              });
               
-              // Check for completion using multiple indicators
-              if (data.is_complete === true || data.finish_reason || data.type === 'complete') {
-                console.log('✅ Stream completion detected:', {
-                  isComplete: data.is_complete,
-                  finishReason: data.finish_reason,
-                  type: data.type
-                });
+              if (!hasResolvedRef.current) {
+                hasResolvedRef.current = true;
                 
-                if (!hasResolvedRef.current) {
-                  hasResolvedRef.current = true;
-                  
-                  const finalCitations = foundCitations.length > 0 ? foundCitations : accumulatedCitationsRef.current;
-                  
-                  setStreamingState(prev => ({
-                    ...prev,
-                    isStreaming: false,
-                    isComplete: true,
-                    currentText: accumulatedTextRef.current,
-                    rawText: accumulatedTextRef.current,
-                    citations: finalCitations,
-                    finalCitations: finalCitations,
-                    hasContent: true
-                  }));
-                  
-                  const finalResult = accumulatedTextRef.current || 'Research completed successfully.';
-                  console.log('✅ Resolving with final result and citations:', {
-                    textLength: finalResult.length,
-                    citationsCount: finalCitations.length,
-                    citations: finalCitations
-                  });
-                  resolve({ text: finalResult, citations: finalCitations });
-                  cleanup();
-                }
+                const finalCitations = foundCitations.length > 0 ? foundCitations : accumulatedCitationsRef.current;
+                
+                setStreamingState(prev => ({
+                  ...prev,
+                  isStreaming: false,
+                  isComplete: true,
+                  currentText: accumulatedTextRef.current,
+                  rawText: accumulatedTextRef.current,
+                  citations: finalCitations,
+                  finalCitations: finalCitations,
+                  hasContent: true
+                }));
+                
+                const finalResult = accumulatedTextRef.current || 'Research completed successfully.';
+                console.log('✅ Resolving with final result and citations:', {
+                  textLength: finalResult.length,
+                  citationsCount: finalCitations.length,
+                  citations: finalCitations
+                });
+                resolve({ text: finalResult, citations: finalCitations });
+                cleanup();
               }
             } else if (data.error) {
               console.error('❌ Stream error received:', data.error);
