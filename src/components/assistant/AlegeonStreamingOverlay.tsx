@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { 
@@ -23,8 +24,10 @@ const AlegeonStreamingOverlay: React.FC<AlegeonStreamingOverlayProps> = ({
 }) => {
   const { isStreaming, currentText, citations, error } = streamingState;
 
-  // Don't show overlay if not streaming and no content
-  if (!isStreaming && !currentText && !error) {
+  // Show overlay during streaming or when there's content/error
+  const shouldShow = isStreaming || currentText || error;
+
+  if (!shouldShow) {
     return null;
   }
 
@@ -68,17 +71,18 @@ const AlegeonStreamingOverlay: React.FC<AlegeonStreamingOverlayProps> = ({
     currentTextLength: currentText.length,
     citationsCount: citations.length,
     error,
-    progress
+    progress,
+    shouldShow
   });
 
   return (
     <div className={cn(
-      "absolute top-0 left-0 right-0 bg-gradient-to-r from-blue-50/80 to-purple-50/80 dark:from-blue-950/30 dark:to-purple-950/30",
-      "backdrop-blur-sm border border-border/50 rounded-t-2xl",
-      "px-4 py-3 transition-all duration-300 shadow-sm",
+      "bg-gradient-to-r from-blue-50/95 to-purple-50/95 dark:from-blue-950/40 dark:to-purple-950/40",
+      "backdrop-blur-sm border border-border/50 rounded-2xl",
+      "p-4 transition-all duration-300 shadow-sm",
       className
     )}>
-      <div className="space-y-3">
+      <div className="space-y-4">
         {/* Main Status */}
         <div className="flex items-center gap-3">
           {/* Animated Icon */}
@@ -130,13 +134,13 @@ const AlegeonStreamingOverlay: React.FC<AlegeonStreamingOverlayProps> = ({
 
         {/* Current Text Preview */}
         {currentText && currentText.length > 0 && (
-          <div className="bg-background/40 backdrop-blur-sm border border-border/30 rounded-lg p-2">
-            <p className="text-xs text-muted-foreground line-clamp-3">
-              {currentText.length > 200 
-                ? currentText.substring(0, 200) + '...' 
+          <div className="bg-background/40 backdrop-blur-sm border border-border/30 rounded-lg p-3">
+            <div className="text-sm text-foreground/90 leading-relaxed">
+              {currentText.length > 300 
+                ? currentText.substring(0, 300) + '...' 
                 : currentText
               }
-            </p>
+            </div>
           </div>
         )}
 
@@ -173,8 +177,8 @@ const AlegeonStreamingOverlay: React.FC<AlegeonStreamingOverlayProps> = ({
 
         {/* Error Display */}
         {error && (
-          <div className="bg-red-50/80 dark:bg-red-950/30 backdrop-blur-sm border border-red-200/50 dark:border-red-800/50 rounded-lg p-2">
-            <p className="text-xs text-red-600 dark:text-red-400">
+          <div className="bg-red-50/80 dark:bg-red-950/30 backdrop-blur-sm border border-red-200/50 dark:border-red-800/50 rounded-lg p-3">
+            <p className="text-sm text-red-600 dark:text-red-400">
               {error}
             </p>
           </div>

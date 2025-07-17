@@ -51,7 +51,7 @@ export const useMessages = (currentSessionId: string | null) => {
   const { history, addMessage, isInitialLoad } = useChatHistory(currentSessionId);
   
   // Initialize streaming systems
-  const { streamingState, startStreaming, stopStreaming } = usePerplexityStreaming(); // This now includes Algeon support
+  const { streamingState, startStreaming, stopStreaming } = usePerplexityStreaming();
   const { 
     streamingState: stratixStreamingState, 
     startStreaming: startStratixStreaming, 
@@ -62,6 +62,9 @@ export const useMessages = (currentSessionId: string | null) => {
     startStreaming: startAlegeonStreaming, 
     stopStreaming: stopAlegeonStreaming 
   } = useAlegeonStreaming();
+
+  // Track streaming message ID to replace it when streaming completes
+  const streamingMessageIdRef = useRef<string | null>(null);
 
   const scrollToBottom = useCallback(() => {
     if (viewportRef.current) {
@@ -75,6 +78,35 @@ export const useMessages = (currentSessionId: string | null) => {
 
   // Add a flag to prevent history loading from interfering with new messages
   const isAddingMessageRef = useRef(false);
+
+  // Create or update streaming message when Algeon streaming state changes
+  useEffect(() => {
+    if (alegeonStreamingState.isStreaming && alegeonStreamingState.currentText) {
+      console.log('📝 Updating streaming message with current text:', alegeonStreamingState.currentText.substring(0, 100));
+      
+      setMessages(prev => {
+        const withoutStreamingMessage = prev.filter(msg => msg.id !== streamingMessageIdRef.current);
+        
+        // Create new streaming message ID if needed
+        if (!streamingMessageIdRef.current) {
+          streamingMessageIdRef.current = `streaming-${uuidv4()}`;
+        }
+        
+        const streamingMessage: Message = {
+          id: streamingMessageIdRef.current,
+          text: alegeonStreamingState.currentText,
+          sender: 'ai',
+          timestamp: new Date(),
+          metadata: {
+            messageType: 'progress_update',
+            isCompleted: false
+          }
+        };
+        
+        return [...withoutStreamingMessage, streamingMessage];
+      });
+    }
+  }, [alegeonStreamingState.currentText, alegeonStreamingState.isStreaming]);
 
   // Load messages from history when session changes
   useEffect(() => {
@@ -245,11 +277,22 @@ export const useMessages = (currentSessionId: string | null) => {
       console.log('🔬 Starting Algeon streaming for message:', message.substring(0, 100));
       console.log('📋 Research type:', researchType);
       
+      // Create streaming message ID
+      streamingMessageIdRef.current = `streaming-${uuidv4()}`;
+      
       // Use the dedicated Algeon streaming implementation with explicit research type
-      return await startAlegeonStreaming(message, researchType as any);
+      const result = await startAlegeonStreaming(message, researchType as any);
+      
+      // Clear streaming message ID when done
+      streamingMessageIdRef.current = null;
+      
+      return result;
       
     } catch (error) {
       console.error('❌ Algeon streaming failed:', error);
+      
+      // Clear streaming message ID on error
+      streamingMessageIdRef.current = null;
       
       // Fallback error message
       return 'I apologize, but I encountered an issue with the Algeon research system. The connection may have been interrupted. Please try again or select a different model.';
@@ -366,7 +409,7 @@ export const useMessages = (currentSessionId: string | null) => {
                     break;
                     
                   case 'source':
-                    console.log('� Source found for simple query');
+                    console.log('📄 Source found for simple query');
                     break;
                     
                   case 'snippet':
@@ -508,6 +551,12 @@ export const useMessages = (currentSessionId: string | null) => {
       
       console.log('✅ Creating AI response message with text:', aiResponseText.substring(0, 100) + '...');
       
+      // Remove any streaming message before adding final response
+      if (streamingMessageIdRef.current) {
+        setMessages(prev => prev.filter(msg => msg.id !== streamingMessageIdRef.current));
+        streamingMessageIdRef.current = null;
+      }
+      
       const aiResponse: Message = {
         id: uuidv4(),
         text: aiResponseText,
@@ -515,6 +564,9 @@ export const useMessages = (currentSessionId: string | null) => {
         timestamp: new Date(),
         metadata: selectedModel === 'stratix' ? {
           messageType: 'stratix_conversation'
+        } : selectedModel === 'algeon' ? {
+          messageType: 'completed_report',
+          isCompleted: true
         } : { messageType: 'standard' },
       };
       
@@ -546,6 +598,12 @@ export const useMessages = (currentSessionId: string | null) => {
     } catch (error) {
       console.error('Message sending error:', error);
       
+      // Remove any streaming message on error
+      if (streamingMessageIdRef.current) {
+        setMessages(prev => prev.filter(msg => msg.id !== streamingMessageIdRef.current));
+        streamingMessageIdRef.current = null;
+      }
+      
       const errorResponse: Message = {
         id: uuidv4(),
         text: `I'm having trouble accessing my full capabilities right now, but I'm still here to help! Please feel free to ask me about business strategy, market analysis, or any startup-related questions.`,
@@ -570,6 +628,7 @@ export const useMessages = (currentSessionId: string | null) => {
     console.log('useMessages: Clearing conversation');
     setMessages(initialMessages);
     stopStreaming();
+    streamingMessageIdRef.current = null;
   }, [stopStreaming]);
 
   const handleDownloadChat = useCallback(() => {

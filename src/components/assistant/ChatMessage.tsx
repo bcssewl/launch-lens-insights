@@ -8,8 +8,10 @@ import MarkdownRenderer from './MarkdownRenderer';
 import CanvasCompact from './CanvasCompact';
 import StreamingOverlay from './StreamingOverlay';
 import StratixStreamingOverlay from './StratixStreamingOverlay';
+import AlegeonStreamingOverlay from './AlegeonStreamingOverlay';
 import { isReportMessage } from '@/utils/reportDetection';
 import type { StratixStreamingState } from '@/types/stratixStreaming';
+import type { AlegeonStreamingState } from '@/hooks/useAlegeonStreaming';
 
 export interface ChatMessageData {
   id: string;
@@ -46,8 +48,9 @@ interface ChatMessageProps {
     phase: string;
     progress: number;
   };
-  // Enhanced Stratix streaming support
+  // Enhanced streaming support
   stratixStreamingState?: StratixStreamingState;
+  alegeonStreamingState?: AlegeonStreamingState;
 }
 
 const ChatMessage: React.FC<ChatMessageProps> = ({ 
@@ -59,26 +62,41 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
   streamingUpdates = [],
   streamingSources = [],
   streamingProgress = { phase: '', progress: 0 },
-  stratixStreamingState
+  stratixStreamingState,
+  alegeonStreamingState
 }) => {
   const isAi = message.sender === 'ai';
   const isReport = isAi && isReportMessage(message.text, message.metadata);
+  
+  // Check if this is a streaming message
+  const isStreamingMessage = message.metadata?.messageType === 'progress_update' && !message.metadata?.isCompleted;
+  
+  // For Algeon streaming, show the streaming overlay if this is the streaming message
+  const showAlegeonStreaming = isAi && alegeonStreamingState && (
+    alegeonStreamingState.isStreaming || 
+    isStreamingMessage ||
+    (alegeonStreamingState.currentText && alegeonStreamingState.currentText.length > 0)
+  );
 
   // Enhanced debug logging
   console.log('💬 ChatMessage: Rendering message', {
     messageId: message.id,
     sender: message.sender,
     isStreaming,
+    isStreamingMessage,
+    showAlegeonStreaming,
     streamingUpdatesCount: streamingUpdates.length,
     streamingSourcesCount: streamingSources.length,
     streamingProgress,
     isReport,
     hasStratixStreaming: !!stratixStreamingState?.isStreaming,
+    hasAlegeonStreaming: !!alegeonStreamingState?.isStreaming,
+    alegeonCurrentTextLength: alegeonStreamingState?.currentText?.length || 0,
     messageText: message.text?.substring(0, 100) + (message.text?.length > 100 ? '...' : '')
   });
 
   // Don't render AI messages with empty or whitespace-only content unless streaming
-  if (isAi && (!message.text || message.text.trim() === '') && !stratixStreamingState?.isStreaming) {
+  if (isAi && (!message.text || message.text.trim() === '') && !showAlegeonStreaming && !stratixStreamingState?.isStreaming) {
     console.log('🚫 Skipping empty AI message:', message.id);
     return null;
   }
@@ -114,6 +132,14 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
               : "bg-primary/90 backdrop-blur-md border border-primary/30 text-primary-foreground rounded-tr-sm shadow-glass hover:bg-primary/95"
           )}
         >
+          {/* Algeon Streaming Overlay - Show when streaming or when this is a streaming message */}
+          {isAi && showAlegeonStreaming && (
+            <AlegeonStreamingOverlay
+              streamingState={alegeonStreamingState!}
+              className="absolute inset-0 z-20 rounded-2xl"
+            />
+          )}
+
           {/* Enhanced Stratix Streaming Overlay for AI messages */}
           {isAi && stratixStreamingState?.isStreaming && (
             <StratixStreamingOverlay
@@ -123,8 +149,8 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
             />
           )}
 
-          {/* Fallback to legacy streaming overlay if Stratix not available */}
-          {isAi && !stratixStreamingState?.isStreaming && (isStreaming || streamingUpdates.length > 0) && (
+          {/* Fallback to legacy streaming overlay if neither Stratix nor Algeon streaming */}
+          {isAi && !stratixStreamingState?.isStreaming && !showAlegeonStreaming && (isStreaming || streamingUpdates.length > 0) && (
             <StreamingOverlay
               isVisible={isStreaming}
               updates={streamingUpdates}
@@ -134,16 +160,16 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
             />
           )}
 
-          {isAi && (
+          {isAi && !showAlegeonStreaming && (
             <div className="absolute top-2 right-2">
               <CopyButton content={message.text} />
             </div>
           )}
 
-          <div className={cn("text-sm leading-relaxed", isAi && "pr-8")}>
+          <div className={cn("text-sm leading-relaxed", isAi && !showAlegeonStreaming && "pr-8")}>
             {isAi ? (
               <>
-                {isReport ? (
+                {isReport && !isStreamingMessage ? (
                   <CanvasCompact
                     content={message.text}
                     onExpand={handleCanvasExpand}
