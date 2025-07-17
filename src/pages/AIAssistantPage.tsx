@@ -48,9 +48,9 @@ const AIAssistantPage: React.FC = () => {
     handleCanvasPrint,
     handleCanvasPdfDownload,
     streamingState,
-    stratixStreamingState
+    stratixStreamingState,
+    alegeonStreamingState
   } = useMessages(currentSessionId);
-  const { streamingState: alegeonStreamingState } = useAlegeonStreaming();
   const [editedCanvasContent, setEditedCanvasContent] = useState(canvasState.content);
 
   // Update edited content when canvas state changes

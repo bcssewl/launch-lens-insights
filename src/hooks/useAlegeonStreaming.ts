@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { detectAlgeonResearchType, type AlgeonResearchType } from '@/utils/algeonResearchTypes';
 import { useOptimizedStreaming } from './useOptimizedStreaming';
@@ -65,10 +66,7 @@ export const useAlegeonStreaming = () => {
     ...streamingState,
     finalCitations: streamingState.citations,
     hasContent: streamingState.displayedText.length > 0 || streamingState.bufferedText.length > 0,
-    // Keep the raw buffered text available
-    rawText: streamingState.bufferedText,
-    currentText: streamingState.displayedText
-  } as any;
+  };
 
   const cleanup = useCallback(() => {
     if (timeoutRef.current) {
@@ -244,6 +242,10 @@ export const useAlegeonStreaming = () => {
     streamingState: alegeonStreamingState,
     startStreaming: startStreamingRequest,
     stopStreaming,
-    resetState
+    resetState,
+    processChunk,
+    processCitations,
+    completeStreaming,
+    setError
   };
 };
