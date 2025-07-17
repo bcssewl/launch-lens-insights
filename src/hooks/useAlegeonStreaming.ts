@@ -17,6 +17,11 @@ interface AlegeonStreamingEvent {
     url: string;
     type?: string;
   }>;
+  sources?: Array<{
+    name: string;
+    url: string;
+    type?: string;
+  }>;
   usage?: object;
   error?: string | null;
   message?: string;
@@ -177,7 +182,7 @@ export const useAlegeonStreaming = () => {
                 if (!hasResolvedRef.current) {
                   hasResolvedRef.current = true;
                   
-                  const finalCitations = data.citations || streamingState.citations;
+                  const finalCitations = data.citations || data.sources || streamingState.citations;
                   const finalText = streamingState.bufferedText || streamingState.displayedText;
                   
                   completeStreaming();
