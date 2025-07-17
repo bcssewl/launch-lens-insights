@@ -5,7 +5,6 @@ import { useN8nWebhook } from '@/hooks/useN8nWebhook';
 import { useChatHistory } from '@/hooks/useChatHistory';
 import { usePerplexityStreaming } from '@/hooks/usePerplexityStreaming';
 import { useStratixStreaming } from '@/hooks/useStratixStreaming';
-import { useAlegeonStreaming } from '@/hooks/useAlegeonStreaming';
 import { supabase } from '@/integrations/supabase/client';
 
 // Configuration constants
@@ -57,11 +56,6 @@ export const useMessages = (currentSessionId: string | null) => {
     startStreaming: startStratixStreaming, 
     stopStreaming: stopStratixStreaming 
   } = useStratixStreaming();
-  const { 
-    streamingState: alegeonStreamingState, 
-    startStreaming: startAlegeonStreaming, 
-    stopStreaming: stopAlegeonStreaming 
-  } = useAlegeonStreaming();
 
   const scrollToBottom = useCallback(() => {
     if (viewportRef.current) {
@@ -239,13 +233,14 @@ export const useMessages = (currentSessionId: string | null) => {
     return hasResearchKeywords || (isLongQuery && hasQuestionWords);
   }, []);
 
-  // Handle Algeon requests using the dedicated Algeon streaming implementation
+  // Handle Algeon agent requests via WebSocket streaming
+  // Handle Algeon requests using the updated streaming implementation
   const handleAlegeonRequest = useCallback(async (message: string, sessionId?: string | null): Promise<string> => {
     try {
       console.log('🔬 Starting Algeon streaming for message:', message.substring(0, 100));
       
-      // Use the dedicated Algeon streaming implementation
-      return await startAlegeonStreaming(message);
+      // Use the updated streaming implementation with proper research_type detection
+      return await startStreaming(message, sessionId || 'default-session');
       
     } catch (error) {
       console.error('❌ Algeon streaming failed:', error);
@@ -253,7 +248,7 @@ export const useMessages = (currentSessionId: string | null) => {
       // Fallback error message
       return 'I apologize, but I encountered an issue with the Algeon research system. The connection may have been interrupted. Please try again or select a different model.';
     }
-  }, [startAlegeonStreaming]);
+  }, [startStreaming]);
 
   // Handle instant responses for simple queries
   const handleInstantRequest = useCallback(async (prompt: string): Promise<string> => {
@@ -716,11 +711,9 @@ export const useMessages = (currentSessionId: string | null) => {
     handleCanvasPdfDownload,
     streamingState,
     stratixStreamingState,
-    alegeonStreamingState,
     // Provide streaming state for components that need it
-    isStreamingForMessage: () => streamingState.isStreaming || stratixStreamingState.isStreaming || alegeonStreamingState.isStreaming,
+    isStreamingForMessage: () => streamingState.isStreaming || stratixStreamingState.isStreaming,
     getStreamingState: () => streamingState,
-    getStratixStreamingState: () => stratixStreamingState,
-    getAlegeonStreamingState: () => alegeonStreamingState
+    getStratixStreamingState: () => stratixStreamingState
   };
 };
