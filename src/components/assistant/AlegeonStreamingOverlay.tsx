@@ -11,6 +11,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { useTypewriter } from '@/hooks/useTypewriter';
 import type { AlegeonStreamingState } from '@/hooks/useAlegeonStreaming';
 
 interface AlegeonStreamingOverlayProps {
@@ -22,41 +23,53 @@ const AlegeonStreamingOverlay: React.FC<AlegeonStreamingOverlayProps> = ({
   streamingState,
   className
 }) => {
-  const { isStreaming, currentText, citations, error } = streamingState;
+  const { isStreaming, rawText, citations, error, isComplete } = streamingState;
 
-  // Show overlay during streaming or when there's content/error
-  const shouldShow = isStreaming || currentText || error;
+  // Use typewriter effect for smooth character-by-character display
+  const { displayedText, isTyping } = useTypewriter(rawText, {
+    speed: 15, // Faster typewriter for better UX
+    enabled: isStreaming && !isComplete
+  });
+
+  // Show overlay during streaming, when there's content, or when there's an error
+  const shouldShow = isStreaming || displayedText || error || isComplete;
 
   if (!shouldShow) {
     return null;
   }
 
-  // Show different states based on streaming status
+  // Determine which text to show
+  const textToShow = isComplete ? rawText : displayedText;
+
   const getIcon = () => {
     if (error) return Brain;
+    if (isComplete) return Sparkles;
     if (isStreaming) return Search;
-    return Sparkles;
+    return FileText;
   };
 
   const getIconColor = () => {
     if (error) return 'text-red-500';
+    if (isComplete) return 'text-emerald-500';
     if (isStreaming) return 'text-blue-500';
-    return 'text-emerald-500';
+    return 'text-gray-500';
   };
 
   const getPhase = () => {
     if (error) return 'Error occurred';
+    if (isComplete) return 'Research complete';
     if (isStreaming) return 'Researching with Algeon...';
-    return 'Research complete';
+    return 'Processing...';
   };
 
   const getProgress = () => {
     if (error) return 0;
-    if (!isStreaming && currentText) return 100;
-    if (isStreaming && currentText) {
-      // Estimate progress based on content length
-      const estimatedProgress = Math.min(90, (currentText.length / 2000) * 70 + 10);
-      return estimatedProgress;
+    if (isComplete) return 100;
+    if (isStreaming && rawText) {
+      // Estimate progress based on content length and typing progress
+      const baseProgress = Math.min(70, (rawText.length / 2000) * 60);
+      const typingProgress = rawText.length > 0 ? (displayedText.length / rawText.length) * 30 : 0;
+      return baseProgress + typingProgress;
     }
     return 10;
   };
@@ -68,7 +81,10 @@ const AlegeonStreamingOverlay: React.FC<AlegeonStreamingOverlayProps> = ({
 
   console.log('🎨 AlegeonStreamingOverlay: Rendering with state:', {
     isStreaming,
-    currentTextLength: currentText.length,
+    isComplete,
+    rawTextLength: rawText.length,
+    displayedTextLength: displayedText.length,
+    isTyping,
     citationsCount: citations.length,
     error,
     progress,
@@ -93,7 +109,7 @@ const AlegeonStreamingOverlay: React.FC<AlegeonStreamingOverlayProps> = ({
             <IconComponent className={cn(
               "w-3 h-3",
               iconColor,
-              isStreaming && "animate-pulse"
+              (isStreaming || isTyping) && "animate-pulse"
             )} />
           </div>
 
@@ -105,7 +121,7 @@ const AlegeonStreamingOverlay: React.FC<AlegeonStreamingOverlayProps> = ({
               )}>
                 {currentPhase}
               </p>
-              {isStreaming && (
+              {(isStreaming || isTyping) && (
                 <Loader2 className="w-3 h-3 animate-spin text-blue-500" />
               )}
             </div>
@@ -126,20 +142,29 @@ const AlegeonStreamingOverlay: React.FC<AlegeonStreamingOverlayProps> = ({
 
           {/* Research Badge */}
           <div className="flex-shrink-0">
-            <div className="bg-gradient-to-r from-blue-500 to-purple-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+            <div className={cn(
+              "text-xs px-2 py-1 rounded-full font-medium",
+              isComplete 
+                ? "bg-gradient-to-r from-emerald-500 to-green-500 text-white"
+                : "bg-gradient-to-r from-blue-500 to-purple-500 text-white"
+            )}>
               Algeon
             </div>
           </div>
         </div>
 
-        {/* Current Text Preview */}
-        {currentText && currentText.length > 0 && (
+        {/* Current Text Preview with Typewriter Effect */}
+        {textToShow && textToShow.length > 0 && (
           <div className="bg-background/40 backdrop-blur-sm border border-border/30 rounded-lg p-3">
             <div className="text-sm text-foreground/90 leading-relaxed">
-              {currentText.length > 300 
-                ? currentText.substring(0, 300) + '...' 
-                : currentText
+              {textToShow.length > 300 
+                ? textToShow.substring(0, 300) + '...' 
+                : textToShow
               }
+              {/* Blinking cursor during typewriter effect */}
+              {isTyping && (
+                <span className="animate-pulse ml-1 text-blue-500">|</span>
+              )}
             </div>
           </div>
         )}

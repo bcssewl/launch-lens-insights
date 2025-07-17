@@ -73,9 +73,8 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
   
   // For Algeon streaming, show the streaming overlay if this is the streaming message
   const showAlegeonStreaming = isAi && alegeonStreamingState && (
-    alegeonStreamingState.isStreaming || 
-    isStreamingMessage ||
-    (alegeonStreamingState.currentText && alegeonStreamingState.currentText.length > 0)
+    (alegeonStreamingState.isStreaming && isStreamingMessage) ||
+    (alegeonStreamingState.isComplete && message.metadata?.messageType === 'completed_report')
   );
 
   // Enhanced debug logging
@@ -85,13 +84,11 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
     isStreaming,
     isStreamingMessage,
     showAlegeonStreaming,
-    streamingUpdatesCount: streamingUpdates.length,
-    streamingSourcesCount: streamingSources.length,
-    streamingProgress,
+    alegeonIsStreaming: alegeonStreamingState?.isStreaming,
+    alegeonIsComplete: alegeonStreamingState?.isComplete,
+    messageType: message.metadata?.messageType,
     isReport,
     hasStratixStreaming: !!stratixStreamingState?.isStreaming,
-    hasAlegeonStreaming: !!alegeonStreamingState?.isStreaming,
-    alegeonCurrentTextLength: alegeonStreamingState?.currentText?.length || 0,
     messageText: message.text?.substring(0, 100) + (message.text?.length > 100 ? '...' : '')
   });
 
@@ -132,8 +129,8 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
               : "bg-primary/90 backdrop-blur-md border border-primary/30 text-primary-foreground rounded-tr-sm shadow-glass hover:bg-primary/95"
           )}
         >
-          {/* Algeon Streaming Overlay - Show when streaming or when this is a streaming message */}
-          {isAi && showAlegeonStreaming && (
+          {/* Algeon Streaming Overlay - Show for streaming or completed Algeon messages */}
+          {showAlegeonStreaming && (
             <AlegeonStreamingOverlay
               streamingState={alegeonStreamingState!}
               className="absolute inset-0 z-20 rounded-2xl"
@@ -160,30 +157,37 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
             />
           )}
 
-          {isAi && !showAlegeonStreaming && (
+          {/* Copy button - only show when not streaming */}
+          {isAi && !showAlegeonStreaming && !stratixStreamingState?.isStreaming && (
             <div className="absolute top-2 right-2">
               <CopyButton content={message.text} />
             </div>
           )}
 
-          <div className={cn("text-sm leading-relaxed", isAi && !showAlegeonStreaming && "pr-8")}>
-            {isAi ? (
-              <>
-                {isReport && !isStreamingMessage ? (
-                  <CanvasCompact
-                    content={message.text}
-                    onExpand={handleCanvasExpand}
-                    onDownload={onCanvasDownload}
-                    onPrint={onCanvasPrint}
-                  />
-                ) : (
-                  <MarkdownRenderer content={message.text} />
-                )}
-              </>
-            ) : (
-              <p className="whitespace-pre-wrap">{message.text}</p>
-            )}
-          </div>
+          {/* Message content - hide when showing streaming overlay */}
+          {!showAlegeonStreaming && (
+            <div className={cn(
+              "text-sm leading-relaxed", 
+              isAi && !stratixStreamingState?.isStreaming && "pr-8"
+            )}>
+              {isAi ? (
+                <>
+                  {isReport && !isStreamingMessage ? (
+                    <CanvasCompact
+                      content={message.text}
+                      onExpand={handleCanvasExpand}
+                      onDownload={onCanvasDownload}
+                      onPrint={onCanvasPrint}
+                    />
+                  ) : (
+                    <MarkdownRenderer content={message.text} />
+                  )}
+                </>
+              ) : (
+                <p className="whitespace-pre-wrap">{message.text}</p>
+              )}
+            </div>
+          )}
         </div>
         <p className={cn(
           "text-xs mt-1 opacity-70 px-1",

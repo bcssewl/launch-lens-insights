@@ -63,8 +63,9 @@ export const useMessages = (currentSessionId: string | null) => {
     stopStreaming: stopAlegeonStreaming 
   } = useAlegeonStreaming();
 
-  // Track streaming message ID to replace it when streaming completes
+  // Track streaming message ID - use consistent ID for entire session
   const streamingMessageIdRef = useRef<string | null>(null);
+  const STREAMING_MESSAGE_ID = 'algeon-streaming-message';
 
   const scrollToBottom = useCallback(() => {
     if (viewportRef.current) {
@@ -79,34 +80,69 @@ export const useMessages = (currentSessionId: string | null) => {
   // Add a flag to prevent history loading from interfering with new messages
   const isAddingMessageRef = useRef(false);
 
-  // Create or update streaming message when Algeon streaming state changes
+  // Enhanced streaming message management for Algeon
   useEffect(() => {
-    if (alegeonStreamingState.isStreaming && alegeonStreamingState.currentText) {
-      console.log('📝 Updating streaming message with current text:', alegeonStreamingState.currentText.substring(0, 100));
+    if (alegeonStreamingState.isStreaming) {
+      console.log('📝 Managing Algeon streaming message - isStreaming:', alegeonStreamingState.isStreaming);
       
       setMessages(prev => {
-        const withoutStreamingMessage = prev.filter(msg => msg.id !== streamingMessageIdRef.current);
+        // Remove any existing streaming message
+        const withoutStreaming = prev.filter(msg => msg.id !== STREAMING_MESSAGE_ID);
         
-        // Create new streaming message ID if needed
-        if (!streamingMessageIdRef.current) {
-          streamingMessageIdRef.current = `streaming-${uuidv4()}`;
+        // Only add streaming message if we have content or if we're actively streaming
+        if (alegeonStreamingState.rawText || alegeonStreamingState.isStreaming) {
+          const streamingMessage: Message = {
+            id: STREAMING_MESSAGE_ID,
+            text: alegeonStreamingState.rawText || 'Initializing Algeon research...',
+            sender: 'ai',
+            timestamp: new Date(),
+            metadata: {
+              messageType: 'progress_update',
+              isCompleted: false
+            }
+          };
+          
+          return [...withoutStreaming, streamingMessage];
         }
         
-        const streamingMessage: Message = {
-          id: streamingMessageIdRef.current,
-          text: alegeonStreamingState.currentText,
+        return withoutStreaming;
+      });
+    } else if (alegeonStreamingState.isComplete && alegeonStreamingState.rawText) {
+      console.log('✅ Algeon streaming completed, replacing with final message');
+      
+      // Replace streaming message with final message
+      setMessages(prev => {
+        const withoutStreaming = prev.filter(msg => msg.id !== STREAMING_MESSAGE_ID);
+        
+        const finalMessage: Message = {
+          id: uuidv4(),
+          text: alegeonStreamingState.rawText,
           sender: 'ai',
           timestamp: new Date(),
           metadata: {
-            messageType: 'progress_update',
-            isCompleted: false
+            messageType: 'completed_report',
+            isCompleted: true
           }
         };
         
-        return [...withoutStreamingMessage, streamingMessage];
+        return [...withoutStreaming, finalMessage];
       });
+      
+      // Save final message to history
+      if (currentSessionId && alegeonStreamingState.rawText) {
+        addMessage(`AI: ${alegeonStreamingState.rawText}`);
+      }
+      
+      // Clear streaming message ID
+      streamingMessageIdRef.current = null;
     }
-  }, [alegeonStreamingState.currentText, alegeonStreamingState.isStreaming]);
+  }, [
+    alegeonStreamingState.isStreaming, 
+    alegeonStreamingState.rawText, 
+    alegeonStreamingState.isComplete,
+    currentSessionId,
+    addMessage
+  ]);
 
   // Load messages from history when session changes
   useEffect(() => {
@@ -278,7 +314,7 @@ export const useMessages = (currentSessionId: string | null) => {
       console.log('📋 Research type:', researchType);
       
       // Create streaming message ID
-      streamingMessageIdRef.current = `streaming-${uuidv4()}`;
+      streamingMessageIdRef.current = STREAMING_MESSAGE_ID;
       
       // Use the dedicated Algeon streaming implementation with explicit research type
       const result = await startAlegeonStreaming(message, researchType as any);
@@ -506,17 +542,19 @@ export const useMessages = (currentSessionId: string | null) => {
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, fallbackResponse]);
-      // Reset flag after adding response
       isAddingMessageRef.current = false;
       return;
     }
 
     setIsTyping(true);
     
-    // Ensure streaming state is clean before starting
-    if (!detectResearchQuery(finalMessageText) || selectedModel !== 'stratix') {
-      stopStreaming();
-    }
+    // Clean up any existing streaming state
+    stopStreaming();
+    stopStratixStreaming();
+    stopAlegeonStreaming();
+    
+    // Clear any existing streaming messages
+    setMessages(prev => prev.filter(msg => msg.id !== STREAMING_MESSAGE_ID));
     
     try {
       let aiResponseText: string;
@@ -524,14 +562,32 @@ export const useMessages = (currentSessionId: string | null) => {
       // Route to Algeon if model is 'algeon'
       if (selectedModel === 'algeon') {
         console.log('🔬 Using Algeon model with research type:', researchType);
-        aiResponseText = await handleAlegeonRequest(finalMessageText, researchType, currentSessionId);
+        streamingMessageIdRef.current = STREAMING_MESSAGE_ID;
+        aiResponseText = await startAlegeonStreaming(finalMessageText, researchType as any);
+        // Note: Final message handling is now done in the useEffect above
+        streamingMessageIdRef.current = null;
       }
       // Route to Stratix if model is 'stratix'
       else if (selectedModel === 'stratix') {
         console.log('🎯 Using Stratix model with Perplexity-style streaming');
         aiResponseText = await handleStratixRequest(finalMessageText, currentSessionId);
-        // Ensure streaming state is fully reset after Stratix completion
         stopStreaming();
+        
+        // Add final Stratix message
+        const aiResponse: Message = {
+          id: uuidv4(),
+          text: aiResponseText,
+          sender: 'ai',
+          timestamp: new Date(),
+          metadata: { messageType: 'stratix_conversation' },
+        };
+        
+        setMessages(prev => [...prev, aiResponse]);
+        
+        // Save AI response to history
+        if (currentSessionId) {
+          await addMessage(`AI: ${aiResponseText}`);
+        }
       } else {
         // Use existing N8N webhook for all other models
         let contextMessage = finalMessageText;
@@ -541,68 +597,41 @@ export const useMessages = (currentSessionId: string | null) => {
         
         console.log('📨 Sending to N8N webhook...');
         aiResponseText = await sendMessageToN8n(contextMessage, currentSessionId);
-      }
-      
-      // Don't create message if response is empty
-      if (!aiResponseText || aiResponseText.trim() === '') {
-        console.warn('Received empty response from AI service');
-        aiResponseText = "I apologize, but I didn't receive a proper response. Please try asking your question again.";
-      }
-      
-      console.log('✅ Creating AI response message with text:', aiResponseText.substring(0, 100) + '...');
-      
-      // Remove any streaming message before adding final response
-      if (streamingMessageIdRef.current) {
-        setMessages(prev => prev.filter(msg => msg.id !== streamingMessageIdRef.current));
-        streamingMessageIdRef.current = null;
-      }
-      
-      const aiResponse: Message = {
-        id: uuidv4(),
-        text: aiResponseText,
-        sender: 'ai',
-        timestamp: new Date(),
-        metadata: selectedModel === 'stratix' ? {
-          messageType: 'stratix_conversation'
-        } : selectedModel === 'algeon' ? {
-          messageType: 'completed_report',
-          isCompleted: true
-        } : { messageType: 'standard' },
-      };
-      
-      setMessages(prev => {
-        const newMessages = [...prev, aiResponse];
-        console.log('📝 Updated messages array, new length:', newMessages.length);
-        console.log('📝 Last message:', newMessages[newMessages.length - 1]);
-        console.log('📝 Current streaming state:', streamingState.isStreaming);
         
-        // For Stratix responses, ensure streaming overlay is not interfering
-        if (selectedModel === 'stratix') {
-          console.log('🎯 Stratix response added, streaming state should be reset');
+        // Don't create message if response is empty
+        if (!aiResponseText || aiResponseText.trim() === '') {
+          console.warn('Received empty response from AI service');
+          aiResponseText = "I apologize, but I didn't receive a proper response. Please try asking your question again.";
         }
         
-        return newMessages;
-      });
+        const aiResponse: Message = {
+          id: uuidv4(),
+          text: aiResponseText,
+          sender: 'ai',
+          timestamp: new Date(),
+          metadata: { messageType: 'standard' },
+        };
+        
+        setMessages(prev => [...prev, aiResponse]);
 
-      // Save AI response to history
-      if (currentSessionId) {
-        await addMessage(`AI: ${aiResponseText}`);
+        // Save AI response to history
+        if (currentSessionId) {
+          await addMessage(`AI: ${aiResponseText}`);
+        }
       }
 
       // Reset flag after successfully adding message and saving to database
       setTimeout(() => {
         isAddingMessageRef.current = false;
         console.log('🔓 Reset isAddingMessageRef flag after message completion');
-      }, 1000); // Wait 1 second to ensure database operations complete
+      }, 1000);
 
     } catch (error) {
       console.error('Message sending error:', error);
       
       // Remove any streaming message on error
-      if (streamingMessageIdRef.current) {
-        setMessages(prev => prev.filter(msg => msg.id !== streamingMessageIdRef.current));
-        streamingMessageIdRef.current = null;
-      }
+      setMessages(prev => prev.filter(msg => msg.id !== STREAMING_MESSAGE_ID));
+      streamingMessageIdRef.current = null;
       
       const errorResponse: Message = {
         id: uuidv4(),
@@ -611,25 +640,20 @@ export const useMessages = (currentSessionId: string | null) => {
         timestamp: new Date(),
       };
       
-      setMessages(prev => {
-        const newMessages = [...prev, errorResponse];
-        console.log('⚠️ Added error message, new messages length:', newMessages.length);
-        return newMessages;
-      });
-
-      // Reset flag even on error
+      setMessages(prev => [...prev, errorResponse]);
       isAddingMessageRef.current = false;
     } finally {
       setIsTyping(false);
     }
-  }, [currentSessionId, addMessage, isConfigured, canvasState, sendMessageToN8n, handleStratixRequest, handleAlegeonRequest]);
+  }, [currentSessionId, addMessage, isConfigured, canvasState, sendMessageToN8n, handleStratixRequest, startAlegeonStreaming, stopStreaming, stopStratixStreaming, stopAlegeonStreaming]);
 
   const handleClearConversation = useCallback(() => {
     console.log('useMessages: Clearing conversation');
     setMessages(initialMessages);
     stopStreaming();
+    stopAlegeonStreaming();
     streamingMessageIdRef.current = null;
-  }, [stopStreaming]);
+  }, [stopStreaming, stopAlegeonStreaming]);
 
   const handleDownloadChat = useCallback(() => {
     const chatContent = messages

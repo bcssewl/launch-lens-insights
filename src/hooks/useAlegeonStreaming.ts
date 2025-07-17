@@ -25,20 +25,24 @@ interface AlegeonStreamingEvent {
 export interface AlegeonStreamingState {
   isStreaming: boolean;
   currentText: string;
+  rawText: string; // Full text buffer for typewriter
   citations: Array<{
     name: string;
     url: string;
     type?: string;
   }>;
   error: string | null;
+  isComplete: boolean;
 }
 
 export const useAlegeonStreaming = () => {
   const [streamingState, setStreamingState] = useState<AlegeonStreamingState>({
     isStreaming: false,
     currentText: '',
+    rawText: '',
     citations: [],
     error: null,
+    isComplete: false,
   });
 
   const wsRef = useRef<WebSocket | null>(null);
@@ -89,8 +93,10 @@ export const useAlegeonStreaming = () => {
     setStreamingState({
       isStreaming: false,
       currentText: '',
+      rawText: '',
       citations: [],
       error: null,
+      isComplete: false,
     });
     cleanup();
   }, [cleanup]);
@@ -108,7 +114,12 @@ export const useAlegeonStreaming = () => {
       accumulatedTextRef.current = '';
       messageCountRef.current = 0;
 
-      setStreamingState(prev => ({ ...prev, isStreaming: true }));
+      setStreamingState(prev => ({ 
+        ...prev, 
+        isStreaming: true,
+        isComplete: false,
+        error: null 
+      }));
 
       // Set overall timeout
       timeoutRef.current = window.setTimeout(() => {
@@ -132,7 +143,6 @@ export const useAlegeonStreaming = () => {
         
         wsRef.current = new WebSocket(wsUrl);
 
-        // Backend team requested exact logging format
         wsRef.current.onopen = () => {
           console.log('WebSocket opened successfully');
           
@@ -156,7 +166,6 @@ export const useAlegeonStreaming = () => {
         };
 
         wsRef.current.onmessage = (event) => {
-          // Backend team requested exact logging format
           console.log('Received WebSocket message:', event.data);
           
           try {
@@ -172,28 +181,22 @@ export const useAlegeonStreaming = () => {
               error: data.error
             });
 
-            // Handle different message types according to backend format
             if (data.type === 'chunk') {
-              // Add content to accumulated text if present
               if (data.content) {
                 accumulatedTextRef.current += data.content;
                 console.log(`📝 Accumulated text length: ${accumulatedTextRef.current.length}`);
                 
-                // Update React state with accumulated text
+                // Update streaming state with raw text for typewriter effect
                 setStreamingState(prev => ({
                   ...prev,
-                  currentText: accumulatedTextRef.current
+                  rawText: accumulatedTextRef.current,
+                  currentText: accumulatedTextRef.current // This will be overridden by typewriter
                 }));
               }
               
-              // Check for completion - backend sends final message with content: "" and is_complete: true
+              // Check for completion
               if (data.is_complete === true) {
                 console.log('✅ Stream completion detected via is_complete flag');
-                console.log('📊 Final statistics:', {
-                  totalMessages: messageCountRef.current,
-                  finalTextLength: accumulatedTextRef.current.length,
-                  finishReason: data.finish_reason
-                });
                 
                 if (!hasResolvedRef.current) {
                   hasResolvedRef.current = true;
@@ -201,16 +204,11 @@ export const useAlegeonStreaming = () => {
                   setStreamingState(prev => ({
                     ...prev,
                     isStreaming: false,
-                    currentText: accumulatedTextRef.current
+                    isComplete: true,
+                    currentText: accumulatedTextRef.current,
+                    rawText: accumulatedTextRef.current,
+                    citations: data.citations || prev.citations
                   }));
-                  
-                  // Store citations if provided
-                  if (data.citations && data.citations.length > 0) {
-                    setStreamingState(prev => ({
-                      ...prev,
-                      citations: data.citations || []
-                    }));
-                  }
                   
                   const finalResult = accumulatedTextRef.current || 'Research completed successfully.';
                   console.log('✅ Resolving with final result:', finalResult.substring(0, 100));
@@ -225,7 +223,8 @@ export const useAlegeonStreaming = () => {
                 setStreamingState(prev => ({ 
                   ...prev, 
                   isStreaming: false, 
-                  error: data.error || 'An error occurred during research' 
+                  error: data.error || 'An error occurred during research',
+                  isComplete: false
                 }));
                 reject(new Error(data.error || 'Research failed'));
                 cleanup();
@@ -234,20 +233,18 @@ export const useAlegeonStreaming = () => {
             
           } catch (parseError) {
             console.error('❌ Error parsing WebSocket message:', parseError, event.data);
-            // Don't reject on parse errors - continue listening for valid messages
-            console.warn('⚠️ Continuing despite parse error');
           }
         };
 
         wsRef.current.onerror = (error) => {
-          // Backend team requested exact logging format
           console.log('WebSocket error:', error);
           if (!hasResolvedRef.current) {
             hasResolvedRef.current = true;
             setStreamingState(prev => ({ 
               ...prev, 
               isStreaming: false, 
-              error: 'WebSocket connection failed.' 
+              error: 'WebSocket connection failed.',
+              isComplete: false
             }));
             reject(new Error('WebSocket connection failed'));
             cleanup();
@@ -255,29 +252,23 @@ export const useAlegeonStreaming = () => {
         };
 
         wsRef.current.onclose = (event) => {
-          // Backend team requested exact logging format
           console.log('WebSocket closed:', event.code, event.reason);
           console.log('Was clean close:', event.wasClean);
           
           setStreamingState(prev => ({ ...prev, isStreaming: false }));
           
-          // Handle closure intelligently
           if (!hasResolvedRef.current) {
             hasResolvedRef.current = true;
             const finalText = accumulatedTextRef.current;
             
-            console.log('🔍 Connection closed analysis:', {
-              code: event.code,
-              reason: event.reason,
-              wasClean: event.wasClean,
-              hasAccumulatedText: !!finalText,
-              textLength: finalText.length,
-              messageCount: messageCountRef.current
-            });
-            
-            // If we have received substantial content and connection closed normally, treat as success
             if (finalText && finalText.length > 50 && (event.code === 1000 || event.wasClean)) {
               console.log('✅ Normal closure with content, resolving with accumulated text');
+              setStreamingState(prev => ({
+                ...prev,
+                isComplete: true,
+                currentText: finalText,
+                rawText: finalText
+              }));
               resolve(finalText);
             } else if (event.code === 1006) {
               reject(new Error('Connection lost unexpectedly'));
@@ -304,7 +295,7 @@ export const useAlegeonStreaming = () => {
 
   const stopStreaming = useCallback(() => {
     console.log('🛑 Stopping Algeon streaming by user');
-    setStreamingState(prev => ({ ...prev, isStreaming: false }));
+    setStreamingState(prev => ({ ...prev, isStreaming: false, isComplete: false }));
     if (!hasResolvedRef.current && promiseRef.current) {
       hasResolvedRef.current = true;
       promiseRef.current.reject(new Error('Streaming stopped by user.'));
