@@ -88,32 +88,40 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
     (alegeonStreamingState.isComplete && message.metadata?.messageType === 'completed_report')
   );
 
-  // Enhanced citation detection - check both streaming state and message data
-  const availableCitations = message.alegeonCitations || 
-    (alegeonStreamingState?.finalCitations?.length ? alegeonStreamingState.finalCitations : null) ||
-    (alegeonStreamingState?.citations?.length ? alegeonStreamingState.citations : null);
+  // Enhanced citation detection - prioritize message citations, then streaming citations
+  const messageCitations = message.alegeonCitations || [];
+  const streamingCitations = alegeonStreamingState?.citations || [];
+  const finalCitations = alegeonStreamingState?.finalCitations || [];
+  
+  // Use the most appropriate citation source based on message state
+  const availableCitations = messageCitations.length > 0 
+    ? messageCitations 
+    : (finalCitations.length > 0 ? finalCitations : streamingCitations);
 
-  // Check if this is a completed Algeon message with citations
-  const isAlegeonCompleted = isAi && 
-    message.metadata?.messageType === 'completed_report' && 
-    availableCitations && availableCitations.length > 0;
+  // Check if we should show citations (for completed AI messages with content)
+  const shouldShowCitations = isAi && 
+    !isStreaming && 
+    !showAlegeonStreaming && 
+    message.text && 
+    message.text.trim() !== '' &&
+    availableCitations && 
+    availableCitations.length > 0;
 
   // Enhanced debug logging
-  console.log('💬 ChatMessage: Rendering message', {
+  console.log('💬 ChatMessage: Citation debug', {
     messageId: message.id,
     sender: message.sender,
     isStreaming,
     isStreamingMessage,
     showAlegeonStreaming,
-    isAlegeonCompleted,
+    shouldShowCitations,
+    messageCitationsCount: messageCitations.length,
+    streamingCitationsCount: streamingCitations.length,
+    finalCitationsCount: finalCitations.length,
     availableCitationsCount: availableCitations?.length || 0,
-    messageCitationsCount: message.alegeonCitations?.length || 0,
-    streamingCitationsCount: alegeonStreamingState?.citations?.length || 0,
-    finalCitationsCount: alegeonStreamingState?.finalCitations?.length || 0,
     messageType: message.metadata?.messageType,
-    isReport,
-    hasStratixStreaming: !!stratixStreamingState?.isStreaming,
-    messageText: message.text?.substring(0, 100) + (message.text?.length > 100 ? '...' : '')
+    messageTextLength: message.text?.length || 0,
+    messageTextPreview: message.text?.substring(0, 100) + (message.text?.length > 100 ? '...' : '')
   });
 
   // Don't render AI messages with empty or whitespace-only content unless streaming
@@ -129,10 +137,12 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
   };
 
   const handleSourcesClick = () => {
+    console.log('🔍 Sources button clicked, opening sidebar');
     setIsSourcesSidebarOpen(true);
   };
 
   const handleSourcesSidebarClose = () => {
+    console.log('❌ Sources sidebar closed');
     setIsSourcesSidebarOpen(false);
   };
 
@@ -212,7 +222,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                         onDownload={onCanvasDownload}
                         onPrint={onCanvasPrint}
                       />
-                    ) : isAlegeonCompleted && availableCitations ? (
+                    ) : shouldShowCitations ? (
                       <CitationAwareRenderer
                         content={message.text}
                         citations={availableCitations}
@@ -241,7 +251,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
       </div>
 
       {/* Sources Sidebar */}
-      {availableCitations && availableCitations.length > 0 && (
+      {shouldShowCitations && (
         <SourcesSidebar
           isOpen={isSourcesSidebarOpen}
           onClose={handleSourcesSidebarClose}

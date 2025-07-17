@@ -24,13 +24,15 @@ const CitationAwareRenderer: React.FC<CitationAwareRendererProps> = ({
   onCitationClick,
   className
 }) => {
-  console.log('📎 CitationAwareRenderer: Processing content with citations', {
+  console.log('📎 CitationAwareRenderer: Rendering with citations', {
     contentLength: content.length,
-    citationsCount: citations.length
+    citationsCount: citations.length,
+    hasOnSourcesClick: !!onSourcesClick,
+    citationsPreview: citations.slice(0, 3).map(c => ({ name: c.name, url: c.url }))
   });
 
   const handleCitationClick = (citation: Citation, index: number) => {
-    console.log('📎 Citation clicked:', citation.name);
+    console.log('📎 Citation clicked:', { citation: citation.name, index, url: citation.url });
     
     // Open the citation URL if available
     if (citation.url) {
