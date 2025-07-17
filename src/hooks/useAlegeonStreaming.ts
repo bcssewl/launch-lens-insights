@@ -6,20 +6,20 @@ import { detectAlgeonResearchType, type AlgeonResearchType } from '@/utils/algeo
 const STREAMING_TIMEOUT_MS = 300000; // 5 minutes for complex research
 const HEARTBEAT_INTERVAL = 30000; // 30 seconds keep-alive
 
-// Event types from the Algeon WebSocket - Updated to match backend
+// Event types from the Algeon WebSocket - Updated to match backend exact format
 interface AlegeonStreamingEvent {
-  type: string; // Allow any type to handle backend variations
+  type: string;
   content?: string;
-  finish_reason?: string;
-  is_complete?: boolean; // Backend sends this field
-  model_used?: string; // Backend sends this field
+  is_complete?: boolean;
+  finish_reason?: string | null;
   citations?: Array<{
     name: string;
     url: string;
     type?: string;
   }>;
+  usage?: object;
+  error?: string | null;
   message?: string; // for error messages
-  error?: string; // Alternative error field
 }
 
 export interface AlegeonStreamingState {
@@ -48,8 +48,15 @@ export const useAlegeonStreaming = () => {
     resolve: (value: string) => void;
     reject: (reason?: any) => void;
   } | null>(null);
+  
+  // Use ref to track accumulated text to avoid React state async issues
+  const accumulatedTextRef = useRef<string>('');
+  const messageCountRef = useRef<number>(0);
+  const hasResolvedRef = useRef<boolean>(false);
 
   const cleanup = useCallback(() => {
+    console.log('🧹 Cleaning up Algeon WebSocket connection');
+    
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
@@ -64,10 +71,16 @@ export const useAlegeonStreaming = () => {
       wsRef.current.onerror = null;
       wsRef.current.onclose = null;
       if (wsRef.current.readyState === WebSocket.OPEN) {
+        console.log('🔌 Closing WebSocket connection');
         wsRef.current.close();
       }
       wsRef.current = null;
     }
+    
+    // Reset refs
+    accumulatedTextRef.current = '';
+    messageCountRef.current = 0;
+    hasResolvedRef.current = false;
     promiseRef.current = null;
   }, []);
 
@@ -91,19 +104,21 @@ export const useAlegeonStreaming = () => {
 
     return new Promise((resolve, reject) => {
       promiseRef.current = { resolve, reject };
-      let hasResolved = false; // Track if promise is already resolved
-      let hasReceivedContent = false; // Track if we've received any content
+      hasResolvedRef.current = false;
+      accumulatedTextRef.current = '';
+      messageCountRef.current = 0;
 
       setStreamingState(prev => ({ ...prev, isStreaming: true }));
 
+      // Set overall timeout
       timeoutRef.current = window.setTimeout(() => {
         console.log('⏰ Algeon streaming timeout reached after 5 minutes');
-        if (!hasResolved) {
-          hasResolved = true;
-          // If we have content, resolve with it instead of rejecting
-          if (hasReceivedContent && streamingState.currentText) {
-            console.log('⏰ Timeout but have content, resolving with:', streamingState.currentText.substring(0, 100));
-            resolve(streamingState.currentText);
+        if (!hasResolvedRef.current) {
+          hasResolvedRef.current = true;
+          const finalText = accumulatedTextRef.current;
+          if (finalText) {
+            console.log('⏰ Timeout but have content, resolving with:', finalText.substring(0, 100));
+            resolve(finalText);
           } else {
             reject(new Error('Streaming timeout - research taking longer than expected'));
           }
@@ -116,11 +131,10 @@ export const useAlegeonStreaming = () => {
         console.log('🔌 Connecting to Algeon WebSocket:', wsUrl);
         
         wsRef.current = new WebSocket(wsUrl);
-        let connectionEstablished = false;
 
+        // Backend team requested exact logging format
         wsRef.current.onopen = () => {
-          console.log('✅ Algeon WebSocket connected');
-          connectionEstablished = true;
+          console.log('WebSocket opened successfully');
           
           heartbeatRef.current = window.setInterval(() => {
             if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -137,107 +151,99 @@ export const useAlegeonStreaming = () => {
             stream: true
           };
           
-          console.log('📤 Sending Algeon query:', payload);
+          console.log('📤 Sending research request:', payload);
           wsRef.current.send(JSON.stringify(payload));
         };
 
         wsRef.current.onmessage = (event) => {
-          // Enhanced debugging
-          console.log('🟦 RAW WebSocket message received:', event.data);
+          // Backend team requested exact logging format
+          console.log('Received WebSocket message:', event.data);
           
           try {
             const data: AlegeonStreamingEvent = JSON.parse(event.data);
-            console.log('🟦 PARSED message type:', data.type);
-            console.log('🟦 PARSED message data:', data);
+            messageCountRef.current += 1;
             
-            setStreamingState(prev => {
-              const newState = { ...prev };
-              let shouldResolve = false;
-              let shouldReject = false;
-              let resolveValue = '';
-              let rejectValue: Error | undefined;
+            console.log(`📨 Message #${messageCountRef.current}:`, {
+              type: data.type,
+              hasContent: !!data.content,
+              contentLength: data.content?.length || 0,
+              isComplete: data.is_complete,
+              finishReason: data.finish_reason,
+              error: data.error
+            });
 
-              // Handle different event types more flexibly
-              switch (data.type) {
-                case 'chunk':
-                  if (data.content) {
-                    hasReceivedContent = true;
-                    newState.currentText += data.content;
-                    console.log('📝 Content chunk added, total length:', newState.currentText.length);
-                  }
-                  
-                  // Check if backend indicates completion via is_complete field
-                  if (data.is_complete === true) {
-                    console.log('✅ Backend indicates completion via is_complete flag');
-                    if (!hasResolved) {
-                      hasResolved = true;
-                      newState.isStreaming = false;
-                      shouldResolve = true;
-                      resolveValue = newState.currentText || 'Research completed successfully.';
-                    }
-                  }
-                  break;
-
-                case 'complete':
-                  console.log('✅ Algeon streaming completed with complete event');
-                  if (!hasResolved) {
-                    hasResolved = true;
-                    newState.isStreaming = false;
-                    if (data.citations && data.citations.length > 0) {
-                      newState.citations = data.citations;
-                    }
-                    shouldResolve = true;
-                    resolveValue = newState.currentText || 'Research completed successfully.';
-                  }
-                  break;
-
-                case 'error':
-                  console.error('❌ Algeon streaming error:', data.message || data.error);
-                  if (!hasResolved) {
-                    hasResolved = true;
-                    newState.isStreaming = false;
-                    newState.error = data.message || data.error || 'An error occurred during research';
-                    shouldReject = true;
-                    rejectValue = new Error(data.message || data.error || 'Research failed');
-                  }
-                  break;
-
-                default:
-                  console.warn('⚠️ Unknown Algeon event type:', data.type);
-                  // Still process content if available
-                  if (data.content) {
-                    hasReceivedContent = true;
-                    newState.currentText += data.content;
-                  }
+            // Handle different message types according to backend format
+            if (data.type === 'chunk') {
+              // Add content to accumulated text if present
+              if (data.content) {
+                accumulatedTextRef.current += data.content;
+                console.log(`📝 Accumulated text length: ${accumulatedTextRef.current.length}`);
+                
+                // Update React state with accumulated text
+                setStreamingState(prev => ({
+                  ...prev,
+                  currentText: accumulatedTextRef.current
+                }));
               }
               
-              // Handle promise resolution/rejection after state update
-              if (shouldResolve) {
-                setTimeout(() => {
-                  resolve(resolveValue);
+              // Check for completion - backend sends final message with content: "" and is_complete: true
+              if (data.is_complete === true) {
+                console.log('✅ Stream completion detected via is_complete flag');
+                console.log('📊 Final statistics:', {
+                  totalMessages: messageCountRef.current,
+                  finalTextLength: accumulatedTextRef.current.length,
+                  finishReason: data.finish_reason
+                });
+                
+                if (!hasResolvedRef.current) {
+                  hasResolvedRef.current = true;
+                  
+                  setStreamingState(prev => ({
+                    ...prev,
+                    isStreaming: false,
+                    currentText: accumulatedTextRef.current
+                  }));
+                  
+                  // Store citations if provided
+                  if (data.citations && data.citations.length > 0) {
+                    setStreamingState(prev => ({
+                      ...prev,
+                      citations: data.citations || []
+                    }));
+                  }
+                  
+                  const finalResult = accumulatedTextRef.current || 'Research completed successfully.';
+                  console.log('✅ Resolving with final result:', finalResult.substring(0, 100));
+                  resolve(finalResult);
                   cleanup();
-                }, 100); // Reduced delay
-              } else if (shouldReject) {
-                setTimeout(() => {
-                  reject(rejectValue);
-                  cleanup();
-                }, 100);
+                }
               }
-
-              return newState;
-            });
+            } else if (data.error) {
+              console.error('❌ Stream error received:', data.error);
+              if (!hasResolvedRef.current) {
+                hasResolvedRef.current = true;
+                setStreamingState(prev => ({ 
+                  ...prev, 
+                  isStreaming: false, 
+                  error: data.error || 'An error occurred during research' 
+                }));
+                reject(new Error(data.error || 'Research failed'));
+                cleanup();
+              }
+            }
             
-          } catch (error) {
-            console.error('❌ Error parsing Algeon event:', error, event.data);
-            // Don't immediately reject on parse errors - log and continue
+          } catch (parseError) {
+            console.error('❌ Error parsing WebSocket message:', parseError, event.data);
+            // Don't reject on parse errors - continue listening for valid messages
             console.warn('⚠️ Continuing despite parse error');
           }
         };
 
-        wsRef.current.onerror = (errorEvent) => {
-          console.error('❌ Algeon WebSocket error:', errorEvent);
-          if (!hasResolved) {
-            hasResolved = true;
+        wsRef.current.onerror = (error) => {
+          // Backend team requested exact logging format
+          console.log('WebSocket error:', error);
+          if (!hasResolvedRef.current) {
+            hasResolvedRef.current = true;
             setStreamingState(prev => ({ 
               ...prev, 
               isStreaming: false, 
@@ -249,50 +255,46 @@ export const useAlegeonStreaming = () => {
         };
 
         wsRef.current.onclose = (event) => {
-          console.log('🟥 WebSocket CLOSED - Code:', event.code);
-          console.log('🟥 WebSocket CLOSED - Reason:', event.reason);
-          console.log('🟥 WebSocket CLOSED - Was Clean:', event.wasClean);
-          console.log('🟥 Has received content:', hasReceivedContent);
-          console.log('🟥 Has resolved already:', hasResolved);
+          // Backend team requested exact logging format
+          console.log('WebSocket closed:', event.code, event.reason);
+          console.log('Was clean close:', event.wasClean);
           
-          setStreamingState(prev => {
-            console.log('🟥 Current text accumulated:', prev.currentText.substring(0, 200));
-            return { ...prev, isStreaming: false };
-          });
+          setStreamingState(prev => ({ ...prev, isStreaming: false }));
           
-          // Handle connection closure more intelligently
-          if (!hasResolved) {
-            hasResolved = true;
+          // Handle closure intelligently
+          if (!hasResolvedRef.current) {
+            hasResolvedRef.current = true;
+            const finalText = accumulatedTextRef.current;
             
-            // If we have received content and connection closed normally, treat as success
-            if (hasReceivedContent && event.code === 1000) {
-              // Get the current text from state
-              setStreamingState(prev => {
-                const finalText = prev.currentText;
-                console.log('✅ Normal closure with content, resolving with:', finalText.substring(0, 100));
-                resolve(finalText || 'Research completed.');
-                return prev;
-              });
-            } else if (!connectionEstablished) {
-              reject(new Error('Failed to establish connection to research service'));
+            console.log('🔍 Connection closed analysis:', {
+              code: event.code,
+              reason: event.reason,
+              wasClean: event.wasClean,
+              hasAccumulatedText: !!finalText,
+              textLength: finalText.length,
+              messageCount: messageCountRef.current
+            });
+            
+            // If we have received substantial content and connection closed normally, treat as success
+            if (finalText && finalText.length > 50 && (event.code === 1000 || event.wasClean)) {
+              console.log('✅ Normal closure with content, resolving with accumulated text');
+              resolve(finalText);
             } else if (event.code === 1006) {
-              // Abnormal closure
               reject(new Error('Connection lost unexpectedly'));
-            } else if (!hasReceivedContent) {
-              // No content received before closure
-              reject(new Error(`Connection closed without receiving any content: ${event.code} ${event.reason || ''}`));
+            } else if (!finalText) {
+              reject(new Error(`Connection closed without receiving content: ${event.code} ${event.reason || ''}`));
             } else {
-              // Other closure codes
               reject(new Error(`WebSocket closed unexpectedly: ${event.code} ${event.reason || 'No reason given'}`));
             }
+            
+            cleanup();
           }
-          cleanup();
         };
 
       } catch (error) {
         console.error('❌ Failed to establish Algeon WebSocket connection:', error);
-        if (!hasResolved) {
-          hasResolved = true;
+        if (!hasResolvedRef.current) {
+          hasResolvedRef.current = true;
           reject(error);
           cleanup();
         }
@@ -303,7 +305,10 @@ export const useAlegeonStreaming = () => {
   const stopStreaming = useCallback(() => {
     console.log('🛑 Stopping Algeon streaming by user');
     setStreamingState(prev => ({ ...prev, isStreaming: false }));
-    promiseRef.current?.reject(new Error('Streaming stopped by user.'));
+    if (!hasResolvedRef.current && promiseRef.current) {
+      hasResolvedRef.current = true;
+      promiseRef.current.reject(new Error('Streaming stopped by user.'));
+    }
     cleanup();
   }, [cleanup]);
 
