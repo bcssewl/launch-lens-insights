@@ -7,8 +7,10 @@ import PerplexityEmptyState from '@/components/assistant/PerplexityEmptyState';
 import EnhancedChatInput from '@/components/assistant/EnhancedChatInput';
 import StreamingProgress from '@/components/assistant/StreamingProgress';
 import StreamingError from '@/components/assistant/StreamingError';
+import AlegeonStreamingOverlay from '@/components/assistant/AlegeonStreamingOverlay';
 import { Message } from '@/constants/aiAssistant';
 import type { StratixStreamingState } from '@/types/stratixStreaming';
+import type { AlegeonStreamingState } from '@/hooks/useAlegeonStreaming';
 
 interface ChatAreaProps {
   messages: Message[];
@@ -44,6 +46,8 @@ interface ChatAreaProps {
   };
   // Enhanced Stratix streaming support
   stratixStreamingState?: StratixStreamingState;
+  // Algeon streaming support
+  alegeonStreamingState?: AlegeonStreamingState;
 }
 
 const ChatArea: React.FC<ChatAreaProps> = ({
@@ -56,7 +60,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   onCanvasDownload,
   onCanvasPrint,
   streamingState,
-  stratixStreamingState
+  stratixStreamingState,
+  alegeonStreamingState
 }) => {
   const hasConversation = messages.length > 1 || isTyping;
 
@@ -134,6 +139,13 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       </div>
 
       <div className="absolute bottom-0 left-0 right-0">
+        {/* Algeon Streaming Overlay */}
+        {alegeonStreamingState && (alegeonStreamingState.isStreaming || alegeonStreamingState.currentText || alegeonStreamingState.error) && (
+          <div className="max-w-4xl mx-auto px-6">
+            <AlegeonStreamingOverlay streamingState={alegeonStreamingState} />
+          </div>
+        )}
+        
         <div className="max-w-4xl mx-auto px-6 py-4">
           <EnhancedChatInput 
             onSendMessage={onSendMessage} 

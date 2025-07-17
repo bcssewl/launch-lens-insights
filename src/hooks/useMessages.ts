@@ -233,62 +233,79 @@ export const useMessages = (currentSessionId: string | null) => {
     return hasResearchKeywords || (isLongQuery && hasQuestionWords);
   }, []);
 
-  // Handle Algeon agent requests
+  // Handle Algeon agent requests via WebSocket streaming
   const handleAlegeonRequest = useCallback(async (message: string, sessionId?: string | null): Promise<string> => {
     try {
-      console.log('🔬 Making Algeon request with message:', message);
+      console.log('🔬 Starting Algeon WebSocket streaming for message:', message);
       
-      // Get the current user from Supabase
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error('User not authenticated');
-      }
-      
-      const response = await fetch(API_ENDPOINTS.algeon, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user_id: user.id, // Use actual Supabase user ID
-          message: message,
-          session_id: sessionId || null
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('Algeon API error:', errorData);
+      // Create WebSocket connection directly
+      return new Promise((resolve, reject) => {
+        const wsUrl = 'wss://opti-agent3-wrappers.up.railway.app/api/research/stream';
+        console.log('🔌 Connecting to Algeon WebSocket:', wsUrl);
         
-        // Handle specific error codes
-        if (response.status === 500) {
-          throw new Error("The research agent is experiencing issues. Please try again.");
-        } else if (response.status === 422) {
-          throw new Error("Invalid request format. Please check your message.");
-        } else if (response.status === 404) {
-          throw new Error("Research agent endpoint not found.");
-        }
-        throw new Error(`HTTP ${response.status}: ${JSON.stringify(errorData)}`);
-      }
-
-      const data = await response.json();
-      
-      // Handle Algeon response format
-      const processedResponse = {
-        content: data.response || 'No response received', // Map 'response' to 'content'
-        model: `algeon-${data.provider || 'auto'}`, // Show which provider was used
-        session_id: data.session_id,
-        metadata: {
-          latency: data.latency,
-          actual_provider: data.provider,
-          routing_info: data.provider ? `Routed to ${data.provider} for this task type` : 'Auto-routed by agent',
-          tokens: data.tokens,
-          cost: data.cost
-        }
-      };
-      
-      console.log('🔬 Algeon response processed:', processedResponse);
-      return processedResponse.content;
+        const socket = new WebSocket(wsUrl);
+        let responseText = "";
+        
+        // Set up event handlers
+        socket.onopen = () => {
+          console.log('✅ Algeon WebSocket connected');
+          socket.send(JSON.stringify({
+            query: message,
+            research_type: "comprehensive",
+            scope: "global",
+            depth: "executive_summary"
+          }));
+        };
+        
+        socket.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            console.log('📨 Algeon message:', data);
+            
+            // Handle content chunks
+            if (data.type === "chunk" && data.content) {
+              responseText += data.content;
+              console.log('📝 Current response length:', responseText.length);
+            }
+            
+            // Handle completion
+            if (data.finish_reason === "stop" || data.type === "complete") {
+              console.log('✅ Algeon streaming completed');
+              socket.close();
+              resolve(responseText || 'Research completed successfully.');
+            }
+            
+            // Handle errors
+            if (data.type === "error") {
+              console.error('❌ Algeon error:', data.message);
+              socket.close();
+              reject(new Error(data.message || 'Research failed'));
+            }
+          } catch (e) {
+            console.error("❌ Error processing Algeon WebSocket message:", e);
+          }
+        };
+        
+        socket.onclose = (event) => {
+          console.log("🔌 Algeon WebSocket connection closed:", event.code);
+          if (event.code !== 1000 && responseText === "") {
+            reject(new Error("Connection closed unexpectedly"));
+          }
+        };
+        
+        socket.onerror = (error) => {
+          console.error("❌ Algeon WebSocket error:", error);
+          reject(new Error("Connection error. Please try again."));
+        };
+        
+        // Set a timeout for the connection
+        setTimeout(() => {
+          if (socket.readyState === WebSocket.CONNECTING || socket.readyState === WebSocket.OPEN) {
+            socket.close();
+            reject(new Error("Request timeout. Please try again."));
+          }
+        }, 300000); // 5 minutes timeout
+      });
       
     } catch (error) {
       console.error('❌ Algeon request failed:', error);

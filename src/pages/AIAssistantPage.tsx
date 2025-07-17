@@ -11,6 +11,7 @@ import ChatSubheader from '@/components/assistant/ChatSubheader';
 import { useChatSessions } from '@/hooks/useChatSessions';
 import { useChatHistory } from '@/hooks/useChatHistory';
 import { useMessages } from '@/hooks/useMessages';
+import { useAlegeonStreaming } from '@/hooks/useAlegeonStreaming';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTheme } from 'next-themes';
 import { Loader2 } from 'lucide-react';
@@ -49,6 +50,7 @@ const AIAssistantPage: React.FC = () => {
     streamingState,
     stratixStreamingState
   } = useMessages(currentSessionId);
+  const { streamingState: alegeonStreamingState } = useAlegeonStreaming();
   const [editedCanvasContent, setEditedCanvasContent] = useState(canvasState.content);
 
   // Update edited content when canvas state changes
