@@ -240,12 +240,13 @@ export const useMessages = (currentSessionId: string | null) => {
   }, []);
 
   // Handle Algeon requests using the dedicated Algeon streaming implementation
-  const handleAlegeonRequest = useCallback(async (message: string, sessionId?: string | null): Promise<string> => {
+  const handleAlegeonRequest = useCallback(async (message: string, researchType?: string, sessionId?: string | null): Promise<string> => {
     try {
       console.log('🔬 Starting Algeon streaming for message:', message.substring(0, 100));
+      console.log('📋 Research type:', researchType);
       
-      // Use the dedicated Algeon streaming implementation
-      return await startAlegeonStreaming(message);
+      // Use the dedicated Algeon streaming implementation with explicit research type
+      return await startAlegeonStreaming(message, researchType as any);
       
     } catch (error) {
       console.error('❌ Algeon streaming failed:', error);
@@ -431,11 +432,11 @@ export const useMessages = (currentSessionId: string | null) => {
     }
   }, [detectResearchQuery, startStreaming, stopStreaming]);
 
-  const handleSendMessage = useCallback(async (text?: string, messageText?: string, selectedModel?: string) => {
+  const handleSendMessage = useCallback(async (text?: string, messageText?: string, selectedModel?: string, researchType?: string) => {
     const finalMessageText = text || messageText;
     if (!finalMessageText || finalMessageText.trim() === '') return;
 
-    console.log('🚀 useMessages: Sending message in session:', currentSessionId, 'with model:', selectedModel);
+    console.log('🚀 useMessages: Sending message in session:', currentSessionId, 'with model:', selectedModel, 'research type:', researchType);
 
     // Set flag to prevent history reload interference
     isAddingMessageRef.current = true;
@@ -479,8 +480,8 @@ export const useMessages = (currentSessionId: string | null) => {
 
       // Route to Algeon if model is 'algeon'
       if (selectedModel === 'algeon') {
-        console.log('🔬 Using Algeon model');
-        aiResponseText = await handleAlegeonRequest(finalMessageText, currentSessionId);
+        console.log('🔬 Using Algeon model with research type:', researchType);
+        aiResponseText = await handleAlegeonRequest(finalMessageText, researchType, currentSessionId);
       }
       // Route to Stratix if model is 'stratix'
       else if (selectedModel === 'stratix') {
@@ -563,7 +564,7 @@ export const useMessages = (currentSessionId: string | null) => {
     } finally {
       setIsTyping(false);
     }
-  }, [currentSessionId, addMessage, isConfigured, canvasState, sendMessageToN8n, handleStratixRequest]);
+  }, [currentSessionId, addMessage, isConfigured, canvasState, sendMessageToN8n, handleStratixRequest, handleAlegeonRequest]);
 
   const handleClearConversation = useCallback(() => {
     console.log('useMessages: Clearing conversation');

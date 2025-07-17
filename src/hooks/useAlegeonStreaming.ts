@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { detectAlgeonResearchType, type AlgeonResearchType } from '@/utils/algeonResearchTypes';
 

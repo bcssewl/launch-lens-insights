@@ -91,10 +91,10 @@ const AIAssistantPage: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isFullscreen]);
 
-  const handleSendMessageWithSession = async (text: string, attachments?: any[], modelOverride?: string) => {
+  const handleSendMessageWithSession = async (text: string, attachments?: any[], modelOverride?: string, researchType?: string) => {
     // Use the modelOverride if provided, otherwise use the current selectedModel
     const modelToUse = modelOverride || selectedModel;
-    console.log('AIAssistantPage: Sending message with session:', currentSessionId, 'model:', modelToUse);
+    console.log('AIAssistantPage: Sending message with session:', currentSessionId, 'model:', modelToUse, 'research type:', researchType);
 
     // Create session if none exists
     if (!currentSessionId) {
@@ -110,9 +110,9 @@ const AIAssistantPage: React.FC = () => {
       await new Promise(resolve => setTimeout(resolve, 200));
       
       // Now send the message with the new session
-      handleSendMessage(text, undefined, modelToUse);
+      handleSendMessage(text, undefined, modelToUse, researchType);
     } else {
-      handleSendMessage(text, undefined, modelToUse);
+      handleSendMessage(text, undefined, modelToUse, researchType);
     }
   };
 
@@ -240,6 +240,7 @@ const AIAssistantPage: React.FC = () => {
               onCanvasPrint={handleCanvasPrint}
               streamingState={streamingState}
               stratixStreamingState={stratixStreamingState}
+              alegeonStreamingState={alegeonStreamingState}
             />
           </div>
         </SidebarInset>

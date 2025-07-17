@@ -1,3 +1,4 @@
+
 // Valid research types for Algeon API
 export type AlgeonResearchType = 
   | 'quick_facts'
