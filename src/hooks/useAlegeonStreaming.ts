@@ -6,7 +6,7 @@ import { detectAlgeonResearchType, type AlgeonResearchType } from '@/utils/algeo
 const STREAMING_TIMEOUT_MS = 300000; // 5 minutes for complex research
 const HEARTBEAT_INTERVAL = 30000; // 30 seconds keep-alive
 
-// Event types from the Algeon WebSocket - Updated to match backend exact format
+// Enhanced event types from the Algeon WebSocket - Updated to match complete API schema
 interface AlegeonStreamingEvent {
   type: string;
   content?: string;
@@ -17,9 +17,43 @@ interface AlegeonStreamingEvent {
     url: string;
     type?: string;
   }>;
+  // Enhanced fields from API schema
+  sources?: Array<{
+    url: string;
+    title: string;
+    snippet?: string;
+    source_num?: number;
+    credibility_score?: number;
+  }>;
+  metadata?: {
+    citations_count?: number;
+    credibility_score?: number;
+    processing_time?: number;
+    search_queries?: string[];
+    [key: string]: any;
+  };
   usage?: object;
   error?: string | null;
   message?: string; // for error messages
+  // Additional fields that might be present
+  response?: {
+    content?: string;
+    sources?: Array<{
+      url: string;
+      title: string;
+      snippet?: string;
+      source_num?: number;
+      credibility_score?: number;
+    }>;
+    citations?: Array<{
+      name: string;
+      url: string;
+      type?: string;
+    }>;
+  };
+  final_answer?: string;
+  search_results?: any[];
+  [key: string]: any; // Allow for additional unknown fields
 }
 
 export interface AlegeonStreamingState {
@@ -67,6 +101,50 @@ export const useAlegeonStreaming = () => {
   const accumulatedCitationsRef = useRef<Array<{ name: string; url: string; type?: string }>>([]);
   const messageCountRef = useRef<number>(0);
   const hasResolvedRef = useRef<boolean>(false);
+
+  // Enhanced citation transformation function
+  const transformSourcesToCitations = useCallback((sources: any[]): Array<{ name: string; url: string; type?: string }> => {
+    if (!sources || !Array.isArray(sources)) return [];
+    
+    return sources.map((source, index) => ({
+      name: source.title || source.name || `Source ${index + 1}`,
+      url: source.url || '',
+      type: source.type || 'web'
+    })).filter(citation => citation.url); // Only include citations with valid URLs
+  }, []);
+
+  // Enhanced message processing function
+  const processMessageForCitations = useCallback((data: AlegeonStreamingEvent): Array<{ name: string; url: string; type?: string }> => {
+    let foundCitations: Array<{ name: string; url: string; type?: string }> = [];
+
+    // Check multiple possible locations for citations/sources
+    if (data.citations && Array.isArray(data.citations)) {
+      foundCitations = [...foundCitations, ...data.citations];
+    }
+
+    if (data.sources && Array.isArray(data.sources)) {
+      foundCitations = [...foundCitations, ...transformSourcesToCitations(data.sources)];
+    }
+
+    if (data.response?.citations && Array.isArray(data.response.citations)) {
+      foundCitations = [...foundCitations, ...data.response.citations];
+    }
+
+    if (data.response?.sources && Array.isArray(data.response.sources)) {
+      foundCitations = [...foundCitations, ...transformSourcesToCitations(data.response.sources)];
+    }
+
+    if (data.metadata?.sources && Array.isArray(data.metadata.sources)) {
+      foundCitations = [...foundCitations, ...transformSourcesToCitations(data.metadata.sources)];
+    }
+
+    // Remove duplicates based on URL
+    const uniqueCitations = foundCitations.filter((citation, index, self) => 
+      index === self.findIndex(c => c.url === citation.url)
+    );
+
+    return uniqueCitations;
+  }, [transformSourcesToCitations]);
 
   const cleanup = useCallback(() => {
     console.log('🧹 Cleaning up Algeon WebSocket connection');
@@ -168,39 +246,65 @@ export const useAlegeonStreaming = () => {
             }
           }, HEARTBEAT_INTERVAL);
           
+          // Enhanced payload with citation-friendly parameters
           const payload = {
             query: query,
             research_type: detectedType,
-            scope: "global",
-            depth: "executive_summary", 
+            scope: "general", // Changed from "global" to match API schema
+            depth: "detailed", // Changed from "executive_summary" for more comprehensive responses
             urgency: "medium",
-            stream: true
+            source_preferences: ["academic", "news", "reports", "official"], // Added for better citations
+            model: "gpt-4", // Added model specification
+            tone: "professional", // Added tone
+            max_tokens: 4000, // Added reasonable token limit
+            timeframe: "recent" // Added timeframe
           };
           
-          console.log('📤 Sending research request:', payload);
+          console.log('📤 Sending enhanced research request:', payload);
           wsRef.current.send(JSON.stringify(payload));
         };
 
         wsRef.current.onmessage = (event) => {
-          console.log('Received WebSocket message:', event.data);
+          console.log('📨 Raw WebSocket message received:', event.data);
           
           try {
             const data: AlegeonStreamingEvent = JSON.parse(event.data);
             messageCountRef.current += 1;
             
-            console.log(`📨 Message #${messageCountRef.current}:`, {
+            // Enhanced logging to capture all fields
+            console.log(`📨 Message #${messageCountRef.current} - Complete structure:`, {
               type: data.type,
               hasContent: !!data.content,
               contentLength: data.content?.length || 0,
               isComplete: data.is_complete,
               finishReason: data.finish_reason,
               error: data.error,
-              citationsCount: data.citations?.length || 0
+              citationsCount: data.citations?.length || 0,
+              sourcesCount: data.sources?.length || 0,
+              hasMetadata: !!data.metadata,
+              hasResponse: !!data.response,
+              allKeys: Object.keys(data),
+              rawData: data // Log the complete raw data
             });
 
+            // Process citations from multiple possible locations
+            const foundCitations = processMessageForCitations(data);
+            if (foundCitations.length > 0) {
+              console.log('📎 Found citations in message:', foundCitations);
+              accumulatedCitationsRef.current = foundCitations;
+              setStreamingState(prev => ({
+                ...prev,
+                citations: foundCitations,
+                finalCitations: foundCitations
+              }));
+            }
+
             if (data.type === 'chunk') {
-              if (data.content) {
-                accumulatedTextRef.current += data.content;
+              // Handle content from multiple possible sources
+              let content = data.content || data.response?.content || data.final_answer || '';
+              
+              if (content) {
+                accumulatedTextRef.current += content;
                 console.log(`📝 Accumulated text length: ${accumulatedTextRef.current.length}`);
                 
                 // Update streaming state with raw text for typewriter effect
@@ -211,25 +315,19 @@ export const useAlegeonStreaming = () => {
                   hasContent: true
                 }));
               }
-
-              // Store citations as they come in
-              if (data.citations && data.citations.length > 0) {
-                accumulatedCitationsRef.current = data.citations;
-                setStreamingState(prev => ({
-                  ...prev,
-                  citations: data.citations || [],
-                  finalCitations: data.citations || []
-                }));
-              }
               
-              // Check for completion
-              if (data.is_complete === true) {
-                console.log('✅ Stream completion detected via is_complete flag');
+              // Check for completion using multiple indicators
+              if (data.is_complete === true || data.finish_reason || data.type === 'complete') {
+                console.log('✅ Stream completion detected:', {
+                  isComplete: data.is_complete,
+                  finishReason: data.finish_reason,
+                  type: data.type
+                });
                 
                 if (!hasResolvedRef.current) {
                   hasResolvedRef.current = true;
                   
-                  const finalCitations = data.citations || accumulatedCitationsRef.current;
+                  const finalCitations = foundCitations.length > 0 ? foundCitations : accumulatedCitationsRef.current;
                   
                   setStreamingState(prev => ({
                     ...prev,
@@ -245,7 +343,8 @@ export const useAlegeonStreaming = () => {
                   const finalResult = accumulatedTextRef.current || 'Research completed successfully.';
                   console.log('✅ Resolving with final result and citations:', {
                     textLength: finalResult.length,
-                    citationsCount: finalCitations.length
+                    citationsCount: finalCitations.length,
+                    citations: finalCitations
                   });
                   resolve({ text: finalResult, citations: finalCitations });
                   cleanup();
@@ -329,7 +428,7 @@ export const useAlegeonStreaming = () => {
         }
       }
     });
-  }, [resetState, cleanup]);
+  }, [resetState, cleanup, processMessageForCitations]);
 
   const stopStreaming = useCallback(() => {
     console.log('🛑 Stopping Algeon streaming by user');
