@@ -5,6 +5,7 @@ import AIAvatar from './AIAvatar';
 import UserAvatar from './UserAvatar';
 import CopyButton from './CopyButton';
 import MarkdownRenderer from './MarkdownRenderer';
+import CitationAwareRenderer from './CitationAwareRenderer';
 import CanvasCompact from './CanvasCompact';
 import StreamingOverlay from './StreamingOverlay';
 import StratixStreamingOverlay from './StratixStreamingOverlay';
@@ -77,6 +78,11 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
     (alegeonStreamingState.isComplete && message.metadata?.messageType === 'completed_report')
   );
 
+  // Check if this is a completed Algeon message with citations
+  const isAlegeonCompleted = isAi && alegeonStreamingState?.isComplete && 
+    message.metadata?.messageType === 'completed_report' && 
+    alegeonStreamingState.citations && alegeonStreamingState.citations.length > 0;
+
   // Enhanced debug logging
   console.log('💬 ChatMessage: Rendering message', {
     messageId: message.id,
@@ -84,8 +90,10 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
     isStreaming,
     isStreamingMessage,
     showAlegeonStreaming,
+    isAlegeonCompleted,
     alegeonIsStreaming: alegeonStreamingState?.isStreaming,
     alegeonIsComplete: alegeonStreamingState?.isComplete,
+    citationsCount: alegeonStreamingState?.citations?.length || 0,
     messageType: message.metadata?.messageType,
     isReport,
     hasStratixStreaming: !!stratixStreamingState?.isStreaming,
@@ -178,6 +186,11 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                       onExpand={handleCanvasExpand}
                       onDownload={onCanvasDownload}
                       onPrint={onCanvasPrint}
+                    />
+                  ) : isAlegeonCompleted ? (
+                    <CitationAwareRenderer
+                      content={message.text}
+                      citations={alegeonStreamingState.citations}
                     />
                   ) : (
                     <MarkdownRenderer content={message.text} />

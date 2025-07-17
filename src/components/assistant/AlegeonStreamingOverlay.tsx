@@ -169,34 +169,11 @@ const AlegeonStreamingOverlay: React.FC<AlegeonStreamingOverlayProps> = ({
           </div>
         )}
 
-        {/* Citations Section */}
+        {/* Citations Count Only (detailed citations will be shown in the main content) */}
         {citations.length > 0 && (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Globe className="w-3 h-3" />
-              <span>{citations.length} source{citations.length !== 1 ? 's' : ''} found</span>
-            </div>
-            
-            <div className="grid grid-cols-1 gap-1 max-h-24 overflow-y-auto">
-              {citations.slice(0, 3).map((citation, index) => (
-                <a
-                  key={index}
-                  href={citation.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors bg-background/40 backdrop-blur-sm border border-border/30 rounded px-2 py-1 group"
-                >
-                  <Globe className="w-3 h-3 flex-shrink-0" />
-                  <span className="truncate flex-1">{citation.name}</span>
-                  <ExternalLink className="w-3 h-3 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-                </a>
-              ))}
-              {citations.length > 3 && (
-                <div className="text-xs text-muted-foreground text-center py-1">
-                  +{citations.length - 3} more sources
-                </div>
-              )}
-            </div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Globe className="w-3 h-3" />
+            <span>{citations.length} source{citations.length !== 1 ? 's' : ''} found</span>
           </div>
         )}
 
