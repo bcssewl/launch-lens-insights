@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect, useCallback, useReducer } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Message, initialMessages, formatTimestamp } from '@/constants/aiAssistant';
@@ -125,7 +124,7 @@ export const useMessages = (currentSessionId: string | null) => {
       
       const streamingMessage: ExtendedMessage = {
         id: STREAMING_MESSAGE_ID,
-        text: alegeonStreamingState.rawText || 'Initializing Algeon research...',
+        text: alegeonStreamingState.bufferedText || 'Initializing Algeon research...',
         sender: 'ai',
         timestamp: new Date(),
         isStreaming: true,
@@ -138,13 +137,13 @@ export const useMessages = (currentSessionId: string | null) => {
       
       dispatch({ type: 'ADD_STREAMING_MESSAGE', payload: streamingMessage });
       
-    } else if (alegeonStreamingState.isComplete && alegeonStreamingState.rawText) {
+    } else if (alegeonStreamingState.isComplete && alegeonStreamingState.bufferedText) {
       console.log('✅ Algeon streaming completed, replacing with final message');
       
       // Create final message with citations preserved
       const finalMessage: ExtendedMessage = {
         id: uuidv4(),
-        text: alegeonStreamingState.rawText,
+        text: alegeonStreamingState.bufferedText,
         sender: 'ai',
         timestamp: new Date(),
         metadata: {
@@ -160,8 +159,8 @@ export const useMessages = (currentSessionId: string | null) => {
       });
       
       // Save final message to history with citations metadata
-      if (currentSessionId && alegeonStreamingState.rawText) {
-        const messageWithCitations = `AI: ${alegeonStreamingState.rawText}${
+      if (currentSessionId && alegeonStreamingState.bufferedText) {
+        const messageWithCitations = `AI: ${alegeonStreamingState.bufferedText}${
           alegeonStreamingState.finalCitations.length > 0 
             ? `\n\nCitations: ${JSON.stringify(alegeonStreamingState.finalCitations)}`
             : ''
@@ -171,7 +170,7 @@ export const useMessages = (currentSessionId: string | null) => {
     }
   }, [
     alegeonStreamingState.isStreaming, 
-    alegeonStreamingState.rawText, 
+    alegeonStreamingState.bufferedText, 
     alegeonStreamingState.isComplete,
     alegeonStreamingState.hasContent,
     alegeonStreamingState.citations,

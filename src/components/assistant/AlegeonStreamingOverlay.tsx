@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { 
@@ -21,10 +20,10 @@ const AlegeonStreamingOverlay: React.FC<AlegeonStreamingOverlayProps> = ({
   streamingState,
   className
 }) => {
-  const { isStreaming, rawText, citations, error, isComplete } = streamingState;
+  const { isStreaming, bufferedText, citations, error, isComplete } = streamingState;
 
   // Use typewriter effect for smooth character-by-character display
-  const { displayedText, isTyping } = useTypewriter(rawText, {
+  const { displayedText, isTyping } = useTypewriter(bufferedText, {
     speed: 3, // Very smooth streaming
     enabled: isStreaming && !isComplete
   });
@@ -37,7 +36,7 @@ const AlegeonStreamingOverlay: React.FC<AlegeonStreamingOverlayProps> = ({
   }
 
   // Determine which text to show
-  const textToShow = isComplete ? rawText : displayedText;
+  const textToShow = isComplete ? bufferedText : displayedText;
 
   const getIcon = () => {
     if (error) return Brain;
@@ -63,10 +62,10 @@ const AlegeonStreamingOverlay: React.FC<AlegeonStreamingOverlayProps> = ({
   const getProgress = () => {
     if (error) return 0;
     if (isComplete) return 100;
-    if (isStreaming && rawText) {
+    if (isStreaming && bufferedText) {
       // More realistic progress calculation
-      const baseProgress = Math.min(85, (rawText.length / 2000) * 75);
-      const typingProgress = rawText.length > 0 ? (displayedText.length / rawText.length) * 15 : 0;
+      const baseProgress = Math.min(85, (bufferedText.length / 2000) * 75);
+      const typingProgress = bufferedText.length > 0 ? (displayedText.length / bufferedText.length) * 15 : 0;
       return baseProgress + typingProgress;
     }
     return 15;
@@ -80,7 +79,7 @@ const AlegeonStreamingOverlay: React.FC<AlegeonStreamingOverlayProps> = ({
   console.log('🎨 AlegeonStreamingOverlay: Rendering with state:', {
     isStreaming,
     isComplete,
-    rawTextLength: rawText.length,
+    bufferedTextLength: bufferedText.length,
     displayedTextLength: displayedText.length,
     isTyping,
     citationsCount: citations.length,
