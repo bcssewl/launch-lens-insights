@@ -197,6 +197,15 @@ export const useAlegeonStreaming = () => {
           const finalCitations = accumulatedCitationsRef.current;
           if (finalText) {
             console.log('⏰ Timeout but have content, resolving with:', finalText.substring(0, 100));
+            setStreamingState(prev => ({
+              ...prev,
+              isStreaming: false,
+              isComplete: true,
+              currentText: finalText,
+              rawText: finalText,
+              finalCitations: finalCitations,
+              hasContent: true
+            }));
             resolve({ text: finalText, citations: finalCitations });
           } else {
             reject(new Error('Streaming timeout - research taking longer than expected'));
@@ -212,7 +221,7 @@ export const useAlegeonStreaming = () => {
         wsRef.current = new WebSocket(wsUrl);
 
         wsRef.current.onopen = () => {
-          console.log('WebSocket opened successfully');
+          console.log('✅ WebSocket opened successfully');
           
           heartbeatRef.current = window.setInterval(() => {
             if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -224,17 +233,17 @@ export const useAlegeonStreaming = () => {
           const payload = {
             query: query,
             research_type: detectedType,
-            scope: "general", // Changed from "global" to match API spec
-            depth: "detailed", // Changed from "executive_summary" to get more citations
+            scope: "general",
+            depth: "detailed",
             urgency: "medium",
-            source_preferences: ["academic", "news", "reports", "web"], // Added for citation-rich sources
+            source_preferences: ["academic", "news", "reports", "web"],
             tone: "professional",
             max_tokens: 4000,
             timeframe: "recent",
-            model: "gpt-4o", // Explicit model selection
+            model: "gpt-4o",
           };
           
-          console.log('📤 Sending research request with updated payload:', payload);
+          console.log('📤 Sending research request with payload:', payload);
           wsRef.current.send(JSON.stringify(payload));
         };
 
@@ -280,23 +289,32 @@ export const useAlegeonStreaming = () => {
                 }));
               }
               
-              // Check for completion with complete response structure
-              if (data.is_complete === true) {
-                console.log('✅ Stream completion detected');
+              // Check for completion - look for multiple completion indicators
+              const isStreamComplete = data.is_complete === true || 
+                                     data.finish_reason === 'stop' || 
+                                     data.finish_reason === 'length' ||
+                                     (data.response && data.response.is_complete === true);
+              
+              if (isStreamComplete) {
+                console.log('✅ Stream completion detected with reason:', data.finish_reason || 'is_complete=true');
                 
+                let finalText = accumulatedTextRef.current;
                 let finalCitations = accumulatedCitationsRef.current;
                 
-                // NEW: Handle complete response structure with sources and citations
+                // Handle complete response structure with sources and citations
                 if (data.response) {
                   console.log('🔍 Processing complete response structure:', {
                     sourcesCount: data.response.sources?.length || 0,
                     citationsCount: data.response.citations?.length || 0,
-                    content: data.response.content?.substring(0, 100) + '...'
+                    hasContent: !!data.response.content,
+                    contentLength: data.response.content?.length || 0
                   });
                   
-                  // Use content from response if available
-                  if (data.response.content) {
-                    accumulatedTextRef.current = data.response.content;
+                  // Use content from response if available and longer than accumulated
+                  if (data.response.content && data.response.content.length > finalText.length) {
+                    finalText = data.response.content;
+                    accumulatedTextRef.current = finalText;
+                    console.log('📝 Updated final text from response structure');
                   }
                   
                   // Transform API sources to our citation format
@@ -317,20 +335,19 @@ export const useAlegeonStreaming = () => {
                     ...prev,
                     isStreaming: false,
                     isComplete: true,
-                    currentText: accumulatedTextRef.current,
-                    rawText: accumulatedTextRef.current,
+                    currentText: finalText,
+                    rawText: finalText,
                     citations: finalCitations,
                     finalCitations: finalCitations,
                     hasContent: true
                   }));
                   
-                  const finalResult = accumulatedTextRef.current || 'Research completed successfully.';
-                  console.log('✅ Resolving with final result and citations:', {
-                    textLength: finalResult.length,
+                  console.log('✅ Resolving with final result:', {
+                    textLength: finalText.length,
                     citationsCount: finalCitations.length,
-                    citationsPreview: finalCitations.slice(0, 3).map(c => ({ name: c.name, url: c.url }))
+                    textPreview: finalText.substring(0, 100) + '...'
                   });
-                  resolve({ text: finalResult, citations: finalCitations });
+                  resolve({ text: finalText, citations: finalCitations });
                   cleanup();
                 }
               }
@@ -355,7 +372,7 @@ export const useAlegeonStreaming = () => {
         };
 
         wsRef.current.onerror = (error) => {
-          console.log('WebSocket error:', error);
+          console.error('❌ WebSocket error:', error);
           if (!hasResolvedRef.current) {
             hasResolvedRef.current = true;
             setStreamingState(prev => ({ 
@@ -370,8 +387,7 @@ export const useAlegeonStreaming = () => {
         };
 
         wsRef.current.onclose = (event) => {
-          console.log('WebSocket closed:', event.code, event.reason);
-          console.log('Was clean close:', event.wasClean);
+          console.log('🔌 WebSocket closed:', { code: event.code, reason: event.reason, wasClean: event.wasClean });
           
           setStreamingState(prev => ({ ...prev, isStreaming: false }));
           
@@ -380,6 +396,7 @@ export const useAlegeonStreaming = () => {
             const finalText = accumulatedTextRef.current;
             const finalCitations = accumulatedCitationsRef.current;
             
+            // If we have substantial content and it was a clean close, resolve successfully
             if (finalText && finalText.length > 50 && (event.code === 1000 || event.wasClean)) {
               console.log('✅ Normal closure with content, resolving with accumulated text and citations');
               setStreamingState(prev => ({
@@ -396,7 +413,17 @@ export const useAlegeonStreaming = () => {
             } else if (!finalText) {
               reject(new Error(`Connection closed without receiving content: ${event.code} ${event.reason || ''}`));
             } else {
-              reject(new Error(`WebSocket closed unexpectedly: ${event.code} ${event.reason || 'No reason given'}`));
+              // If we have some content but connection closed unexpectedly, still resolve
+              console.log('⚠️ Connection closed but we have content, resolving anyway');
+              setStreamingState(prev => ({
+                ...prev,
+                isComplete: true,
+                currentText: finalText,
+                rawText: finalText,
+                finalCitations: finalCitations,
+                hasContent: true
+              }));
+              resolve({ text: finalText, citations: finalCitations });
             }
             
             cleanup();
