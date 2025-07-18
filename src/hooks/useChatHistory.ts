@@ -66,6 +66,39 @@ export const useChatHistory = (sessionId: string | null) => {
     console.log('useChatHistory: Message length:', message.length);
 
     try {
+      // First, let's check if we have a valid auth session
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError) {
+        console.error('useChatHistory: Auth error when getting user:', authError);
+        throw new Error(`Authentication error: ${authError.message}`);
+      }
+      
+      if (!user) {
+        console.error('useChatHistory: No authenticated user found');
+        throw new Error('No authenticated user found');
+      }
+      
+      console.log('useChatHistory: Authenticated user:', user.id);
+
+      // Check if this session belongs to the current user
+      const { data: sessionCheck, error: sessionError } = await supabase
+        .from('chat_sessions')
+        .select('user_id, title')
+        .eq('id', sessionId)
+        .single();
+
+      if (sessionError) {
+        console.error('useChatHistory: Error checking session ownership:', sessionError);
+        throw new Error(`Session verification error: ${sessionError.message}`);
+      }
+
+      if (sessionCheck.user_id !== user.id) {
+        console.error('useChatHistory: Session does not belong to current user');
+        throw new Error('Session does not belong to current user');
+      }
+
+      console.log('useChatHistory: Session verification passed, inserting message...');
+
       const { data, error } = await supabase
         .from('n8n_chat_history')
         .insert([
@@ -79,6 +112,12 @@ export const useChatHistory = (sessionId: string | null) => {
 
       if (error) {
         console.error('useChatHistory: Database error when saving message:', error);
+        console.error('useChatHistory: Error details:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
         throw error;
       }
 
@@ -89,7 +128,7 @@ export const useChatHistory = (sessionId: string | null) => {
       console.error('useChatHistory: Error adding message to history:', error);
       toast({
         title: "Error",
-        description: "Failed to save message",
+        description: `Failed to save message: ${error.message}`,
         variant: "destructive",
       });
       return null;
