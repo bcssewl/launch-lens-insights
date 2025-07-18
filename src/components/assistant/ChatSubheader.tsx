@@ -5,6 +5,7 @@ import { Maximize2, Minimize2 } from 'lucide-react';
 import QuickActionsDropdown from '@/components/assistant/QuickActionsDropdown';
 import ChatSessionsDropdown from '@/components/assistant/ChatSessionsDropdown';
 import ModelSelectionDropdown, { AIModel } from '@/components/assistant/ModelSelectionDropdown';
+import ResearchTypeSelector from '@/components/assistant/ResearchTypeSelector';
 
 interface ChatSubheaderProps {
   isConfigured: boolean;
@@ -16,6 +17,8 @@ interface ChatSubheaderProps {
   onSessionSelect: (sessionId: string) => void;
   selectedModel: string;
   onModelSelect: (modelId: string) => void;
+  selectedResearchType?: string;
+  onResearchTypeChange?: (type: string) => void;
 }
 
 const ChatSubheader: React.FC<ChatSubheaderProps> = ({
@@ -27,7 +30,9 @@ const ChatSubheader: React.FC<ChatSubheaderProps> = ({
   onClearConversation,
   onSessionSelect,
   selectedModel,
-  onModelSelect
+  onModelSelect,
+  selectedResearchType,
+  onResearchTypeChange
 }) => {
   const handleModelSelect = (model: AIModel) => {
     onModelSelect(model.id);
@@ -35,11 +40,20 @@ const ChatSubheader: React.FC<ChatSubheaderProps> = ({
 
   return (
     <div className="flex items-center justify-between">
-      {/* Model dropdown on the left */}
-      <ModelSelectionDropdown 
-        selectedModel={selectedModel}
-        onModelSelect={handleModelSelect}
-      />
+      {/* Model dropdown and research type selector on the left */}
+      <div className="flex items-center space-x-3">
+        <ModelSelectionDropdown 
+          selectedModel={selectedModel}
+          onModelSelect={handleModelSelect}
+        />
+        {selectedModel === 'algeon' && onResearchTypeChange && (
+          <ResearchTypeSelector
+            selectedType={selectedResearchType || 'business-research'}
+            onTypeChange={onResearchTypeChange}
+            isCompact={true}
+          />
+        )}
+      </div>
       
       {/* Control buttons on the right */}
       <div className="flex items-center space-x-2">

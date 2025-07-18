@@ -21,6 +21,7 @@ const AIAssistantPage: React.FC = () => {
   const isMobile = useIsMobile();
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [selectedModel, setSelectedModel] = useState<string>('best');
+  const [selectedResearchType, setSelectedResearchType] = useState<string>('business-research');
   const { theme } = useTheme();
 
   const {
@@ -154,6 +155,15 @@ const AIAssistantPage: React.FC = () => {
   const handleModelSelect = (modelId: string) => {
     console.log('AIAssistantPage: Model selected:', modelId);
     setSelectedModel(modelId);
+    // Reset research type to default when switching models
+    if (modelId === 'algeon') {
+      setSelectedResearchType('business-research');
+    }
+  };
+
+  const handleResearchTypeChange = (type: string) => {
+    console.log('AIAssistantPage: Research type selected:', type);
+    setSelectedResearchType(type);
   };
 
   // Show loading state while history is being loaded
@@ -227,6 +237,8 @@ const AIAssistantPage: React.FC = () => {
                   onSessionSelect={handleSessionSelect}
                   selectedModel={selectedModel}
                   onModelSelect={handleModelSelect}
+                  selectedResearchType={selectedResearchType}
+                  onResearchTypeChange={handleResearchTypeChange}
                 />
               </div>
             </div>
