@@ -1,11 +1,11 @@
+
 import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import AIAvatar from './AIAvatar';
 import UserAvatar from './UserAvatar';
-import CanvasButton from './CanvasButton';
 import CopyButton from './CopyButton';
 import MarkdownRenderer from './MarkdownRenderer';
-import CitationsList from './CitationsList';
+import CitationAwareRenderer from './CitationAwareRenderer';
 import SourcesSidebar from './SourcesSidebar';
 import CanvasCompact from './CanvasCompact';
 import StreamingOverlay from './StreamingOverlay';
@@ -58,8 +58,6 @@ interface ChatMessageProps {
   };
   stratixStreamingState?: StratixStreamingState;
   alegeonStreamingState?: AlegeonStreamingState;
-  onToggleCanvasPreview?: (messageId: string) => void;
-  isCanvasPreview?: boolean;
 }
 
 const ChatMessage: React.FC<ChatMessageProps> = React.memo(({ 
@@ -72,14 +70,12 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
   streamingSources = [],
   streamingProgress = { phase: '', progress: 0 },
   stratixStreamingState,
-  alegeonStreamingState,
-  onToggleCanvasPreview,
-  isCanvasPreview = false
+  alegeonStreamingState
 }) => {
   const [isSourcesSidebarOpen, setIsSourcesSidebarOpen] = useState(false);
   
   const isAi = message.sender === 'ai';
-  const isReport = isAi && isCanvasPreview; // Only show canvas preview when manually activated
+  const isReport = isAi && isReportMessage(message.text, message.metadata);
   
   // Check if this is a streaming message
   const isStreamingMessage = message.isStreaming || (message.metadata?.messageType === 'progress_update' && !message.metadata?.isCompleted);
@@ -90,10 +86,15 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
     (alegeonStreamingState.isComplete && message.metadata?.messageType === 'completed_report')
   );
 
-  // Enhanced citation detection - get final citations for display
+  // Enhanced citation detection
   const availableCitations = message.alegeonCitations || 
     (alegeonStreamingState?.finalCitations?.length ? alegeonStreamingState.finalCitations : null) ||
     (alegeonStreamingState?.citations?.length ? alegeonStreamingState.citations : null);
+
+  // Check if this is a completed Algeon message with citations
+  const isAlegeonCompleted = isAi && 
+    message.metadata?.messageType === 'completed_report' && 
+    availableCitations && availableCitations.length > 0;
 
   // Don't render AI messages with empty content unless streaming
   if (isAi && (!message.text || message.text.trim() === '') && !showAlegeonStreaming && !stratixStreamingState?.isStreaming) {
@@ -103,12 +104,6 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
   const handleCanvasExpand = () => {
     if (onOpenCanvas) {
       onOpenCanvas(message.id, message.text);
-    }
-  };
-
-  const handleToggleCanvasPreview = () => {
-    if (onToggleCanvasPreview) {
-      onToggleCanvasPreview(message.id);
     }
   };
 
@@ -172,17 +167,10 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
               />
             )}
 
-            {/* Action buttons */}
+            {/* Copy button */}
             {isAi && !showAlegeonStreaming && !stratixStreamingState?.isStreaming && (
-              <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-1">
+              <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                 <CopyButton content={message.text} />
-                {/* Show canvas button for substantial content */}
-                {message.text && message.text.trim().split(/\s+/).length >= 100 && (
-                  <CanvasButton 
-                    onClick={handleToggleCanvasPreview} 
-                    variant={isCanvasPreview ? "active" : "default"}
-                  />
-                )}
               </div>
             )}
 
@@ -201,14 +189,14 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
                         onDownload={onCanvasDownload}
                         onPrint={onCanvasPrint}
                       />
+                    ) : isAlegeonCompleted && availableCitations ? (
+                      <CitationAwareRenderer
+                        content={message.text}
+                        citations={availableCitations}
+                        onSourcesClick={handleSourcesClick}
+                      />
                     ) : (
-                      <>
-                        <MarkdownRenderer content={message.text} />
-                        {/* Display citations inline below the message content */}
-                        {availableCitations && availableCitations.length > 0 && (
-                          <CitationsList citations={availableCitations} />
-                        )}
-                      </>
+                      <MarkdownRenderer content={message.text} />
                     )}
                   </>
                 ) : (
@@ -229,7 +217,7 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
         )}
       </div>
 
-      {/* Sources Sidebar - only show if citations exist and user wants to see them */}
+      {/* Sources Sidebar */}
       {availableCitations && availableCitations.length > 0 && (
         <SourcesSidebar
           isOpen={isSourcesSidebarOpen}
@@ -259,11 +247,10 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
     return true; // Otherwise don't re-render during streaming
   }
   
-  // For non-streaming messages, check basic properties including canvas preview state
+  // For non-streaming messages, check basic properties
   return (
     prevProps.message.text === nextProps.message.text &&
     prevProps.isStreaming === nextProps.isStreaming &&
-    prevProps.isCanvasPreview === nextProps.isCanvasPreview &&
     (prevAlgeonState?.isComplete === nextAlgeonState?.isComplete)
   );
 });

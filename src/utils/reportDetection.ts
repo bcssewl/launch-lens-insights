@@ -23,13 +23,22 @@ export const isReportMessage = (content: string, metadata?: { isCompleted?: bool
     return hasCompletionIndicators;
   }
   
+  // For Algeon reports, be more selective about auto-canvas conversion
+  if (content.includes('# ') || content.includes('## ')) {
+    const wordCount = content.trim().split(/\s+/).length;
+    const hasProgressIndicators = content.includes('⚡') || content.includes('📊 **Preliminary') || content.includes('**Agent Update:**');
+    
+    // Only convert to canvas if it's a substantial report without progress indicators
+    return wordCount >= 750 && !hasProgressIndicators && metadata?.messageType === 'completed_report';
+  }
+  
   // For other types of reports (business validation, etc.), use word count as before
   // but exclude obvious progress indicators and require more substantial content
   const wordCount = content.trim().split(/\s+/).length;
   const hasProgressIndicators = content.includes('⚡') || content.includes('📊 **Preliminary') || content.includes('**Agent Update:**');
   
-  // Increased threshold and stricter requirements - but don't auto-convert to canvas
-  return false; // Disable automatic canvas conversion
+  // Increased threshold and stricter requirements
+  return wordCount >= 750 && !hasProgressIndicators && metadata?.messageType === 'completed_report';
 };
 
 export const getReportPreview = (content: string, maxLength: number = 200): string => {

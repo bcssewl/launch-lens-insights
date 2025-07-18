@@ -22,13 +22,6 @@ const SourcesSidebar: React.FC<SourcesSidebarProps> = ({
   citations,
   className
 }) => {
-  // Debug log the citations data
-  React.useEffect(() => {
-    if (citations.length > 0) {
-      console.log('📋 SourcesSidebar received citations:', citations);
-    }
-  }, [citations]);
-
   const getSourceIcon = (type?: string) => {
     switch (type?.toLowerCase()) {
       case 'pdf':
@@ -42,25 +35,6 @@ const SourcesSidebar: React.FC<SourcesSidebarProps> = ({
         return Book;
       default:
         return ExternalLink;
-    }
-  };
-
-  const formatUrl = (url: string): string => {
-    if (!url) return '';
-    
-    // Ensure URL has protocol
-    if (!url.startsWith('http://') && !url.startsWith('https://')) {
-      return `https://${url}`;
-    }
-    return url;
-  };
-
-  const isValidUrl = (url: string): boolean => {
-    try {
-      new URL(formatUrl(url));
-      return true;
-    } catch {
-      return false;
     }
   };
 
@@ -107,8 +81,6 @@ const SourcesSidebar: React.FC<SourcesSidebarProps> = ({
               <div className="p-4 space-y-3">
                 {citations.map((citation, index) => {
                   const IconComponent = getSourceIcon(citation.type);
-                  const formattedUrl = formatUrl(citation.url);
-                  const hasValidUrl = citation.url && isValidUrl(citation.url);
                   
                   return (
                     <div
@@ -125,52 +97,39 @@ const SourcesSidebar: React.FC<SourcesSidebarProps> = ({
                         </div>
                         
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-start gap-2">
-                            <div className="flex-1">
-                              <h4 className="font-medium text-sm leading-snug break-words">
-                                {citation.name || (hasValidUrl ? new URL(formattedUrl).hostname.replace('www.', '') : 'Unknown Source')}
+                          {citation.url ? (
+                            <a
+                              href={citation.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block group-hover:text-primary transition-colors"
+                            >
+                              <div className="flex items-start gap-2">
+                                <div className="flex-1">
+                                  <h4 className="font-medium text-sm leading-snug break-words">
+                                    {citation.name}
+                                  </h4>
+                                  {citation.type && (
+                                    <p className="text-xs text-muted-foreground mt-1 capitalize">
+                                      {citation.type}
+                                    </p>
+                                  )}
+                                </div>
+                                <IconComponent className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 text-muted-foreground" />
+                              </div>
+                            </a>
+                          ) : (
+                            <div>
+                              <h4 className="font-medium text-sm leading-snug text-foreground/80">
+                                {citation.name}
                               </h4>
-                              
-                              {/* URL Display */}
-                              {hasValidUrl ? (
-                                <a
-                                  href={formattedUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-xs text-primary hover:text-primary/80 underline break-all block mt-1"
-                                  title={`Visit ${formattedUrl}`}
-                                >
-                                  {formattedUrl}
-                                </a>
-                              ) : citation.url ? (
-                                <p className="text-xs text-muted-foreground mt-1 break-all">
-                                  {citation.url} (Invalid URL)
-                                </p>
-                              ) : (
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  No URL available
-                                </p>
-                              )}
-                              
                               {citation.type && (
                                 <p className="text-xs text-muted-foreground mt-1 capitalize">
                                   {citation.type}
                                 </p>
                               )}
                             </div>
-                            
-                            {hasValidUrl && (
-                              <a
-                                href={formattedUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 text-muted-foreground hover:text-primary"
-                                title={`Visit ${formattedUrl}`}
-                              >
-                                <IconComponent className="w-4 h-4" />
-                              </a>
-                            )}
-                          </div>
+                          )}
                         </div>
                       </div>
                     </div>

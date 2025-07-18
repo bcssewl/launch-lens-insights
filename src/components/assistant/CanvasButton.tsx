@@ -1,37 +1,23 @@
+
 import React from 'react';
-import { Button } from '@/components/ui/button';
 import { FileText } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 interface CanvasButtonProps {
   onClick: () => void;
   className?: string;
-  disabled?: boolean;
-  variant?: 'default' | 'active';
 }
 
-const CanvasButton: React.FC<CanvasButtonProps> = ({ 
-  onClick, 
-  className,
-  disabled = false,
-  variant = 'default'
-}) => {
+const CanvasButton: React.FC<CanvasButtonProps> = ({ onClick, className }) => {
   return (
     <Button
-      variant="ghost"
+      variant="outline"
       size="sm"
       onClick={onClick}
-      disabled={disabled}
-      className={cn(
-        "h-8 w-8 p-0 transition-colors duration-200",
-        variant === 'active' 
-          ? "bg-primary/20 hover:bg-primary/30 text-primary" 
-          : "hover:bg-white/20",
-        className
-      )}
-      title={variant === 'active' ? "Exit Canvas Preview" : "Convert to Canvas Preview"}
+      className={`flex items-center gap-2 ${className}`}
     >
       <FileText className="h-4 w-4" />
+      View Full Report
     </Button>
   );
 };

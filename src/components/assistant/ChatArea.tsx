@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback } from 'react';
+import React from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import ChatMessage from '@/components/assistant/ChatMessage';
 import TypingIndicator from '@/components/assistant/TypingIndicator';
@@ -61,19 +61,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   stratixStreamingState,
   alegeonStreamingState
 }) => {
-  const [canvasPreviewMessages, setCanvasPreviewMessages] = useState<Set<string>>(new Set());
-
-  const handleToggleCanvasPreview = useCallback((messageId: string) => {
-    setCanvasPreviewMessages(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(messageId)) {
-        newSet.delete(messageId);
-      } else {
-        newSet.add(messageId);
-      }
-      return newSet;
-    });
-  }, []);
   const hasConversation = messages.length > 1 || isTyping;
 
   if (!hasConversation) {
@@ -134,8 +121,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                   onOpenCanvas={onOpenCanvas}
                   onCanvasDownload={onCanvasDownload}
                   onCanvasPrint={onCanvasPrint}
-                  onToggleCanvasPreview={handleToggleCanvasPreview}
-                  isCanvasPreview={canvasPreviewMessages.has(msg.id)}
                   // Legacy streaming support (fallback)
                   isStreaming={false}
                   streamingUpdates={[]}
