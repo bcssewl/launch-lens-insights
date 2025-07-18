@@ -26,7 +26,7 @@ const InlineCitationRenderer: React.FC<InlineCitationRendererProps> = ({
     citationsCount: citations.length
   });
 
-  // Process content to make numbered citations clickable
+  // Process content to make numbered citations clickable hyperlinks
   const processContentWithCitations = (text: string): React.ReactNode => {
     if (!citations || citations.length === 0) {
       return <MarkdownRenderer content={text} />;
@@ -47,19 +47,25 @@ const InlineCitationRenderer: React.FC<InlineCitationRendererProps> = ({
             
             if (citation && citation.url) {
               return (
-                <button
+                <a
                   key={index}
-                  onClick={() => onCitationClick?.(citation, citationIndex)}
-                  className="citation-link text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium no-underline border-b border-current border-dotted pb-0.5 transition-colors cursor-pointer bg-transparent p-0 inline"
-                  title={citation.name}
+                  href={citation.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => {
+                    // Allow both direct navigation and custom click handling
+                    onCitationClick?.(citation, citationIndex);
+                  }}
+                  className="citation-link text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium no-underline border-b border-current border-dotted pb-0.5 transition-colors cursor-pointer bg-transparent p-0 inline hover:bg-blue-50 dark:hover:bg-blue-900/20 px-1 rounded"
+                  title={`${citation.name} - Click to open source`}
                 >
                   [{citationNumber}]
-                </button>
+                </a>
               );
             }
           }
           
-          // Regular text part
+          // Regular text part - render as markdown
           if (part.trim()) {
             return <MarkdownRenderer key={index} content={part} />;
           }
