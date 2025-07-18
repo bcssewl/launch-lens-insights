@@ -60,6 +60,52 @@ function messageReducer(state: ExtendedMessage[], action: MessageAction): Extend
   }
 }
 
+// Helper function to extract domain name from URL
+const extractDomainName = (url: string): string => {
+  try {
+    const urlObj = new URL(url);
+    return urlObj.hostname.replace('www.', '');
+  } catch {
+    return url;
+  }
+};
+
+// Helper function to parse citations from message text
+const parseCitationsFromText = (messageText: string): Array<{ name: string; url: string; type?: string }> => {
+  // Look for citations pattern anywhere in the text using regex
+  const citationMatch = messageText.match(/Citations:\s*(\[.*?\])\s*$/s);
+  
+  if (!citationMatch) {
+    return [];
+  }
+
+  try {
+    const citationData = JSON.parse(citationMatch[1]);
+    
+    // Convert URL strings to proper citation objects
+    if (Array.isArray(citationData)) {
+      return citationData.map((item: string | object) => {
+        if (typeof item === 'string') {
+          // Convert URL string to citation object
+          return {
+            name: extractDomainName(item),
+            url: item,
+            type: 'web'
+          };
+        } else if (typeof item === 'object' && item !== null) {
+          // Already a proper citation object
+          return item as { name: string; url: string; type?: string };
+        }
+        return null;
+      }).filter(Boolean);
+    }
+  } catch (e) {
+    console.warn('Failed to parse citations from message:', e);
+  }
+  
+  return [];
+};
+
 export const useMessages = (currentSessionId: string | null, updateSessionTitle?: (sessionId: string, title: string) => Promise<void>, sessionTitle?: string) => {
   const [messages, dispatch] = useReducer(messageReducer, initialMessages as ExtendedMessage[]);
   const [isTyping, setIsTyping] = useState(false);
@@ -248,23 +294,21 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
           text = lines[0].substring(5).trim();
         } else if (isAI) {
           const firstLineContent = lines[0].substring(3).trim();
+          const fullMessageText = [firstLineContent, ...lines.slice(1)].join('\n').trim();
           
-          // Check for citations in the message
-          const citationLineIndex = lines.findIndex(line => line.startsWith('Citations: '));
-          if (citationLineIndex !== -1) {
-            // Extract citations
-            try {
-              const citationData = lines[citationLineIndex].substring(11); // Remove "Citations: "
-              alegeonCitations = JSON.parse(citationData);
-              // Remove citation line from content
-              const contentLines = lines.slice(1, citationLineIndex);
-              text = [firstLineContent, ...contentLines].join('\n').trim();
-            } catch (e) {
-              console.warn('Failed to parse citations from history:', e);
-              text = [firstLineContent, ...lines.slice(1)].join('\n').trim();
-            }
+          // Parse citations using the new regex-based approach
+          alegeonCitations = parseCitationsFromText(fullMessageText);
+          
+          if (alegeonCitations.length > 0) {
+            // Remove citations from the content text
+            text = fullMessageText.replace(/\n*Citations:\s*\[.*?\]\s*$/s, '').trim();
+            console.log('📎 Extracted citations from message:', {
+              messageId: entry.id || `history-${index}`,
+              citationsCount: alegeonCitations.length,
+              extractedCitations: alegeonCitations
+            });
           } else {
-            text = [firstLineContent, ...lines.slice(1)].join('\n').trim();
+            text = fullMessageText;
           }
         } else {
           text = entry.message.trim();
@@ -282,13 +326,6 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
           timestamp: new Date(entry.created_at),
           alegeonCitations: alegeonCitations.length > 0 ? alegeonCitations : undefined
         };
-        
-        if (alegeonCitations.length > 0) {
-          console.log('📎 Restored message with citations:', {
-            messageId: message.id,
-            citationsCount: alegeonCitations.length
-          });
-        }
         
         return message;
       }).filter(Boolean) as ExtendedMessage[];
