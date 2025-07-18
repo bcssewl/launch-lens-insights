@@ -6,7 +6,7 @@ import UserAvatar from './UserAvatar';
 import CanvasButton from './CanvasButton';
 import CopyButton from './CopyButton';
 import MarkdownRenderer from './MarkdownRenderer';
-import InlineCitationRenderer from './InlineCitationRenderer';
+import CitationAwareRenderer from './CitationAwareRenderer';
 import SourcesSidebar from './SourcesSidebar';
 import CanvasCompact from './CanvasCompact';
 import StreamingOverlay from './StreamingOverlay';
@@ -121,13 +121,6 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
     setIsSourcesSidebarOpen(false);
   };
 
-  const handleCitationClick = (citation: any, index: number) => {
-    // Open the source in a new tab
-    if (citation.url) {
-      window.open(citation.url, '_blank', 'noopener,noreferrer');
-    }
-  };
-
   return (
     <>
       <div
@@ -208,12 +201,6 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
                         onExpand={handleCanvasExpand}
                         onDownload={onCanvasDownload}
                         onPrint={onCanvasPrint}
-                      />
-                    ) : availableCitations && availableCitations.length > 0 ? (
-                      <InlineCitationRenderer
-                        content={message.text}
-                        citations={availableCitations}
-                        onCitationClick={handleCitationClick}
                       />
                     ) : (
                       <MarkdownRenderer content={message.text} />
