@@ -80,7 +80,7 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
   const [isSourcesSidebarOpen, setIsSourcesSidebarOpen] = useState(false);
   
   const isAi = message.sender === 'ai';
-  const isReport = isAi && (isReportMessage(message.text, message.metadata) || isCanvasPreview);
+  const isReport = isAi && isCanvasPreview; // Only show canvas preview when manually activated
   
   // Check if this is a streaming message
   const isStreamingMessage = message.isStreaming || (message.metadata?.messageType === 'progress_update' && !message.metadata?.isCompleted);
