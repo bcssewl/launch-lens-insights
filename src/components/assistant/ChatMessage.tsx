@@ -91,15 +91,10 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
     (alegeonStreamingState.isComplete && message.metadata?.messageType === 'completed_report')
   );
 
-  // Enhanced citation detection
+  // Enhanced citation detection - only for sources sidebar
   const availableCitations = message.alegeonCitations || 
     (alegeonStreamingState?.finalCitations?.length ? alegeonStreamingState.finalCitations : null) ||
     (alegeonStreamingState?.citations?.length ? alegeonStreamingState.citations : null);
-
-  // Check if this is a completed Algeon message with citations
-  const isAlegeonCompleted = isAi && 
-    message.metadata?.messageType === 'completed_report' && 
-    availableCitations && availableCitations.length > 0;
 
   // Don't render AI messages with empty content unless streaming
   if (isAi && (!message.text || message.text.trim() === '') && !showAlegeonStreaming && !stratixStreamingState?.isStreaming) {
@@ -207,12 +202,6 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
                         onDownload={onCanvasDownload}
                         onPrint={onCanvasPrint}
                       />
-                    ) : isAlegeonCompleted && availableCitations ? (
-                      <CitationAwareRenderer
-                        content={message.text}
-                        citations={availableCitations}
-                        onSourcesClick={handleSourcesClick}
-                      />
                     ) : (
                       <MarkdownRenderer content={message.text} />
                     )}
@@ -235,7 +224,7 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
         )}
       </div>
 
-      {/* Sources Sidebar */}
+      {/* Sources Sidebar - only show if citations exist and user wants to see them */}
       {availableCitations && availableCitations.length > 0 && (
         <SourcesSidebar
           isOpen={isSourcesSidebarOpen}
@@ -265,10 +254,11 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
     return true; // Otherwise don't re-render during streaming
   }
   
-  // For non-streaming messages, check basic properties
+  // For non-streaming messages, check basic properties including canvas preview state
   return (
     prevProps.message.text === nextProps.message.text &&
     prevProps.isStreaming === nextProps.isStreaming &&
+    prevProps.isCanvasPreview === nextProps.isCanvasPreview &&
     (prevAlgeonState?.isComplete === nextAlgeonState?.isComplete)
   );
 });
