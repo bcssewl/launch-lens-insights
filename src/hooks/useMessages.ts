@@ -180,13 +180,24 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
 
         // Check if we should generate an auto-title after first exchange
         // At this point, history includes the new AI message we just added, so we check for exactly 2 messages
+        console.log('🏷️ Checking auto-title conditions:', {
+          messageCount: history.length + 1,
+          sessionTitle,
+          shouldGenerate: shouldGenerateTitle(history.length + 1, sessionTitle),
+          historyLength: history.length,
+          updateSessionTitleExists: !!updateSessionTitle
+        });
+        
         if (updateSessionTitle && sessionTitle && shouldGenerateTitle(history.length + 1, sessionTitle)) {
           // Find the user's first message for title generation
           const userMessages = history.filter(h => h.message.startsWith('USER:'));
+          console.log('🏷️ Found user messages for title generation:', userMessages.length);
           if (userMessages.length > 0) {
             const firstUserMessage = userMessages[0].message.substring(5).trim();
             console.log('🏷️ Triggering auto-title generation for session:', currentSessionId, 'with', history.length + 1, 'messages');
             generateAndSetTitle(currentSessionId, firstUserMessage, currentBufferedText, updateSessionTitle);
+          } else {
+            console.log('🏷️ No user messages found in history for title generation');
           }
         }
       }
@@ -597,7 +608,9 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
 
     // Save user message to history
     if (currentSessionId) {
-      await addMessage(`USER: ${finalMessageText}`);
+      console.log('💾 Saving user message to history for session:', currentSessionId);
+      const savedMessage = await addMessage(`USER: ${finalMessageText}`);
+      console.log('💾 User message save result:', savedMessage ? 'SUCCESS' : 'FAILED');
     }
 
     if (!isConfigured) {
