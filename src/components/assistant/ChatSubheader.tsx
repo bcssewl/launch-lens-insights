@@ -34,17 +34,14 @@ const ChatSubheader: React.FC<ChatSubheaderProps> = ({
   };
 
   return (
-    <div className="flex items-center space-x-4">
-      {/* AI Assistant title with model dropdown */}
-      <div className="flex items-center space-x-2">
-        <h1 className="text-lg font-semibold text-foreground">AI Assistant</h1>
-        <span className="text-muted-foreground">•</span>
-        <ModelSelectionDropdown 
-          selectedModel={selectedModel}
-          onModelSelect={handleModelSelect}
-        />
-      </div>
+    <div className="flex items-center justify-between">
+      {/* Model dropdown on the left */}
+      <ModelSelectionDropdown 
+        selectedModel={selectedModel}
+        onModelSelect={handleModelSelect}
+      />
       
+      {/* Control buttons on the right */}
       <div className="flex items-center space-x-2">
         <QuickActionsDropdown 
           onDownloadChat={onDownloadChat}
