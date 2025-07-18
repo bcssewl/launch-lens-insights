@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import AIAvatar from './AIAvatar';
@@ -6,7 +5,7 @@ import UserAvatar from './UserAvatar';
 import CanvasButton from './CanvasButton';
 import CopyButton from './CopyButton';
 import MarkdownRenderer from './MarkdownRenderer';
-import CitationAwareRenderer from './CitationAwareRenderer';
+import CitationsList from './CitationsList';
 import SourcesSidebar from './SourcesSidebar';
 import CanvasCompact from './CanvasCompact';
 import StreamingOverlay from './StreamingOverlay';
@@ -91,7 +90,7 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
     (alegeonStreamingState.isComplete && message.metadata?.messageType === 'completed_report')
   );
 
-  // Enhanced citation detection - only for sources sidebar
+  // Enhanced citation detection - get final citations for display
   const availableCitations = message.alegeonCitations || 
     (alegeonStreamingState?.finalCitations?.length ? alegeonStreamingState.finalCitations : null) ||
     (alegeonStreamingState?.citations?.length ? alegeonStreamingState.citations : null);
@@ -203,7 +202,13 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
                         onPrint={onCanvasPrint}
                       />
                     ) : (
-                      <MarkdownRenderer content={message.text} />
+                      <>
+                        <MarkdownRenderer content={message.text} />
+                        {/* Display citations inline below the message content */}
+                        {availableCitations && availableCitations.length > 0 && (
+                          <CitationsList citations={availableCitations} />
+                        )}
+                      </>
                     )}
                   </>
                 ) : (
