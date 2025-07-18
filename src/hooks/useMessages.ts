@@ -74,7 +74,7 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
   });
   const viewportRef = useRef<HTMLDivElement>(null);
   const { sendMessageToN8n, isConfigured } = useN8nWebhook();
-  const { history, addMessage, isInitialLoad } = useChatHistory(currentSessionId);
+  const { history, addMessage, addMessageToSession, isInitialLoad } = useChatHistory(currentSessionId);
   
   // Initialize auto-title system
   const { generateAndSetTitle, shouldGenerateTitle } = useAutoTitle();
@@ -589,11 +589,11 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     }
   }, [detectResearchQuery, startStreaming, stopStreaming]);
 
-  const handleSendMessage = useCallback(async (text?: string, messageText?: string, selectedModel?: string, researchType?: string) => {
+  const handleSendMessage = useCallback(async (text?: string, messageText?: string, selectedModel?: string, researchType?: string, sessionIdOverride?: string) => {
     const finalMessageText = text || messageText;
     if (!finalMessageText || finalMessageText.trim() === '') return;
 
-    console.log('🚀 useMessages: Sending message with model:', selectedModel);
+    console.log('🚀 useMessages: Sending message with model:', selectedModel, 'sessionOverride:', sessionIdOverride);
 
     isAddingMessageRef.current = true;
 
@@ -606,11 +606,14 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     
     dispatch({ type: 'ADD_MESSAGE', payload: newUserMessage });
 
-    // Save user message to history
-    if (currentSessionId) {
-      console.log('💾 Saving user message to history for session:', currentSessionId);
-      const savedMessage = await addMessage(`USER: ${finalMessageText}`);
+    // Save user message to history - use override session ID if provided
+    const sessionIdToUse = sessionIdOverride || currentSessionId;
+    if (sessionIdToUse) {
+      console.log('💾 Saving user message to history for session:', sessionIdToUse, '(override:', !!sessionIdOverride, ')');
+      const savedMessage = await addMessageToSession(`USER: ${finalMessageText}`, sessionIdToUse);
       console.log('💾 User message save result:', savedMessage ? 'SUCCESS' : 'FAILED');
+    } else {
+      console.warn('💾 No session ID available for saving user message');
     }
 
     if (!isConfigured) {

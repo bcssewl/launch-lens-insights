@@ -56,12 +56,16 @@ export const useChatHistory = (sessionId: string | null) => {
   };
 
   const addMessage = async (message: string) => {
-    if (!sessionId) {
-      console.warn('useChatHistory: No sessionId provided for addMessage');
+    return addMessageToSession(message, sessionId);
+  };
+
+  const addMessageToSession = async (message: string, targetSessionId: string | null) => {
+    if (!targetSessionId) {
+      console.warn('useChatHistory: No sessionId provided for addMessageToSession');
       return null;
     }
 
-    console.log('useChatHistory: Adding message to session:', sessionId);
+    console.log('useChatHistory: Adding message to session:', targetSessionId);
     console.log('useChatHistory: Message preview:', message.substring(0, 200) + '...');
     console.log('useChatHistory: Message length:', message.length);
 
@@ -84,7 +88,7 @@ export const useChatHistory = (sessionId: string | null) => {
       const { data: sessionCheck, error: sessionError } = await supabase
         .from('chat_sessions')
         .select('user_id, title')
-        .eq('id', sessionId)
+        .eq('id', targetSessionId)
         .single();
 
       if (sessionError) {
@@ -103,7 +107,7 @@ export const useChatHistory = (sessionId: string | null) => {
         .from('n8n_chat_history')
         .insert([
           {
-            session_id: sessionId,
+            session_id: targetSessionId,
             message,
           }
         ])
@@ -122,7 +126,12 @@ export const useChatHistory = (sessionId: string | null) => {
       }
 
       console.log('useChatHistory: Successfully saved message with ID:', data.id);
-      setHistory(prev => [...prev, data]);
+      
+      // Only update local history if this is for the current session
+      if (targetSessionId === sessionId) {
+        setHistory(prev => [...prev, data]);
+      }
+      
       return data;
     } catch (error) {
       console.error('useChatHistory: Error adding message to history:', error);
@@ -161,6 +170,7 @@ export const useChatHistory = (sessionId: string | null) => {
     loading,
     isInitialLoad,
     addMessage,
+    addMessageToSession,
     clearHistory,
     refreshHistory: fetchHistory,
   };

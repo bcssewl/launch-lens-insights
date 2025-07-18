@@ -116,8 +116,9 @@ const AIAssistantPage: React.FC = () => {
       // Wait for session to be fully set and URL to update
       await new Promise(resolve => setTimeout(resolve, 200));
       
-      // Now send the message with the new session
-      handleSendMessage(text, undefined, modelToUse, researchType);
+      // Now send the message with the new session ID passed directly
+      console.log('AIAssistantPage: Sending message with new session ID:', newSession.id);
+      handleSendMessage(text, undefined, modelToUse, researchType, newSession.id);
     } else {
       handleSendMessage(text, undefined, modelToUse, researchType);
     }
