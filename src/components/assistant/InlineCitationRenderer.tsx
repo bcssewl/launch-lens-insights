@@ -26,13 +26,51 @@ const InlineCitationRenderer: React.FC<InlineCitationRendererProps> = ({
     citationsCount: citations.length
   });
 
-  // Process content to make numbered citations clickable hyperlinks
+  // Custom component to handle citation links within markdown
+  const CitationLink: React.FC<{ citationNumber: number }> = ({ citationNumber }) => {
+    const citationIndex = citationNumber - 1;
+    const citation = citations[citationIndex];
+    
+    if (!citation || !citation.url) {
+      return <span>[{citationNumber}]</span>;
+    }
+
+    return (
+      <a
+        href={citation.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={(e) => {
+          // Allow both direct navigation and custom click handling
+          onCitationClick?.(citation, citationIndex);
+        }}
+        className="citation-link text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium no-underline border-b border-current border-dotted pb-0.5 transition-colors cursor-pointer bg-transparent p-0 inline hover:bg-blue-50 dark:hover:bg-blue-900/20 px-1 rounded"
+        title={`${citation.name} - Click to open source`}
+      >
+        [{citationNumber}]
+      </a>
+    );
+  };
+
+  // Process content to replace citation patterns with clickable links
   const processContentWithCitations = (text: string): React.ReactNode => {
     if (!citations || citations.length === 0) {
       return <MarkdownRenderer content={text} />;
     }
 
-    // Split text by citation patterns [1], [2], etc.
+    // Create a custom markdown renderer that handles citations
+    const MarkdownWithCitations: React.FC<{ content: string }> = ({ content }) => {
+      return (
+        <div className="prose prose-sm dark:prose-invert max-w-none">
+          <MarkdownRenderer 
+            content={content}
+            className="[&_.citation-placeholder]:inline-block"
+          />
+        </div>
+      );
+    };
+
+    // Replace citation patterns with React components after markdown processing
     const parts = text.split(/(\[\d+\])/g);
     
     return (
@@ -42,32 +80,12 @@ const InlineCitationRenderer: React.FC<InlineCitationRendererProps> = ({
           
           if (citationMatch) {
             const citationNumber = parseInt(citationMatch[1]);
-            const citationIndex = citationNumber - 1;
-            const citation = citations[citationIndex];
-            
-            if (citation && citation.url) {
-              return (
-                <a
-                  key={index}
-                  href={citation.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(e) => {
-                    // Allow both direct navigation and custom click handling
-                    onCitationClick?.(citation, citationIndex);
-                  }}
-                  className="citation-link text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium no-underline border-b border-current border-dotted pb-0.5 transition-colors cursor-pointer bg-transparent p-0 inline hover:bg-blue-50 dark:hover:bg-blue-900/20 px-1 rounded"
-                  title={`${citation.name} - Click to open source`}
-                >
-                  [{citationNumber}]
-                </a>
-              );
-            }
+            return <CitationLink key={index} citationNumber={citationNumber} />;
           }
           
           // Regular text part - render as markdown
           if (part.trim()) {
-            return <MarkdownRenderer key={index} content={part} />;
+            return <MarkdownRenderer key={index} content={part} className="inline" />;
           }
           
           return null;
