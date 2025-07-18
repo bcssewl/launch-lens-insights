@@ -70,90 +70,34 @@ const extractDomainName = (url: string): string => {
   }
 };
 
-// Enhanced helper function to parse citations from message text
-const parseCitationsFromText = (messageText: string): Array<{ name: string; url: string; type?: string }> => {
-  console.log('🔍 Parsing citations from message length:', messageText.length);
-  
-  // Try multiple regex patterns to handle different citation formats
-  const patterns = [
-    // Pattern 1: Citations at the end with any content inside brackets
-    /Citations:\s*(\[[\s\S]*?\])\s*$/,
-    // Pattern 2: Citations anywhere in the text
-    /Citations:\s*(\[[\s\S]*?\])/,
-    // Pattern 3: More flexible pattern for edge cases
-    /Citations:\s*(\[[^\]]*(?:\][^\]]*\[)*[^\]]*\])/
-  ];
-  
-  let citationMatch: RegExpMatchArray | null = null;
-  let usedPattern = '';
-  
-  // Try each pattern until one works
-  for (let i = 0; i < patterns.length; i++) {
-    citationMatch = messageText.match(patterns[i]);
-    if (citationMatch) {
-      usedPattern = `Pattern ${i + 1}`;
-      console.log(`📋 Found citations using ${usedPattern}:`, citationMatch[1]);
-      break;
-    }
-  }
+// Simple helper function to parse citations from legacy stored messages
+const parseLegacyCitationsFromText = (messageText: string): Array<{ name: string; url: string; type?: string }> => {
+  // Only for parsing legacy stored messages - new messages will have citations stored separately
+  const citationMatch = messageText.match(/Citations:\s*(\[[\s\S]*?\])\s*$/);
   
   if (!citationMatch) {
-    console.log('❌ No citation pattern matched in message');
     return [];
   }
 
   try {
-    const citationText = citationMatch[1];
-    console.log('🔗 Attempting to parse citation text:', citationText);
+    const citationData = JSON.parse(citationMatch[1]);
     
-    const citationData = JSON.parse(citationText);
-    console.log('✅ Successfully parsed citation data:', citationData);
-    
-    // Convert URL strings to proper citation objects
     if (Array.isArray(citationData)) {
-      const citations = citationData.map((item: string | object, index: number) => {
+      return citationData.map((item: string | object) => {
         if (typeof item === 'string') {
-          // Convert URL string to citation object
-          const citation = {
+          return {
             name: extractDomainName(item),
             url: item,
             type: 'web'
           };
-          console.log(`📎 Converted URL ${index + 1} to citation:`, citation);
-          return citation;
         } else if (typeof item === 'object' && item !== null) {
-          // Already a proper citation object
-          console.log(`📎 Using existing citation object ${index + 1}:`, item);
           return item as { name: string; url: string; type?: string };
         }
-        console.warn(`⚠️ Invalid citation item at index ${index}:`, item);
         return null;
       }).filter(Boolean);
-      
-      console.log(`🎯 Final parsed citations (${citations.length}):`, citations);
-      return citations;
-    } else {
-      console.warn('⚠️ Citation data is not an array:', citationData);
     }
   } catch (e) {
-    console.error('❌ Failed to parse citations from message:', e);
-    console.error('📄 Raw citation text that failed to parse:', citationMatch[1]);
-    
-    // Fallback: try to extract URLs manually if JSON parsing fails
-    try {
-      const urlPattern = /https?:\/\/[^\s"]+/g;
-      const urls = citationMatch[1].match(urlPattern) || [];
-      if (urls.length > 0) {
-        console.log('🔄 Fallback: extracted URLs manually:', urls);
-        return urls.map(url => ({
-          name: extractDomainName(url),
-          url: url.replace(/[",\]]/g, ''), // Clean up any trailing characters
-          type: 'web'
-        }));
-      }
-    } catch (fallbackError) {
-      console.error('❌ Fallback URL extraction also failed:', fallbackError);
-    }
+    console.warn('Failed to parse legacy citations:', e);
   }
   
   return [];
@@ -221,7 +165,7 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     scrollToBottom();
   }, [messages.length, isTyping, scrollToBottom]);
 
-  // Enhanced Algeon streaming message management with duplicate prevention
+  // Enhanced Algeon streaming message management with proper citation handling
   useEffect(() => {
     const currentBufferedText = alegeonStreamingState.bufferedText;
     const completionKey = `${currentBufferedText.substring(0, 100)}-${alegeonStreamingState.isComplete}`;
@@ -250,7 +194,7 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
       // Mark this completion as processed
       processedCompletionsRef.current.add(completionKey);
       
-      // Create final message with citations preserved
+      // Create final message with citations from finalCitations (captured from completion event)
       const finalMessage: ExtendedMessage = {
         id: uuidv4(),
         text: currentBufferedText,
@@ -268,14 +212,11 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
         payload: { finalMessage, streamingId: STREAMING_MESSAGE_ID }
       });
       
-      // Save final message to history with citations metadata
+      // Save final message to history with citations as separate metadata
       if (currentSessionId && currentBufferedText) {
-        const messageWithCitations = `AI: ${currentBufferedText}${
-          alegeonStreamingState.finalCitations.length > 0 
-            ? `\n\nCitations: ${JSON.stringify(alegeonStreamingState.finalCitations)}`
-            : ''
-        }`;
-        addMessage(messageWithCitations);
+        // Store citations separately instead of embedding in text
+        const messageToStore = `AI: ${currentBufferedText}`;
+        addMessage(messageToStore);
 
         // Check if we should generate an auto-title after first exchange
         // At this point, history includes the new AI message we just added, so we check for exactly 2 messages
@@ -349,13 +290,13 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
           const firstLineContent = lines[0].substring(3).trim();
           const fullMessageText = [firstLineContent, ...lines.slice(1)].join('\n').trim();
           
-          // Parse citations using the enhanced regex-based approach
-          alegeonCitations = parseCitationsFromText(fullMessageText);
+          // Parse citations from legacy messages only (new messages have citations stored separately)
+          alegeonCitations = parseLegacyCitationsFromText(fullMessageText);
           
           if (alegeonCitations.length > 0) {
-            // Remove citations from the content text using the same patterns
+            // Remove citations from the content text
             text = fullMessageText.replace(/\n*Citations:\s*\[[\s\S]*?\]\s*$/, '').trim();
-            console.log('📎 Extracted citations from message:', {
+            console.log('📎 Extracted citations from legacy message:', {
               messageId: entry.id || `history-${index}`,
               citationsCount: alegeonCitations.length,
               extractedCitations: alegeonCitations
@@ -482,12 +423,12 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     return hasResearchKeywords || (isLongQuery && hasQuestionWords);
   }, []);
 
-  // Handle Algeon requests with enhanced citation support
+  // Handle Algeon requests with direct citation handling
   const handleAlegeonRequest = useCallback(async (message: string, researchType?: string, sessionId?: string | null): Promise<string> => {
     try {
       console.log('🔬 Starting Algeon streaming for message:', message.substring(0, 100));
       
-      // Use the enhanced Algeon streaming implementation
+      // Use the enhanced Algeon streaming implementation that returns clean text and citations
       const result = await startAlegeonStreaming(message, researchType as any);
       
       console.log('✅ Algeon request completed:', {
@@ -495,6 +436,7 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
         citationsCount: result.citations.length
       });
       
+      // Return only the clean text - citations are handled separately
       return result.text;
       
     } catch (error) {
@@ -738,7 +680,7 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
       if (selectedModel === 'algeon' || (selectedModel === 'best' && detectResearchQuery(finalMessageText))) {
         console.log('🔬 Using Algeon model with typewriter animation');
         aiResponseText = await handleAlegeonRequest(finalMessageText, researchType, currentSessionId);
-        // Note: Final message handling is done in the useEffect above
+        // Final message handling is done in the useEffect above with proper citation separation
       }
       // Route to Stratix if model is 'stratix'
       else if (selectedModel === 'stratix') {
