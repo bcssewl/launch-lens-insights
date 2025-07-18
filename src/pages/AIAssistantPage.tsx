@@ -27,11 +27,17 @@ const AIAssistantPage: React.FC = () => {
     currentSessionId,
     setCurrentSessionId,
     navigateToSession,
-    createSession
+    createSession,
+    sessions,
+    updateSessionTitle
   } = useChatSessions();
   const {
     clearHistory
   } = useChatHistory(currentSessionId);
+  
+  // Get current session for title
+  const currentSession = sessions.find(s => s.id === currentSessionId);
+  
   const {
     messages,
     isTyping,
@@ -49,7 +55,7 @@ const AIAssistantPage: React.FC = () => {
     handleCanvasPdfDownload,
     streamingState,
     stratixStreamingState
-  } = useMessages(currentSessionId);
+  } = useMessages(currentSessionId, updateSessionTitle, currentSession?.title);
   const { streamingState: alegeonStreamingState } = useAlegeonStreaming();
   const [editedCanvasContent, setEditedCanvasContent] = useState(canvasState.content);
 

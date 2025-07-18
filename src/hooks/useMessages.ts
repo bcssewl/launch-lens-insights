@@ -6,6 +6,7 @@ import { useChatHistory } from '@/hooks/useChatHistory';
 import { usePerplexityStreaming } from '@/hooks/usePerplexityStreaming';
 import { useStratixStreaming } from '@/hooks/useStratixStreaming';
 import { useAlegeonStreaming } from '@/hooks/useAlegeonStreaming';
+import { useAutoTitle } from '@/hooks/useAutoTitle';
 import { supabase } from '@/integrations/supabase/client';
 
 // Configuration constants
@@ -59,7 +60,7 @@ function messageReducer(state: ExtendedMessage[], action: MessageAction): Extend
   }
 }
 
-export const useMessages = (currentSessionId: string | null) => {
+export const useMessages = (currentSessionId: string | null, updateSessionTitle?: (sessionId: string, title: string) => Promise<void>, sessionTitle?: string) => {
   const [messages, dispatch] = useReducer(messageReducer, initialMessages as ExtendedMessage[]);
   const [isTyping, setIsTyping] = useState(false);
   const [canvasState, setCanvasState] = useState<{
@@ -74,6 +75,9 @@ export const useMessages = (currentSessionId: string | null) => {
   const viewportRef = useRef<HTMLDivElement>(null);
   const { sendMessageToN8n, isConfigured } = useN8nWebhook();
   const { history, addMessage, isInitialLoad } = useChatHistory(currentSessionId);
+  
+  // Initialize auto-title system
+  const { generateAndSetTitle, shouldGenerateTitle } = useAutoTitle();
   
   // Initialize streaming systems
   const { streamingState, startStreaming, stopStreaming } = usePerplexityStreaming();
@@ -173,6 +177,16 @@ export const useMessages = (currentSessionId: string | null) => {
             : ''
         }`;
         addMessage(messageWithCitations);
+
+        // Check if we should generate an auto-title after first exchange
+        if (updateSessionTitle && sessionTitle && shouldGenerateTitle(history.length + 1, sessionTitle)) {
+          // Find the user's first message for title generation
+          const userMessages = history.filter(h => h.message.startsWith('USER:'));
+          if (userMessages.length > 0) {
+            const firstUserMessage = userMessages[0].message.substring(5).trim();
+            generateAndSetTitle(currentSessionId, firstUserMessage, currentBufferedText, updateSessionTitle);
+          }
+        }
       }
       
       // Clean up processed completions after a delay to prevent memory leaks
