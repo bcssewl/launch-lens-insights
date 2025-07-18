@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import AIAvatar from './AIAvatar';
 import UserAvatar from './UserAvatar';
+import CanvasButton from './CanvasButton';
 import CopyButton from './CopyButton';
 import MarkdownRenderer from './MarkdownRenderer';
 import CitationAwareRenderer from './CitationAwareRenderer';
@@ -167,10 +168,14 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
               />
             )}
 
-            {/* Copy button */}
+            {/* Action buttons */}
             {isAi && !showAlegeonStreaming && !stratixStreamingState?.isStreaming && (
-              <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-1">
                 <CopyButton content={message.text} />
+                {/* Show canvas button for substantial content */}
+                {message.text && message.text.trim().split(/\s+/).length >= 100 && (
+                  <CanvasButton onClick={handleCanvasExpand} />
+                )}
               </div>
             )}
 
