@@ -7,12 +7,14 @@ interface CanvasButtonProps {
   onClick: () => void;
   className?: string;
   disabled?: boolean;
+  variant?: 'default' | 'active';
 }
 
 const CanvasButton: React.FC<CanvasButtonProps> = ({ 
   onClick, 
   className,
-  disabled = false 
+  disabled = false,
+  variant = 'default'
 }) => {
   return (
     <Button
@@ -21,10 +23,13 @@ const CanvasButton: React.FC<CanvasButtonProps> = ({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "h-8 w-8 p-0 hover:bg-white/20 transition-colors duration-200",
+        "h-8 w-8 p-0 transition-colors duration-200",
+        variant === 'active' 
+          ? "bg-primary/20 hover:bg-primary/30 text-primary" 
+          : "hover:bg-white/20",
         className
       )}
-      title="Convert to Canvas"
+      title={variant === 'active' ? "Exit Canvas Preview" : "Convert to Canvas Preview"}
     >
       <FileText className="h-4 w-4" />
     </Button>

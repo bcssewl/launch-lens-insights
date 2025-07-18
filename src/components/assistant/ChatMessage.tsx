@@ -59,6 +59,8 @@ interface ChatMessageProps {
   };
   stratixStreamingState?: StratixStreamingState;
   alegeonStreamingState?: AlegeonStreamingState;
+  onToggleCanvasPreview?: (messageId: string) => void;
+  isCanvasPreview?: boolean;
 }
 
 const ChatMessage: React.FC<ChatMessageProps> = React.memo(({ 
@@ -71,12 +73,14 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
   streamingSources = [],
   streamingProgress = { phase: '', progress: 0 },
   stratixStreamingState,
-  alegeonStreamingState
+  alegeonStreamingState,
+  onToggleCanvasPreview,
+  isCanvasPreview = false
 }) => {
   const [isSourcesSidebarOpen, setIsSourcesSidebarOpen] = useState(false);
   
   const isAi = message.sender === 'ai';
-  const isReport = isAi && isReportMessage(message.text, message.metadata);
+  const isReport = isAi && (isReportMessage(message.text, message.metadata) || isCanvasPreview);
   
   // Check if this is a streaming message
   const isStreamingMessage = message.isStreaming || (message.metadata?.messageType === 'progress_update' && !message.metadata?.isCompleted);
@@ -105,6 +109,12 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
   const handleCanvasExpand = () => {
     if (onOpenCanvas) {
       onOpenCanvas(message.id, message.text);
+    }
+  };
+
+  const handleToggleCanvasPreview = () => {
+    if (onToggleCanvasPreview) {
+      onToggleCanvasPreview(message.id);
     }
   };
 
@@ -174,7 +184,10 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
                 <CopyButton content={message.text} />
                 {/* Show canvas button for substantial content */}
                 {message.text && message.text.trim().split(/\s+/).length >= 100 && (
-                  <CanvasButton onClick={handleCanvasExpand} />
+                  <CanvasButton 
+                    onClick={handleToggleCanvasPreview} 
+                    variant={isCanvasPreview ? "active" : "default"}
+                  />
                 )}
               </div>
             )}
