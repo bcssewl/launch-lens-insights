@@ -70,37 +70,90 @@ const extractDomainName = (url: string): string => {
   }
 };
 
-// Helper function to parse citations from message text
+// Enhanced helper function to parse citations from message text
 const parseCitationsFromText = (messageText: string): Array<{ name: string; url: string; type?: string }> => {
-  // Look for citations pattern anywhere in the text using regex
-  const citationMatch = messageText.match(/Citations:\s*(\[.*?\])\s*$/s);
+  console.log('🔍 Parsing citations from message length:', messageText.length);
+  
+  // Try multiple regex patterns to handle different citation formats
+  const patterns = [
+    // Pattern 1: Citations at the end with any content inside brackets
+    /Citations:\s*(\[[\s\S]*?\])\s*$/,
+    // Pattern 2: Citations anywhere in the text
+    /Citations:\s*(\[[\s\S]*?\])/,
+    // Pattern 3: More flexible pattern for edge cases
+    /Citations:\s*(\[[^\]]*(?:\][^\]]*\[)*[^\]]*\])/
+  ];
+  
+  let citationMatch: RegExpMatchArray | null = null;
+  let usedPattern = '';
+  
+  // Try each pattern until one works
+  for (let i = 0; i < patterns.length; i++) {
+    citationMatch = messageText.match(patterns[i]);
+    if (citationMatch) {
+      usedPattern = `Pattern ${i + 1}`;
+      console.log(`📋 Found citations using ${usedPattern}:`, citationMatch[1]);
+      break;
+    }
+  }
   
   if (!citationMatch) {
+    console.log('❌ No citation pattern matched in message');
     return [];
   }
 
   try {
-    const citationData = JSON.parse(citationMatch[1]);
+    const citationText = citationMatch[1];
+    console.log('🔗 Attempting to parse citation text:', citationText);
+    
+    const citationData = JSON.parse(citationText);
+    console.log('✅ Successfully parsed citation data:', citationData);
     
     // Convert URL strings to proper citation objects
     if (Array.isArray(citationData)) {
-      return citationData.map((item: string | object) => {
+      const citations = citationData.map((item: string | object, index: number) => {
         if (typeof item === 'string') {
           // Convert URL string to citation object
-          return {
+          const citation = {
             name: extractDomainName(item),
             url: item,
             type: 'web'
           };
+          console.log(`📎 Converted URL ${index + 1} to citation:`, citation);
+          return citation;
         } else if (typeof item === 'object' && item !== null) {
           // Already a proper citation object
+          console.log(`📎 Using existing citation object ${index + 1}:`, item);
           return item as { name: string; url: string; type?: string };
         }
+        console.warn(`⚠️ Invalid citation item at index ${index}:`, item);
         return null;
       }).filter(Boolean);
+      
+      console.log(`🎯 Final parsed citations (${citations.length}):`, citations);
+      return citations;
+    } else {
+      console.warn('⚠️ Citation data is not an array:', citationData);
     }
   } catch (e) {
-    console.warn('Failed to parse citations from message:', e);
+    console.error('❌ Failed to parse citations from message:', e);
+    console.error('📄 Raw citation text that failed to parse:', citationMatch[1]);
+    
+    // Fallback: try to extract URLs manually if JSON parsing fails
+    try {
+      const urlPattern = /https?:\/\/[^\s"]+/g;
+      const urls = citationMatch[1].match(urlPattern) || [];
+      if (urls.length > 0) {
+        console.log('🔄 Fallback: extracted URLs manually:', urls);
+        return urls.map(url => ({
+          name: extractDomainName(url),
+          url: url.replace(/[",\]]/g, ''), // Clean up any trailing characters
+          type: 'web'
+        }));
+      }
+    } catch (fallbackError) {
+      console.error('❌ Fallback URL extraction also failed:', fallbackError);
+    }
   }
   
   return [];
@@ -296,12 +349,12 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
           const firstLineContent = lines[0].substring(3).trim();
           const fullMessageText = [firstLineContent, ...lines.slice(1)].join('\n').trim();
           
-          // Parse citations using the new regex-based approach
+          // Parse citations using the enhanced regex-based approach
           alegeonCitations = parseCitationsFromText(fullMessageText);
           
           if (alegeonCitations.length > 0) {
-            // Remove citations from the content text
-            text = fullMessageText.replace(/\n*Citations:\s*\[.*?\]\s*$/s, '').trim();
+            // Remove citations from the content text using the same patterns
+            text = fullMessageText.replace(/\n*Citations:\s*\[[\s\S]*?\]\s*$/, '').trim();
             console.log('📎 Extracted citations from message:', {
               messageId: entry.id || `history-${index}`,
               citationsCount: alegeonCitations.length,
