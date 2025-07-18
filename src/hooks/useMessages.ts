@@ -179,11 +179,13 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
         addMessage(messageWithCitations);
 
         // Check if we should generate an auto-title after first exchange
+        // At this point, history includes the new AI message we just added, so we check for exactly 2 messages
         if (updateSessionTitle && sessionTitle && shouldGenerateTitle(history.length + 1, sessionTitle)) {
           // Find the user's first message for title generation
           const userMessages = history.filter(h => h.message.startsWith('USER:'));
           if (userMessages.length > 0) {
             const firstUserMessage = userMessages[0].message.substring(5).trim();
+            console.log('🏷️ Triggering auto-title generation for session:', currentSessionId, 'with', history.length + 1, 'messages');
             generateAndSetTitle(currentSessionId, firstUserMessage, currentBufferedText, updateSessionTitle);
           }
         }
