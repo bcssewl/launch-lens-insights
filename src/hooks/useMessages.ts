@@ -70,39 +70,6 @@ const extractDomainName = (url: string): string => {
   }
 };
 
-// Simple helper function to parse citations from legacy stored messages
-const parseLegacyCitationsFromText = (messageText: string): Array<{ name: string; url: string; type?: string }> => {
-  // Only for parsing legacy stored messages - new messages will have citations stored separately
-  const citationMatch = messageText.match(/Citations:\s*(\[[\s\S]*?\])\s*$/);
-  
-  if (!citationMatch) {
-    return [];
-  }
-
-  try {
-    const citationData = JSON.parse(citationMatch[1]);
-    
-    if (Array.isArray(citationData)) {
-      return citationData.map((item: string | object) => {
-        if (typeof item === 'string') {
-          return {
-            name: extractDomainName(item),
-            url: item,
-            type: 'web'
-          };
-        } else if (typeof item === 'object' && item !== null) {
-          return item as { name: string; url: string; type?: string };
-        }
-        return null;
-      }).filter(Boolean);
-    }
-  } catch (e) {
-    console.warn('Failed to parse legacy citations:', e);
-  }
-  
-  return [];
-};
-
 export const useMessages = (currentSessionId: string | null, updateSessionTitle?: (sessionId: string, title: string) => Promise<void>, sessionTitle?: string) => {
   const [messages, dispatch] = useReducer(messageReducer, initialMessages as ExtendedMessage[]);
   const [isTyping, setIsTyping] = useState(false);
@@ -138,7 +105,17 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
   // Consistent streaming message ID
   const STREAMING_MESSAGE_ID = 'algeon-streaming-message';
   const isAddingMessageRef = useRef(false);
-  const processedCompletionsRef = useRef<Set<string>>(new Set()); // Track processed completions
+  
+  // Enhanced completion tracking to prevent duplicates
+  const completionTracker = useRef<{
+    isProcessed: boolean;
+    sessionId: string | null;
+    lastCompletedText: string;
+  }>({
+    isProcessed: false,
+    sessionId: null,
+    lastCompletedText: ''
+  });
 
   // Improved scroll behavior - only auto-scroll when user is near bottom
   const scrollToBottom = useCallback(() => {
@@ -165,12 +142,23 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     scrollToBottom();
   }, [messages.length, isTyping, scrollToBottom]);
 
-  // Enhanced Algeon streaming message management with proper citation handling
+  // Simplified Algeon streaming message management with robust duplicate prevention
   useEffect(() => {
     const currentBufferedText = alegeonStreamingState.bufferedText;
-    const completionKey = `${currentBufferedText.substring(0, 100)}-${alegeonStreamingState.isComplete}`;
+    const isComplete = alegeonStreamingState.isComplete;
+    const hasContent = alegeonStreamingState.hasContent;
+    const finalCitations = alegeonStreamingState.finalCitations;
     
-    if (alegeonStreamingState.isStreaming && alegeonStreamingState.hasContent) {
+    // Reset completion tracker when new streaming starts
+    if (alegeonStreamingState.isStreaming && !completionTracker.current.isProcessed) {
+      completionTracker.current = {
+        isProcessed: false,
+        sessionId: currentSessionId,
+        lastCompletedText: ''
+      };
+    }
+    
+    if (alegeonStreamingState.isStreaming && hasContent) {
       console.log('📝 Managing Algeon streaming message - isStreaming:', alegeonStreamingState.isStreaming);
       
       const streamingMessage: ExtendedMessage = {
@@ -188,13 +176,26 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
       
       dispatch({ type: 'ADD_STREAMING_MESSAGE', payload: streamingMessage });
       
-    } else if (alegeonStreamingState.isComplete && currentBufferedText && !processedCompletionsRef.current.has(completionKey)) {
-      console.log('✅ Algeon streaming completed, replacing with final message');
+    } else if (isComplete && currentBufferedText && !completionTracker.current.isProcessed) {
+      // Prevent duplicate processing with enhanced checks
+      const isSameSession = completionTracker.current.sessionId === currentSessionId;
+      const isSameText = completionTracker.current.lastCompletedText === currentBufferedText;
       
-      // Mark this completion as processed
-      processedCompletionsRef.current.add(completionKey);
+      if (isSameSession && isSameText) {
+        console.log('🚫 Duplicate completion detected, skipping');
+        return;
+      }
       
-      // Create final message with citations from finalCitations (captured from completion event)
+      console.log('✅ Algeon streaming completed, creating final message');
+      
+      // Mark as processed immediately to prevent race conditions
+      completionTracker.current = {
+        isProcessed: true,
+        sessionId: currentSessionId,
+        lastCompletedText: currentBufferedText
+      };
+      
+      // Create final message with citations from finalCitations
       const finalMessage: ExtendedMessage = {
         id: uuidv4(),
         text: currentBufferedText,
@@ -204,7 +205,7 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
           messageType: 'completed_report',
           isCompleted: true
         },
-        alegeonCitations: alegeonStreamingState.finalCitations
+        alegeonCitations: finalCitations
       };
       
       dispatch({ 
@@ -214,12 +215,10 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
       
       // Save final message to history with citations as separate metadata
       if (currentSessionId && currentBufferedText) {
-        // Store citations separately instead of embedding in text
         const messageToStore = `AI: ${currentBufferedText}`;
         addMessage(messageToStore);
 
         // Check if we should generate an auto-title after first exchange
-        // At this point, history includes the new AI message we just added, so we check for exactly 2 messages
         console.log('🏷️ Checking auto-title conditions:', {
           messageCount: history.length + 1,
           sessionTitle,
@@ -229,7 +228,6 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
         });
         
         if (updateSessionTitle && sessionTitle && shouldGenerateTitle(history.length + 1, sessionTitle)) {
-          // Find the user's first message for title generation
           const userMessages = history.filter(h => h.message.startsWith('USER:'));
           console.log('🏷️ Found user messages for title generation:', userMessages.length);
           if (userMessages.length > 0) {
@@ -241,21 +239,20 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
           }
         }
       }
-      
-      // Clean up processed completions after a delay to prevent memory leaks
-      setTimeout(() => {
-        processedCompletionsRef.current.delete(completionKey);
-      }, 5000);
     }
   }, [
     alegeonStreamingState.isStreaming, 
     alegeonStreamingState.bufferedText, 
     alegeonStreamingState.isComplete,
     alegeonStreamingState.hasContent,
-    alegeonStreamingState.citations,
     alegeonStreamingState.finalCitations,
     currentSessionId,
-    addMessage
+    addMessage,
+    history.length,
+    sessionTitle,
+    updateSessionTitle,
+    shouldGenerateTitle,
+    generateAndSetTitle
   ]);
 
   // Load messages from history when session changes
@@ -266,6 +263,13 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
       console.log('🚫 Skipping history reload while adding message');
       return;
     }
+    
+    // Reset completion tracker when session changes
+    completionTracker.current = {
+      isProcessed: false,
+      sessionId: currentSessionId,
+      lastCompletedText: ''
+    };
     
     if (!isInitialLoad && history.length > 0) {
       console.log('📚 Converting history to messages:', history.slice(0, 3));
@@ -282,28 +286,12 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
         const isAI = lines[0].startsWith('AI:');
         
         let text = '';
-        let alegeonCitations: Array<{ name: string; url: string; type?: string }> = [];
         
         if (isUser) {
           text = lines[0].substring(5).trim();
         } else if (isAI) {
           const firstLineContent = lines[0].substring(3).trim();
-          const fullMessageText = [firstLineContent, ...lines.slice(1)].join('\n').trim();
-          
-          // Parse citations from legacy messages only (new messages have citations stored separately)
-          alegeonCitations = parseLegacyCitationsFromText(fullMessageText);
-          
-          if (alegeonCitations.length > 0) {
-            // Remove citations from the content text
-            text = fullMessageText.replace(/\n*Citations:\s*\[[\s\S]*?\]\s*$/, '').trim();
-            console.log('📎 Extracted citations from legacy message:', {
-              messageId: entry.id || `history-${index}`,
-              citationsCount: alegeonCitations.length,
-              extractedCitations: alegeonCitations
-            });
-          } else {
-            text = fullMessageText;
-          }
+          text = [firstLineContent, ...lines.slice(1)].join('\n').trim();
         } else {
           text = entry.message.trim();
         }
@@ -317,8 +305,7 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
           id: entry.id || `history-${index}`,
           text,
           sender: isUser ? 'user' : 'ai',
-          timestamp: new Date(entry.created_at),
-          alegeonCitations: alegeonCitations.length > 0 ? alegeonCitations : undefined
+          timestamp: new Date(entry.created_at)
         };
         
         return message;
@@ -427,6 +414,13 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
   const handleAlegeonRequest = useCallback(async (message: string, researchType?: string, sessionId?: string | null): Promise<string> => {
     try {
       console.log('🔬 Starting Algeon streaming for message:', message.substring(0, 100));
+      
+      // Reset completion tracker for new request
+      completionTracker.current = {
+        isProcessed: false,
+        sessionId: sessionId,
+        lastCompletedText: ''
+      };
       
       // Use the enhanced Algeon streaming implementation that returns clean text and citations
       const result = await startAlegeonStreaming(message, researchType as any);
@@ -670,8 +664,12 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     // Remove any existing streaming messages
     dispatch({ type: 'REMOVE_STREAMING_MESSAGE', payload: STREAMING_MESSAGE_ID });
     
-    // Clear processed completions for new request
-    processedCompletionsRef.current.clear();
+    // Reset completion tracker for new request
+    completionTracker.current = {
+      isProcessed: false,
+      sessionId: sessionIdToUse,
+      lastCompletedText: ''
+    };
     
     try {
       let aiResponseText: string;
@@ -765,8 +763,12 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     dispatch({ type: 'SET_MESSAGES', payload: initialMessages as ExtendedMessage[] });
     stopStreaming();
     stopAlegeonStreaming();
-    // Clear processed completions on conversation clear
-    processedCompletionsRef.current.clear();
+    // Reset completion tracker on conversation clear
+    completionTracker.current = {
+      isProcessed: false,
+      sessionId: null,
+      lastCompletedText: ''
+    };
   }, [stopStreaming, stopAlegeonStreaming]);
 
   const handleDownloadChat = useCallback(() => {
