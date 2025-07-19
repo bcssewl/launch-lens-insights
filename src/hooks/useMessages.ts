@@ -15,7 +15,7 @@ const WEBSOCKET_TIMEOUT_MS = 300000; // 5 minutes for complex processing
 // Extended Message interface for internal use
 interface ExtendedMessage extends Message {
   isStreaming?: boolean;
-  alegeonCitations?: Array<{
+  finalCitations?: Array<{
     name: string;
     url: string;
     type?: string;
@@ -95,7 +95,7 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
   // Consistent streaming message ID
   const STREAMING_MESSAGE_ID = 'algeon-streaming-message';
   const isAddingMessageRef = useRef(false);
-  const processedCompletionsRef = useRef<Set<string>>(new Set()); // Track processed completions
+  const processedCompletionsRef = useRef<Set<string>>(new Set());
 
   // Improved scroll behavior - only auto-scroll when user is near bottom
   const scrollToBottom = useCallback(() => {
@@ -122,13 +122,13 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     scrollToBottom();
   }, [messages.length, isTyping, scrollToBottom]);
 
-  // Enhanced Algeon streaming message management with duplicate prevention
+  // Simplified Algeon streaming message management
   useEffect(() => {
     const currentBufferedText = alegeonStreamingState.bufferedText;
     const completionKey = `${currentBufferedText.substring(0, 100)}-${alegeonStreamingState.isComplete}`;
     
     if (alegeonStreamingState.isStreaming && alegeonStreamingState.hasContent) {
-      console.log('📝 Managing Algeon streaming message - isStreaming:', alegeonStreamingState.isStreaming);
+      console.log('📝 Managing Algeon streaming message');
       
       const streamingMessage: ExtendedMessage = {
         id: STREAMING_MESSAGE_ID,
@@ -139,19 +139,18 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
         metadata: {
           messageType: 'progress_update',
           isCompleted: false
-        },
-        alegeonCitations: alegeonStreamingState.citations
+        }
       };
       
       dispatch({ type: 'ADD_STREAMING_MESSAGE', payload: streamingMessage });
       
     } else if (alegeonStreamingState.isComplete && currentBufferedText && !processedCompletionsRef.current.has(completionKey)) {
-      console.log('✅ Algeon streaming completed, replacing with final message');
+      console.log('✅ Algeon streaming completed, creating final message with citations');
       
       // Mark this completion as processed
       processedCompletionsRef.current.add(completionKey);
       
-      // Create final message with citations preserved
+      // Create final message with citations from the streaming state
       const finalMessage: ExtendedMessage = {
         id: uuidv4(),
         text: currentBufferedText,
@@ -161,7 +160,7 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
           messageType: 'completed_report',
           isCompleted: true
         },
-        alegeonCitations: alegeonStreamingState.finalCitations
+        finalCitations: alegeonStreamingState.citations // Use citations from final chunk
       };
       
       dispatch({ 
@@ -169,40 +168,21 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
         payload: { finalMessage, streamingId: STREAMING_MESSAGE_ID }
       });
       
-      // Save final message to history with citations metadata
+      // Save final message to history - clean text only
       if (currentSessionId && currentBufferedText) {
-        const messageWithCitations = `AI: ${currentBufferedText}${
-          alegeonStreamingState.finalCitations.length > 0 
-            ? `\n\nCitations: ${JSON.stringify(alegeonStreamingState.finalCitations)}`
-            : ''
-        }`;
-        addMessage(messageWithCitations);
+        addMessage(`AI: ${currentBufferedText}`);
 
-        // Check if we should generate an auto-title after first exchange
-        // At this point, history includes the new AI message we just added, so we check for exactly 2 messages
-        console.log('🏷️ Checking auto-title conditions:', {
-          messageCount: history.length + 1,
-          sessionTitle,
-          shouldGenerate: shouldGenerateTitle(history.length + 1, sessionTitle),
-          historyLength: history.length,
-          updateSessionTitleExists: !!updateSessionTitle
-        });
-        
+        // Auto-title generation logic
         if (updateSessionTitle && sessionTitle && shouldGenerateTitle(history.length + 1, sessionTitle)) {
-          // Find the user's first message for title generation
           const userMessages = history.filter(h => h.message.startsWith('USER:'));
-          console.log('🏷️ Found user messages for title generation:', userMessages.length);
           if (userMessages.length > 0) {
             const firstUserMessage = userMessages[0].message.substring(5).trim();
-            console.log('🏷️ Triggering auto-title generation for session:', currentSessionId, 'with', history.length + 1, 'messages');
             generateAndSetTitle(currentSessionId, firstUserMessage, currentBufferedText, updateSessionTitle);
-          } else {
-            console.log('🏷️ No user messages found in history for title generation');
           }
         }
       }
       
-      // Clean up processed completions after a delay to prevent memory leaks
+      // Clean up processed completions after a delay
       setTimeout(() => {
         processedCompletionsRef.current.delete(completionKey);
       }, 5000);
@@ -212,15 +192,14 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     alegeonStreamingState.bufferedText, 
     alegeonStreamingState.isComplete,
     alegeonStreamingState.hasContent,
-    alegeonStreamingState.citations,
-    alegeonStreamingState.finalCitations,
+    alegeonStreamingState.citations, // Only listen to final citations
     currentSessionId,
     addMessage
   ]);
 
-  // Load messages from history when session changes
+  // Load messages from history - simplified without citation parsing
   useEffect(() => {
-    console.log('useMessages: History effect triggered - Session:', currentSessionId, 'History length:', history.length, 'Is initial load:', isInitialLoad);
+    console.log('useMessages: History effect triggered - Session:', currentSessionId, 'History length:', history.length);
     
     if (isAddingMessageRef.current) {
       console.log('🚫 Skipping history reload while adding message');
@@ -242,30 +221,13 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
         const isAI = lines[0].startsWith('AI:');
         
         let text = '';
-        let alegeonCitations: Array<{ name: string; url: string; type?: string }> = [];
         
         if (isUser) {
           text = lines[0].substring(5).trim();
         } else if (isAI) {
+          // Simply extract AI content without any citation parsing
           const firstLineContent = lines[0].substring(3).trim();
-          
-          // Check for citations in the message
-          const citationLineIndex = lines.findIndex(line => line.startsWith('Citations: '));
-          if (citationLineIndex !== -1) {
-            // Extract citations
-            try {
-              const citationData = lines[citationLineIndex].substring(11); // Remove "Citations: "
-              alegeonCitations = JSON.parse(citationData);
-              // Remove citation line from content
-              const contentLines = lines.slice(1, citationLineIndex);
-              text = [firstLineContent, ...contentLines].join('\n').trim();
-            } catch (e) {
-              console.warn('Failed to parse citations from history:', e);
-              text = [firstLineContent, ...lines.slice(1)].join('\n').trim();
-            }
-          } else {
-            text = [firstLineContent, ...lines.slice(1)].join('\n').trim();
-          }
+          text = [firstLineContent, ...lines.slice(1)].join('\n').trim();
         } else {
           text = entry.message.trim();
         }
@@ -279,16 +241,8 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
           id: entry.id || `history-${index}`,
           text,
           sender: isUser ? 'user' : 'ai',
-          timestamp: new Date(entry.created_at),
-          alegeonCitations: alegeonCitations.length > 0 ? alegeonCitations : undefined
+          timestamp: new Date(entry.created_at)
         };
-        
-        if (alegeonCitations.length > 0) {
-          console.log('📎 Restored message with citations:', {
-            messageId: message.id,
-            citationsCount: alegeonCitations.length
-          });
-        }
         
         return message;
       }).filter(Boolean) as ExtendedMessage[];
@@ -297,20 +251,18 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
       dispatch({ type: 'SET_MESSAGES', payload: [...initialMessages as ExtendedMessage[], ...convertedMessages] });
       console.log('✅ Loaded messages from history:', convertedMessages.length);
       
+      // Restore canvas documents from history
       const restoreCanvasFromHistory = async () => {
         try {
           console.log('🎨 Checking for canvas documents to restore...');
           
-          // Find the most recent AI message that might have a canvas document
           const aiMessages = convertedMessages.filter(msg => msg.sender === 'ai');
           
           const { data: { user } } = await supabase.auth.getUser();
           if (!user) return;
 
-          // Check each AI message for canvas documents, starting with the most recent
           for (let i = aiMessages.length - 1; i >= 0; i--) {
             const message = aiMessages[i];
-            // Use the actual message ID from the database
             const messageId = message.id || `history-${i}`;
             
             console.log('🔍 Checking message for canvas document:', messageId, 'from message:', message);
@@ -335,11 +287,11 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
             if (!error && mapping && mapping.canvas_documents) {
               console.log('🎨 Found canvas document to restore:', mapping.canvas_documents.id);
               setCanvasState({
-                isOpen: false, // Don't auto-open, just restore the association
+                isOpen: false,
                 messageId,
                 content: mapping.canvas_documents.content
               });
-              break; // Use the most recent canvas document
+              break;
             }
           }
         } catch (err) {
@@ -347,7 +299,6 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
         }
       };
       
-      // Restore canvas documents after a short delay to ensure messages are loaded
       setTimeout(restoreCanvasFromHistory, 100);
       
     } else if (!isInitialLoad && history.length === 0) {
@@ -392,12 +343,11 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     return hasResearchKeywords || (isLongQuery && hasQuestionWords);
   }, []);
 
-  // Handle Algeon requests with enhanced citation support
+  // Simplified Algeon request handler
   const handleAlegeonRequest = useCallback(async (message: string, researchType?: string, sessionId?: string | null): Promise<string> => {
     try {
       console.log('🔬 Starting Algeon streaming for message:', message.substring(0, 100));
       
-      // Use the enhanced Algeon streaming implementation
       const result = await startAlegeonStreaming(message, researchType as any);
       
       console.log('✅ Algeon request completed:', {
@@ -418,7 +368,6 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     try {
       console.log('⚡ Making instant request to Stratix API');
       
-      // Try the correct endpoint first
       let response = await fetch('https://ai-agent-research-optivise-production.up.railway.app/instant', {
         method: 'POST',
         headers: {
@@ -430,7 +379,6 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
         }),
       });
 
-      // If that fails, try the chat endpoint
       if (!response.ok) {
         console.log('⚡ Instant endpoint failed, trying chat endpoint');
         response = await fetch('https://ai-agent-research-optivise-production.up.railway.app/chat', {
@@ -454,12 +402,10 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
       
     } catch (error) {
       console.error('❌ Instant request failed:', error);
-      // Return a more helpful error message that won't disappear
       return `Hello! I'm having trouble connecting to my advanced AI service right now, but I'm still here to help. Feel free to ask me anything about business strategy, market analysis, or startup advice and I'll do my best to assist you.`;
     }
   }, [currentSessionId]);
 
-  // Handle Stratix requests with enhanced streaming
   const handleStratixRequest = useCallback(async (prompt: string, sessionId: string | null): Promise<string> => {
     if (!sessionId) {
       throw new Error('Session ID required for Stratix communication');
@@ -468,7 +414,6 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     try {
       console.log('🎯 Enhanced Stratix Request - Smart routing for:', prompt);
       
-      // Reset both streaming systems
       stopStreaming();
       stopStratixStreaming();
       
@@ -479,7 +424,6 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
         return await startStratixStreaming(prompt, sessionId);
       } else {
         console.log('⚡ Using Stratix backend for simple query (WebSocket instant)');
-        // For simple queries, use a quick WebSocket connection following exact backend spec
         return new Promise((resolve, reject) => {
           try {
             const ws = new WebSocket('wss://ai-agent-research-optivise-production.up.railway.app/stream');
@@ -492,11 +436,10 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
                 ws.close();
                 reject(new Error('Timeout waiting for Stratix response'));
               }
-            }, WEBSOCKET_TIMEOUT_MS); // 5 minutes for complex processing
+            }, WEBSOCKET_TIMEOUT_MS);
             
             ws.onopen = () => {
               console.log('📡 Connected to Stratix for simple query');
-              // Send with exact backend format
               ws.send(JSON.stringify({
                 query: prompt,
                 context: { sessionId: sessionId }
@@ -508,7 +451,6 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
                 const data = JSON.parse(event.data);
                 console.log('📨 Stratix simple query response type:', data.type, 'data:', data);
                 
-                // Handle backend event types exactly as specified
                 switch (data.type) {
                   case 'connection_confirmed':
                     console.log('🔗 Connection confirmed for simple query');
@@ -581,10 +523,8 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     } catch (error) {
       console.error('❌ Stratix communication error:', error);
       
-      // Ensure streaming is stopped on error
       stopStreaming();
       
-      // For Stratix errors, return a Stratix-appropriate error message
       return 'I apologize, but I\'m having trouble processing your request right now. Please try again in a moment.';
     }
   }, [detectResearchQuery, startStreaming, stopStreaming]);
@@ -606,7 +546,6 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     
     dispatch({ type: 'ADD_MESSAGE', payload: newUserMessage });
 
-    // Save user message to history - use override session ID if provided
     const sessionIdToUse = sessionIdOverride || currentSessionId;
     if (sessionIdToUse) {
       console.log('💾 Saving user message to history for session:', sessionIdToUse, '(override:', !!sessionIdOverride, ')');
@@ -630,33 +569,25 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
 
     setIsTyping(true);
     
-    // Clean up any existing streaming state
     stopStreaming();
     stopStratixStreaming();
     stopAlegeonStreaming();
     
-    // Remove any existing streaming messages
     dispatch({ type: 'REMOVE_STREAMING_MESSAGE', payload: STREAMING_MESSAGE_ID });
-    
-    // Clear processed completions for new request
     processedCompletionsRef.current.clear();
     
     try {
       let aiResponseText: string;
 
-      // Route to Algeon if model is 'algeon' OR for research queries with 'best' model
       if (selectedModel === 'algeon' || (selectedModel === 'best' && detectResearchQuery(finalMessageText))) {
-        console.log('🔬 Using Algeon model with typewriter animation');
+        console.log('🔬 Using Algeon model with simplified citation handling');
         aiResponseText = await handleAlegeonRequest(finalMessageText, researchType, currentSessionId);
-        // Note: Final message handling is done in the useEffect above
       }
-      // Route to Stratix if model is 'stratix'
       else if (selectedModel === 'stratix') {
         console.log('🎯 Using Stratix model with Perplexity-style streaming');
         aiResponseText = await handleStratixRequest(finalMessageText, currentSessionId);
         stopStreaming();
         
-        // Add final Stratix message
         const aiResponse: Message = {
           id: uuidv4(),
           text: aiResponseText,
@@ -667,12 +598,10 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
         
         dispatch({ type: 'ADD_MESSAGE', payload: aiResponse });
         
-        // Save AI response to history
         if (currentSessionId) {
           await addMessage(`AI: ${aiResponseText}`);
         }
       } else {
-        // Use existing N8N webhook for all other models
         let contextMessage = finalMessageText;
         if (canvasState.isOpen && canvasState.content) {
           contextMessage = `Current document content:\n\n${canvasState.content}\n\n---\n\nUser message: ${finalMessageText}`;
@@ -681,7 +610,6 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
         console.log('📨 Sending to N8N webhook...');
         aiResponseText = await sendMessageToN8n(contextMessage, currentSessionId);
         
-        // Don't create message if response is empty
         if (!aiResponseText || aiResponseText.trim() === '') {
           console.warn('Received empty response from AI service');
           aiResponseText = "I apologize, but I didn't receive a proper response. Please try asking your question again.";
@@ -697,13 +625,11 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
         
         dispatch({ type: 'ADD_MESSAGE', payload: aiResponse });
 
-        // Save AI response to history
         if (currentSessionId) {
           await addMessage(`AI: ${aiResponseText}`);
         }
       }
 
-      // Reset flag after successful completion
       setTimeout(() => {
         isAddingMessageRef.current = false;
         console.log('🔓 Reset isAddingMessageRef flag');
@@ -733,7 +659,6 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     dispatch({ type: 'SET_MESSAGES', payload: initialMessages as ExtendedMessage[] });
     stopStreaming();
     stopAlegeonStreaming();
-    // Clear processed completions on conversation clear
     processedCompletionsRef.current.clear();
   }, [stopStreaming, stopAlegeonStreaming]);
 
@@ -757,14 +682,12 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
   const handleOpenCanvas = useCallback(async (messageId: string, content: string) => {
     console.log('useMessages: Opening canvas for message:', messageId);
     
-    // Set canvas state immediately for UI responsiveness
     setCanvasState({
       isOpen: true,
       messageId,
       content
     });
 
-    // Ensure the canvas document is created and saved to database
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -772,7 +695,6 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
         return;
       }
 
-      // Check if a document already exists for this message
       const { data: existingMapping } = await supabase
         .from('message_canvas_documents')
         .select('document_id')
@@ -785,11 +707,9 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
         return;
       }
 
-      // Extract title from content (first heading or fallback)
       const titleMatch = content.match(/^#\s*(.+)$/m);
       const title = titleMatch ? titleMatch[1].trim() : 'AI Report';
 
-      // Create the canvas document
       const { data: newDocument, error: docError } = await supabase
         .from('canvas_documents')
         .insert({
@@ -805,7 +725,6 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
         return;
       }
 
-      // Create the message-document mapping
       const { error: mappingError } = await supabase
         .from('message_canvas_documents')
         .insert({
@@ -866,7 +785,7 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
   }, [handleCanvasDownload]);
 
   return {
-    messages: messages as Message[], // Cast back to Message[] for external use
+    messages: messages as Message[],
     isTyping,
     isLoadingHistory: isInitialLoad,
     viewportRef,
@@ -883,7 +802,6 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     streamingState,
     stratixStreamingState,
     alegeonStreamingState,
-    // Provide streaming state for components that need it
     isStreamingForMessage: () => streamingState.isStreaming || stratixStreamingState.isStreaming || alegeonStreamingState.isStreaming,
     getStreamingState: () => streamingState,
     getStratixStreamingState: () => stratixStreamingState,
