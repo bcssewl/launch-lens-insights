@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import AIAvatar from './AIAvatar';
@@ -12,7 +13,6 @@ import StreamingOverlay from './StreamingOverlay';
 import StratixStreamingOverlay from './StratixStreamingOverlay';
 import EnhancedStreamingOverlay from './EnhancedStreamingOverlay';
 import ThinkingPanel from './ThinkingPanel';
-import { useReasoning } from '@/contexts/ReasoningContext';
 import { isReportMessage } from '@/utils/reportDetection';
 import type { StratixStreamingState } from '@/types/stratixStreaming';
 import type { AlegeonStreamingStateV2 } from '@/hooks/useAlegeonStreamingV2';
@@ -81,7 +81,6 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
   onAlegeonFastForward
 }) => {
   const [isSourcesSidebarOpen, setIsSourcesSidebarOpen] = useState(false);
-  const { thinkingState } = useReasoning();
   
   const isAi = message.sender === 'ai';
   const isReport = isAi && isCanvasPreview;
@@ -181,9 +180,9 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
                 : "bg-primary/90 backdrop-blur-md border border-primary/30 text-primary-foreground rounded-tr-sm shadow-glass hover:bg-primary/95"
             )}
           >
-            {/* Agent's Thought Process Panel */}
-            {isAi && thinkingState && thinkingState.phase !== 'idle' && (
-              <ThinkingPanel />
+            {/* Message-specific Agent's Thought Process Panel */}
+            {isAi && (
+              <ThinkingPanel messageId={message.id} />
             )}
 
             {/* Enhanced Algeon V2 Streaming Overlay */}

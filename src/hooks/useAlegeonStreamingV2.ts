@@ -13,6 +13,7 @@ interface StreamingEvent {
   type: 'thinking_started' | 'thinking_chunk' | 'thinking_complete' | 'content_chunk' | 'completion' | 'error';
   content?: string;
   accumulated_content?: string;
+  final_content?: string;
   message?: string;
   code?: number;
   citations?: Array<{
@@ -86,7 +87,7 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
     typewriterProgress: 0,
   });
 
-  const { setThinkingState, thinkingState } = useReasoning();
+  const { setThinkingStateForMessage, clearThinkingStateForMessage } = useReasoning();
 
   // Typewriter effect for smooth display
   const { displayedText: typewriterText, isTyping, progress: typewriterProgress, fastForward } = useAlegeonTypewriter(
@@ -95,7 +96,7 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
       speed: 25, // 25 characters per second
       enabled: streamingState.currentPhase === 'generating' || streamingState.bufferedText.length > 0,
       onComplete: () => {
-        console.log('🎯 Typewriter animation completed');
+        console.log('🎯 Typewriter animation completed for message:', messageId);
       }
     }
   );
@@ -108,6 +109,7 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
     reject: (reason?: any) => void;
   } | null>(null);
   const hasResolvedRef = useRef<boolean>(false);
+  const currentThinkingStateRef = useRef<ThinkingState | null>(null);
 
   // Update streaming state with typewriter values
   useEffect(() => {
@@ -120,6 +122,7 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
   }, [typewriterText, isTyping, typewriterProgress]);
 
   const cleanup = useCallback(() => {
+    console.log('🧹 Cleaning up Algeon V2 streaming for message:', messageId);
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
@@ -140,10 +143,16 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
     }
     hasResolvedRef.current = false;
     promiseRef.current = null;
-  }, []);
+    currentThinkingStateRef.current = null;
+    
+    // Clear thinking state for this specific message
+    if (messageId) {
+      clearThinkingStateForMessage(messageId);
+    }
+  }, [messageId, clearThinkingStateForMessage]);
 
   const resetState = useCallback(() => {
-    console.log('🔄 Resetting Algeon V2 streaming state');
+    console.log('🔄 Resetting Algeon V2 streaming state for message:', messageId);
     setStreamingState({
       isStreaming: false,
       currentPhase: 'idle',
@@ -158,12 +167,17 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
       isTyping: false,
       typewriterProgress: 0,
     });
-    setThinkingState(null);
+    
+    // Clear thinking state for this specific message
+    if (messageId) {
+      clearThinkingStateForMessage(messageId);
+    }
+    
     cleanup();
-  }, [cleanup, setThinkingState]);
+  }, [cleanup, messageId, clearThinkingStateForMessage]);
 
   const startStreaming = useCallback(async (query: string, researchType: string = 'quick_facts'): Promise<string> => {
-    console.log('🚀 Starting Algeon V2 streaming request for:', query.substring(0, 50));
+    console.log('🚀 Starting Algeon V2 streaming request for message:', messageId, 'query:', query.substring(0, 50));
     console.log('🔬 Research Type (input):', researchType);
     
     // Validate and normalize research type
@@ -205,7 +219,7 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
         wsRef.current = new WebSocket(wsUrl);
 
         wsRef.current.onopen = () => {
-          console.log('🔗 WebSocket V2 connection opened');
+          console.log('🔗 WebSocket V2 connection opened for message:', messageId);
           heartbeatRef.current = window.setInterval(() => {
             if (wsRef.current?.readyState === WebSocket.OPEN) {
               wsRef.current.send(JSON.stringify({ type: 'ping' }));
@@ -221,16 +235,16 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
             stream: true
           };
           
-          console.log('📤 Sending WebSocket V2 payload:', payload);
+          console.log('📤 Sending WebSocket V2 payload for message:', messageId, payload);
           wsRef.current.send(JSON.stringify(payload));
         };
 
         wsRef.current.onmessage = (event) => {
-          console.log('🟦 RAW V2 WebSocket message:', event.data);
+          console.log('🟦 RAW V2 WebSocket message for', messageId, ':', event.data);
           
           try {
             const data: StreamingEvent = JSON.parse(event.data);
-            console.log('📊 Parsed V2 event:', { type: data.type, phase: data.progress?.phase, percentage: data.progress?.percentage });
+            console.log('📊 Parsed V2 event for message', messageId, ':', { type: data.type, phase: data.progress?.phase, percentage: data.progress?.percentage });
             
             setStreamingState(prev => {
               const newState = { ...prev };
@@ -244,41 +258,51 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
               
               switch (data.type) {
                 case 'thinking_started':
-                  console.log('🧠 Thinking phase started');
+                  console.log('🧠 Thinking phase started for message:', messageId);
                   newState.currentPhase = 'reasoning';
-                  setThinkingState({
-                    phase: 'thinking',
-                    thoughts: [],
-                    isThinking: true,
-                    finalContent: ''
-                  });
+                  
+                  if (messageId) {
+                    const newThinkingState: ThinkingState = {
+                      phase: 'thinking',
+                      thoughts: [],
+                      isThinking: true,
+                      finalContent: ''
+                    };
+                    currentThinkingStateRef.current = newThinkingState;
+                    setThinkingStateForMessage(messageId, newThinkingState);
+                  }
                   break;
 
                 case 'thinking_chunk':
-                  console.log('💭 Thinking chunk:', data.content?.substring(0, 50));
-                  if (data.content) {
-                    setThinkingState({
-                      phase: 'thinking',
-                      thoughts: [...(thinkingState?.thoughts || []), data.content!],
-                      isThinking: true,
-                      finalContent: thinkingState?.finalContent || ''
-                    });
+                  console.log('💭 Thinking chunk for message', messageId, ':', data.content?.substring(0, 50));
+                  if (data.content && messageId && currentThinkingStateRef.current) {
+                    const updatedThinkingState: ThinkingState = {
+                      ...currentThinkingStateRef.current,
+                      thoughts: [...currentThinkingStateRef.current.thoughts, data.content],
+                      isThinking: true
+                    };
+                    currentThinkingStateRef.current = updatedThinkingState;
+                    setThinkingStateForMessage(messageId, updatedThinkingState);
                   }
                   break;
 
                 case 'thinking_complete':
-                  console.log('✅ Thinking phase complete');
+                  console.log('✅ Thinking phase complete for message:', messageId);
                   newState.currentPhase = 'generating';
-                  setThinkingState({
-                    phase: 'done',
-                    thoughts: thinkingState?.thoughts || [],
-                    isThinking: false,
-                    finalContent: thinkingState?.finalContent || ''
-                  });
+                  
+                  if (messageId && currentThinkingStateRef.current) {
+                    const completedThinkingState: ThinkingState = {
+                      ...currentThinkingStateRef.current,
+                      phase: 'done',
+                      isThinking: false
+                    };
+                    currentThinkingStateRef.current = completedThinkingState;
+                    setThinkingStateForMessage(messageId, completedThinkingState);
+                  }
                   break;
 
                 case 'content_chunk':
-                  console.log('📝 Content chunk received, length:', data.content?.length);
+                  console.log('📝 Content chunk received for message', messageId, ', length:', data.content?.length);
                   if (data.content) {
                     newState.bufferedText += data.content;
                     newState.hasContent = true;
@@ -286,20 +310,20 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
                   break;
 
                 case 'completion':
-                  console.log('✅ Stream completion received');
+                  console.log('✅ Stream completion received for message:', messageId);
                   newState.isComplete = true;
                   newState.isStreaming = false;
                   newState.currentPhase = 'complete';
                   
                   // Use accumulated content if available
-                  if (data.accumulated_content) {
-                    newState.bufferedText = data.accumulated_content;
+                  if (data.accumulated_content || data.final_content) {
+                    newState.bufferedText = data.accumulated_content || data.final_content || newState.bufferedText;
                   }
                   
                   // Process citations
                   if (data.citations) {
                     newState.citations = data.citations;
-                    console.log('📚 Citations processed:', data.citations.length);
+                    console.log('📚 Citations processed for message', messageId, ':', data.citations.length);
                   }
                   
                   // Store metadata
@@ -307,20 +331,27 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
                     newState.metadata = {
                       duration: data.metadata.duration,
                       reasoning_duration: data.metadata.reasoning_duration,
-                      generation_duration:data.metadata.generation_duration,
+                      generation_duration: data.metadata.generation_duration,
                       model_name: data.metadata.model_name,
                       token_usage: data.metadata.token_usage
                     };
-                    console.log('📊 Metadata stored:', {
+                    console.log('📊 Metadata stored for message', messageId, ':', {
                       total: data.metadata.duration,
                       reasoning: data.metadata.reasoning_duration,
                       generation: data.metadata.generation_duration
                     });
                   }
                   
+                  // Clear thinking state when complete
+                  if (messageId) {
+                    setTimeout(() => {
+                      clearThinkingStateForMessage(messageId);
+                    }, 2000); // Keep thinking visible for 2 seconds after completion
+                  }
+                  
                   // Resolve with final content
                   if (!hasResolvedRef.current) {
-                    const finalContent = data.accumulated_content || prev.bufferedText;
+                    const finalContent = data.accumulated_content || data.final_content || prev.bufferedText;
                     setTimeout(() => {
                       if (!hasResolvedRef.current) {
                         hasResolvedRef.current = true;
@@ -332,10 +363,15 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
                   break;
 
                 case 'error':
-                  console.error('❌ V2 Stream error:', data.message);
+                  console.error('❌ V2 Stream error for message', messageId, ':', data.message);
                   newState.error = data.message || 'An error occurred during research';
                   newState.isStreaming = false;
                   newState.currentPhase = 'complete';
+                  
+                  // Clear thinking state on error
+                  if (messageId) {
+                    clearThinkingStateForMessage(messageId);
+                  }
                   
                   if (!hasResolvedRef.current) {
                     hasResolvedRef.current = true;
@@ -345,14 +381,14 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
                   break;
 
                 default:
-                  console.warn('⚠️ Unknown V2 event type:', data.type);
+                  console.warn('⚠️ Unknown V2 event type for message', messageId, ':', data.type);
               }
               
               return newState;
             });
             
           } catch (parseError) {
-            console.error('❌ Error parsing V2 message:', parseError);
+            console.error('❌ Error parsing V2 message for', messageId, ':', parseError);
             console.error('📄 Raw message:', event.data);
             
             setStreamingState(prev => ({ 
@@ -361,6 +397,10 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
               isStreaming: false,
               currentPhase: 'complete'
             }));
+            
+            if (messageId) {
+              clearThinkingStateForMessage(messageId);
+            }
             
             if (!hasResolvedRef.current) {
               hasResolvedRef.current = true;
@@ -371,7 +411,7 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
         };
 
         wsRef.current.onerror = (error) => {
-          console.error('❌ V2 WebSocket error:', error);
+          console.error('❌ V2 WebSocket error for message', messageId, ':', error);
           if (!hasResolvedRef.current) {
             hasResolvedRef.current = true;
             setStreamingState(prev => ({ 
@@ -380,13 +420,18 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
               currentPhase: 'complete',
               error: 'WebSocket connection failed.' 
             }));
+            
+            if (messageId) {
+              clearThinkingStateForMessage(messageId);
+            }
+            
             reject(new Error('WebSocket connection failed'));
             cleanup();
           }
         };
 
         wsRef.current.onclose = (event) => {
-          console.log('🔌 V2 WebSocket closed:', event.code, event.reason);
+          console.log('🔌 V2 WebSocket closed for message', messageId, ':', event.code, event.reason);
           
           if (!hasResolvedRef.current) {
             hasResolvedRef.current = true;
@@ -408,12 +453,16 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
               }
             });
             
+            if (messageId) {
+              clearThinkingStateForMessage(messageId);
+            }
+            
             cleanup();
           }
         };
 
       } catch (error) {
-        console.error('❌ Error setting up V2 WebSocket:', error);
+        console.error('❌ Error setting up V2 WebSocket for message', messageId, ':', error);
         if (!hasResolvedRef.current) {
           hasResolvedRef.current = true;
           reject(error);
@@ -421,15 +470,19 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
         }
       }
     });
-  }, [resetState, cleanup, setThinkingState]);
+  }, [resetState, cleanup, messageId, setThinkingStateForMessage, clearThinkingStateForMessage]);
 
   const stopStreaming = useCallback(() => {
-    console.log('🛑 Stopping Algeon V2 streaming');
+    console.log('🛑 Stopping Algeon V2 streaming for message:', messageId);
     setStreamingState(prev => ({ ...prev, isStreaming: false, currentPhase: 'complete' }));
-    setThinkingState(null);
+    
+    if (messageId) {
+      clearThinkingStateForMessage(messageId);
+    }
+    
     promiseRef.current?.reject(new Error('Streaming stopped by user.'));
     cleanup();
-  }, [cleanup, setThinkingState]);
+  }, [cleanup, messageId, clearThinkingStateForMessage]);
 
   useEffect(() => {
     return () => {

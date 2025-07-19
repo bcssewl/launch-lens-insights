@@ -1,6 +1,7 @@
+
 /**
  * @file ThinkingPanel.tsx
- * @description Collapsible panel to display the agent's live thought process.
+ * @description Message-specific collapsible panel to display the agent's live thought process.
  */
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -8,11 +9,16 @@ import { ChevronUp, Brain } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useReasoning } from '@/contexts/ReasoningContext';
 
-const ThinkingPanel: React.FC = () => {
-  const { thinkingState } = useReasoning();
+interface ThinkingPanelProps {
+  messageId: string;
+}
+
+const ThinkingPanel: React.FC<ThinkingPanelProps> = ({ messageId }) => {
+  const { getThinkingStateForMessage } = useReasoning();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const thoughtsEndRef = useRef<HTMLDivElement>(null);
 
+  const thinkingState = getThinkingStateForMessage(messageId);
   const { phase = 'idle', thoughts = [], isThinking = false } = thinkingState || {};
 
   useEffect(() => {
@@ -20,7 +26,8 @@ const ThinkingPanel: React.FC = () => {
     thoughtsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [thoughts]);
 
-  if (phase === 'idle' || phase === 'done') {
+  // Don't render if no thinking state or if idle/done
+  if (!thinkingState || phase === 'idle' || phase === 'done') {
     return null;
   }
 
