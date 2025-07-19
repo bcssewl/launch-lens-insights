@@ -227,6 +227,7 @@ export const useAlegeonStreaming = (messageId: string | null) => {
                 newState.hasContent = true;
                 
                 console.log('📝 Content chunk received, accumulated length:', data.accumulated_content.length);
+                console.log('📝 Content preview:', data.accumulated_content.substring(0, 100) + '...');
                 
                 // Update streaming progress
                 if (data.progress) {
@@ -241,8 +242,38 @@ export const useAlegeonStreaming = (messageId: string | null) => {
                   requestCompletedRef.current = true;
                   newState.isComplete = true;
                   newState.isStreaming = false;
-                  newState.citations = data.citations || data.sources || [];
-                  newState.finalCitations = newState.citations;
+                  
+                  // Extract citations with comprehensive debugging
+                  const rawCitations = data.citations || data.sources || [];
+                  console.log('🔍 RAW citation data from backend:', rawCitations);
+                  console.log('🔍 Full completion data structure:', {
+                    citations: data.citations,
+                    sources: data.sources,
+                    accumulated_content_preview: data.accumulated_content?.substring(0, 200),
+                    accumulated_content_length: data.accumulated_content?.length,
+                    other_keys: Object.keys(data).filter(key => !['type', 'accumulated_content', 'is_complete', 'citations', 'sources'].includes(key))
+                  });
+                  
+                  // Process and validate citations
+                  const processedCitations = rawCitations.map((citation: any, index: number) => {
+                    console.log(`📚 Processing citation ${index + 1}:`, {
+                      original: citation,
+                      name: citation.name || citation.title || 'Unknown Source',
+                      url: citation.url || citation.link || citation.href,
+                      type: citation.type || 'web'
+                    });
+                    
+                    return {
+                      name: citation.name || citation.title || `Source ${index + 1}`,
+                      url: citation.url || citation.link || citation.href || '',
+                      type: citation.type || 'web'
+                    };
+                  });
+                  
+                  newState.citations = processedCitations;
+                  newState.finalCitations = processedCitations;
+                  
+                  console.log('✅ Processed citations for frontend:', processedCitations);
                   
                   // Use the backend-formatted content directly (already includes citations)
                   const finalContent = data.accumulated_content || prev.bufferedText;
@@ -251,8 +282,9 @@ export const useAlegeonStreaming = (messageId: string | null) => {
                   newState.currentPhaseMessage = 'Research completed - displaying results';
                   
                   console.log('✅ Algeon request completed');
-                  console.log('📚 Final citations:', newState.citations);
+                  console.log('📚 Final citations count:', processedCitations.length);
                   console.log('📝 Final content length:', finalContent.length);
+                  console.log('🔗 Citations with URLs:', processedCitations.filter(c => c.url));
                   
                   // Don't resolve immediately - wait for typewriter to finish
                   if (!hasResolvedRef.current) {

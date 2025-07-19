@@ -22,10 +22,19 @@ const SourcesSidebar: React.FC<SourcesSidebarProps> = ({
   citations,
   className
 }) => {
-  // Debug log the citations data
+  // Debug log the citations data with detailed URL analysis
   React.useEffect(() => {
     if (citations.length > 0) {
       console.log('📋 SourcesSidebar received citations:', citations);
+      console.log('📋 URL analysis:', citations.map((cite, index) => ({
+        index: index + 1,
+        name: cite.name,
+        url: cite.url,
+        hasUrl: !!cite.url,
+        urlLength: cite.url?.length || 0,
+        urlValid: cite.url ? isValidUrl(cite.url) : false,
+        type: cite.type
+      })));
     }
   }, [citations]);
 
@@ -56,11 +65,24 @@ const SourcesSidebar: React.FC<SourcesSidebarProps> = ({
   };
 
   const isValidUrl = (url: string): boolean => {
+    if (!url || url.trim() === '') return false;
+    
     try {
-      new URL(formatUrl(url));
+      const formattedUrl = formatUrl(url);
+      new URL(formattedUrl);
       return true;
     } catch {
       return false;
+    }
+  };
+
+  const getDomainFromUrl = (url: string): string => {
+    try {
+      const formattedUrl = formatUrl(url);
+      const domain = new URL(formattedUrl).hostname;
+      return domain.replace('www.', '');
+    } catch {
+      return 'Unknown Domain';
     }
   };
 
@@ -109,6 +131,16 @@ const SourcesSidebar: React.FC<SourcesSidebarProps> = ({
                   const IconComponent = getSourceIcon(citation.type);
                   const formattedUrl = formatUrl(citation.url);
                   const hasValidUrl = citation.url && isValidUrl(citation.url);
+                  const domain = hasValidUrl ? getDomainFromUrl(citation.url) : null;
+                  
+                  console.log('📋 Rendering citation:', {
+                    index: index + 1,
+                    name: citation.name,
+                    originalUrl: citation.url,
+                    formattedUrl,
+                    hasValidUrl,
+                    domain
+                  });
                   
                   return (
                     <div
@@ -128,8 +160,15 @@ const SourcesSidebar: React.FC<SourcesSidebarProps> = ({
                           <div className="flex items-start gap-2">
                             <div className="flex-1">
                               <h4 className="font-medium text-sm leading-snug break-words">
-                                {citation.name || (hasValidUrl ? new URL(formattedUrl).hostname.replace('www.', '') : 'Unknown Source')}
+                                {citation.name || (domain || 'Unknown Source')}
                               </h4>
+                              
+                              {/* Domain Display */}
+                              {domain && (
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                  {domain}
+                                </p>
+                              )}
                               
                               {/* URL Display */}
                               {hasValidUrl ? (
@@ -137,24 +176,27 @@ const SourcesSidebar: React.FC<SourcesSidebarProps> = ({
                                   href={formattedUrl}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="text-xs text-primary hover:text-primary/80 underline break-all block mt-1"
+                                  className="text-xs text-primary hover:text-primary/80 underline break-all block mt-1 transition-colors"
                                   title={`Visit ${formattedUrl}`}
                                 >
-                                  {formattedUrl}
+                                  {formattedUrl.length > 60 ? 
+                                    formattedUrl.substring(0, 60) + '...' : 
+                                    formattedUrl
+                                  }
                                 </a>
                               ) : citation.url ? (
-                                <p className="text-xs text-muted-foreground mt-1 break-all">
-                                  {citation.url} (Invalid URL)
+                                <p className="text-xs text-red-500/70 mt-1 break-all">
+                                  Invalid URL: {citation.url}
                                 </p>
                               ) : (
                                 <p className="text-xs text-muted-foreground mt-1">
-                                  No URL available
+                                  No URL provided
                                 </p>
                               )}
                               
                               {citation.type && (
                                 <p className="text-xs text-muted-foreground mt-1 capitalize">
-                                  {citation.type}
+                                  Type: {citation.type}
                                 </p>
                               )}
                             </div>

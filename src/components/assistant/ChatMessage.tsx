@@ -90,28 +90,50 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
   // Check if this is a streaming message
   const isStreamingMessage = message.isStreaming || (message.metadata?.messageType === 'progress_update' && !message.metadata?.isCompleted);
   
-  // For Algeon streaming, show the overlay if this is the streaming message
-  const showAlegeonStreaming = isAi && alegeonStreamingState && (
-    (alegeonStreamingState.isStreaming && isStreamingMessage) ||
-    (alegeonStreamingState.isComplete && message.metadata?.messageType === 'completed_report')
-  );
+  // For Algeon streaming, show the overlay ONLY during active streaming
+  const showAlegeonStreaming = isAi && alegeonStreamingState && alegeonStreamingState.isStreaming && !alegeonStreamingState.isComplete;
 
-  // Enhanced citation detection - check for both message citations and streaming citations
+  // Enhanced citation detection - get available citations from multiple sources
   const availableCitations = message.alegeonCitations || 
     (alegeonStreamingState?.finalCitations?.length ? alegeonStreamingState.finalCitations : null) ||
     (alegeonStreamingState?.citations?.length ? alegeonStreamingState.citations : null);
 
-  // Check if this message should use CitationAwareRenderer
-  const shouldUseCitationRenderer = isAi && availableCitations && availableCitations.length > 0 && !isReport && !showAlegeonStreaming;
-
+  // Debug citation data flow
   console.log('🎯 ChatMessage: Citation detection', {
     messageId: message.id,
     hasMessageCitations: !!message.alegeonCitations?.length,
     hasStreamingCitations: !!(alegeonStreamingState?.finalCitations?.length || alegeonStreamingState?.citations?.length),
     availableCitationsCount: availableCitations?.length || 0,
+    alegeonStreamingState: {
+      isStreaming: alegeonStreamingState?.isStreaming,
+      isComplete: alegeonStreamingState?.isComplete,
+      hasContent: alegeonStreamingState?.hasContent,
+      displayedTextLength: alegeonStreamingState?.displayedText?.length || 0,
+      bufferedTextLength: alegeonStreamingState?.bufferedText?.length || 0
+    },
+    showAlegeonStreaming,
+    isReport
+  });
+
+  // Debug citation URLs specifically
+  if (availableCitations && availableCitations.length > 0) {
+    console.log('📚 Available citations with URLs:', availableCitations.map(cite => ({
+      name: cite.name,
+      url: cite.url,
+      hasUrl: !!cite.url,
+      type: cite.type
+    })));
+  }
+
+  // Check if this message should use CitationAwareRenderer
+  const shouldUseCitationRenderer = isAi && availableCitations && availableCitations.length > 0 && !isReport && !showAlegeonStreaming;
+
+  console.log('🎯 ChatMessage: Rendering decision', {
+    messageId: message.id,
     shouldUseCitationRenderer,
+    showAlegeonStreaming,
     isReport,
-    showAlegeonStreaming
+    messageTextLength: message.text?.length || 0
   });
 
   // Don't render AI messages with empty content unless streaming
@@ -132,6 +154,7 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
   };
 
   const handleSourcesClick = () => {
+    console.log('📋 Sources button clicked, opening sidebar with citations:', availableCitations);
     setIsSourcesSidebarOpen(true);
   };
 
@@ -168,7 +191,7 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
               <ThinkingPanel />
             )}
 
-            {/* Optimized Algeon Streaming Overlay - Enhanced typewriter animation */}
+            {/* Algeon Streaming Overlay - ONLY during active streaming */}
             {showAlegeonStreaming && (
               <OptimizedStreamingOverlay
                 streamingState={alegeonStreamingState!}
@@ -211,8 +234,8 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
               </div>
             )}
 
-            {/* Message content */}
-            {!(showAlegeonStreaming && isStreamingMessage) && (
+            {/* Message content - Show content when NOT actively streaming */}
+            {!showAlegeonStreaming && (
               <div className={cn(
                 "text-sm leading-relaxed", 
                 isAi && !stratixStreamingState?.isStreaming && "pr-8"
@@ -228,12 +251,12 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
                       />
                     ) : shouldUseCitationRenderer ? (
                       <CitationAwareRenderer
-                        content={message.text}
+                        content={alegeonStreamingState?.displayedText || message.text}
                         citations={availableCitations!}
                         onSourcesClick={handleSourcesClick}
                       />
                     ) : (
-                      <MarkdownRenderer content={message.text} />
+                      <MarkdownRenderer content={alegeonStreamingState?.displayedText || message.text} />
                     )}
                   </>
                 ) : (
@@ -284,12 +307,18 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
     return true; // Otherwise don't re-render during streaming
   }
   
+  // When streaming completes, we need to re-render to show final content
+  if (prevAlgeonState?.isStreaming && !nextAlgeonState?.isStreaming) {
+    return false; // Streaming just completed, need to re-render
+  }
+  
   // For non-streaming messages, check basic properties including canvas preview state
   return (
     prevProps.message.text === nextProps.message.text &&
     prevProps.isStreaming === nextProps.isStreaming &&
     prevProps.isCanvasPreview === nextProps.isCanvasPreview &&
-    (prevAlgeonState?.isComplete === nextAlgeonState?.isComplete)
+    (prevAlgeonState?.isComplete === nextAlgeonState?.isComplete) &&
+    (prevAlgeonState?.displayedText === nextAlgeonState?.displayedText)
   );
 });
 
