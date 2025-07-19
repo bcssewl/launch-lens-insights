@@ -74,7 +74,7 @@ export const useAlegeonStreaming = (messageId: string | null) => {
     typewriterProgress: 0,
   });
 
-  const { setThinkingState } = useReasoning();
+  const { setThinkingStateForMessage, clearThinkingStateForMessage } = useReasoning();
 
   // Typewriter effect for smooth display
   const { displayedText: typewriterText, isTyping, progress: typewriterProgress, fastForward } = useAlegeonTypewriter(
@@ -148,9 +148,11 @@ export const useAlegeonStreaming = (messageId: string | null) => {
       isTyping: false,
       typewriterProgress: 0,
     });
-    setThinkingState(null);
+    if (messageId) {
+      clearThinkingStateForMessage(messageId);
+    }
     cleanup();
-  }, [cleanup, setThinkingState]);
+  }, [cleanup, clearThinkingStateForMessage, messageId]);
 
   const startStreaming = useCallback(async (query: string, researchType?: AlgeonResearchType): Promise<string> => {
     const selectedType = researchType || 'quick_facts';
@@ -390,15 +392,17 @@ export const useAlegeonStreaming = (messageId: string | null) => {
         }
       }
     });
-  }, [resetState, cleanup, setThinkingState]);
+  }, [resetState, cleanup, clearThinkingStateForMessage, messageId]);
 
   const stopStreaming = useCallback(() => {
     console.log('🛑 Stopping Algeon streaming');
     setStreamingState(prev => ({ ...prev, isStreaming: false }));
-    setThinkingState(null);
+    if (messageId) {
+      clearThinkingStateForMessage(messageId);
+    }
     promiseRef.current?.reject(new Error('Streaming stopped by user.'));
     cleanup();
-  }, [cleanup, setThinkingState]);
+  }, [cleanup, clearThinkingStateForMessage, messageId]);
 
   useEffect(() => {
     return () => {
