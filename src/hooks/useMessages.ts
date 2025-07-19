@@ -186,7 +186,11 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
           messageType: 'progress_update',
           isCompleted: false
         },
-        alegeonCitations: alegeonStreamingState.citations
+        alegeonCitations: alegeonStreamingState.citations?.map(citation => ({
+          name: citation.title,
+          url: citation.url,
+          type: citation.description
+        }))
       };
       
       dispatch({ type: 'ADD_STREAMING_MESSAGE', payload: streamingMessage });
@@ -217,7 +221,11 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
           messageType: 'completed_report',
           isCompleted: true
         },
-        alegeonCitations: alegeonStreamingState.citations
+        alegeonCitations: alegeonStreamingState.citations?.map(citation => ({
+          name: citation.title,
+          url: citation.url,
+          type: citation.description
+        }))
       };
       
       dispatch({ 
