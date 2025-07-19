@@ -1,8 +1,7 @@
+
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { detectAlgeonResearchType, type AlgeonResearchType } from '@/utils/algeonResearchTypes';
-import { ThinkingParser, type ThinkingState } from '@/utils/thinkingParser';
 import { useReasoning } from '@/contexts/ReasoningContext';
-import { useOptimizedStreaming } from './useOptimizedStreaming';
 
 // Configuration constants - Updated to 12 minutes
 const STREAMING_TIMEOUT_MS = 720000; // 12 minutes
@@ -11,6 +10,7 @@ const HEARTBEAT_INTERVAL = 30000; // 30 seconds
 interface AlegeonStreamingEvent {
   type: string;
   content?: string;
+  accumulated_content?: string;
   is_complete?: boolean;
   finish_reason?: string | null;
   citations?: Array<{
@@ -26,6 +26,10 @@ interface AlegeonStreamingEvent {
   usage?: object;
   error?: string | null;
   message?: string;
+  progress?: {
+    chunk_number: number;
+    characters_sent: number;
+  };
 }
 
 export interface AlegeonStreamingState {
@@ -66,7 +70,6 @@ export const useAlegeonStreaming = (messageId: string | null) => {
   });
 
   const { setThinkingState } = useReasoning();
-  const thinkingParserRef = useRef(new ThinkingParser());
 
   const wsRef = useRef<WebSocket | null>(null);
   const timeoutRef = useRef<number | null>(null);
@@ -76,14 +79,7 @@ export const useAlegeonStreaming = (messageId: string | null) => {
     reject: (reason?: any) => void;
   } | null>(null);
   const hasResolvedRef = useRef<boolean>(false);
-  const requestCompletedRef = useRef<boolean>(false); // Track request completion
-
-  // Transform optimized state to legacy format for compatibility
-  const alegeonStreamingState: AlegeonStreamingState = {
-    ...streamingState,
-    finalCitations: streamingState.citations,
-    hasContent: streamingState.displayedText.length > 0 || streamingState.bufferedText.length > 0
-  };
+  const requestCompletedRef = useRef<boolean>(false);
 
   const cleanup = useCallback(() => {
     if (timeoutRef.current) {
@@ -123,13 +119,11 @@ export const useAlegeonStreaming = (messageId: string | null) => {
       currentPhaseMessage: '',
       phaseStartTime: Date.now(),
     });
-    thinkingParserRef.current.reset();
     setThinkingState(null);
     cleanup();
   }, [cleanup, setThinkingState]);
 
   const startStreaming = useCallback(async (query: string, researchType?: AlgeonResearchType): Promise<string> => {
-    // Use manually selected research type or default to 'quick_facts'
     const selectedType = researchType || 'quick_facts';
     
     console.log('🚀 Starting Algeon streaming request for:', query.substring(0, 50));
@@ -144,17 +138,18 @@ export const useAlegeonStreaming = (messageId: string | null) => {
       hasResolvedRef.current = false;
       requestCompletedRef.current = false;
 
-      // Set overall timeout to 12 minutes
       timeoutRef.current = window.setTimeout(() => {
         if (!hasResolvedRef.current) {
           hasResolvedRef.current = true;
-          const finalText = streamingState.bufferedText || streamingState.displayedText;
-          const finalCitations = streamingState.citations;
+          setStreamingState(prev => {
+            const finalText = prev.bufferedText || prev.displayedText;
             if (finalText) {
               resolve(finalText);
             } else {
               reject(new Error('Research session timeout - taking longer than 12 minutes'));
             }
+            return { ...prev, isStreaming: false };
+          });
           cleanup();
         }
       }, STREAMING_TIMEOUT_MS);
@@ -164,6 +159,7 @@ export const useAlegeonStreaming = (messageId: string | null) => {
         wsRef.current = new WebSocket(wsUrl);
 
         wsRef.current.onopen = () => {
+          console.log('🔗 WebSocket connection opened');
           heartbeatRef.current = window.setInterval(() => {
             if (wsRef.current?.readyState === WebSocket.OPEN) {
               wsRef.current.send(JSON.stringify({ type: 'ping' }));
@@ -186,81 +182,125 @@ export const useAlegeonStreaming = (messageId: string | null) => {
         let hasReceivedContent = false;
 
         wsRef.current.onmessage = (event) => {
-          // Enhanced debugging
           console.log('🟦 RAW WebSocket message received:', event.data);
           
           try {
             const data: AlegeonStreamingEvent = JSON.parse(event.data);
-            thinkingParserRef.current.parse(data.content || '');
-            const currentThinkingState = thinkingParserRef.current.getState();
-            setThinkingState(currentThinkingState);
+            console.log('📊 Parsed WebSocket data:', data);
             
             setStreamingState(prev => {
               const newState = { ...prev };
               
-              // Handle different event types more flexibly
-              switch (data.type) {
-                case 'chunk':
-                  if (data.content) {
-                    hasReceivedContent = true;
-                    newState.bufferedText = currentThinkingState.finalContent;
-                    console.log('📝 Content chunk added, total length:', newState.bufferedText.length);
+              // Handle different event types based on backend format
+              if (data.type === 'chunk') {
+                if (data.accumulated_content) {
+                  hasReceivedContent = true;
+                  newState.bufferedText = data.accumulated_content;
+                  newState.hasContent = true;
+                  console.log('📝 Content chunk received, accumulated length:', data.accumulated_content.length);
+                  
+                  // Update progress if available
+                  if (data.progress) {
+                    newState.progress = Math.min(90, (data.progress.characters_sent / 5000) * 100);
+                    newState.currentPhaseMessage = `Processing... ${data.progress.chunk_number} chunks received`;
                   }
-                  break;
-                case 'complete':
-                  if (!requestCompletedRef.current) {
-                    requestCompletedRef.current = true;
-                    newState.isComplete = true;
-                    newState.displayedText = currentThinkingState.finalContent;
-                    newState.bufferedText = '';
-                    newState.citations = data.citations || data.sources || prev.citations;
-                    console.log('✅ Algeon request completed');
-                    
-                    // Reset state after a delay to prevent interference
-                    setTimeout(() => {
-                      resetState();
-                    }, 1000);
-                    
+                }
+              } else if (data.is_complete === true) {
+                if (!requestCompletedRef.current) {
+                  requestCompletedRef.current = true;
+                  newState.isComplete = true;
+                  newState.isStreaming = false;
+                  newState.displayedText = data.accumulated_content || prev.bufferedText;
+                  newState.bufferedText = '';
+                  newState.citations = data.citations || data.sources || [];
+                  newState.finalCitations = newState.citations;
+                  newState.progress = 100;
+                  newState.currentPhaseMessage = 'Research completed';
+                  
+                  console.log('✅ Algeon request completed');
+                  console.log('📚 Final citations:', newState.citations);
+                  
+                  if (!hasResolvedRef.current) {
+                    hasResolvedRef.current = true;
                     resolve(newState.displayedText);
                     cleanup();
                   }
-                  break;
-                default:
-                  console.warn('Unknown data type received:', data.type);
+                }
+              } else if (data.error) {
+                console.error('❌ Backend error:', data.error);
+                newState.error = data.error;
+                newState.isStreaming = false;
+                
+                if (!hasResolvedRef.current) {
+                  hasResolvedRef.current = true;
+                  reject(new Error(data.error));
+                  cleanup();
+                }
               }
               
               return newState;
             });
             
           } catch (parseError) {
-            console.error('Error parsing WebSocket message:', parseError);
+            console.error('❌ Error parsing WebSocket message:', parseError);
+            console.error('📄 Raw message that failed to parse:', event.data);
+            
+            setStreamingState(prev => ({ 
+              ...prev, 
+              error: 'Failed to parse server response',
+              isStreaming: false 
+            }));
+            
+            if (!hasResolvedRef.current) {
+              hasResolvedRef.current = true;
+              reject(new Error('Failed to parse server response'));
+              cleanup();
+            }
           }
         };
 
         wsRef.current.onerror = (error) => {
+          console.error('❌ WebSocket error:', error);
           if (!hasResolvedRef.current) {
             hasResolvedRef.current = true;
-            setStreamingState(prev => ({ ...prev, isStreaming: false, error: 'WebSocket connection failed.' }));
+            setStreamingState(prev => ({ 
+              ...prev, 
+              isStreaming: false, 
+              error: 'WebSocket connection failed.' 
+            }));
             reject(new Error('WebSocket connection failed'));
             cleanup();
           }
         };
 
         wsRef.current.onclose = (event) => {
-          // Handle connection closure more intelligently
+          console.log('🔌 WebSocket connection closed:', event.code, event.reason);
+          
           if (!hasResolvedRef.current) {
             hasResolvedRef.current = true;
-            thinkingParserRef.current.complete();
-            setThinkingState(thinkingParserRef.current.getState());
             
             // If we have received content and connection closed normally, treat as success
             if (hasReceivedContent && event.code === 1000) {
-              setStreamingState(prev => ({ ...prev, isStreaming: false, isComplete: true }));
-              resolve(streamingState.displayedText);
+              setStreamingState(prev => {
+                const finalText = prev.bufferedText || prev.displayedText;
+                resolve(finalText);
+                return { ...prev, isStreaming: false, isComplete: true };
+              });
             } else if (event.code === 1006) {
+              setStreamingState(prev => ({ 
+                ...prev, 
+                error: 'Connection lost unexpectedly',
+                isStreaming: false 
+              }));
               reject(new Error('Connection lost unexpectedly'));
             } else {
-              reject(new Error(`WebSocket closed unexpectedly: ${event.code} ${event.reason || 'No reason given'}`));
+              const errorMsg = `WebSocket closed unexpectedly: ${event.code} ${event.reason || 'No reason given'}`;
+              setStreamingState(prev => ({ 
+                ...prev, 
+                error: errorMsg,
+                isStreaming: false 
+              }));
+              reject(new Error(errorMsg));
             }
             
             cleanup();
@@ -268,6 +308,7 @@ export const useAlegeonStreaming = (messageId: string | null) => {
         };
 
       } catch (error) {
+        console.error('❌ Error setting up WebSocket:', error);
         if (!hasResolvedRef.current) {
           hasResolvedRef.current = true;
           reject(error);
@@ -278,14 +319,13 @@ export const useAlegeonStreaming = (messageId: string | null) => {
   }, [resetState, cleanup, setThinkingState]);
 
   const stopStreaming = useCallback(() => {
+    console.log('🛑 Stopping Algeon streaming');
     setStreamingState(prev => ({ ...prev, isStreaming: false }));
-    thinkingParserRef.current.complete();
-    setThinkingState(thinkingParserRef.current.getState());
+    setThinkingState(null);
     promiseRef.current?.reject(new Error('Streaming stopped by user.'));
     cleanup();
   }, [cleanup, setThinkingState]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       stopStreaming();
@@ -293,7 +333,7 @@ export const useAlegeonStreaming = (messageId: string | null) => {
   }, [stopStreaming]);
 
   return {
-    streamingState: alegeonStreamingState,
+    streamingState,
     startStreaming,
     stopStreaming,
     resetState
