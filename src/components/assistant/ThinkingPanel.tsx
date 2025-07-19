@@ -26,8 +26,8 @@ const ThinkingPanel: React.FC<ThinkingPanelProps> = ({ messageId }) => {
     thoughtsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [thoughts]);
 
-  // Don't render if no thinking state or if idle/done
-  if (!thinkingState || phase === 'idle' || phase === 'done') {
+  // Don't render if no thinking state or if idle
+  if (!thinkingState || phase === 'idle') {
     return null;
   }
 

@@ -414,18 +414,27 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
           console.error('❌ V2 WebSocket error for message', messageId, ':', error);
           if (!hasResolvedRef.current) {
             hasResolvedRef.current = true;
+            const errorMsg = 'WebSocket connection failed';
+            
             setStreamingState(prev => ({ 
               ...prev, 
               isStreaming: false, 
               currentPhase: 'complete',
-              error: 'WebSocket connection failed.' 
+              error: errorMsg
             }));
             
-            if (messageId) {
-              clearThinkingStateForMessage(messageId);
+            // Show error in thinking state instead of clearing it
+            if (messageId && currentThinkingStateRef.current) {
+              const errorThinkingState: ThinkingState = {
+                ...currentThinkingStateRef.current,
+                phase: 'error',
+                isThinking: false,
+                thoughts: [...currentThinkingStateRef.current.thoughts, `❌ ${errorMsg}`]
+              };
+              setThinkingStateForMessage(messageId, errorThinkingState);
             }
             
-            reject(new Error('WebSocket connection failed'));
+            reject(new Error(errorMsg));
             cleanup();
           }
         };
@@ -442,8 +451,20 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
                 resolve(finalText);
                 return { ...prev, isStreaming: false, isComplete: true, currentPhase: 'complete' };
               } else {
-                const errorMsg = `WebSocket closed: ${event.code} ${event.reason || 'No reason given'}`;
+                const errorMsg = `Connection lost: ${event.code} ${event.reason || 'WebSocket closed unexpectedly'}`;
                 reject(new Error(errorMsg));
+                
+                // Show error in thinking state instead of clearing it
+                if (messageId && currentThinkingStateRef.current) {
+                  const errorThinkingState: ThinkingState = {
+                    ...currentThinkingStateRef.current,
+                    phase: 'error',
+                    isThinking: false,
+                    thoughts: [...currentThinkingStateRef.current.thoughts, `❌ ${errorMsg}`]
+                  };
+                  setThinkingStateForMessage(messageId, errorThinkingState);
+                }
+                
                 return { 
                   ...prev, 
                   error: errorMsg,
@@ -452,10 +473,6 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
                 };
               }
             });
-            
-            if (messageId) {
-              clearThinkingStateForMessage(messageId);
-            }
             
             cleanup();
           }

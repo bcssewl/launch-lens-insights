@@ -5,7 +5,7 @@
  * Handles split tags, nested tags, and sanitizes thought lines.
  */
 
-export type ThinkingPhase = 'idle' | 'thinking' | 'generating' | 'done';
+export type ThinkingPhase = 'idle' | 'thinking' | 'generating' | 'done' | 'error';
 
 export interface ThinkingState {
   phase: ThinkingPhase;
