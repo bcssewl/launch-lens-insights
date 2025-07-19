@@ -1,6 +1,4 @@
-
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { detectAlgeonResearchType, type AlgeonResearchType } from '@/utils/algeonResearchTypes';
 import { useOptimizedStreaming } from './useOptimizedStreaming';
 
 // Configuration constants
@@ -108,10 +106,12 @@ export const useAlegeonStreaming = () => {
     requestCompletedRef.current = false; // Reset completion flag
   }, [cleanup, reset]);
 
-  const startStreamingRequest = useCallback(async (query: string, researchType?: AlgeonResearchType): Promise<{ text: string; citations: Array<{ name: string; url: string; type?: string }> }> => {
-    const detectedType = researchType || detectAlgeonResearchType(query);
+  const startStreamingRequest = useCallback(async (query: string, researchType?: string): Promise<{ text: string; citations: Array<{ name: string; url: string; type?: string }> }> => {
+    // Use manually selected research type or default to 'quick_facts'
+    const selectedType = researchType || 'quick_facts';
     
     console.log('🚀 Starting Algeon streaming request for:', query.substring(0, 50));
+    console.log('🔬 Research Type Selected:', selectedType);
     
     resetState();
     startStreaming();
@@ -149,13 +149,14 @@ export const useAlegeonStreaming = () => {
           
           const payload = {
             query: query,
-            research_type: detectedType,
+            research_type: selectedType,
             scope: "global",
             depth: "executive_summary", 
             urgency: "medium",
             stream: true
           };
           
+          console.log('📤 Sending WebSocket payload:', payload);
           wsRef.current.send(JSON.stringify(payload));
         };
 
