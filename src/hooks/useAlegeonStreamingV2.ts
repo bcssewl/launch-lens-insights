@@ -2,6 +2,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useReasoning } from '@/contexts/ReasoningContext';
 import { useAlegeonTypewriter } from './useAlegeonTypewriter';
+import type { ThinkingState } from '@/utils/thinkingParser';
 
 // Configuration constants
 const STREAMING_TIMEOUT_MS = 720000; // 12 minutes
@@ -84,7 +85,7 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
     typewriterProgress: 0,
   });
 
-  const { setThinkingState } = useReasoning();
+  const { setThinkingState, thinkingState } = useReasoning();
 
   // Typewriter effect for smooth display
   const { displayedText: typewriterText, isTyping, progress: typewriterProgress, fastForward } = useAlegeonTypewriter(
@@ -236,29 +237,32 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
                   setThinkingState({
                     phase: 'thinking',
                     thoughts: [],
-                    isThinking: true
+                    isThinking: true,
+                    finalContent: ''
                   });
                   break;
 
                 case 'thinking_chunk':
                   console.log('💭 Thinking chunk:', data.content?.substring(0, 50));
                   if (data.content) {
-                    setThinkingState(prevThinking => ({
+                    setThinkingState({
                       phase: 'thinking',
-                      thoughts: [...(prevThinking?.thoughts || []), data.content!],
-                      isThinking: true
-                    }));
+                      thoughts: [...(thinkingState?.thoughts || []), data.content!],
+                      isThinking: true,
+                      finalContent: thinkingState?.finalContent || ''
+                    });
                   }
                   break;
 
                 case 'thinking_complete':
                   console.log('✅ Thinking phase complete');
                   newState.currentPhase = 'generating';
-                  setThinkingState(prevThinking => ({
-                    ...prevThinking,
+                  setThinkingState({
                     phase: 'done',
-                    isThinking: false
-                  }));
+                    thoughts: thinkingState?.thoughts || [],
+                    isThinking: false,
+                    finalContent: thinkingState?.finalContent || ''
+                  });
                   break;
 
                 case 'content_chunk':
