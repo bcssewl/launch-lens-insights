@@ -8,10 +8,6 @@ export default {
     "./app/**/*.{ts,tsx}",
     "./src/**/*.{ts,tsx}",
   ],
-  safelist: [
-    // Preserve opt- prefixed classes from tree-shaking
-    { pattern: /^opt-/ },
-  ],
   prefix: "",
   theme: {
     container: {

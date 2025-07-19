@@ -35,8 +35,6 @@ const ResearchTypeSelector: React.FC<ResearchTypeSelectorProps> = ({
   const buttonSize = isCompact ? 'h-8 w-8' : 'h-10 w-10';
   const iconSize = isCompact ? 'h-3 w-3' : 'h-4 w-4';
 
-  console.log('🔬 ResearchTypeSelector: Current selected type:', selectedType, 'Option found:', selectedOption);
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -54,10 +52,7 @@ const ResearchTypeSelector: React.FC<ResearchTypeSelectorProps> = ({
         {RESEARCH_TYPES.map((type) => (
           <DropdownMenuItem
             key={type.value}
-            onClick={() => {
-              console.log('🔬 ResearchTypeSelector: Type selected:', type.value);
-              onTypeChange(type.value);
-            }}
+            onClick={() => onTypeChange(type.value)}
             className={`p-3 cursor-pointer hover:bg-muted ${
               selectedType === type.value ? 'bg-muted' : ''
             }`}

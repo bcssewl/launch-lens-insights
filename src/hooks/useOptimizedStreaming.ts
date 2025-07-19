@@ -1,7 +1,5 @@
 
-
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { ThinkingParser, ThinkingPhase } from '@/utils/thinkingParser';
 
 interface OptimizedStreamingState {
   isStreaming: boolean;
@@ -17,9 +15,6 @@ interface OptimizedStreamingState {
   progress: number;
   currentPhaseMessage: string;
   phaseStartTime: number;
-  // Enhanced thinking support
-  thinkingPhase: ThinkingPhase;
-  isThinkingActive: boolean;
 }
 
 export const useOptimizedStreaming = () => {
@@ -33,13 +28,6 @@ export const useOptimizedStreaming = () => {
     progress: 0,
     currentPhaseMessage: 'Thinking...',
     phaseStartTime: Date.now(),
-    thinkingPhase: {
-      phase: 'idle',
-      progress: 0,
-      thoughts: [],
-      totalThoughts: 0
-    },
-    isThinkingActive: false,
   });
 
   const bufferRef = useRef<string>('');
@@ -50,7 +38,6 @@ export const useOptimizedStreaming = () => {
   const batchSizeRef = useRef<number>(1); // Characters per batch for smooth typing
   const isCompletedRef = useRef<boolean>(false); // Track completion to prevent duplicates
   const phaseIntervalRef = useRef<number | null>(null);
-  const thinkingParserRef = useRef<ThinkingParser>(new ThinkingParser());
 
   // Optimized typewriter animation using RAF with precise character-per-frame calculation
   const typewriterAnimation = useCallback(() => {
@@ -100,37 +87,21 @@ export const useOptimizedStreaming = () => {
     }
   }, [typewriterAnimation]);
 
-  // Process incoming chunks efficiently with thinking detection
+  // Process incoming chunks efficiently
   const processChunk = useCallback((chunk: string) => {
-    console.log('📝 useOptimizedStreaming: Received chunk:', chunk.length, 'chars');
+    // Add chunk to buffer
+    bufferRef.current += chunk;
     
-    // Process thinking content first and extract clean content
-    const thinkingPhase = thinkingParserRef.current.processChunk(chunk);
+    console.log(`📝 Received chunk (${chunk.length} chars), buffer now: ${bufferRef.current.length} chars`);
     
-    // Get clean content from the thinking parser (content without <think> tags)
-    const cleanChunk = thinkingParserRef.current.consumeCleanContent();
-    
-    console.log('📝 useOptimizedStreaming: Clean chunk length:', cleanChunk.length);
-    console.log('📝 useOptimizedStreaming: Thinking phase:', thinkingPhase.phase, 'thoughts:', thinkingPhase.totalThoughts);
-    
-    // Add clean chunk to buffer only if it has content
-    if (cleanChunk) {
-      bufferRef.current += cleanChunk;
-      console.log('📝 useOptimizedStreaming: Buffer now:', bufferRef.current.length, 'chars');
-    }
-    
-    // Update buffered text state with thinking info
+    // Update buffered text state
     setStreamingState(prev => ({
       ...prev,
-      bufferedText: bufferRef.current,
-      thinkingPhase,
-      isThinkingActive: thinkingPhase.phase !== 'idle'
+      bufferedText: bufferRef.current
     }));
 
-    // Start typewriter animation if not already running and we have content to show
-    if (cleanChunk) {
-      startTypewriter();
-    }
+    // Start typewriter animation if not already running
+    startTypewriter();
   }, [startTypewriter]);
 
   // Process citations (batched, not per character)
@@ -162,15 +133,6 @@ export const useOptimizedStreaming = () => {
     console.log('✅ Completing streaming - final text length:', bufferRef.current.length);
     isCompletedRef.current = true;
     
-    // Force complete thinking parser to get any remaining clean content
-    const finalThinkingPhase = thinkingParserRef.current.forceComplete();
-    const remainingCleanContent = thinkingParserRef.current.consumeCleanContent();
-    
-    if (remainingCleanContent) {
-      bufferRef.current += remainingCleanContent;
-      console.log('✅ Added remaining clean content:', remainingCleanContent.length, 'chars');
-    }
-    
     // Ensure all buffered text is displayed immediately
     displayedRef.current = bufferRef.current;
     
@@ -180,9 +142,7 @@ export const useOptimizedStreaming = () => {
       isComplete: true,
       displayedText: bufferRef.current,
       progress: 100,
-      currentPhaseMessage: 'Complete',
-      thinkingPhase: finalThinkingPhase,
-      isThinkingActive: false
+      currentPhaseMessage: 'Complete'
     }));
 
     // Clean up animation and phase timer
@@ -207,9 +167,6 @@ export const useOptimizedStreaming = () => {
     isAnimatingRef.current = false;
     isCompletedRef.current = false; // Reset completion flag
     
-    // Reset thinking parser
-    thinkingParserRef.current.reset();
-    
     if (animationRef.current) {
       cancelAnimationFrame(animationRef.current);
       animationRef.current = null;
@@ -232,13 +189,6 @@ export const useOptimizedStreaming = () => {
       progress: 0,
       currentPhaseMessage: 'Thinking...',
       phaseStartTime: startTime,
-      thinkingPhase: {
-        phase: 'idle',
-        progress: 0,
-        thoughts: [],
-        totalThoughts: 0
-      },
-      isThinkingActive: false,
     });
 
     // Set up phase message timer (every 3 minutes)
@@ -293,9 +243,6 @@ export const useOptimizedStreaming = () => {
     isAnimatingRef.current = false;
     isCompletedRef.current = false;
     
-    // Reset thinking parser
-    thinkingParserRef.current.reset();
-    
     // Cancel any ongoing animation and phase timer
     if (animationRef.current) {
       cancelAnimationFrame(animationRef.current);
@@ -317,13 +264,6 @@ export const useOptimizedStreaming = () => {
       progress: 0,
       currentPhaseMessage: 'Thinking...',
       phaseStartTime: Date.now(),
-      thinkingPhase: {
-        phase: 'idle',
-        progress: 0,
-        thoughts: [],
-        totalThoughts: 0
-      },
-      isThinkingActive: false,
     });
   }, []);
 
@@ -350,4 +290,3 @@ export const useOptimizedStreaming = () => {
     updatePhaseMessage
   };
 };
-

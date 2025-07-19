@@ -48,7 +48,7 @@ const ChatSubheader: React.FC<ChatSubheaderProps> = ({
         />
         {selectedModel === 'algeon' && onResearchTypeChange && (
           <ResearchTypeSelector
-            selectedType={selectedResearchType || 'quick_facts'}
+            selectedType={selectedResearchType || 'business-research'}
             onTypeChange={onResearchTypeChange}
             isCompact={true}
           />
