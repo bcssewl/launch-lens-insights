@@ -74,39 +74,33 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
   const isAi = message.sender === 'ai';
   const isReport = isAi && isReportMessage(message.text, message.metadata);
   
-  // Check if this is a streaming message
-  const isStreamingMessage = message.isStreaming || (message.metadata?.messageType === 'progress_update' && !message.metadata?.isCompleted);
+  // Simplified streaming message detection
+  const isStreamingMessage = Boolean(message.isStreaming || (message.metadata?.messageType === 'progress_update' && !message.metadata?.isCompleted));
   
-  // For Algeon streaming, show the overlay if this is the streaming message
-  const showAlegeonStreaming = isAi && alegeonStreamingState && (
-    (alegeonStreamingState.isStreaming && isStreamingMessage) ||
-    (alegeonStreamingState.isComplete && message.metadata?.messageType === 'completed_report')
-  );
+  // Simplified Algeon streaming check with memoized conditions
+  const showAlegeonStreaming = React.useMemo(() => {
+    if (!isAi || !alegeonStreamingState) return false;
+    return (alegeonStreamingState.isStreaming && isStreamingMessage) ||
+           (alegeonStreamingState.isComplete && message.metadata?.messageType === 'completed_report');
+  }, [isAi, alegeonStreamingState?.isStreaming, alegeonStreamingState?.isComplete, isStreamingMessage, message.metadata?.messageType]);
 
-  // Enhanced citation handling: Get citations from multiple sources with priority
-  const messageCitations = message.finalCitations || 
-    (alegeonStreamingState?.isComplete && alegeonStreamingState?.citations) || 
-    [];
+  // Memoized citation handling
+  const messageCitations = React.useMemo(() => {
+    return message.finalCitations || 
+           (alegeonStreamingState?.isComplete ? alegeonStreamingState.citations : []) || 
+           [];
+  }, [message.finalCitations, alegeonStreamingState?.isComplete, alegeonStreamingState?.citations]);
 
-  console.log('💬 ChatMessage: Rendering message with citations:', {
-    messageId: message.id,
-    sender: message.sender,
-    hasMessageCitations: !!message.finalCitations,
-    hasAlegeonCitations: !!(alegeonStreamingState?.citations),
-    finalCitationsCount: messageCitations.length,
-    citationsPreview: messageCitations.slice(0, 2)
-  });
-
-  // Don't render AI messages with empty content unless streaming
+  // Early return for empty AI messages (prevent unnecessary renders)
   if (isAi && (!message.text || message.text.trim() === '') && !showAlegeonStreaming && !stratixStreamingState?.isStreaming) {
     return null;
   }
 
-  const handleCanvasExpand = () => {
+  const handleCanvasExpand = React.useCallback(() => {
     if (onOpenCanvas) {
       onOpenCanvas(message.id, message.text);
     }
-  };
+  }, [onOpenCanvas, message.id, message.text]);
 
   return (
     <div
@@ -185,7 +179,7 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
                     <MarkdownRenderer content={message.text} />
                   )}
                   
-                  {/* Enhanced citation display: Only show citations for completed messages */}
+                  {/* Display citations only for completed non-streaming messages */}
                   {!isStreamingMessage && !showAlegeonStreaming && messageCitations.length > 0 && (
                     <SimpleCitations citations={messageCitations} />
                   )}
@@ -209,28 +203,52 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
     </div>
   );
 }, (prevProps, nextProps) => {
-  // Enhanced comparison to prevent unnecessary re-renders
-  if (prevProps.message.id !== nextProps.message.id) {
+  // Optimized comparison function to prevent unnecessary re-renders
+  const prevMsg = prevProps.message;
+  const nextMsg = nextProps.message;
+  
+  // Always re-render if message ID changes
+  if (prevMsg.id !== nextMsg.id) {
     return false;
   }
   
-  const prevAlgeonState = prevProps.alegeonStreamingState;
-  const nextAlgeonState = nextProps.alegeonStreamingState;
-  
-  // If Algeon streaming is active, only update when displayedText changes
-  if (nextAlgeonState?.isStreaming) {
-    if (!prevAlgeonState?.isStreaming) return false;
-    if (prevAlgeonState.displayedText !== nextAlgeonState.displayedText) return false;
-    return true;
+  // Always re-render if text content changes
+  if (prevMsg.text !== nextMsg.text) {
+    return false;
   }
   
-  // For non-streaming messages, check basic properties including citations
-  return (
-    prevProps.message.text === nextProps.message.text &&
-    prevProps.isStreaming === nextProps.isStreaming &&
-    (prevAlgeonState?.isComplete === nextAlgeonState?.isComplete) &&
-    JSON.stringify(prevProps.message.finalCitations) === JSON.stringify(nextProps.message.finalCitations)
-  );
+  // Handle Algeon streaming state changes
+  const prevAlgeon = prevProps.alegeonStreamingState;
+  const nextAlgeon = nextProps.alegeonStreamingState;
+  
+  // If streaming states differ significantly, re-render
+  if (prevAlgeon?.isStreaming !== nextAlgeon?.isStreaming) {
+    return false;
+  }
+  
+  if (prevAlgeon?.isComplete !== nextAlgeon?.isComplete) {
+    return false;
+  }
+  
+  // Only check displayedText if actively streaming
+  if (nextAlgeon?.isStreaming && prevAlgeon?.displayedText !== nextAlgeon?.displayedText) {
+    return false;
+  }
+  
+  // Check citations changes
+  const prevCitations = JSON.stringify(prevMsg.finalCitations || []);
+  const nextCitations = JSON.stringify(nextMsg.finalCitations || []);
+  if (prevCitations !== nextCitations) {
+    return false;
+  }
+  
+  // Check other streaming states
+  if (prevProps.stratixStreamingState?.isStreaming !== nextProps.stratixStreamingState?.isStreaming) {
+    return false;
+  }
+  
+  // If all checks pass, prevent re-render
+  return true;
 });
 
 ChatMessage.displayName = 'ChatMessage';
