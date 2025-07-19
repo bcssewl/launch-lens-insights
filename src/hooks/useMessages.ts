@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect, useCallback, useReducer } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Message, initialMessages, formatTimestamp } from '@/constants/aiAssistant';
@@ -141,7 +142,8 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
   // Consistent streaming message ID
   const STREAMING_MESSAGE_ID = 'algeon-streaming-message';
   const isAddingMessageRef = useRef(false);
-  const processedCompletionsRef = useRef<Set<string>>(new Set()); // Track processed completions
+  const alegeonCompletionProcessedRef = useRef<boolean>(false); // Track if completion was processed
+  const currentStreamingSessionRef = useRef<string | null>(null); // Track current streaming session
 
   // Improved scroll behavior - only auto-scroll when user is near bottom
   const scrollToBottom = useCallback(() => {
@@ -168,17 +170,15 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     scrollToBottom();
   }, [messages.length, isTyping, scrollToBottom]);
 
-  // Enhanced Algeon streaming message management with duplicate prevention
+  // Handle Algeon streaming state changes - separated into two effects
+  // Effect 1: Handle streaming messages (display updates)
   useEffect(() => {
-    const currentBufferedText = alegeonStreamingState.bufferedText;
-    const completionKey = `${currentBufferedText.substring(0, 100)}-${alegeonStreamingState.isComplete}`;
-    
-    if (alegeonStreamingState.isStreaming && alegeonStreamingState.hasContent) {
-      console.log('📝 Managing Algeon streaming message - isStreaming:', alegeonStreamingState.isStreaming);
+    if (alegeonStreamingState.isStreaming && alegeonStreamingState.hasContent && alegeonStreamingState.bufferedText) {
+      console.log('📝 Managing Algeon streaming message display');
       
       const streamingMessage: ExtendedMessage = {
         id: STREAMING_MESSAGE_ID,
-        text: currentBufferedText || 'Initializing Algeon research...',
+        text: alegeonStreamingState.bufferedText,
         sender: 'ai',
         timestamp: new Date(),
         isStreaming: true,
@@ -190,17 +190,27 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
       };
       
       dispatch({ type: 'ADD_STREAMING_MESSAGE', payload: streamingMessage });
-      
-    } else if (alegeonStreamingState.isComplete && currentBufferedText && !processedCompletionsRef.current.has(completionKey)) {
-      console.log('✅ Algeon streaming completed, replacing with final message');
-      
-      // Mark this completion as processed
-      processedCompletionsRef.current.add(completionKey);
+    }
+  }, [
+    alegeonStreamingState.isStreaming, 
+    alegeonStreamingState.hasContent,
+    alegeonStreamingState.bufferedText,
+    alegeonStreamingState.citations
+  ]);
+
+  // Effect 2: Handle completion (final message creation) - ONCE per session
+  useEffect(() => {
+    if (alegeonStreamingState.isComplete && 
+        alegeonStreamingState.bufferedText && 
+        !alegeonCompletionProcessedRef.current) {
+        
+      console.log('✅ Processing Algeon completion - ONE TIME ONLY');
+      alegeonCompletionProcessedRef.current = true; // Mark as processed immediately
       
       // Create final message with citations preserved
       const finalMessage: ExtendedMessage = {
         id: uuidv4(),
-        text: currentBufferedText,
+        text: alegeonStreamingState.bufferedText,
         sender: 'ai',
         timestamp: new Date(),
         metadata: {
@@ -215,54 +225,52 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
         payload: { finalMessage, streamingId: STREAMING_MESSAGE_ID }
       });
       
-      // Save final message to history with citations metadata
-      if (currentSessionId && currentBufferedText) {
-        const messageWithCitations = `AI: ${currentBufferedText}${
+      // Save final message to history with citations metadata - ONCE
+      if (currentSessionId && alegeonStreamingState.bufferedText) {
+        const messageWithCitations = `AI: ${alegeonStreamingState.bufferedText}${
           alegeonStreamingState.finalCitations.length > 0 
             ? `\n\nCitations: ${JSON.stringify(alegeonStreamingState.finalCitations)}`
             : ''
         }`;
+        
+        console.log('💾 Saving Algeon completion to history - ONE TIME');
         addMessage(messageWithCitations);
 
-        // Check if we should generate an auto-title after first exchange
-        // At this point, history includes the new AI message we just added, so we check for exactly 2 messages
-        console.log('🏷️ Checking auto-title conditions:', {
-          messageCount: history.length + 1,
-          sessionTitle,
-          shouldGenerate: shouldGenerateTitle(history.length + 1, sessionTitle),
-          historyLength: history.length,
-          updateSessionTitleExists: !!updateSessionTitle
-        });
-        
+        // Auto-title generation - only once per completion
         if (updateSessionTitle && sessionTitle && shouldGenerateTitle(history.length + 1, sessionTitle)) {
-          // Find the user's first message for title generation
           const userMessages = history.filter(h => h.message.startsWith('USER:'));
-          console.log('🏷️ Found user messages for title generation:', userMessages.length);
           if (userMessages.length > 0) {
             const firstUserMessage = userMessages[0].message.substring(5).trim();
-            console.log('🏷️ Triggering auto-title generation for session:', currentSessionId, 'with', history.length + 1, 'messages');
-            generateAndSetTitle(currentSessionId, firstUserMessage, currentBufferedText, updateSessionTitle);
-          } else {
-            console.log('🏷️ No user messages found in history for title generation');
+            console.log('🏷️ Triggering auto-title generation - ONE TIME');
+            generateAndSetTitle(currentSessionId, firstUserMessage, alegeonStreamingState.bufferedText, updateSessionTitle);
           }
         }
       }
-      
-      // Clean up processed completions after a delay to prevent memory leaks
-      setTimeout(() => {
-        processedCompletionsRef.current.delete(completionKey);
-      }, 5000);
     }
   }, [
-    alegeonStreamingState.isStreaming, 
-    alegeonStreamingState.bufferedText, 
     alegeonStreamingState.isComplete,
-    alegeonStreamingState.hasContent,
-    alegeonStreamingState.citations,
+    alegeonStreamingState.bufferedText,
     alegeonStreamingState.finalCitations,
     currentSessionId,
-    addMessage
+    addMessage,
+    updateSessionTitle,
+    sessionTitle,
+    shouldGenerateTitle,
+    generateAndSetTitle,
+    history
   ]);
+
+  // Reset completion flag when new streaming starts
+  useEffect(() => {
+    if (alegeonStreamingState.isStreaming && !alegeonCompletionProcessedRef.current) {
+      const newSessionId = `${Date.now()}-${Math.random()}`;
+      if (currentStreamingSessionRef.current !== newSessionId) {
+        console.log('🔄 New Algeon streaming session started - resetting completion flag');
+        currentStreamingSessionRef.current = newSessionId;
+        alegeonCompletionProcessedRef.current = false;
+      }
+    }
+  }, [alegeonStreamingState.isStreaming]);
 
   // Load messages from history when session changes
   useEffect(() => {
@@ -434,6 +442,9 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     try {
       console.log('🔬 Starting Algeon streaming for message:', message.substring(0, 100));
       
+      // Reset completion flag for new request
+      alegeonCompletionProcessedRef.current = false;
+      
       // Use the enhanced Algeon streaming implementation
       const result = await startAlegeonStreaming(message, researchType as any);
       
@@ -446,6 +457,7 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     } catch (error) {
       console.error('❌ Algeon streaming failed:', error);
       dispatch({ type: 'REMOVE_STREAMING_MESSAGE', payload: STREAMING_MESSAGE_ID });
+      alegeonCompletionProcessedRef.current = false; // Reset on error
       return 'I apologize, but I encountered an issue with the Algeon research system. Please try again or select a different model.';
     }
   }, [startAlegeonStreaming]);
@@ -674,8 +686,8 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     // Remove any existing streaming messages
     dispatch({ type: 'REMOVE_STREAMING_MESSAGE', payload: STREAMING_MESSAGE_ID });
     
-    // Clear processed completions for new request
-    processedCompletionsRef.current.clear();
+    // Reset completion flag for new request
+    alegeonCompletionProcessedRef.current = false;
     
     try {
       let aiResponseText: string;
@@ -759,6 +771,7 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
       
       dispatch({ type: 'ADD_MESSAGE', payload: errorResponse });
       isAddingMessageRef.current = false;
+      alegeonCompletionProcessedRef.current = false; // Reset on error
     } finally {
       setIsTyping(false);
     }
@@ -769,8 +782,8 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     dispatch({ type: 'SET_MESSAGES', payload: initialMessages as ExtendedMessage[] });
     stopStreaming();
     stopAlegeonStreaming();
-    // Clear processed completions on conversation clear
-    processedCompletionsRef.current.clear();
+    // Reset completion flag on conversation clear
+    alegeonCompletionProcessedRef.current = false;
   }, [stopStreaming, stopAlegeonStreaming]);
 
   const handleDownloadChat = useCallback(() => {
