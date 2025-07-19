@@ -62,6 +62,7 @@ interface ChatMessageProps {
   alegeonStreamingState?: AlegeonStreamingState;
   onToggleCanvasPreview?: (messageId: string) => void;
   isCanvasPreview?: boolean;
+  onAlegeonFastForward?: () => void;
 }
 
 const ChatMessage: React.FC<ChatMessageProps> = React.memo(({ 
@@ -76,7 +77,8 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
   stratixStreamingState,
   alegeonStreamingState,
   onToggleCanvasPreview,
-  isCanvasPreview = false
+  isCanvasPreview = false,
+  onAlegeonFastForward
 }) => {
   const [isSourcesSidebarOpen, setIsSourcesSidebarOpen] = useState(false);
   const { thinkingState } = useReasoning();
@@ -157,6 +159,7 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
               <OptimizedStreamingOverlay
                 streamingState={alegeonStreamingState!}
                 className="absolute inset-0 z-20 rounded-2xl"
+                onFastForward={onAlegeonFastForward}
               />
             )}
 
