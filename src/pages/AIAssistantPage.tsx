@@ -16,12 +16,13 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useTheme } from 'next-themes';
 import { Loader2 } from 'lucide-react';
 import type { AIModel } from '@/components/assistant/ModelSelectionDropdown';
+import type { AlgeonResearchType } from '@/utils/algeonResearchTypes';
 
 const AIAssistantPage: React.FC = () => {
   const isMobile = useIsMobile();
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [selectedModel, setSelectedModel] = useState<string>('best');
-  const [selectedResearchType, setSelectedResearchType] = useState<string>('business-research');
+  const [selectedResearchType, setSelectedResearchType] = useState<string>('quick_facts');
   const { theme } = useTheme();
 
   const {
@@ -70,6 +71,8 @@ const AIAssistantPage: React.FC = () => {
     console.log('=== AI Assistant Page Debug ===');
     console.log('Current route:', window.location.pathname);
     console.log('Current session ID:', currentSessionId);
+    console.log('Selected model:', selectedModel);
+    console.log('Selected research type:', selectedResearchType);
     console.log('Theme mode:', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
     console.log('Theme from hook:', theme);
 
@@ -82,7 +85,7 @@ const AIAssistantPage: React.FC = () => {
       accent: rootStyles.getPropertyValue('--accent')
     });
     console.log('=== End Debug ===');
-  }, [theme, currentSessionId]);
+  }, [theme, currentSessionId, selectedModel, selectedResearchType]);
 
   // Handle keyboard shortcuts
   useEffect(() => {
@@ -101,7 +104,10 @@ const AIAssistantPage: React.FC = () => {
   const handleSendMessageWithSession = async (text: string, attachments?: any[], modelOverride?: string, researchType?: string) => {
     // Use the modelOverride if provided, otherwise use the current selectedModel
     const modelToUse = modelOverride || selectedModel;
-    console.log('AIAssistantPage: Sending message with session:', currentSessionId, 'model:', modelToUse, 'research type:', researchType);
+    // Use the researchType if provided, otherwise use the current selectedResearchType
+    const researchTypeToUse = researchType || selectedResearchType;
+    
+    console.log('AIAssistantPage: Sending message with session:', currentSessionId, 'model:', modelToUse, 'research type:', researchTypeToUse);
 
     // Create session if none exists
     if (!currentSessionId) {
@@ -117,10 +123,10 @@ const AIAssistantPage: React.FC = () => {
       await new Promise(resolve => setTimeout(resolve, 200));
       
       // Now send the message with the new session ID passed directly
-      console.log('AIAssistantPage: Sending message with new session ID:', newSession.id);
-      handleSendMessage(text, undefined, modelToUse, researchType, newSession.id);
+      console.log('AIAssistantPage: Sending message with new session ID:', newSession.id, 'research type:', researchTypeToUse);
+      handleSendMessage(text, undefined, modelToUse, researchTypeToUse, newSession.id);
     } else {
-      handleSendMessage(text, undefined, modelToUse, researchType);
+      handleSendMessage(text, undefined, modelToUse, researchTypeToUse);
     }
   };
 
@@ -158,7 +164,8 @@ const AIAssistantPage: React.FC = () => {
     setSelectedModel(modelId);
     // Reset research type to default when switching models
     if (modelId === 'algeon') {
-      setSelectedResearchType('business-research');
+      setSelectedResearchType('quick_facts');
+      console.log('AIAssistantPage: Reset research type to quick_facts for Algeon model');
     }
   };
 

@@ -1,9 +1,23 @@
+
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useOptimizedStreaming } from './useOptimizedStreaming';
+import type { AlgeonResearchType } from '@/utils/algeonResearchTypes';
 
 // Configuration constants - Updated to 12 minutes
 const STREAMING_TIMEOUT_MS = 720000; // 12 minutes
 const HEARTBEAT_INTERVAL = 30000; // 30 seconds
+
+// Valid research types for validation
+const VALID_RESEARCH_TYPES: AlgeonResearchType[] = [
+  'quick_facts',
+  'market_sizing', 
+  'competitive_analysis',
+  'regulatory_scan',
+  'trend_analysis',
+  'legal_analysis',
+  'deep_analysis',
+  'industry_reports'
+];
 
 interface AlegeonStreamingEvent {
   type: string;
@@ -49,6 +63,22 @@ export interface AlegeonStreamingState {
   thinkingPhase: import('@/utils/thinkingParser').ThinkingPhase;
   isThinkingActive: boolean;
 }
+
+// Utility function to validate and normalize research type
+const validateResearchType = (type?: string): AlgeonResearchType => {
+  if (!type) {
+    console.log('🔬 No research type provided, defaulting to quick_facts');
+    return 'quick_facts';
+  }
+  
+  if (VALID_RESEARCH_TYPES.includes(type as AlgeonResearchType)) {
+    console.log('🔬 Valid research type provided:', type);
+    return type as AlgeonResearchType;
+  }
+  
+  console.warn('🔬 Invalid research type provided:', type, 'defaulting to quick_facts');
+  return 'quick_facts';
+};
 
 export const useAlegeonStreaming = () => {
   const {
@@ -115,11 +145,12 @@ export const useAlegeonStreaming = () => {
   }, [cleanup, reset]);
 
   const startStreamingRequest = useCallback(async (query: string, researchType?: string): Promise<{ text: string; citations: Array<{ name: string; url: string; type?: string }> }> => {
-    // Use manually selected research type or default to 'quick_facts'
-    const selectedType = researchType || 'quick_facts';
+    // Validate and normalize research type
+    const validatedType = validateResearchType(researchType);
     
     console.log('🚀 Starting Algeon streaming request for:', query.substring(0, 50));
-    console.log('🔬 Research Type Selected:', selectedType);
+    console.log('🔬 Research Type Provided:', researchType);
+    console.log('🔬 Research Type Validated:', validatedType);
     console.log('⏱️ Session timeout set to 12 minutes');
     
     resetState();
@@ -158,7 +189,7 @@ export const useAlegeonStreaming = () => {
           
           const payload = {
             query: query,
-            research_type: selectedType,
+            research_type: validatedType,
             scope: "global",
             depth: "executive_summary", 
             urgency: "medium",
