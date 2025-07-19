@@ -7,6 +7,8 @@ import PerplexityEmptyState from '@/components/assistant/PerplexityEmptyState';
 import EnhancedChatInput from '@/components/assistant/EnhancedChatInput';
 import StreamingProgress from '@/components/assistant/StreamingProgress';
 import StreamingError from '@/components/assistant/StreamingError';
+import ThinkingPanel from '@/components/assistant/ThinkingPanel';
+import { ReasoningProvider } from '@/contexts/ReasoningContext';
 import { Message } from '@/constants/aiAssistant';
 import type { StratixStreamingState } from '@/types/stratixStreaming';
 import type { AlegeonStreamingState } from '@/hooks/useAlegeonStreaming';
@@ -88,10 +90,18 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   }
 
   return (
-    <div className="h-full flex flex-col relative bg-background/10 backdrop-blur-sm">
-      <div className="flex-1 overflow-hidden">
-        <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
-          <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
+    <ReasoningProvider>
+      <div className="h-full flex flex-col relative bg-background/10 backdrop-blur-sm">
+        <div className="flex-1 overflow-hidden">
+          <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
+            <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
+              {/* Thinking Panel */}
+              {alegeonStreamingState?.isThinkingActive && (
+                <ThinkingPanel
+                  phase={alegeonStreamingState.thinkingPhase}
+                  isVisible={alegeonStreamingState.isThinkingActive}
+                />
+              )}
             {/* Show streaming error if present */}
             {streamingState?.error && (
               <StreamingError
@@ -161,9 +171,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             isCompact={true}
             selectedModel={selectedModel}
           />
+          </div>
         </div>
       </div>
-    </div>
+    </ReasoningProvider>
   );
 };
 

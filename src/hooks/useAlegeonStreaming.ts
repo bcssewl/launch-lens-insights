@@ -45,6 +45,9 @@ export interface AlegeonStreamingState {
   hasContent: boolean;
   currentPhaseMessage: string;
   phaseStartTime: number;
+  // Enhanced thinking support
+  thinkingPhase: import('@/utils/thinkingParser').ThinkingPhase;
+  isThinkingActive: boolean;
 }
 
 export const useAlegeonStreaming = () => {
@@ -73,6 +76,9 @@ export const useAlegeonStreaming = () => {
     ...streamingState,
     finalCitations: streamingState.citations,
     hasContent: streamingState.displayedText.length > 0 || streamingState.bufferedText.length > 0,
+    // Enhanced thinking support
+    thinkingPhase: streamingState.thinkingPhase,
+    isThinkingActive: streamingState.isThinkingActive,
     // Keep the raw buffered text available
     rawText: streamingState.bufferedText,
     currentText: streamingState.displayedText
