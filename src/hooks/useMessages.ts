@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 // Configuration constants
 const WEBSOCKET_TIMEOUT_MS = 300000; // 5 minutes for complex processing
+const STREAMING_MESSAGE_ID = 'algeon-streaming-message'; // Consistent streaming message ID
 
 // Extended Message interface for internal use
 interface ExtendedMessage extends Message {
@@ -136,10 +137,8 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     streamingState: alegeonStreamingState, 
     startStreaming: startAlegeonStreaming, 
     stopStreaming: stopAlegeonStreaming 
-  } = useAlegeonStreaming();
+  } = useAlegeonStreaming(STREAMING_MESSAGE_ID);
 
-  // Consistent streaming message ID
-  const STREAMING_MESSAGE_ID = 'algeon-streaming-message';
   const isAddingMessageRef = useRef(false);
   const processedCompletionsRef = useRef<Set<string>>(new Set()); // Track processed completions
 
@@ -168,17 +167,12 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     scrollToBottom();
   }, [messages.length, isTyping, scrollToBottom]);
 
-  // Enhanced Algeon streaming message management with duplicate prevention
+  // Simplified Algeon streaming message management
   useEffect(() => {
-    const currentBufferedText = alegeonStreamingState.bufferedText;
-    const completionKey = `${currentBufferedText.substring(0, 100)}-${alegeonStreamingState.isComplete}`;
-    
-    if (alegeonStreamingState.isStreaming && alegeonStreamingState.hasContent) {
-      console.log('📝 Managing Algeon streaming message - isStreaming:', alegeonStreamingState.isStreaming);
-      
+    if (alegeonStreamingState.isStreaming) {
       const streamingMessage: ExtendedMessage = {
         id: STREAMING_MESSAGE_ID,
-        text: currentBufferedText || 'Initializing Algeon research...',
+        text: alegeonStreamingState.finalText || 'Initializing Algeon research...',
         sender: 'ai',
         timestamp: new Date(),
         isStreaming: true,
@@ -188,81 +182,14 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
         },
         alegeonCitations: alegeonStreamingState.citations
       };
-      
       dispatch({ type: 'ADD_STREAMING_MESSAGE', payload: streamingMessage });
-      
-    } else if (alegeonStreamingState.isComplete && currentBufferedText && !processedCompletionsRef.current.has(completionKey)) {
-      console.log('✅ Algeon streaming completed, replacing with final message');
-      
-      // Mark this completion as processed
-      processedCompletionsRef.current.add(completionKey);
-      
-      // Create final message with citations preserved
-      const finalMessage: ExtendedMessage = {
-        id: uuidv4(),
-        text: currentBufferedText,
-        sender: 'ai',
-        timestamp: new Date(),
-        metadata: {
-          messageType: 'completed_report',
-          isCompleted: true
-        },
-        alegeonCitations: alegeonStreamingState.finalCitations
-      };
-      
-      dispatch({ 
-        type: 'REPLACE_STREAMING_WITH_FINAL', 
-        payload: { finalMessage, streamingId: STREAMING_MESSAGE_ID }
-      });
-      
-      // Save final message to history with citations metadata
-      if (currentSessionId && currentBufferedText) {
-        const messageWithCitations = `AI: ${currentBufferedText}${
-          alegeonStreamingState.finalCitations.length > 0 
-            ? `\n\nCitations: ${JSON.stringify(alegeonStreamingState.finalCitations)}`
-            : ''
-        }`;
-        addMessage(messageWithCitations);
-
-        // Check if we should generate an auto-title after first exchange
-        // At this point, history includes the new AI message we just added, so we check for exactly 2 messages
-        console.log('🏷️ Checking auto-title conditions:', {
-          messageCount: history.length + 1,
-          sessionTitle,
-          shouldGenerate: shouldGenerateTitle(history.length + 1, sessionTitle),
-          historyLength: history.length,
-          updateSessionTitleExists: !!updateSessionTitle
-        });
-        
-        if (updateSessionTitle && sessionTitle && shouldGenerateTitle(history.length + 1, sessionTitle)) {
-          // Find the user's first message for title generation
-          const userMessages = history.filter(h => h.message.startsWith('USER:'));
-          console.log('🏷️ Found user messages for title generation:', userMessages.length);
-          if (userMessages.length > 0) {
-            const firstUserMessage = userMessages[0].message.substring(5).trim();
-            console.log('🏷️ Triggering auto-title generation for session:', currentSessionId, 'with', history.length + 1, 'messages');
-            generateAndSetTitle(currentSessionId, firstUserMessage, currentBufferedText, updateSessionTitle);
-          } else {
-            console.log('🏷️ No user messages found in history for title generation');
-          }
-        }
-      }
-      
-      // Clean up processed completions after a delay to prevent memory leaks
-      setTimeout(() => {
-        processedCompletionsRef.current.delete(completionKey);
-      }, 5000);
     }
   }, [
-    alegeonStreamingState.isStreaming, 
-    alegeonStreamingState.bufferedText, 
-    alegeonStreamingState.isComplete,
-    alegeonStreamingState.hasContent,
+    alegeonStreamingState.isStreaming,
+    alegeonStreamingState.finalText,
     alegeonStreamingState.citations,
-    alegeonStreamingState.finalCitations,
-    currentSessionId,
-    addMessage
   ]);
+
 
   // Load messages from history when session changes
   useEffect(() => {
@@ -430,26 +357,51 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
   }, []);
 
   // Handle Algeon requests with enhanced citation support
-  const handleAlegeonRequest = useCallback(async (message: string, researchType?: string, sessionId?: string | null): Promise<string> => {
+  const handleAlegeonRequest = useCallback(async (message: string, researchType?: string, sessionId?: string | null): Promise<void> => {
     try {
       console.log('🔬 Starting Algeon streaming for message:', message.substring(0, 100));
       
-      // Use the enhanced Algeon streaming implementation
       const result = await startAlegeonStreaming(message, researchType as any);
       
       console.log('✅ Algeon request completed:', {
         textLength: result.text.length,
         citationsCount: result.citations.length
       });
+
+      const finalMessage: ExtendedMessage = {
+        id: uuidv4(),
+        text: result.text,
+        sender: 'ai',
+        timestamp: new Date(),
+        metadata: {
+          messageType: 'completed_report',
+          isCompleted: true,
+        },
+        alegeonCitations: result.citations,
+      };
+
+      dispatch({ 
+        type: 'REPLACE_STREAMING_WITH_FINAL', 
+        payload: { finalMessage, streamingId: STREAMING_MESSAGE_ID }
+      });
       
-      return result.text;
+      if (currentSessionId) {
+        addMessage(`AI: ${result.text}`);
+      }
       
     } catch (error) {
       console.error('❌ Algeon streaming failed:', error);
       dispatch({ type: 'REMOVE_STREAMING_MESSAGE', payload: STREAMING_MESSAGE_ID });
-      return 'I apologize, but I encountered an issue with the Algeon research system. Please try again or select a different model.';
+      
+      const errorMessage: ExtendedMessage = {
+        id: uuidv4(),
+        text: 'I apologize, but I encountered an issue with the Algeon research system. Please try again or select a different model.',
+        sender: 'ai',
+        timestamp: new Date(),
+      };
+      dispatch({ type: 'ADD_MESSAGE', payload: errorMessage });
     }
-  }, [startAlegeonStreaming]);
+  }, [startAlegeonStreaming, currentSessionId, addMessage]);
 
   const handleInstantRequest = useCallback(async (prompt: string): Promise<string> => {
     try {
@@ -684,8 +636,8 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
       // Route to Algeon if model is 'algeon' OR for research queries with 'best' model
       if (selectedModel === 'algeon' || (selectedModel === 'best' && detectResearchQuery(finalMessageText))) {
         console.log('🔬 Using Algeon model with typewriter animation');
-        aiResponseText = await handleAlegeonRequest(finalMessageText, researchType, currentSessionId);
-        // Note: Final message handling is done in the useEffect above
+        await handleAlegeonRequest(finalMessageText, researchType, currentSessionId);
+        // The handleAlegeonRequest function now manages its own message dispatching.
       }
       // Route to Stratix if model is 'stratix'
       else if (selectedModel === 'stratix') {
