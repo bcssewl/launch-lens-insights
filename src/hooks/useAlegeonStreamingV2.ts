@@ -2,6 +2,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useReasoning } from '@/contexts/ReasoningContext';
 import { useAlegeonTypewriter } from './useAlegeonTypewriter';
+import { detectAlgeonResearchType, type AlgeonResearchType } from '@/utils/algeonResearchTypes';
 import type { ThinkingState } from '@/utils/thinkingParser';
 
 // Configuration constants
@@ -161,9 +162,20 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
     cleanup();
   }, [cleanup, setThinkingState]);
 
-  const startStreaming = useCallback(async (query: string, researchType: string = 'business_research'): Promise<string> => {
+  const startStreaming = useCallback(async (query: string, researchType: string = 'quick_facts'): Promise<string> => {
     console.log('🚀 Starting Algeon V2 streaming request for:', query.substring(0, 50));
-    console.log('🔬 Research Type:', researchType);
+    console.log('🔬 Research Type (input):', researchType);
+    
+    // Validate and normalize research type
+    let validatedResearchType: AlgeonResearchType;
+    try {
+      validatedResearchType = detectAlgeonResearchType(researchType);
+    } catch (error) {
+      console.warn('⚠️ Invalid research type provided, using fallback:', researchType);
+      validatedResearchType = 'quick_facts'; // Safe fallback
+    }
+    
+    console.log('✅ Validated Research Type:', validatedResearchType);
     
     resetState();
     setStreamingState(prev => ({ ...prev, isStreaming: true, currentPhase: 'reasoning' }));
@@ -202,7 +214,7 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
           
           const payload = {
             query,
-            research_type: researchType,
+            research_type: validatedResearchType, // Use validated research type
             scope: "global",
             depth: "comprehensive",
             urgency: "medium",
@@ -295,7 +307,7 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
                     newState.metadata = {
                       duration: data.metadata.duration,
                       reasoning_duration: data.metadata.reasoning_duration,
-                      generation_duration: data.metadata.generation_duration,
+                      generation_duration:data.metadata.generation_duration,
                       model_name: data.metadata.model_name,
                       token_usage: data.metadata.token_usage
                     };

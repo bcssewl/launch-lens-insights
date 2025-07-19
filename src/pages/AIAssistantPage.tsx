@@ -21,7 +21,7 @@ const AIAssistantPage: React.FC = () => {
   const isMobile = useIsMobile();
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [selectedModel, setSelectedModel] = useState<string>('best');
-  const [selectedResearchType, setSelectedResearchType] = useState<string>('business-research');
+  const [selectedResearchType, setSelectedResearchType] = useState<string>('quick_facts');
   const { theme } = useTheme();
 
   const {
@@ -96,7 +96,8 @@ const AIAssistantPage: React.FC = () => {
 
   const handleSendMessageWithSession = async (text: string, attachments?: any[], modelOverride?: string, researchType?: string) => {
     const modelToUse = modelOverride || selectedModel;
-    console.log('AIAssistantPage: Sending message with session:', currentSessionId, 'model:', modelToUse, 'research type:', researchType);
+    const researchTypeToUse = researchType || selectedResearchType;
+    console.log('AIAssistantPage: Sending message with session:', currentSessionId, 'model:', modelToUse, 'research type:', researchTypeToUse);
 
     if (!currentSessionId) {
       console.log('AIAssistantPage: No current session, creating new one...');
@@ -110,9 +111,9 @@ const AIAssistantPage: React.FC = () => {
       await new Promise(resolve => setTimeout(resolve, 200));
       
       console.log('AIAssistantPage: Sending message with new session ID:', newSession.id);
-      handleSendMessage(text, undefined, modelToUse, researchType, newSession.id);
+      handleSendMessage(text, undefined, modelToUse, researchTypeToUse, newSession.id);
     } else {
-      handleSendMessage(text, undefined, modelToUse, researchType);
+      handleSendMessage(text, undefined, modelToUse, researchTypeToUse);
     }
   };
 
@@ -146,7 +147,7 @@ const AIAssistantPage: React.FC = () => {
     console.log('AIAssistantPage: Model selected:', modelId);
     setSelectedModel(modelId);
     if (modelId === 'algeon') {
-      setSelectedResearchType('business-research');
+      setSelectedResearchType('quick_facts');
     }
   };
 
