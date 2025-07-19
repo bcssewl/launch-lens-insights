@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import AIAvatar from './AIAvatar';
@@ -95,10 +96,23 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
     (alegeonStreamingState.isComplete && message.metadata?.messageType === 'completed_report')
   );
 
-  // Enhanced citation detection - only for sources sidebar
+  // Enhanced citation detection - check for both message citations and streaming citations
   const availableCitations = message.alegeonCitations || 
     (alegeonStreamingState?.finalCitations?.length ? alegeonStreamingState.finalCitations : null) ||
     (alegeonStreamingState?.citations?.length ? alegeonStreamingState.citations : null);
+
+  // Check if this message should use CitationAwareRenderer
+  const shouldUseCitationRenderer = isAi && availableCitations && availableCitations.length > 0 && !isReport && !showAlegeonStreaming;
+
+  console.log('🎯 ChatMessage: Citation detection', {
+    messageId: message.id,
+    hasMessageCitations: !!message.alegeonCitations?.length,
+    hasStreamingCitations: !!(alegeonStreamingState?.finalCitations?.length || alegeonStreamingState?.citations?.length),
+    availableCitationsCount: availableCitations?.length || 0,
+    shouldUseCitationRenderer,
+    isReport,
+    showAlegeonStreaming
+  });
 
   // Don't render AI messages with empty content unless streaming
   if (isAi && (!message.text || message.text.trim() === '') && !showAlegeonStreaming && !stratixStreamingState?.isStreaming) {
@@ -211,6 +225,12 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
                         onExpand={handleCanvasExpand}
                         onDownload={onCanvasDownload}
                         onPrint={onCanvasPrint}
+                      />
+                    ) : shouldUseCitationRenderer ? (
+                      <CitationAwareRenderer
+                        content={message.text}
+                        citations={availableCitations!}
+                        onSourcesClick={handleSourcesClick}
                       />
                     ) : (
                       <MarkdownRenderer content={message.text} />

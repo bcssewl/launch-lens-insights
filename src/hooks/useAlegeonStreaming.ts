@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { detectAlgeonResearchType, type AlgeonResearchType } from '@/utils/algeonResearchTypes';
 import { useReasoning } from '@/contexts/ReasoningContext';
 import { useAlegeonTypewriter } from './useAlegeonTypewriter';
+import { injectCitationsIntoContent } from '@/utils/citationInjector';
 
 // Configuration constants - Updated to 12 minutes
 const STREAMING_TIMEOUT_MS = 720000; // 12 minutes
@@ -234,20 +235,26 @@ export const useAlegeonStreaming = (messageId: string | null) => {
                   newState.currentPhaseMessage = `Processing... ${data.progress.chunk_number} chunks received`;
                 }
               }
-              // Handle completion
+              // Handle completion with citation injection
               else if (data.is_complete === true) {
                 if (!requestCompletedRef.current) {
                   requestCompletedRef.current = true;
                   newState.isComplete = true;
                   newState.isStreaming = false;
-                  newState.bufferedText = data.accumulated_content || prev.bufferedText;
                   newState.citations = data.citations || data.sources || [];
                   newState.finalCitations = newState.citations;
+                  
+                  // Inject citations into the final content
+                  const rawContent = data.accumulated_content || prev.bufferedText;
+                  const contentWithCitations = injectCitationsIntoContent(rawContent, newState.citations);
+                  
+                  newState.bufferedText = contentWithCitations;
                   newState.progress = 85; // Leave room for typewriter to complete
                   newState.currentPhaseMessage = 'Research completed - displaying results';
                   
                   console.log('✅ Algeon request completed');
                   console.log('📚 Final citations:', newState.citations);
+                  console.log('🔗 Content with injected citations length:', contentWithCitations.length);
                   
                   // Don't resolve immediately - wait for typewriter to finish
                   if (!hasResolvedRef.current) {
@@ -255,10 +262,10 @@ export const useAlegeonStreaming = (messageId: string | null) => {
                     setTimeout(() => {
                       if (!hasResolvedRef.current) {
                         hasResolvedRef.current = true;
-                        resolve(newState.bufferedText);
+                        resolve(contentWithCitations);
                         cleanup();
                       }
-                    }, Math.max(1000, (newState.bufferedText.length / 25) * 1000)); // Wait for typewriter
+                    }, Math.max(1000, (contentWithCitations.length / 25) * 1000)); // Wait for typewriter
                   }
                 }
               }
