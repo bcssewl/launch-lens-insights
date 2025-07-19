@@ -72,7 +72,7 @@ export const useAlegeonStreaming = (messageId: string | null) => {
   const timeoutRef = useRef<number | null>(null);
   const heartbeatRef = useRef<number | null>(null);
   const promiseRef = useRef<{
-    resolve: (value: { text: string; citations: Array<{ name: string; url: string; type?: string }> }) => void;
+    resolve: (value: string) => void;
     reject: (reason?: any) => void;
   } | null>(null);
   const hasResolvedRef = useRef<boolean>(false);
@@ -82,11 +82,8 @@ export const useAlegeonStreaming = (messageId: string | null) => {
   const alegeonStreamingState: AlegeonStreamingState = {
     ...streamingState,
     finalCitations: streamingState.citations,
-    hasContent: streamingState.displayedText.length > 0 || streamingState.bufferedText.length > 0,
-    // Keep the raw buffered text available
-    rawText: streamingState.bufferedText,
-    currentText: streamingState.displayedText
-  } as any;
+    hasContent: streamingState.displayedText.length > 0 || streamingState.bufferedText.length > 0
+  };
 
   const cleanup = useCallback(() => {
     if (timeoutRef.current) {
@@ -153,11 +150,11 @@ export const useAlegeonStreaming = (messageId: string | null) => {
           hasResolvedRef.current = true;
           const finalText = streamingState.bufferedText || streamingState.displayedText;
           const finalCitations = streamingState.citations;
-          if (finalText) {
-            resolve({ text: finalText, citations: finalCitations });
-          } else {
-            reject(new Error('Research session timeout - taking longer than 12 minutes'));
-          }
+            if (finalText) {
+              resolve(finalText);
+            } else {
+              reject(new Error('Research session timeout - taking longer than 12 minutes'));
+            }
           cleanup();
         }
       }, STREAMING_TIMEOUT_MS);
@@ -206,8 +203,8 @@ export const useAlegeonStreaming = (messageId: string | null) => {
                 case 'chunk':
                   if (data.content) {
                     hasReceivedContent = true;
-                    newState.currentText = currentThinkingState.finalContent;
-                    console.log('📝 Content chunk added, total length:', newState.currentText.length);
+                    newState.bufferedText = currentThinkingState.finalContent;
+                    console.log('📝 Content chunk added, total length:', newState.bufferedText.length);
                   }
                   break;
                 case 'complete':
@@ -224,7 +221,7 @@ export const useAlegeonStreaming = (messageId: string | null) => {
                       resetState();
                     }, 1000);
                     
-                    resolve({ text: newState.displayedText, citations: newState.citations });
+                    resolve(newState.displayedText);
                     cleanup();
                   }
                   break;
@@ -259,7 +256,7 @@ export const useAlegeonStreaming = (messageId: string | null) => {
             // If we have received content and connection closed normally, treat as success
             if (hasReceivedContent && event.code === 1000) {
               setStreamingState(prev => ({ ...prev, isStreaming: false, isComplete: true }));
-              resolve({ text: streamingState.displayedText, citations: streamingState.citations });
+              resolve(streamingState.displayedText);
             } else if (event.code === 1006) {
               reject(new Error('Connection lost unexpectedly'));
             } else {

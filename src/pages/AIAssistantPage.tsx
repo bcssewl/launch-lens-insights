@@ -57,7 +57,7 @@ const AIAssistantPage: React.FC = () => {
     streamingState,
     stratixStreamingState
   } = useMessages(currentSessionId, updateSessionTitle, currentSession?.title);
-  const { streamingState: alegeonStreamingState } = useAlegeonStreaming();
+  const { streamingState: alegeonStreamingState } = useAlegeonStreaming(null);
   const [editedCanvasContent, setEditedCanvasContent] = useState(canvasState.content);
 
   // Update edited content when canvas state changes

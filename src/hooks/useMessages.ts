@@ -136,7 +136,7 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     streamingState: alegeonStreamingState, 
     startStreaming: startAlegeonStreaming, 
     stopStreaming: stopAlegeonStreaming 
-  } = useAlegeonStreaming();
+  } = useAlegeonStreaming(null);
 
   // Consistent streaming message ID
   const STREAMING_MESSAGE_ID = 'algeon-streaming-message';
@@ -438,11 +438,10 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
       const result = await startAlegeonStreaming(message, researchType as any);
       
       console.log('✅ Algeon request completed:', {
-        textLength: result.text.length,
-        citationsCount: result.citations.length
+        textLength: result.length
       });
       
-      return result.text;
+      return result;
       
     } catch (error) {
       console.error('❌ Algeon streaming failed:', error);
