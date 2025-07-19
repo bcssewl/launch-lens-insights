@@ -108,6 +108,7 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
     reject: (reason?: any) => void;
   } | null>(null);
   const hasResolvedRef = useRef<boolean>(false);
+  const hasReceivedCompletionRef = useRef<boolean>(false);
 
   // Update streaming state with typewriter values
   useEffect(() => {
@@ -139,6 +140,7 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
       wsRef.current = null;
     }
     hasResolvedRef.current = false;
+    hasReceivedCompletionRef.current = false;
     promiseRef.current = null;
   }, []);
 
@@ -159,6 +161,7 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
       typewriterProgress: 0,
     });
     setThinkingState(null);
+    hasReceivedCompletionRef.current = false;
     cleanup();
   }, [cleanup, setThinkingState]);
 
@@ -183,6 +186,7 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
     return new Promise((resolve, reject) => {
       promiseRef.current = { resolve, reject };
       hasResolvedRef.current = false;
+      hasReceivedCompletionRef.current = false;
 
       timeoutRef.current = window.setTimeout(() => {
         if (!hasResolvedRef.current) {
@@ -287,13 +291,16 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
 
                 case 'completion':
                   console.log('✅ Stream completion received');
+                  hasReceivedCompletionRef.current = true;
                   newState.isComplete = true;
                   newState.isStreaming = false;
                   newState.currentPhase = 'complete';
                   
-                  // Use accumulated content if available
-                  if (data.accumulated_content) {
-                    newState.bufferedText = data.accumulated_content;
+                  // Use accumulated content if available, otherwise use final_content
+                  const finalContent = data.accumulated_content || data.final_content || prev.bufferedText;
+                  if (finalContent) {
+                    newState.bufferedText = finalContent;
+                    newState.hasContent = true;
                   }
                   
                   // Process citations
@@ -307,7 +314,7 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
                     newState.metadata = {
                       duration: data.metadata.duration,
                       reasoning_duration: data.metadata.reasoning_duration,
-                      generation_duration:data.metadata.generation_duration,
+                      generation_duration: data.metadata.generation_duration,
                       model_name: data.metadata.model_name,
                       token_usage: data.metadata.token_usage
                     };
@@ -318,16 +325,18 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
                     });
                   }
                   
-                  // Resolve with final content
+                  // Resolve with final content after a delay to ensure typewriter can finish
                   if (!hasResolvedRef.current) {
-                    const finalContent = data.accumulated_content || prev.bufferedText;
+                    const contentToResolve = finalContent || prev.bufferedText;
+                    console.log('🎯 Preparing to resolve with content length:', contentToResolve.length);
                     setTimeout(() => {
                       if (!hasResolvedRef.current) {
                         hasResolvedRef.current = true;
-                        resolve(finalContent);
+                        console.log('✅ Resolving Algeon V2 stream with final content');
+                        resolve(contentToResolve);
                         cleanup();
                       }
-                    }, Math.max(1000, (finalContent.length / 25) * 1000));
+                    }, Math.max(1000, (contentToResolve.length / 25) * 1000));
                   }
                   break;
 
@@ -392,12 +401,16 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
             hasResolvedRef.current = true;
             
             setStreamingState(prev => {
-              if (event.code === 1000 && prev.hasContent) {
+              // If we received a completion event, treat the close as success
+              if (hasReceivedCompletionRef.current || (event.code === 1000 && prev.hasContent)) {
                 const finalText = prev.bufferedText || prev.displayedText;
+                console.log('✅ WebSocket closed after completion, resolving with content length:', finalText.length);
                 resolve(finalText);
                 return { ...prev, isStreaming: false, isComplete: true, currentPhase: 'complete' };
               } else {
-                const errorMsg = `WebSocket closed: ${event.code} ${event.reason || 'No reason given'}`;
+                // Only treat as error if we haven't received completion and there's an actual error
+                const errorMsg = `WebSocket closed unexpectedly: ${event.code} ${event.reason || 'No reason given'}`;
+                console.error('❌', errorMsg);
                 reject(new Error(errorMsg));
                 return { 
                   ...prev, 
