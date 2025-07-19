@@ -39,6 +39,11 @@ export interface AlegeonStreamingState {
   error: string | null;
   isComplete: boolean;
   progress: number;
+  finalCitations: Array<{
+    name: string;
+    url: string;
+    type?: string;
+  }>;
   hasContent: boolean;
 }
 
@@ -46,6 +51,7 @@ export const useAlegeonStreaming = () => {
   const {
     streamingState,
     processChunk,
+    processCitations,
     completeStreaming,
     startStreaming,
     setError,
@@ -60,14 +66,16 @@ export const useAlegeonStreaming = () => {
     reject: (reason?: any) => void;
   } | null>(null);
   const hasResolvedRef = useRef<boolean>(false);
-  const requestCompletedRef = useRef<boolean>(false);
-  const finalCitationsRef = useRef<Array<{ name: string; url: string; type?: string }>>([]);
+  const requestCompletedRef = useRef<boolean>(false); // Track request completion
 
   // Transform optimized state to legacy format for compatibility
   const alegeonStreamingState: AlegeonStreamingState = {
     ...streamingState,
-    citations: finalCitationsRef.current, // Only use final citations from is_complete=true chunk
-    hasContent: streamingState.displayedText.length > 0 || streamingState.bufferedText.length > 0
+    finalCitations: streamingState.citations,
+    hasContent: streamingState.displayedText.length > 0 || streamingState.bufferedText.length > 0,
+    // Keep the raw buffered text available
+    rawText: streamingState.bufferedText,
+    currentText: streamingState.displayedText
   } as any;
 
   const cleanup = useCallback(() => {
@@ -96,9 +104,8 @@ export const useAlegeonStreaming = () => {
   const resetState = useCallback(() => {
     console.log('🔄 Resetting Algeon streaming state');
     cleanup();
-    reset();
-    requestCompletedRef.current = false;
-    finalCitationsRef.current = [];
+    reset(); // Use the new reset method
+    requestCompletedRef.current = false; // Reset completion flag
   }, [cleanup, reset]);
 
   const startStreamingRequest = useCallback(async (query: string, researchType?: AlgeonResearchType): Promise<{ text: string; citations: Array<{ name: string; url: string; type?: string }> }> => {
@@ -113,15 +120,15 @@ export const useAlegeonStreaming = () => {
       promiseRef.current = { resolve, reject };
       hasResolvedRef.current = false;
       requestCompletedRef.current = false;
-      finalCitationsRef.current = [];
 
       // Set overall timeout
       timeoutRef.current = window.setTimeout(() => {
         if (!hasResolvedRef.current) {
           hasResolvedRef.current = true;
           const finalText = streamingState.bufferedText || streamingState.displayedText;
+          const finalCitations = streamingState.citations;
           if (finalText) {
-            resolve({ text: finalText, citations: finalCitationsRef.current });
+            resolve({ text: finalText, citations: finalCitations });
           } else {
             reject(new Error('Streaming timeout - research taking longer than expected'));
           }
@@ -157,49 +164,35 @@ export const useAlegeonStreaming = () => {
             const data: AlegeonStreamingEvent = JSON.parse(event.data);
             
             if (data.type === 'chunk') {
-              // Process text content normally during streaming
+              // Process 450-character chunks efficiently
               if (data.content) {
                 processChunk(data.content);
               }
+
+              // Handle citations
+              if (data.citations && data.citations.length > 0) {
+                processCitations(data.citations);
+              }
               
-              // Enhanced citation capture: Only when stream is complete with is_complete=true
+              // Check for completion - prevent duplicate handling
               if (data.is_complete === true && !requestCompletedRef.current) {
-                console.log('✅ Algeon request completed with final chunk containing citations');
-                console.log('📋 Raw citations from final chunk:', data.citations);
-                console.log('📋 Raw sources from final chunk:', data.sources);
-                
+                console.log('✅ Algeon request completed');
                 requestCompletedRef.current = true;
-                
-                // Enhanced citation processing: Handle both citations and sources fields
-                const rawCitations = data.citations || [];
-                const rawSources = data.sources || [];
-                
-                // Combine and normalize citations with proper name and URL extraction
-                const allSources = [...rawCitations, ...rawSources];
-                const processedCitations = allSources
-                  .filter(source => source && (source.name || source.url)) // Ensure we have name or URL
-                  .map(source => ({
-                    name: source.name || 'Source', // Fallback name if missing
-                    url: source.url || '#', // Fallback URL if missing
-                    type: source.type || 'reference'
-                  }));
-                
-                console.log('🔗 Processed final citations:', processedCitations);
-                finalCitationsRef.current = processedCitations;
                 
                 if (!hasResolvedRef.current) {
                   hasResolvedRef.current = true;
                   
+                  const finalCitations = data.citations || data.sources || streamingState.citations;
                   const finalText = streamingState.bufferedText || streamingState.displayedText;
                   
                   completeStreaming();
                   
-                  console.log('✅ Resolving with final text and citations:', {
-                    textLength: finalText.length,
-                    citationsCount: processedCitations.length
-                  });
+                  // Reset state after a delay to prevent interference
+                  setTimeout(() => {
+                    reset();
+                  }, 1000);
                   
-                  resolve({ text: finalText, citations: processedCitations });
+                  resolve({ text: finalText, citations: finalCitations });
                   cleanup();
                 }
               }
@@ -230,11 +223,17 @@ export const useAlegeonStreaming = () => {
           if (!hasResolvedRef.current) {
             hasResolvedRef.current = true;
             const finalText = streamingState.bufferedText || streamingState.displayedText;
+            const finalCitations = streamingState.citations;
             
             if (finalText && finalText.length > 50 && (event.code === 1000 || event.wasClean)) {
               completeStreaming();
-              console.log('🔌 WebSocket closed cleanly, resolving with existing citations:', finalCitationsRef.current.length);
-              resolve({ text: finalText, citations: finalCitationsRef.current });
+              
+              // Reset state after completion
+              setTimeout(() => {
+                reset();
+              }, 1000);
+              
+              resolve({ text: finalText, citations: finalCitations });
             } else if (event.code === 1006) {
               reject(new Error('Connection lost unexpectedly'));
             } else {
@@ -253,7 +252,7 @@ export const useAlegeonStreaming = () => {
         }
       }
     });
-  }, [streamingState, processChunk, completeStreaming, startStreaming, setError, resetState, cleanup, reset]);
+  }, [streamingState, processChunk, processCitations, completeStreaming, startStreaming, setError, resetState, cleanup, reset]);
 
   const stopStreaming = useCallback(() => {
     if (!hasResolvedRef.current && promiseRef.current) {

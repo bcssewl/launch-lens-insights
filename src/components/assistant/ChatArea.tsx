@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import ChatMessage from '@/components/assistant/ChatMessage';
 import TypingIndicator from '@/components/assistant/TypingIndicator';
@@ -43,45 +43,12 @@ interface ChatAreaProps {
     activeAgents?: string[];
     collaborationMode?: string;
   };
+  // Enhanced streaming support
   stratixStreamingState?: StratixStreamingState;
   alegeonStreamingState?: AlegeonStreamingState;
 }
 
-// Memoized message renderer to prevent unnecessary re-renders
-const MessageRenderer = React.memo<{
-  message: Message;
-  onOpenCanvas?: (messageId: string, content: string) => void;
-  onCanvasDownload?: () => void;
-  onCanvasPrint?: () => void;
-  stratixStreamingState?: StratixStreamingState;
-  alegeonStreamingState?: AlegeonStreamingState;
-}>(({ message, onOpenCanvas, onCanvasDownload, onCanvasPrint, stratixStreamingState, alegeonStreamingState }) => {
-  return (
-    <ChatMessage 
-      message={{ ...message, timestamp: formatTimestamp(message.timestamp) }}
-      onOpenCanvas={onOpenCanvas}
-      onCanvasDownload={onCanvasDownload}
-      onCanvasPrint={onCanvasPrint}
-      isStreaming={false}
-      streamingUpdates={[]}
-      streamingSources={[]}
-      streamingProgress={{ phase: '', progress: 0 }}
-      stratixStreamingState={stratixStreamingState}
-      alegeonStreamingState={alegeonStreamingState}
-    />
-  );
-}, (prevProps, nextProps) => {
-  // Prevent re-render if message hasn't changed
-  return (
-    prevProps.message.id === nextProps.message.id &&
-    prevProps.message.text === nextProps.message.text &&
-    prevProps.stratixStreamingState?.isStreaming === nextProps.stratixStreamingState?.isStreaming &&
-    prevProps.alegeonStreamingState?.isStreaming === nextProps.alegeonStreamingState?.isStreaming &&
-    prevProps.alegeonStreamingState?.isComplete === nextProps.alegeonStreamingState?.isComplete
-  );
-});
-
-const ChatArea: React.FC<ChatAreaProps> = React.memo(({
+const ChatArea: React.FC<ChatAreaProps> = ({
   messages,
   isTyping,
   viewportRef,
@@ -94,6 +61,19 @@ const ChatArea: React.FC<ChatAreaProps> = React.memo(({
   stratixStreamingState,
   alegeonStreamingState
 }) => {
+  const [canvasPreviewMessages, setCanvasPreviewMessages] = useState<Set<string>>(new Set());
+
+  const handleToggleCanvasPreview = useCallback((messageId: string) => {
+    setCanvasPreviewMessages(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(messageId)) {
+        newSet.delete(messageId);
+      } else {
+        newSet.add(messageId);
+      }
+      return newSet;
+    });
+  }, []);
   const hasConversation = messages.length > 1 || isTyping;
 
   if (!hasConversation) {
@@ -122,7 +102,7 @@ const ChatArea: React.FC<ChatAreaProps> = React.memo(({
               />
             )}
 
-            {/* Show legacy streaming progress (fallback) */}
+            {/* Show legacy Perplexity-style streaming progress (fallback) */}
             {streamingState?.isStreaming && !stratixStreamingState?.isStreaming && !alegeonStreamingState?.isStreaming && (
               <StreamingProgress
                 currentPhase={streamingState.currentPhase}
@@ -135,17 +115,38 @@ const ChatArea: React.FC<ChatAreaProps> = React.memo(({
               />
             )}
 
-            {messages.map((msg) => (
-              <MessageRenderer
-                key={msg.id}
-                message={msg}
-                onOpenCanvas={onOpenCanvas}
-                onCanvasDownload={onCanvasDownload}
-                onCanvasPrint={onCanvasPrint}
-                stratixStreamingState={stratixStreamingState}
-                alegeonStreamingState={alegeonStreamingState}
-              />
-            ))}
+            {messages.map((msg) => {
+              console.log('🔄 ChatArea: Rendering message', {
+                messageId: msg.id,
+                sender: msg.sender,
+                hasStreamingState: !!streamingState,
+                hasStratixStreaming: !!stratixStreamingState?.isStreaming,
+                hasAlegeonStreaming: !!alegeonStreamingState?.isStreaming,
+                isStreaming: streamingState?.isStreaming,
+                messageText: msg.text.substring(0, 50),
+                timestamp: msg.timestamp
+              });
+
+              return (
+                <ChatMessage 
+                  key={msg.id} 
+                  message={{ ...msg, timestamp: formatTimestamp(msg.timestamp) }}
+                  onOpenCanvas={onOpenCanvas}
+                  onCanvasDownload={onCanvasDownload}
+                  onCanvasPrint={onCanvasPrint}
+                  onToggleCanvasPreview={handleToggleCanvasPreview}
+                  isCanvasPreview={canvasPreviewMessages.has(msg.id)}
+                  // Legacy streaming support (fallback)
+                  isStreaming={false}
+                  streamingUpdates={[]}
+                  streamingSources={[]}
+                  streamingProgress={{ phase: '', progress: 0 }}
+                  // Enhanced streaming support
+                  stratixStreamingState={stratixStreamingState}
+                  alegeonStreamingState={alegeonStreamingState}
+                />
+              );
+            })}
             {isTyping && <TypingIndicator />}
           </div>
           <div className="h-24" />
@@ -164,23 +165,11 @@ const ChatArea: React.FC<ChatAreaProps> = React.memo(({
       </div>
     </div>
   );
-}, (prevProps, nextProps) => {
-  // Prevent unnecessary re-renders of the entire chat area
-  return (
-    prevProps.messages.length === nextProps.messages.length &&
-    prevProps.isTyping === nextProps.isTyping &&
-    prevProps.selectedModel === nextProps.selectedModel &&
-    prevProps.streamingState?.isStreaming === nextProps.streamingState?.isStreaming &&
-    prevProps.stratixStreamingState?.isStreaming === nextProps.stratixStreamingState?.isStreaming &&
-    prevProps.alegeonStreamingState?.isStreaming === nextProps.alegeonStreamingState?.isStreaming
-  );
-});
+};
 
-// Helper function for timestamp formatting
+// Helper function moved from constants
 const formatTimestamp = (timestamp: Date): string => {
   return timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
-
-ChatArea.displayName = 'ChatArea';
 
 export default ChatArea;
