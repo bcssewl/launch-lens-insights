@@ -11,6 +11,7 @@ import ChatSubheader from '@/components/assistant/ChatSubheader';
 import { useChatSessions } from '@/hooks/useChatSessions';
 import { useChatHistory } from '@/hooks/useChatHistory';
 import { useMessages } from '@/hooks/useMessages';
+import { useAlegeonStreaming } from '@/hooks/useAlegeonStreaming';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTheme } from 'next-themes';
 import { Loader2 } from 'lucide-react';
@@ -53,8 +54,10 @@ const AIAssistantPage: React.FC = () => {
     handleCanvasDownload,
     handleCanvasPrint,
     handleCanvasPdfDownload,
-    unifiedStreamingState,
+    streamingState,
+    stratixStreamingState
   } = useMessages(currentSessionId, updateSessionTitle, currentSession?.title);
+  const { streamingState: alegeonStreamingState } = useAlegeonStreaming();
   const [editedCanvasContent, setEditedCanvasContent] = useState(canvasState.content);
 
   // Update edited content when canvas state changes
@@ -196,8 +199,15 @@ const AIAssistantPage: React.FC = () => {
         onSendMessage={handleSendMessageWithSession} 
         onDownloadChat={handleDownloadChat} 
         onClearConversation={handleClearConversationWithHistory} 
-        onToggleFullscreen={toggleFullscreen} 
-        streamingState={unifiedStreamingState} // Pass the unified state
+        onSessionSelect={handleSessionSelect} 
+        onToggleFullscreen={toggleFullscreen}
+        selectedModel={selectedModel}
+        canvasState={canvasState} 
+        onOpenCanvas={handleOpenCanvas} 
+        onCloseCanvas={handleCloseCanvas} 
+        onCanvasDownload={handleCanvasDownload} 
+        onCanvasPrint={handleCanvasPrint}
+        streamingState={streamingState}
       />
     );
   }
@@ -211,7 +221,7 @@ const AIAssistantPage: React.FC = () => {
       <SidebarProvider>
         <AppSidebar />
         
-        <SidebarInset className="flex-1 flex flex-col bg-transparent">
+        <SidebarInset className="flex-1 flex flex-col bg-transparent h-screen">
           {/* Fixed Header */}
           {isMobile ? (
             <MobileDashboardHeader title="AI Assistant" />
