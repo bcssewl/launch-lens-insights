@@ -13,15 +13,17 @@ import StratixStreamingOverlay from './StratixStreamingOverlay';
 import OptimizedStreamingOverlay from './OptimizedStreamingOverlay';
 import ThinkingPanel from './ThinkingPanel';
 import { useReasoning } from '@/contexts/ReasoningContext';
+import { formatTimestamp } from '@/utils/formatTimestamp'; // Import the timestamp formatting function
 import { isReportMessage } from '@/utils/reportDetection';
 import type { StratixStreamingState } from '@/types/stratixStreaming';
 import type { AlegeonStreamingState } from '@/hooks/useAlegeonStreaming';
+import type { ThinkingState } from '@/utils/thinkingParser'; // Import ThinkingState
 
 export interface ChatMessageData {
   id: string;
   text: string;
   sender: 'ai' | 'user';
-  timestamp: string;
+  timestamp: Date; // Changed from string to Date for consistency
   metadata?: {
     isCompleted?: boolean;
     messageType?: 'progress_update' | 'completed_report' | 'standard' | 'stratix_conversation';
@@ -62,6 +64,7 @@ interface ChatMessageProps {
   alegeonStreamingState?: AlegeonStreamingState;
   onToggleCanvasPreview?: (messageId: string) => void;
   isCanvasPreview?: boolean;
+  thinkingState?: ThinkingState | null; // Add thinkingState to props
 }
 
 const ChatMessage: React.FC<ChatMessageProps> = React.memo(({ 
@@ -76,10 +79,10 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
   stratixStreamingState,
   alegeonStreamingState,
   onToggleCanvasPreview,
-  isCanvasPreview = false
+  isCanvasPreview = false,
+  thinkingState // Destructure the new prop
 }) => {
   const [isSourcesSidebarOpen, setIsSourcesSidebarOpen] = useState(false);
-  const { thinkingState } = useReasoning();
   
   const isAi = message.sender === 'ai';
   const isReport = isAi && isCanvasPreview; // Only show canvas preview when manually activated
@@ -88,15 +91,10 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
   const isStreamingMessage = message.isStreaming || (message.metadata?.messageType === 'progress_update' && !message.metadata?.isCompleted);
   
   // For Algeon streaming, show the overlay if this is the streaming message
-  const showAlegeonStreaming = isAi && alegeonStreamingState && (
-    (alegeonStreamingState.isStreaming && isStreamingMessage) ||
-    (alegeonStreamingState.isComplete && message.metadata?.messageType === 'completed_report')
-  );
+  const showAlegeonStreaming = isAi && alegeonStreamingState && alegeonStreamingState.isStreaming;
 
   // Enhanced citation detection - only for sources sidebar
-  const availableCitations = message.alegeonCitations || 
-    (alegeonStreamingState?.finalCitations?.length ? alegeonStreamingState.finalCitations : null) ||
-    (alegeonStreamingState?.citations?.length ? alegeonStreamingState.citations : null);
+  const availableCitations = message.alegeonCitations || alegeonStreamingState?.citations;
 
   // Don't render AI messages with empty content unless streaming
   if (isAi && (!message.text || message.text.trim() === '') && !showAlegeonStreaming && !stratixStreamingState?.isStreaming) {
@@ -223,7 +221,7 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
             "text-xs mt-1 opacity-70 px-1",
             isAi ? "text-muted-foreground" : "text-muted-foreground"
           )}>
-            {message.timestamp}
+            {formatTimestamp(message.timestamp)}
           </p>
         </div>
         {!isAi && (
@@ -257,7 +255,7 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
   // If Algeon streaming is active, only update when displayedText changes
   if (nextAlgeonState?.isStreaming) {
     if (!prevAlgeonState?.isStreaming) return false; // Streaming just started
-    if (prevAlgeonState.displayedText !== nextAlgeonState.displayedText) return false; // Text changed
+    if (prevAlgeonState.finalText !== nextAlgeonState.finalText) return false; // Text changed
     return true; // Otherwise don't re-render during streaming
   }
   
@@ -265,8 +263,7 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
   return (
     prevProps.message.text === nextProps.message.text &&
     prevProps.isStreaming === nextProps.isStreaming &&
-    prevProps.isCanvasPreview === nextProps.isCanvasPreview &&
-    (prevAlgeonState?.isComplete === nextAlgeonState?.isComplete)
+    prevProps.isCanvasPreview === nextProps.isCanvasPreview
   );
 });
 

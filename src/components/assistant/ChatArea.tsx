@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import ChatMessage from '@/components/assistant/ChatMessage';
@@ -10,6 +9,7 @@ import StreamingError from '@/components/assistant/StreamingError';
 import { Message } from '@/constants/aiAssistant';
 import type { StratixStreamingState } from '@/types/stratixStreaming';
 import type { AlegeonStreamingState } from '@/hooks/useAlegeonStreaming';
+import { useReasoning } from '@/contexts/ReasoningContext'; // Import useReasoning
 
 interface ChatAreaProps {
   messages: Message[];
@@ -62,6 +62,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   alegeonStreamingState
 }) => {
   const [canvasPreviewMessages, setCanvasPreviewMessages] = useState<Set<string>>(new Set());
+  const { thinkingState } = useReasoning(); // Get thinkingState from context
 
   const handleToggleCanvasPreview = useCallback((messageId: string) => {
     setCanvasPreviewMessages(prev => {
@@ -92,61 +93,20 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       <div className="flex-1 overflow-hidden">
         <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
           <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
-            {/* Show streaming error if present */}
-            {streamingState?.error && (
-              <StreamingError
-                error={streamingState.error}
-                errorCode={streamingState.errorCode}
-                retryAfter={streamingState.retryAfter}
-                isVisible={true}
+            {messages.map((message, index) => (
+              <ChatMessage
+                key={message.id}
+                message={message}
+                onOpenCanvas={onOpenCanvas}
+                onCanvasDownload={onCanvasDownload}
+                onCanvasPrint={onCanvasPrint}
+                stratixStreamingState={stratixStreamingState}
+                alegeonStreamingState={alegeonStreamingState}
+                onToggleCanvasPreview={handleToggleCanvasPreview}
+                isCanvasPreview={canvasPreviewMessages.has(message.id)}
+                thinkingState={thinkingState} // Pass thinkingState as a prop
               />
-            )}
-
-            {/* Show legacy Perplexity-style streaming progress (fallback) */}
-            {streamingState?.isStreaming && !stratixStreamingState?.isStreaming && !alegeonStreamingState?.isStreaming && (
-              <StreamingProgress
-                currentPhase={streamingState.currentPhase}
-                progress={streamingState.progress}
-                searchQueries={streamingState.searchQueries}
-                discoveredSources={streamingState.discoveredSources}
-                activeAgents={streamingState.activeAgents?.map(name => ({ name, status: 'active' as const, progress: 50 })) || []}
-                collaborationMode={streamingState.collaborationMode as 'sequential' | 'parallel' | 'hierarchical' | null}
-                isVisible={true}
-              />
-            )}
-
-            {messages.map((msg) => {
-              console.log('🔄 ChatArea: Rendering message', {
-                messageId: msg.id,
-                sender: msg.sender,
-                hasStreamingState: !!streamingState,
-                hasStratixStreaming: !!stratixStreamingState?.isStreaming,
-                hasAlegeonStreaming: !!alegeonStreamingState?.isStreaming,
-                isStreaming: streamingState?.isStreaming,
-                messageText: msg.text.substring(0, 50),
-                timestamp: msg.timestamp
-              });
-
-              return (
-                <ChatMessage 
-                  key={msg.id} 
-                  message={{ ...msg, timestamp: formatTimestamp(msg.timestamp) }}
-                  onOpenCanvas={onOpenCanvas}
-                  onCanvasDownload={onCanvasDownload}
-                  onCanvasPrint={onCanvasPrint}
-                  onToggleCanvasPreview={handleToggleCanvasPreview}
-                  isCanvasPreview={canvasPreviewMessages.has(msg.id)}
-                  // Legacy streaming support (fallback)
-                  isStreaming={false}
-                  streamingUpdates={[]}
-                  streamingSources={[]}
-                  streamingProgress={{ phase: '', progress: 0 }}
-                  // Enhanced streaming support
-                  stratixStreamingState={stratixStreamingState}
-                  alegeonStreamingState={alegeonStreamingState}
-                />
-              );
-            })}
+            ))}
             {isTyping && <TypingIndicator />}
           </div>
           <div className="h-24" />

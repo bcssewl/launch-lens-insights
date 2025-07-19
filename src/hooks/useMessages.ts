@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, useReducer } from 'react';
+import { useState, useRef, useEffect, useCallback, useReducer, useMemo } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Message, initialMessages, formatTimestamp } from '@/constants/aiAssistant';
 import { useN8nWebhook } from '@/hooks/useN8nWebhook';
@@ -138,6 +138,38 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     startStreaming: startAlegeonStreaming, 
     stopStreaming: stopAlegeonStreaming 
   } = useAlegeonStreaming(STREAMING_MESSAGE_ID);
+
+  // Unified Streaming State Adapter
+  const unifiedStreamingState = useMemo(() => {
+    if (alegeonStreamingState.isStreaming) {
+      return {
+        isStreaming: true,
+        currentPhase: alegeonStreamingState.thinkingState?.phase || 'processing',
+        progress: alegeonStreamingState.progress,
+        sources: alegeonStreamingState.citations,
+        searchQueries: [], // Algeon doesn't provide this
+        discoveredSources: alegeonStreamingState.citations, // Map citations to sources
+      };
+    }
+    if (stratixStreamingState.isStreaming) {
+      return {
+        isStreaming: true,
+        currentPhase: stratixStreamingState.currentPhase,
+        progress: stratixStreamingState.overallProgress,
+        sources: stratixStreamingState.discoveredSources,
+        searchQueries: [], // Stratix doesn't provide this yet
+        discoveredSources: stratixStreamingState.discoveredSources,
+      };
+    }
+    return {
+      isStreaming: false,
+      currentPhase: 'idle',
+      progress: 0,
+      sources: [],
+      searchQueries: [],
+      discoveredSources: [],
+    };
+  }, [alegeonStreamingState, stratixStreamingState]);
 
   const isAddingMessageRef = useRef(false);
   const processedCompletionsRef = useRef<Set<string>>(new Set()); // Track processed completions
@@ -361,23 +393,22 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     try {
       console.log('🔬 Starting Algeon streaming for message:', message.substring(0, 100));
       
-      const result = await startAlegeonStreaming(message, researchType as any);
+      const resultText = await startAlegeonStreaming(message, researchType as any);
       
       console.log('✅ Algeon request completed:', {
-        textLength: result.text.length,
-        citationsCount: result.citations.length
+        textLength: resultText.length,
       });
 
       const finalMessage: ExtendedMessage = {
         id: uuidv4(),
-        text: result.text,
+        text: resultText,
         sender: 'ai',
         timestamp: new Date(),
         metadata: {
           messageType: 'completed_report',
           isCompleted: true,
         },
-        alegeonCitations: result.citations,
+        alegeonCitations: alegeonStreamingState.citations,
       };
 
       dispatch({ 
@@ -386,7 +417,7 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
       });
       
       if (currentSessionId) {
-        addMessage(`AI: ${result.text}`);
+        addMessage(`AI: ${resultText}`);
       }
       
     } catch (error) {
@@ -869,13 +900,6 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     handleCanvasDownload,
     handleCanvasPrint,
     handleCanvasPdfDownload,
-    streamingState,
-    stratixStreamingState,
-    alegeonStreamingState,
-    // Provide streaming state for components that need it
-    isStreamingForMessage: () => streamingState.isStreaming || stratixStreamingState.isStreaming || alegeonStreamingState.isStreaming,
-    getStreamingState: () => streamingState,
-    getStratixStreamingState: () => stratixStreamingState,
-    getAlegeonStreamingState: () => alegeonStreamingState
+    unifiedStreamingState, // Expose the unified state
   };
 };
