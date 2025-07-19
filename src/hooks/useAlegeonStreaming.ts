@@ -1,4 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { detectAlgeonResearchType, type AlgeonResearchType } from '@/utils/algeonResearchTypes';
+import { ThinkingParser, type ThinkingState } from '@/utils/thinkingParser';
+import { useReasoning } from '@/contexts/ReasoningContext';
 import { useOptimizedStreaming } from './useOptimizedStreaming';
 
 // Configuration constants - Updated to 12 minutes
@@ -47,16 +50,23 @@ export interface AlegeonStreamingState {
   phaseStartTime: number;
 }
 
-export const useAlegeonStreaming = () => {
-  const {
-    streamingState,
-    processChunk,
-    processCitations,
-    completeStreaming,
-    startStreaming,
-    setError,
-    reset
-  } = useOptimizedStreaming();
+export const useAlegeonStreaming = (messageId: string | null) => {
+  const [streamingState, setStreamingState] = useState<AlegeonStreamingState>({
+    isStreaming: false,
+    displayedText: '',
+    bufferedText: '',
+    citations: [],
+    error: null,
+    isComplete: false,
+    progress: 0,
+    finalCitations: [],
+    hasContent: false,
+    currentPhaseMessage: '',
+    phaseStartTime: Date.now(),
+  });
+
+  const { setThinkingState } = useReasoning();
+  const thinkingParserRef = useRef(new ThinkingParser());
 
   const wsRef = useRef<WebSocket | null>(null);
   const timeoutRef = useRef<number | null>(null);
@@ -103,12 +113,25 @@ export const useAlegeonStreaming = () => {
 
   const resetState = useCallback(() => {
     console.log('🔄 Resetting Algeon streaming state');
+    setStreamingState({
+      isStreaming: false,
+      displayedText: '',
+      bufferedText: '',
+      citations: [],
+      error: null,
+      isComplete: false,
+      progress: 0,
+      finalCitations: [],
+      hasContent: false,
+      currentPhaseMessage: '',
+      phaseStartTime: Date.now(),
+    });
+    thinkingParserRef.current.reset();
+    setThinkingState(null);
     cleanup();
-    reset(); // Use the new reset method
-    requestCompletedRef.current = false; // Reset completion flag
-  }, [cleanup, reset]);
+  }, [cleanup, setThinkingState]);
 
-  const startStreamingRequest = useCallback(async (query: string, researchType?: string): Promise<{ text: string; citations: Array<{ name: string; url: string; type?: string }> }> => {
+  const startStreaming = useCallback(async (query: string, researchType?: AlgeonResearchType): Promise<string> => {
     // Use manually selected research type or default to 'quick_facts'
     const selectedType = researchType || 'quick_facts';
     
@@ -117,7 +140,7 @@ export const useAlegeonStreaming = () => {
     console.log('⏱️ Session timeout set to 12 minutes');
     
     resetState();
-    startStreaming();
+    setStreamingState(prev => ({ ...prev, isStreaming: true }));
 
     return new Promise((resolve, reject) => {
       promiseRef.current = { resolve, reject };
@@ -163,51 +186,54 @@ export const useAlegeonStreaming = () => {
           wsRef.current.send(JSON.stringify(payload));
         };
 
+        let hasReceivedContent = false;
+
         wsRef.current.onmessage = (event) => {
+          // Enhanced debugging
+          console.log('🟦 RAW WebSocket message received:', event.data);
+          
           try {
             const data: AlegeonStreamingEvent = JSON.parse(event.data);
+            thinkingParserRef.current.parse(data.content || '');
+            const currentThinkingState = thinkingParserRef.current.getState();
+            setThinkingState(currentThinkingState);
             
-            if (data.type === 'chunk') {
-              // Process 450-character chunks efficiently
-              if (data.content) {
-                processChunk(data.content);
-              }
-
-              // Handle citations
-              if (data.citations && data.citations.length > 0) {
-                processCitations(data.citations);
+            setStreamingState(prev => {
+              const newState = { ...prev };
+              
+              // Handle different event types more flexibly
+              switch (data.type) {
+                case 'chunk':
+                  if (data.content) {
+                    hasReceivedContent = true;
+                    newState.currentText = currentThinkingState.finalContent;
+                    console.log('📝 Content chunk added, total length:', newState.currentText.length);
+                  }
+                  break;
+                case 'complete':
+                  if (!requestCompletedRef.current) {
+                    requestCompletedRef.current = true;
+                    newState.isComplete = true;
+                    newState.displayedText = currentThinkingState.finalContent;
+                    newState.bufferedText = '';
+                    newState.citations = data.citations || data.sources || prev.citations;
+                    console.log('✅ Algeon request completed');
+                    
+                    // Reset state after a delay to prevent interference
+                    setTimeout(() => {
+                      resetState();
+                    }, 1000);
+                    
+                    resolve({ text: newState.displayedText, citations: newState.citations });
+                    cleanup();
+                  }
+                  break;
+                default:
+                  console.warn('Unknown data type received:', data.type);
               }
               
-              // Check for completion - prevent duplicate handling
-              if (data.is_complete === true && !requestCompletedRef.current) {
-                console.log('✅ Algeon request completed');
-                requestCompletedRef.current = true;
-                
-                if (!hasResolvedRef.current) {
-                  hasResolvedRef.current = true;
-                  
-                  const finalCitations = data.citations || data.sources || streamingState.citations;
-                  const finalText = streamingState.bufferedText || streamingState.displayedText;
-                  
-                  completeStreaming();
-                  
-                  // Reset state after a delay to prevent interference
-                  setTimeout(() => {
-                    reset();
-                  }, 1000);
-                  
-                  resolve({ text: finalText, citations: finalCitations });
-                  cleanup();
-                }
-              }
-            } else if (data.error) {
-              if (!hasResolvedRef.current) {
-                hasResolvedRef.current = true;
-                setError(data.error || 'An error occurred during research');
-                reject(new Error(data.error || 'Research failed'));
-                cleanup();
-              }
-            }
+              return newState;
+            });
             
           } catch (parseError) {
             console.error('Error parsing WebSocket message:', parseError);
@@ -217,27 +243,23 @@ export const useAlegeonStreaming = () => {
         wsRef.current.onerror = (error) => {
           if (!hasResolvedRef.current) {
             hasResolvedRef.current = true;
-            setError('WebSocket connection failed.');
+            setStreamingState(prev => ({ ...prev, isStreaming: false, error: 'WebSocket connection failed.' }));
             reject(new Error('WebSocket connection failed'));
             cleanup();
           }
         };
 
         wsRef.current.onclose = (event) => {
+          // Handle connection closure more intelligently
           if (!hasResolvedRef.current) {
             hasResolvedRef.current = true;
-            const finalText = streamingState.bufferedText || streamingState.displayedText;
-            const finalCitations = streamingState.citations;
+            thinkingParserRef.current.complete();
+            setThinkingState(thinkingParserRef.current.getState());
             
-            if (finalText && finalText.length > 50 && (event.code === 1000 || event.wasClean)) {
-              completeStreaming();
-              
-              // Reset state after completion
-              setTimeout(() => {
-                reset();
-              }, 1000);
-              
-              resolve({ text: finalText, citations: finalCitations });
+            // If we have received content and connection closed normally, treat as success
+            if (hasReceivedContent && event.code === 1000) {
+              setStreamingState(prev => ({ ...prev, isStreaming: false, isComplete: true }));
+              resolve({ text: streamingState.displayedText, citations: streamingState.citations });
             } else if (event.code === 1006) {
               reject(new Error('Connection lost unexpectedly'));
             } else {
@@ -256,15 +278,15 @@ export const useAlegeonStreaming = () => {
         }
       }
     });
-  }, [streamingState, processChunk, processCitations, completeStreaming, startStreaming, setError, resetState, cleanup, reset]);
+  }, [resetState, cleanup, setThinkingState]);
 
   const stopStreaming = useCallback(() => {
-    if (!hasResolvedRef.current && promiseRef.current) {
-      hasResolvedRef.current = true;
-      promiseRef.current.reject(new Error('Streaming stopped by user.'));
-    }
+    setStreamingState(prev => ({ ...prev, isStreaming: false }));
+    thinkingParserRef.current.complete();
+    setThinkingState(thinkingParserRef.current.getState());
+    promiseRef.current?.reject(new Error('Streaming stopped by user.'));
     cleanup();
-  }, [cleanup]);
+  }, [cleanup, setThinkingState]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -275,7 +297,7 @@ export const useAlegeonStreaming = () => {
 
   return {
     streamingState: alegeonStreamingState,
-    startStreaming: startStreamingRequest,
+    startStreaming,
     stopStreaming,
     resetState
   };

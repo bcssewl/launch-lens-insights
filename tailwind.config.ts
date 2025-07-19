@@ -153,12 +153,10 @@ export default {
       },
     },
   },
-  plugins: [
-    require("tailwindcss-animate"), 
-    require("@tailwindcss/typography"),
-    // Add custom variant for canvas-scoped typography
-    function({ addVariant }) {
-      addVariant('canvas', '.canvas-content &');
+  plugins: [require("tailwindcss-animate")],
+  safelist: [
+    {
+      pattern: /^opt-/,
     },
   ],
-} satisfies Config;
+} satisfies Config
