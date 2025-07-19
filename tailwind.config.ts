@@ -161,15 +161,4 @@ export default {
       addVariant('canvas', '.canvas-content &');
     },
   ],
-  safelist: [
-    // Thinking panel classes to prevent Tailwind purge
-    'opt-thinking-panel',
-    'opt-thinking-header',
-    'opt-thinking-content',
-    'opt-thinking-toggle',
-    'opt-thinking-progress',
-    'opt-thought-line',
-    'opt-thinking-icon',
-    'opt-thinking-collapsed'
-  ],
 } satisfies Config;
