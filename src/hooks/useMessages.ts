@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect, useCallback, useReducer } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Message, initialMessages, formatTimestamp } from '@/constants/aiAssistant';
@@ -6,7 +5,7 @@ import { useN8nWebhook } from '@/hooks/useN8nWebhook';
 import { useChatHistory } from '@/hooks/useChatHistory';
 import { usePerplexityStreaming } from '@/hooks/usePerplexityStreaming';
 import { useStratixStreaming } from '@/hooks/useStratixStreaming';
-import { useAlegeonStreaming } from '@/hooks/useAlegeonStreaming';
+import { useAlegeonStreamingV2 } from '@/hooks/useAlegeonStreamingV2';
 import { useAutoTitle } from '@/hooks/useAutoTitle';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -136,8 +135,9 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
   const { 
     streamingState: alegeonStreamingState, 
     startStreaming: startAlegeonStreaming, 
-    stopStreaming: stopAlegeonStreaming 
-  } = useAlegeonStreaming(null);
+    stopStreaming: stopAlegeonStreaming,
+    fastForward: alegeonFastForward
+  } = useAlegeonStreamingV2(currentSessionId);
 
   // Consistent streaming message ID
   const STREAMING_MESSAGE_ID = 'algeon-streaming-message';
@@ -174,7 +174,7 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
   // Effect 1: Handle streaming messages (display updates)
   useEffect(() => {
     if (alegeonStreamingState.isStreaming && alegeonStreamingState.hasContent && alegeonStreamingState.bufferedText) {
-      console.log('📝 Managing Algeon streaming message display');
+      console.log('📝 Managing Algeon V2 streaming message display');
       
       const streamingMessage: ExtendedMessage = {
         id: STREAMING_MESSAGE_ID,
@@ -204,7 +204,7 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
         alegeonStreamingState.bufferedText && 
         !alegeonCompletionProcessedRef.current) {
         
-      console.log('✅ Processing Algeon completion - ONE TIME ONLY');
+      console.log('✅ Processing Algeon V2 completion - ONE TIME ONLY');
       alegeonCompletionProcessedRef.current = true; // Mark as processed immediately
       
       // Create final message with citations preserved
@@ -217,7 +217,7 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
           messageType: 'completed_report',
           isCompleted: true
         },
-        alegeonCitations: alegeonStreamingState.finalCitations
+        alegeonCitations: alegeonStreamingState.citations
       };
       
       dispatch({ 
@@ -228,12 +228,12 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
       // Save final message to history with citations metadata - ONCE
       if (currentSessionId && alegeonStreamingState.bufferedText) {
         const messageWithCitations = `AI: ${alegeonStreamingState.bufferedText}${
-          alegeonStreamingState.finalCitations.length > 0 
-            ? `\n\nCitations: ${JSON.stringify(alegeonStreamingState.finalCitations)}`
+          alegeonStreamingState.citations.length > 0 
+            ? `\n\nCitations: ${JSON.stringify(alegeonStreamingState.citations)}`
             : ''
         }`;
         
-        console.log('💾 Saving Algeon completion to history - ONE TIME');
+        console.log('💾 Saving Algeon V2 completion to history - ONE TIME');
         addMessage(messageWithCitations);
 
         // Auto-title generation - only once per completion
@@ -250,7 +250,7 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
   }, [
     alegeonStreamingState.isComplete,
     alegeonStreamingState.bufferedText,
-    alegeonStreamingState.finalCitations,
+    alegeonStreamingState.citations,
     currentSessionId,
     addMessage,
     updateSessionTitle,
@@ -265,7 +265,7 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     if (alegeonStreamingState.isStreaming && !alegeonCompletionProcessedRef.current) {
       const newSessionId = `${Date.now()}-${Math.random()}`;
       if (currentStreamingSessionRef.current !== newSessionId) {
-        console.log('🔄 New Algeon streaming session started - resetting completion flag');
+        console.log('🔄 New Algeon V2 streaming session started - resetting completion flag');
         currentStreamingSessionRef.current = newSessionId;
         alegeonCompletionProcessedRef.current = false;
       }
@@ -437,25 +437,25 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     return hasResearchKeywords || (isLongQuery && hasQuestionWords);
   }, []);
 
-  // Handle Algeon requests with enhanced citation support
+  // Handle Algeon requests with enhanced citation support - Updated for V2
   const handleAlegeonRequest = useCallback(async (message: string, researchType?: string, sessionId?: string | null): Promise<string> => {
     try {
-      console.log('🔬 Starting Algeon streaming for message:', message.substring(0, 100));
+      console.log('🔬 Starting Algeon V2 streaming for message:', message.substring(0, 100));
       
       // Reset completion flag for new request
       alegeonCompletionProcessedRef.current = false;
       
-      // Use the enhanced Algeon streaming implementation
+      // Use the V2 Algeon streaming implementation
       const result = await startAlegeonStreaming(message, researchType as any);
       
-      console.log('✅ Algeon request completed:', {
+      console.log('✅ Algeon V2 request completed:', {
         textLength: result.length
       });
       
       return result;
       
     } catch (error) {
-      console.error('❌ Algeon streaming failed:', error);
+      console.error('❌ Algeon V2 streaming failed:', error);
       dispatch({ type: 'REMOVE_STREAMING_MESSAGE', payload: STREAMING_MESSAGE_ID });
       alegeonCompletionProcessedRef.current = false; // Reset on error
       return 'I apologize, but I encountered an issue with the Algeon research system. Please try again or select a different model.';
@@ -936,6 +936,7 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     isStreamingForMessage: () => streamingState.isStreaming || stratixStreamingState.isStreaming || alegeonStreamingState.isStreaming,
     getStreamingState: () => streamingState,
     getStratixStreamingState: () => stratixStreamingState,
-    getAlegeonStreamingState: () => alegeonStreamingState
+    getAlegeonStreamingState: () => alegeonStreamingState,
+    alegeonFastForward
   };
 };
