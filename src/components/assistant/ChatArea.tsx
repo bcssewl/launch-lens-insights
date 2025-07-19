@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import ChatMessage from '@/components/assistant/ChatMessage';
@@ -9,7 +8,7 @@ import StreamingProgress from '@/components/assistant/StreamingProgress';
 import StreamingError from '@/components/assistant/StreamingError';
 import { Message } from '@/constants/aiAssistant';
 import type { StratixStreamingState } from '@/types/stratixStreaming';
-import type { AlegeonStreamingState } from '@/hooks/useAlegeonStreaming';
+import type { AlegeonStreamingStateV2 } from '@/hooks/useAlegeonStreamingV2';
 
 interface ChatAreaProps {
   messages: Message[];
@@ -43,9 +42,8 @@ interface ChatAreaProps {
     activeAgents?: string[];
     collaborationMode?: string;
   };
-  // Enhanced streaming support
   stratixStreamingState?: StratixStreamingState;
-  alegeonStreamingState?: AlegeonStreamingState;
+  alegeonStreamingState?: AlegeonStreamingStateV2;
   onAlegeonFastForward?: () => void;
 }
 
@@ -79,10 +77,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
   const hasConversation = messages.length > 1 || isTyping;
 
-  // Auto-scroll to bottom when component mounts with existing messages
   useEffect(() => {
     if (hasConversation && viewportRef.current) {
-      // Use a small delay to ensure the DOM is fully rendered
       const timer = setTimeout(() => {
         if (viewportRef.current) {
           viewportRef.current.scrollTo({
@@ -112,7 +108,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       <div className="flex-1 overflow-hidden">
         <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
           <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
-            {/* Show streaming error if present */}
             {streamingState?.error && (
               <StreamingError
                 error={streamingState.error}
@@ -122,7 +117,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
               />
             )}
 
-            {/* Show legacy Perplexity-style streaming progress (fallback) */}
             {streamingState?.isStreaming && !stratixStreamingState?.isStreaming && !alegeonStreamingState?.isStreaming && (
               <StreamingProgress
                 currentPhase={streamingState.currentPhase}
@@ -136,13 +130,13 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             )}
 
             {messages.map((msg) => {
-              console.log('🔄 ChatArea: Rendering message', {
+              console.log('🔄 ChatArea V2: Rendering message', {
                 messageId: msg.id,
                 sender: msg.sender,
                 hasStreamingState: !!streamingState,
                 hasStratixStreaming: !!stratixStreamingState?.isStreaming,
                 hasAlegeonStreaming: !!alegeonStreamingState?.isStreaming,
-                isStreaming: streamingState?.isStreaming,
+                alegeonPhase: alegeonStreamingState?.currentPhase,
                 messageText: msg.text.substring(0, 50),
                 timestamp: msg.timestamp
               });
@@ -156,12 +150,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                   onCanvasPrint={onCanvasPrint}
                   onToggleCanvasPreview={handleToggleCanvasPreview}
                   isCanvasPreview={canvasPreviewMessages.has(msg.id)}
-                  // Legacy streaming support (fallback)
                   isStreaming={false}
                   streamingUpdates={[]}
                   streamingSources={[]}
                   streamingProgress={{ phase: '', progress: 0 }}
-                  // Enhanced streaming support
                   stratixStreamingState={stratixStreamingState}
                   alegeonStreamingState={alegeonStreamingState}
                   onAlegeonFastForward={onAlegeonFastForward}
@@ -188,7 +180,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   );
 };
 
-// Helper function moved from constants
 const formatTimestamp = (timestamp: Date): string => {
   return timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };

@@ -11,7 +11,7 @@ import ChatSubheader from '@/components/assistant/ChatSubheader';
 import { useChatSessions } from '@/hooks/useChatSessions';
 import { useChatHistory } from '@/hooks/useChatHistory';
 import { useMessages } from '@/hooks/useMessages';
-import { useAlegeonStreaming } from '@/hooks/useAlegeonStreaming';
+import { useAlegeonStreamingV2 } from '@/hooks/useAlegeonStreamingV2';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTheme } from 'next-themes';
 import { Loader2 } from 'lucide-react';
@@ -36,7 +36,6 @@ const AIAssistantPage: React.FC = () => {
     clearHistory
   } = useChatHistory(currentSessionId);
   
-  // Get current session for title
   const currentSession = sessions.find(s => s.id === currentSessionId);
   
   const {
@@ -57,15 +56,14 @@ const AIAssistantPage: React.FC = () => {
     streamingState,
     stratixStreamingState
   } = useMessages(currentSessionId, updateSessionTitle, currentSession?.title);
-  const { streamingState: alegeonStreamingState } = useAlegeonStreaming(null);
+  
+  const { streamingState: alegeonStreamingStateV2, startStreaming: startAlegeonV2, fastForward } = useAlegeonStreamingV2(null);
   const [editedCanvasContent, setEditedCanvasContent] = useState(canvasState.content);
 
-  // Update edited content when canvas state changes
   useEffect(() => {
     setEditedCanvasContent(canvasState.content);
   }, [canvasState.content]);
 
-  // Enhanced debugging with CSS inspection
   useEffect(() => {
     console.log('=== AI Assistant Page Debug ===');
     console.log('Current route:', window.location.pathname);
@@ -73,7 +71,6 @@ const AIAssistantPage: React.FC = () => {
     console.log('Theme mode:', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
     console.log('Theme from hook:', theme);
 
-    // Check CSS variables
     const rootStyles = getComputedStyle(document.documentElement);
     console.log('CSS Variables:', {
       background: rootStyles.getPropertyValue('--background'),
@@ -84,7 +81,6 @@ const AIAssistantPage: React.FC = () => {
     console.log('=== End Debug ===');
   }, [theme, currentSessionId]);
 
-  // Handle keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'F11') {
@@ -99,11 +95,9 @@ const AIAssistantPage: React.FC = () => {
   }, [isFullscreen]);
 
   const handleSendMessageWithSession = async (text: string, attachments?: any[], modelOverride?: string, researchType?: string) => {
-    // Use the modelOverride if provided, otherwise use the current selectedModel
     const modelToUse = modelOverride || selectedModel;
     console.log('AIAssistantPage: Sending message with session:', currentSessionId, 'model:', modelToUse, 'research type:', researchType);
 
-    // Create session if none exists
     if (!currentSessionId) {
       console.log('AIAssistantPage: No current session, creating new one...');
       const newSession = await createSession();
@@ -113,10 +107,8 @@ const AIAssistantPage: React.FC = () => {
       }
       console.log('AIAssistantPage: Created new session:', newSession.id);
       
-      // Wait for session to be fully set and URL to update
       await new Promise(resolve => setTimeout(resolve, 200));
       
-      // Now send the message with the new session ID passed directly
       console.log('AIAssistantPage: Sending message with new session ID:', newSession.id);
       handleSendMessage(text, undefined, modelToUse, researchType, newSession.id);
     } else {
@@ -135,7 +127,6 @@ const AIAssistantPage: React.FC = () => {
   const handleSessionSelect = (sessionId: string) => {
     console.log('AIAssistantPage: Session selected:', sessionId);
     if (sessionId === '') {
-      // Empty string means clear current session
       navigateToSession(null);
     } else {
       navigateToSession(sessionId);
@@ -149,14 +140,11 @@ const AIAssistantPage: React.FC = () => {
   const handleCanvasContentUpdate = (newContent: string) => {
     console.log('AIAssistantPage: Canvas content updated');
     setEditedCanvasContent(newContent);
-    // TODO: You might want to save this to the backend or update the original message
   };
 
-  // Fixed model selection handler
   const handleModelSelect = (modelId: string) => {
     console.log('AIAssistantPage: Model selected:', modelId);
     setSelectedModel(modelId);
-    // Reset research type to default when switching models
     if (modelId === 'algeon') {
       setSelectedResearchType('business-research');
     }
@@ -167,7 +155,6 @@ const AIAssistantPage: React.FC = () => {
     setSelectedResearchType(type);
   };
 
-  // Show loading state while history is being loaded
   if (isLoadingHistory) {
     return (
       <div className="min-h-screen flex w-full apple-hero relative">
@@ -187,7 +174,6 @@ const AIAssistantPage: React.FC = () => {
     );
   }
 
-  // Fullscreen mode
   if (isFullscreen) {
     return (
       <FullscreenChatLayout 
@@ -212,17 +198,14 @@ const AIAssistantPage: React.FC = () => {
     );
   }
 
-  // Normal mode with proper height constraints for sticky header and input
   return (
     <div className="min-h-screen flex w-full apple-hero relative">
-      {/* Floating Elements at the root level */}
       <FloatingElements />
       
       <SidebarProvider>
         <AppSidebar />
         
         <SidebarInset className="flex-1 flex flex-col bg-transparent h-screen">
-          {/* Fixed Header */}
           {isMobile ? (
             <MobileDashboardHeader title="AI Assistant" />
           ) : (
@@ -245,7 +228,6 @@ const AIAssistantPage: React.FC = () => {
             </div>
           )}
           
-          {/* Main chat area - takes remaining height */}
           <div className="flex-1 min-h-0 bg-transparent">
             <ChatArea 
               messages={messages} 
@@ -259,13 +241,13 @@ const AIAssistantPage: React.FC = () => {
               onCanvasPrint={handleCanvasPrint}
               streamingState={streamingState}
               stratixStreamingState={stratixStreamingState}
-              alegeonStreamingState={alegeonStreamingState}
+              alegeonStreamingState={alegeonStreamingStateV2}
+              onAlegeonFastForward={fastForward}
             />
           </div>
         </SidebarInset>
       </SidebarProvider>
 
-      {/* SINGLE Canvas View - Only rendered here */}
       <CanvasView 
         isOpen={canvasState.isOpen} 
         onClose={handleCloseCanvas} 
