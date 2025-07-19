@@ -83,10 +83,19 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
     (alegeonStreamingState.isComplete && message.metadata?.messageType === 'completed_report')
   );
 
-  // Get citations for this message
+  // Enhanced citation handling: Get citations from multiple sources with priority
   const messageCitations = message.finalCitations || 
     (alegeonStreamingState?.isComplete && alegeonStreamingState?.citations) || 
     [];
+
+  console.log('💬 ChatMessage: Rendering message with citations:', {
+    messageId: message.id,
+    sender: message.sender,
+    hasMessageCitations: !!message.finalCitations,
+    hasAlegeonCitations: !!(alegeonStreamingState?.citations),
+    finalCitationsCount: messageCitations.length,
+    citationsPreview: messageCitations.slice(0, 2)
+  });
 
   // Don't render AI messages with empty content unless streaming
   if (isAi && (!message.text || message.text.trim() === '') && !showAlegeonStreaming && !stratixStreamingState?.isStreaming) {
@@ -176,8 +185,10 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
                     <MarkdownRenderer content={message.text} />
                   )}
                   
-                  {/* Display citations at the end of AI messages */}
-                  <SimpleCitations citations={messageCitations} />
+                  {/* Enhanced citation display: Only show citations for completed messages */}
+                  {!isStreamingMessage && !showAlegeonStreaming && messageCitations.length > 0 && (
+                    <SimpleCitations citations={messageCitations} />
+                  )}
                 </>
               ) : (
                 <p className="whitespace-pre-wrap">{message.text}</p>
@@ -198,7 +209,7 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
     </div>
   );
 }, (prevProps, nextProps) => {
-  // Optimized comparison to prevent unnecessary re-renders
+  // Enhanced comparison to prevent unnecessary re-renders
   if (prevProps.message.id !== nextProps.message.id) {
     return false;
   }
@@ -213,11 +224,12 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
     return true;
   }
   
-  // For non-streaming messages, check basic properties
+  // For non-streaming messages, check basic properties including citations
   return (
     prevProps.message.text === nextProps.message.text &&
     prevProps.isStreaming === nextProps.isStreaming &&
-    (prevAlgeonState?.isComplete === nextAlgeonState?.isComplete)
+    (prevAlgeonState?.isComplete === nextAlgeonState?.isComplete) &&
+    JSON.stringify(prevProps.message.finalCitations) === JSON.stringify(nextProps.message.finalCitations)
   );
 });
 

@@ -122,7 +122,7 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     scrollToBottom();
   }, [messages.length, isTyping, scrollToBottom]);
 
-  // Simplified Algeon streaming message management
+  // Enhanced Algeon streaming message management with proper citation handling
   useEffect(() => {
     const currentBufferedText = alegeonStreamingState.bufferedText;
     const completionKey = `${currentBufferedText.substring(0, 100)}-${alegeonStreamingState.isComplete}`;
@@ -146,6 +146,7 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
       
     } else if (alegeonStreamingState.isComplete && currentBufferedText && !processedCompletionsRef.current.has(completionKey)) {
       console.log('✅ Algeon streaming completed, creating final message with citations');
+      console.log('📋 Final citations received:', alegeonStreamingState.citations);
       
       // Mark this completion as processed
       processedCompletionsRef.current.add(completionKey);
@@ -160,25 +161,22 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
           messageType: 'completed_report',
           isCompleted: true
         },
-        finalCitations: alegeonStreamingState.citations // Use citations from final chunk
+        finalCitations: alegeonStreamingState.citations // Citations from final chunk with is_complete=true
       };
+      
+      console.log('💬 Creating final message with citations:', finalMessage.finalCitations);
       
       dispatch({ 
         type: 'REPLACE_STREAMING_WITH_FINAL', 
         payload: { finalMessage, streamingId: STREAMING_MESSAGE_ID }
       });
       
-      // Save final message to history - clean text only
-      if (currentSessionId && currentBufferedText) {
-        addMessage(`AI: ${currentBufferedText}`);
-
-        // Auto-title generation logic
-        if (updateSessionTitle && sessionTitle && shouldGenerateTitle(history.length + 1, sessionTitle)) {
-          const userMessages = history.filter(h => h.message.startsWith('USER:'));
-          if (userMessages.length > 0) {
-            const firstUserMessage = userMessages[0].message.substring(5).trim();
-            generateAndSetTitle(currentSessionId, firstUserMessage, currentBufferedText, updateSessionTitle);
-          }
+      // Auto-title generation logic (only for new sessions)
+      if (updateSessionTitle && sessionTitle && shouldGenerateTitle(history.length + 1, sessionTitle)) {
+        const userMessages = history.filter(h => h.message.startsWith('USER:'));
+        if (userMessages.length > 0) {
+          const firstUserMessage = userMessages[0].message.substring(5).trim();
+          generateAndSetTitle(currentSessionId, firstUserMessage, currentBufferedText, updateSessionTitle);
         }
       }
       
@@ -192,12 +190,16 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     alegeonStreamingState.bufferedText, 
     alegeonStreamingState.isComplete,
     alegeonStreamingState.hasContent,
-    alegeonStreamingState.citations, // Only listen to final citations
+    alegeonStreamingState.citations, // Enhanced citation tracking
     currentSessionId,
-    addMessage
+    updateSessionTitle,
+    sessionTitle,
+    history,
+    shouldGenerateTitle,
+    generateAndSetTitle
   ]);
 
-  // Load messages from history - simplified without citation parsing
+  // Load messages from history with deduplication
   useEffect(() => {
     console.log('useMessages: History effect triggered - Session:', currentSessionId, 'History length:', history.length);
     
@@ -207,7 +209,7 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     }
     
     if (!isInitialLoad && history.length > 0) {
-      console.log('📚 Converting history to messages:', history.slice(0, 3));
+      console.log('📚 Converting history to messages with deduplication:', history.slice(0, 3));
       const convertedMessages = history.map((entry, index) => {
         console.log(`Processing history entry ${index}:`, entry);
         
@@ -247,16 +249,22 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
         return message;
       }).filter(Boolean) as ExtendedMessage[];
       
-      console.log('🔄 REPLACING messages array with history');
-      dispatch({ type: 'SET_MESSAGES', payload: [...initialMessages as ExtendedMessage[], ...convertedMessages] });
-      console.log('✅ Loaded messages from history:', convertedMessages.length);
+      // Enhanced deduplication: prevent loading messages that might be duplicates
+      const currentMessageTexts = new Set(messages.map(msg => msg.text.substring(0, 100)));
+      const deduplicatedMessages = convertedMessages.filter(msg => 
+        !currentMessageTexts.has(msg.text.substring(0, 100))
+      );
       
-      // Restore canvas documents from history
+      console.log('🔄 REPLACING messages array with deduplicated history');
+      console.log('📊 Deduplicated:', convertedMessages.length - deduplicatedMessages.length, 'messages');
+      dispatch({ type: 'SET_MESSAGES', payload: [...initialMessages as ExtendedMessage[], ...deduplicatedMessages] });
+      console.log('✅ Loaded deduplicated messages from history:', deduplicatedMessages.length);
+      
       const restoreCanvasFromHistory = async () => {
         try {
           console.log('🎨 Checking for canvas documents to restore...');
           
-          const aiMessages = convertedMessages.filter(msg => msg.sender === 'ai');
+          const aiMessages = deduplicatedMessages.filter(msg => msg.sender === 'ai');
           
           const { data: { user } } = await supabase.auth.getUser();
           if (!user) return;
@@ -305,7 +313,7 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
       console.log('🔄 No history found, resetting to initial messages');
       dispatch({ type: 'SET_MESSAGES', payload: initialMessages as ExtendedMessage[] });
     }
-  }, [currentSessionId, history, isInitialLoad]);
+  }, [currentSessionId, history, isInitialLoad, messages]);
 
   const detectResearchQuery = useCallback((prompt: string): boolean => {
     const trimmedPrompt = prompt.trim().toLowerCase();
@@ -343,7 +351,7 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     return hasResearchKeywords || (isLongQuery && hasQuestionWords);
   }, []);
 
-  // Simplified Algeon request handler
+  // Simplified Algeon request handler with enhanced citation logging
   const handleAlegeonRequest = useCallback(async (message: string, researchType?: string, sessionId?: string | null): Promise<string> => {
     try {
       console.log('🔬 Starting Algeon streaming for message:', message.substring(0, 100));
@@ -352,7 +360,8 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
       
       console.log('✅ Algeon request completed:', {
         textLength: result.text.length,
-        citationsCount: result.citations.length
+        citationsCount: result.citations.length,
+        citationsPreview: result.citations.slice(0, 2)
       });
       
       return result.text;
@@ -580,7 +589,7 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
       let aiResponseText: string;
 
       if (selectedModel === 'algeon' || (selectedModel === 'best' && detectResearchQuery(finalMessageText))) {
-        console.log('🔬 Using Algeon model with simplified citation handling');
+        console.log('🔬 Using Algeon model with enhanced citation handling');
         aiResponseText = await handleAlegeonRequest(finalMessageText, researchType, currentSessionId);
       }
       else if (selectedModel === 'stratix') {

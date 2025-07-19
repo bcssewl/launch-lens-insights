@@ -66,7 +66,7 @@ export const useAlegeonStreaming = () => {
   // Transform optimized state to legacy format for compatibility
   const alegeonStreamingState: AlegeonStreamingState = {
     ...streamingState,
-    citations: finalCitationsRef.current, // Only use final citations
+    citations: finalCitationsRef.current, // Only use final citations from is_complete=true chunk
     hasContent: streamingState.displayedText.length > 0 || streamingState.bufferedText.length > 0
   } as any;
 
@@ -162,14 +162,30 @@ export const useAlegeonStreaming = () => {
                 processChunk(data.content);
               }
               
-              // Only capture citations when stream is complete
+              // Enhanced citation capture: Only when stream is complete with is_complete=true
               if (data.is_complete === true && !requestCompletedRef.current) {
-                console.log('✅ Algeon request completed with final citations');
+                console.log('✅ Algeon request completed with final chunk containing citations');
+                console.log('📋 Raw citations from final chunk:', data.citations);
+                console.log('📋 Raw sources from final chunk:', data.sources);
+                
                 requestCompletedRef.current = true;
                 
-                // Capture final citations from the completion chunk
-                const finalCitations = data.citations || data.sources || [];
-                finalCitationsRef.current = finalCitations;
+                // Enhanced citation processing: Handle both citations and sources fields
+                const rawCitations = data.citations || [];
+                const rawSources = data.sources || [];
+                
+                // Combine and normalize citations with proper name and URL extraction
+                const allSources = [...rawCitations, ...rawSources];
+                const processedCitations = allSources
+                  .filter(source => source && (source.name || source.url)) // Ensure we have name or URL
+                  .map(source => ({
+                    name: source.name || 'Source', // Fallback name if missing
+                    url: source.url || '#', // Fallback URL if missing
+                    type: source.type || 'reference'
+                  }));
+                
+                console.log('🔗 Processed final citations:', processedCitations);
+                finalCitationsRef.current = processedCitations;
                 
                 if (!hasResolvedRef.current) {
                   hasResolvedRef.current = true;
@@ -178,7 +194,12 @@ export const useAlegeonStreaming = () => {
                   
                   completeStreaming();
                   
-                  resolve({ text: finalText, citations: finalCitations });
+                  console.log('✅ Resolving with final text and citations:', {
+                    textLength: finalText.length,
+                    citationsCount: processedCitations.length
+                  });
+                  
+                  resolve({ text: finalText, citations: processedCitations });
                   cleanup();
                 }
               }
@@ -212,6 +233,7 @@ export const useAlegeonStreaming = () => {
             
             if (finalText && finalText.length > 50 && (event.code === 1000 || event.wasClean)) {
               completeStreaming();
+              console.log('🔌 WebSocket closed cleanly, resolving with existing citations:', finalCitationsRef.current.length);
               resolve({ text: finalText, citations: finalCitationsRef.current });
             } else if (event.code === 1006) {
               reject(new Error('Connection lost unexpectedly'));
