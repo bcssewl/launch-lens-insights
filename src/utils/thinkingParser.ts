@@ -1,3 +1,4 @@
+
 /**
  * ThinkingParser - Robust parser for <think> tags in streaming content
  * Handles edge cases like split tags, nested thinking, and buffer cleanup
@@ -12,6 +13,7 @@ export interface ThinkingPhase {
 
 export class ThinkingParser {
   private buffer = '';
+  private cleanBuffer = ''; // Buffer for clean content (without thinking tags)
   private thoughts: string[] = [];
   private thinkingNestLevel = 0;
   private phase: ThinkingPhase['phase'] = 'idle';
@@ -21,67 +23,124 @@ export class ThinkingParser {
    * Process incoming chunk and extract thinking content
    */
   processChunk(chunk: string): ThinkingPhase {
+    console.log('🧠 ThinkingParser: Processing chunk:', chunk.length, 'chars');
+    
     // Append chunk to buffer for complete tag detection
     this.buffer += chunk;
 
-    // Process all complete <think>...</think> pairs
-    while (this.buffer.includes('<think>') && this.buffer.includes('</think>')) {
-      this.extractThinkingBlock();
-    }
+    // Process all complete <think>...</think> pairs and extract clean content
+    this.processBuffer();
 
     // Update phase based on current state
     this.updatePhase();
 
-    return this.getCurrentPhase();
+    const currentPhase = this.getCurrentPhase();
+    console.log('🧠 ThinkingParser: Current phase:', currentPhase.phase, 'thoughts:', currentPhase.totalThoughts);
+    
+    return currentPhase;
   }
 
   /**
-   * Extract one complete thinking block from buffer
+   * Process the buffer to extract thinking blocks and clean content
    */
-  private extractThinkingBlock(): void {
-    const startTag = '<think>';
-    const endTag = '</think>';
-    
-    const startIndex = this.buffer.indexOf(startTag);
-    const endIndex = this.buffer.indexOf(endTag);
+  private processBuffer(): void {
+    let workingBuffer = this.buffer;
+    let cleanContent = '';
+    let lastProcessedIndex = 0;
 
-    if (startIndex === -1 || endIndex === -1 || endIndex < startIndex) {
-      return;
-    }
-
-    // Handle nested <think> tags by counting levels
-    let currentPos = startIndex + startTag.length;
-    let nestLevel = 1;
-    
-    while (currentPos < endIndex && nestLevel > 0) {
-      const nextStart = this.buffer.indexOf(startTag, currentPos);
-      const nextEnd = this.buffer.indexOf(endTag, currentPos);
+    // Find all thinking blocks in the buffer
+    while (true) {
+      const startTag = '<think>';
+      const endTag = '</think>';
       
-      if (nextStart !== -1 && nextStart < nextEnd) {
-        nestLevel++;
-        currentPos = nextStart + startTag.length;
-      } else if (nextEnd !== -1) {
-        nestLevel--;
-        currentPos = nextEnd + endTag.length;
+      const startIndex = workingBuffer.indexOf(startTag, lastProcessedIndex);
+      
+      if (startIndex === -1) {
+        // No more thinking blocks, add remaining content to clean buffer
+        cleanContent += workingBuffer.slice(lastProcessedIndex);
+        break;
+      }
+
+      // Add content before thinking block to clean buffer
+      cleanContent += workingBuffer.slice(lastProcessedIndex, startIndex);
+
+      const endIndex = workingBuffer.indexOf(endTag, startIndex);
+      
+      if (endIndex === -1) {
+        // Incomplete thinking block, stop processing
+        break;
+      }
+
+      // Handle nested <think> tags by counting levels
+      let currentPos = startIndex + startTag.length;
+      let nestLevel = 1;
+      let actualEndIndex = endIndex;
+      
+      while (currentPos < workingBuffer.length && nestLevel > 0) {
+        const nextStart = workingBuffer.indexOf(startTag, currentPos);
+        const nextEnd = workingBuffer.indexOf(endTag, currentPos);
+        
+        if (nextStart !== -1 && nextStart < nextEnd) {
+          nestLevel++;
+          currentPos = nextStart + startTag.length;
+        } else if (nextEnd !== -1) {
+          nestLevel--;
+          if (nestLevel === 0) {
+            actualEndIndex = nextEnd;
+          }
+          currentPos = nextEnd + endTag.length;
+        } else {
+          break;
+        }
+      }
+
+      if (nestLevel === 0) {
+        // Complete thinking block found
+        const thinkingContent = workingBuffer
+          .slice(startIndex + startTag.length, actualEndIndex)
+          .replace(/<\/?[^>]+>/g, '') // Remove any HTML tags
+          .trim()
+          .slice(0, 180); // Limit to 180 chars per thought
+
+        if (thinkingContent && thinkingContent.length > 10) {
+          this.thoughts.push(thinkingContent);
+          this.isThinkingActive = true;
+          console.log('🧠 ThinkingParser: Extracted thought:', thinkingContent.substring(0, 50) + '...');
+        }
+
+        // Move past this thinking block
+        lastProcessedIndex = actualEndIndex + endTag.length;
       } else {
+        // Incomplete nested block, stop processing
         break;
       }
     }
 
-    // Extract thinking content (sanitized and limited)
-    const thinkingContent = this.buffer
-      .slice(startIndex + startTag.length, endIndex)
-      .replace(/<\/?[^>]+>/g, '') // Remove any HTML tags
-      .trim()
-      .slice(0, 180); // Limit to 180 chars per thought
-
-    if (thinkingContent && thinkingContent.length > 10) {
-      this.thoughts.push(thinkingContent);
-      this.isThinkingActive = true;
+    // Update clean buffer with processed content
+    this.cleanBuffer = cleanContent;
+    
+    // Remove processed content from main buffer
+    if (lastProcessedIndex > 0) {
+      this.buffer = workingBuffer.slice(lastProcessedIndex);
     }
 
-    // Clean up buffer - remove processed content including stale tail
-    this.buffer = this.buffer.slice(endIndex + endTag.length);
+    console.log('🧠 ThinkingParser: Clean content length:', this.cleanBuffer.length, 'Buffer remaining:', this.buffer.length);
+  }
+
+  /**
+   * Get cleaned content without thinking tags
+   */
+  getCleanContent(): string {
+    return this.cleanBuffer;
+  }
+
+  /**
+   * Get and consume cleaned content (resets clean buffer)
+   */
+  consumeCleanContent(): string {
+    const content = this.cleanBuffer;
+    this.cleanBuffer = '';
+    return content;
   }
 
   /**
@@ -105,6 +164,14 @@ export class ThinkingParser {
   forceComplete(): ThinkingPhase {
     this.phase = 'done';
     this.isThinkingActive = false;
+    
+    // Process any remaining buffer content as clean content
+    if (this.buffer) {
+      // Remove any incomplete thinking tags from remaining buffer
+      this.cleanBuffer += this.buffer.replace(/<think>[\s\S]*$/g, '');
+      this.buffer = '';
+    }
+    
     return this.getCurrentPhase();
   }
 
@@ -149,10 +216,12 @@ export class ThinkingParser {
    */
   reset(): void {
     this.buffer = '';
+    this.cleanBuffer = '';
     this.thoughts = [];
     this.thinkingNestLevel = 0;
     this.phase = 'idle';
     this.isThinkingActive = false;
+    console.log('🧠 ThinkingParser: Reset complete');
   }
 
   /**
