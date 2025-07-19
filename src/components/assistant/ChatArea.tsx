@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import ChatMessage from '@/components/assistant/ChatMessage';
 import TypingIndicator from '@/components/assistant/TypingIndicator';
@@ -74,7 +74,25 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       return newSet;
     });
   }, []);
+
   const hasConversation = messages.length > 1 || isTyping;
+
+  // Auto-scroll to bottom when component mounts with existing messages
+  useEffect(() => {
+    if (hasConversation && viewportRef.current) {
+      // Use a small delay to ensure the DOM is fully rendered
+      const timer = setTimeout(() => {
+        if (viewportRef.current) {
+          viewportRef.current.scrollTo({
+            top: viewportRef.current.scrollHeight,
+            behavior: 'smooth'
+          });
+        }
+      }, 100);
+
+      return () => clearTimeout(timer);
+    }
+  }, [hasConversation, viewportRef]);
 
   if (!hasConversation) {
     return (
