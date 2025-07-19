@@ -13,6 +13,7 @@ interface StreamingEvent {
   type: 'thinking_started' | 'thinking_chunk' | 'thinking_complete' | 'content_chunk' | 'completion' | 'error';
   content?: string;
   accumulated_content?: string;
+  final_content?: string;
   message?: string;
   code?: number;
   citations?: Array<{
