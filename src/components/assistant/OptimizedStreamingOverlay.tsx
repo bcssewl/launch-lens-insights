@@ -20,7 +20,7 @@ const OptimizedStreamingOverlay: React.FC<OptimizedStreamingOverlayProps> = memo
   streamingState,
   className
 }) => {
-  const { isStreaming, displayedText, citations, error, isComplete, progress } = streamingState;
+  const { isStreaming, displayedText, citations, error, isComplete, progress, currentPhaseMessage } = streamingState;
 
   // Show overlay during streaming, when there's content, or when there's an error
   const shouldShow = isStreaming || displayedText || error || isComplete;
@@ -46,7 +46,7 @@ const OptimizedStreamingOverlay: React.FC<OptimizedStreamingOverlayProps> = memo
   const getPhase = () => {
     if (error) return 'Error occurred';
     if (isComplete) return 'Research complete';
-    if (isStreaming) return 'Researching with Algeon...';
+    if (isStreaming && currentPhaseMessage) return currentPhaseMessage;
     return 'Processing...';
   };
 
@@ -100,6 +100,11 @@ const OptimizedStreamingOverlay: React.FC<OptimizedStreamingOverlayProps> = memo
                 </span>
               </div>
               <Progress value={progress} className="h-1" />
+              {isStreaming && (
+                <div className="text-xs text-muted-foreground/75 mt-1">
+                  Session timeout: 12 minutes
+                </div>
+              )}
             </div>
           </div>
 
@@ -169,7 +174,8 @@ const OptimizedStreamingOverlay: React.FC<OptimizedStreamingOverlayProps> = memo
     prev.isComplete === next.isComplete &&
     prev.error === next.error &&
     prev.progress === next.progress &&
-    prev.citations.length === next.citations.length
+    prev.citations.length === next.citations.length &&
+    prev.currentPhaseMessage === next.currentPhaseMessage
   );
 });
 

@@ -1,8 +1,8 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useOptimizedStreaming } from './useOptimizedStreaming';
 
-// Configuration constants
-const STREAMING_TIMEOUT_MS = 300000; // 5 minutes
+// Configuration constants - Updated to 12 minutes
+const STREAMING_TIMEOUT_MS = 720000; // 12 minutes
 const HEARTBEAT_INTERVAL = 30000; // 30 seconds
 
 interface AlegeonStreamingEvent {
@@ -43,6 +43,8 @@ export interface AlegeonStreamingState {
     type?: string;
   }>;
   hasContent: boolean;
+  currentPhaseMessage: string;
+  phaseStartTime: number;
 }
 
 export const useAlegeonStreaming = () => {
@@ -112,6 +114,7 @@ export const useAlegeonStreaming = () => {
     
     console.log('🚀 Starting Algeon streaming request for:', query.substring(0, 50));
     console.log('🔬 Research Type Selected:', selectedType);
+    console.log('⏱️ Session timeout set to 12 minutes');
     
     resetState();
     startStreaming();
@@ -121,7 +124,7 @@ export const useAlegeonStreaming = () => {
       hasResolvedRef.current = false;
       requestCompletedRef.current = false;
 
-      // Set overall timeout
+      // Set overall timeout to 12 minutes
       timeoutRef.current = window.setTimeout(() => {
         if (!hasResolvedRef.current) {
           hasResolvedRef.current = true;
@@ -130,7 +133,7 @@ export const useAlegeonStreaming = () => {
           if (finalText) {
             resolve({ text: finalText, citations: finalCitations });
           } else {
-            reject(new Error('Streaming timeout - research taking longer than expected'));
+            reject(new Error('Research session timeout - taking longer than 12 minutes'));
           }
           cleanup();
         }

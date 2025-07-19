@@ -13,6 +13,8 @@ interface OptimizedStreamingState {
   error: string | null;
   isComplete: boolean;
   progress: number;
+  currentPhaseMessage: string;
+  phaseStartTime: number;
 }
 
 export const useOptimizedStreaming = () => {
@@ -24,6 +26,8 @@ export const useOptimizedStreaming = () => {
     error: null,
     isComplete: false,
     progress: 0,
+    currentPhaseMessage: 'Thinking...',
+    phaseStartTime: Date.now(),
   });
 
   const bufferRef = useRef<string>('');
@@ -33,6 +37,7 @@ export const useOptimizedStreaming = () => {
   const isAnimatingRef = useRef<boolean>(false);
   const batchSizeRef = useRef<number>(1); // Characters per batch for smooth typing
   const isCompletedRef = useRef<boolean>(false); // Track completion to prevent duplicates
+  const phaseIntervalRef = useRef<number | null>(null);
 
   // Optimized typewriter animation using RAF with precise character-per-frame calculation
   const typewriterAnimation = useCallback(() => {
@@ -107,6 +112,16 @@ export const useOptimizedStreaming = () => {
     }));
   }, []);
 
+  // Update phase message
+  const updatePhaseMessage = useCallback((message: string) => {
+    console.log('🔄 Phase update:', message);
+    setStreamingState(prev => ({
+      ...prev,
+      currentPhaseMessage: message,
+      phaseStartTime: Date.now()
+    }));
+  }, []);
+
   // Complete streaming and show all remaining text
   const completeStreaming = useCallback(() => {
     // Prevent duplicate completion
@@ -126,13 +141,18 @@ export const useOptimizedStreaming = () => {
       isStreaming: false,
       isComplete: true,
       displayedText: bufferRef.current,
-      progress: 100
+      progress: 100,
+      currentPhaseMessage: 'Complete'
     }));
 
-    // Clean up animation
+    // Clean up animation and phase timer
     if (animationRef.current) {
       cancelAnimationFrame(animationRef.current);
       animationRef.current = null;
+    }
+    if (phaseIntervalRef.current) {
+      clearInterval(phaseIntervalRef.current);
+      phaseIntervalRef.current = null;
     }
     isAnimatingRef.current = false;
   }, []);
@@ -152,6 +172,13 @@ export const useOptimizedStreaming = () => {
       animationRef.current = null;
     }
 
+    if (phaseIntervalRef.current) {
+      clearInterval(phaseIntervalRef.current);
+      phaseIntervalRef.current = null;
+    }
+
+    const startTime = Date.now();
+
     setStreamingState({
       isStreaming: true,
       displayedText: '',
@@ -160,8 +187,28 @@ export const useOptimizedStreaming = () => {
       error: null,
       isComplete: false,
       progress: 0,
+      currentPhaseMessage: 'Thinking...',
+      phaseStartTime: startTime,
     });
-  }, []);
+
+    // Set up phase message timer (every 3 minutes)
+    const phaseMessages = [
+      'Thinking...',           // 0-3 minutes
+      'Still thinking...',     // 3-6 minutes  
+      'Gathering resources...', // 6-9 minutes
+      'Structuring data, almost done...' // 9-12 minutes
+    ];
+    
+    let currentPhaseIndex = 0;
+    
+    phaseIntervalRef.current = window.setInterval(() => {
+      currentPhaseIndex++;
+      if (currentPhaseIndex < phaseMessages.length && !isCompletedRef.current) {
+        updatePhaseMessage(phaseMessages[currentPhaseIndex]);
+      }
+    }, 180000); // 3 minutes = 180,000ms
+
+  }, [updatePhaseMessage]);
 
   // Set error and cleanup
   const setError = useCallback((error: string) => {
@@ -169,13 +216,18 @@ export const useOptimizedStreaming = () => {
       ...prev,
       isStreaming: false,
       error,
-      isComplete: false
+      isComplete: false,
+      currentPhaseMessage: 'Error occurred'
     }));
 
-    // Clean up animation
+    // Clean up animation and phase timer
     if (animationRef.current) {
       cancelAnimationFrame(animationRef.current);
       animationRef.current = null;
+    }
+    if (phaseIntervalRef.current) {
+      clearInterval(phaseIntervalRef.current);
+      phaseIntervalRef.current = null;
     }
     isAnimatingRef.current = false;
     isCompletedRef.current = false;
@@ -191,10 +243,14 @@ export const useOptimizedStreaming = () => {
     isAnimatingRef.current = false;
     isCompletedRef.current = false;
     
-    // Cancel any ongoing animation
+    // Cancel any ongoing animation and phase timer
     if (animationRef.current) {
       cancelAnimationFrame(animationRef.current);
       animationRef.current = null;
+    }
+    if (phaseIntervalRef.current) {
+      clearInterval(phaseIntervalRef.current);
+      phaseIntervalRef.current = null;
     }
 
     // Reset state
@@ -206,6 +262,8 @@ export const useOptimizedStreaming = () => {
       error: null,
       isComplete: false,
       progress: 0,
+      currentPhaseMessage: 'Thinking...',
+      phaseStartTime: Date.now(),
     });
   }, []);
 
@@ -214,6 +272,9 @@ export const useOptimizedStreaming = () => {
     return () => {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
+      }
+      if (phaseIntervalRef.current) {
+        clearInterval(phaseIntervalRef.current);
       }
     };
   }, []);
@@ -225,6 +286,7 @@ export const useOptimizedStreaming = () => {
     completeStreaming,
     startStreaming,
     setError,
-    reset // NEW METHOD
+    reset,
+    updatePhaseMessage
   };
 };
