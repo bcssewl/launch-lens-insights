@@ -1,7 +1,7 @@
-
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { detectAlgeonResearchType, type AlgeonResearchType } from '@/utils/algeonResearchTypes';
 import { useReasoning } from '@/contexts/ReasoningContext';
+import { useAlegeonTypewriter } from './useAlegeonTypewriter';
 
 // Configuration constants - Updated to 12 minutes
 const STREAMING_TIMEOUT_MS = 720000; // 12 minutes
@@ -52,6 +52,8 @@ export interface AlegeonStreamingState {
   hasContent: boolean;
   currentPhaseMessage: string;
   phaseStartTime: number;
+  isTyping: boolean;
+  typewriterProgress: number;
 }
 
 export const useAlegeonStreaming = (messageId: string | null) => {
@@ -67,9 +69,23 @@ export const useAlegeonStreaming = (messageId: string | null) => {
     hasContent: false,
     currentPhaseMessage: '',
     phaseStartTime: Date.now(),
+    isTyping: false,
+    typewriterProgress: 0,
   });
 
   const { setThinkingState } = useReasoning();
+
+  // Typewriter effect for smooth display
+  const { displayedText: typewriterText, isTyping, progress: typewriterProgress, fastForward } = useAlegeonTypewriter(
+    streamingState.bufferedText,
+    {
+      speed: 25, // 25 characters per second
+      enabled: streamingState.isStreaming || streamingState.bufferedText.length > 0,
+      onComplete: () => {
+        console.log('🎯 Typewriter animation completed');
+      }
+    }
+  );
 
   const wsRef = useRef<WebSocket | null>(null);
   const timeoutRef = useRef<number | null>(null);
@@ -80,6 +96,16 @@ export const useAlegeonStreaming = (messageId: string | null) => {
   } | null>(null);
   const hasResolvedRef = useRef<boolean>(false);
   const requestCompletedRef = useRef<boolean>(false);
+
+  // Update streaming state with typewriter values
+  useEffect(() => {
+    setStreamingState(prev => ({
+      ...prev,
+      displayedText: typewriterText,
+      isTyping,
+      typewriterProgress
+    }));
+  }, [typewriterText, isTyping, typewriterProgress]);
 
   const cleanup = useCallback(() => {
     if (timeoutRef.current) {
@@ -118,6 +144,8 @@ export const useAlegeonStreaming = (messageId: string | null) => {
       hasContent: false,
       currentPhaseMessage: '',
       phaseStartTime: Date.now(),
+      isTyping: false,
+      typewriterProgress: 0,
     });
     setThinkingState(null);
     cleanup();
@@ -191,42 +219,51 @@ export const useAlegeonStreaming = (messageId: string | null) => {
             setStreamingState(prev => {
               const newState = { ...prev };
               
-              // Handle different event types based on backend format
-              if (data.type === 'chunk') {
-                if (data.accumulated_content) {
-                  hasReceivedContent = true;
-                  newState.bufferedText = data.accumulated_content;
-                  newState.hasContent = true;
-                  console.log('📝 Content chunk received, accumulated length:', data.accumulated_content.length);
-                  
-                  // Update progress if available
-                  if (data.progress) {
-                    newState.progress = Math.min(90, (data.progress.characters_sent / 5000) * 100);
-                    newState.currentPhaseMessage = `Processing... ${data.progress.chunk_number} chunks received`;
-                  }
+              // Handle chunk events - buffer the content for typewriter effect
+              if (data.type === 'chunk' && data.accumulated_content) {
+                hasReceivedContent = true;
+                newState.bufferedText = data.accumulated_content;
+                newState.hasContent = true;
+                
+                console.log('📝 Content chunk received, accumulated length:', data.accumulated_content.length);
+                
+                // Update streaming progress
+                if (data.progress) {
+                  const streamingProgress = Math.min(85, (data.progress.characters_sent / 5000) * 85);
+                  newState.progress = streamingProgress;
+                  newState.currentPhaseMessage = `Processing... ${data.progress.chunk_number} chunks received`;
                 }
-              } else if (data.is_complete === true) {
+              }
+              // Handle completion
+              else if (data.is_complete === true) {
                 if (!requestCompletedRef.current) {
                   requestCompletedRef.current = true;
                   newState.isComplete = true;
                   newState.isStreaming = false;
-                  newState.displayedText = data.accumulated_content || prev.bufferedText;
-                  newState.bufferedText = '';
+                  newState.bufferedText = data.accumulated_content || prev.bufferedText;
                   newState.citations = data.citations || data.sources || [];
                   newState.finalCitations = newState.citations;
-                  newState.progress = 100;
-                  newState.currentPhaseMessage = 'Research completed';
+                  newState.progress = 85; // Leave room for typewriter to complete
+                  newState.currentPhaseMessage = 'Research completed - displaying results';
                   
                   console.log('✅ Algeon request completed');
                   console.log('📚 Final citations:', newState.citations);
                   
+                  // Don't resolve immediately - wait for typewriter to finish
                   if (!hasResolvedRef.current) {
-                    hasResolvedRef.current = true;
-                    resolve(newState.displayedText);
-                    cleanup();
+                    // Set a timeout to resolve after typewriter has had time to complete
+                    setTimeout(() => {
+                      if (!hasResolvedRef.current) {
+                        hasResolvedRef.current = true;
+                        resolve(newState.bufferedText);
+                        cleanup();
+                      }
+                    }, Math.max(1000, (newState.bufferedText.length / 25) * 1000)); // Wait for typewriter
                   }
                 }
-              } else if (data.error) {
+              }
+              // Handle errors
+              else if (data.error) {
                 console.error('❌ Backend error:', data.error);
                 newState.error = data.error;
                 newState.isStreaming = false;
@@ -336,6 +373,7 @@ export const useAlegeonStreaming = (messageId: string | null) => {
     streamingState,
     startStreaming,
     stopStreaming,
-    resetState
+    resetState,
+    fastForward // Allow users to skip typewriter animation
   };
 };

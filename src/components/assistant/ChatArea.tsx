@@ -46,6 +46,7 @@ interface ChatAreaProps {
   // Enhanced streaming support
   stratixStreamingState?: StratixStreamingState;
   alegeonStreamingState?: AlegeonStreamingState;
+  onAlegeonFastForward?: () => void;
 }
 
 const ChatArea: React.FC<ChatAreaProps> = ({
@@ -59,7 +60,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   onCanvasPrint,
   streamingState,
   stratixStreamingState,
-  alegeonStreamingState
+  alegeonStreamingState,
+  onAlegeonFastForward
 }) => {
   const [canvasPreviewMessages, setCanvasPreviewMessages] = useState<Set<string>>(new Set());
 
@@ -162,6 +164,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                   // Enhanced streaming support
                   stratixStreamingState={stratixStreamingState}
                   alegeonStreamingState={alegeonStreamingState}
+                  onAlegeonFastForward={onAlegeonFastForward}
                 />
               );
             })}
