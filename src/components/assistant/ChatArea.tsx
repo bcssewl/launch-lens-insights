@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import ChatMessage from '@/components/assistant/ChatMessage';
@@ -131,6 +130,17 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             )}
 
             {messages.map((msg) => {
+              console.log('🔄 ChatArea V2: Rendering message', {
+                messageId: msg.id,
+                sender: msg.sender,
+                hasStreamingState: !!streamingState,
+                hasStratixStreaming: !!stratixStreamingState?.isStreaming,
+                hasAlegeonStreaming: !!alegeonStreamingState?.isStreaming,
+                alegeonPhase: alegeonStreamingState?.currentPhase,
+                messageText: msg.text.substring(0, 50),
+                timestamp: msg.timestamp
+              });
+
               return (
                 <ChatMessage 
                   key={msg.id} 

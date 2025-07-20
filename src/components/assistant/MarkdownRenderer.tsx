@@ -11,16 +11,6 @@ interface MarkdownRendererProps {
   className?: string;
 }
 
-const removeEmojis = (text: any): any => {
-  if (typeof text === 'string') {
-    return text.replace(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '').trim();
-  }
-  if (Array.isArray(text)) {
-    return text.map(removeEmojis);
-  }
-  return text;
-};
-
 const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className }) => {
   return (
     <div className={cn("markdown-content prose prose-gray dark:prose-invert max-w-none", className)}>
@@ -28,9 +18,9 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className 
         remarkPlugins={[remarkGfm]}
         components={{
           // Headings
-          h1: ({ children }) => <h1 className="text-lg font-bold mb-2 mt-1">{removeEmojis(children)}</h1>,
-          h2: ({ children }) => <h2 className="text-base font-bold mb-2 mt-1">{removeEmojis(children)}</h2>,
-          h3: ({ children }) => <h3 className="text-sm font-bold mb-1 mt-1">{removeEmojis(children)}</h3>,
+          h1: ({ children }) => <h1 className="text-lg font-bold mb-2 mt-1">{children}</h1>,
+          h2: ({ children }) => <h2 className="text-base font-bold mb-2 mt-1">{children}</h2>,
+          h3: ({ children }) => <h3 className="text-sm font-bold mb-1 mt-1">{children}</h3>,
           
           // Paragraphs
           p: ({ children }) => <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>,

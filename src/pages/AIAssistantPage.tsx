@@ -58,7 +58,7 @@ const AIAssistantPage: React.FC = () => {
     stratixStreamingState
   } = useMessages(currentSessionId, updateSessionTitle, currentSession?.title);
   
-  const { streamingState: alegeonStreamingStateV2, startStreaming: startAlegeonV2, fastForward } = useAlegeonStreamingV2();
+  const { streamingState: alegeonStreamingStateV2, startStreaming: startAlegeonV2, fastForward } = useAlegeonStreamingV2(null);
   const [editedCanvasContent, setEditedCanvasContent] = useState(canvasState.content);
 
   useEffect(() => {

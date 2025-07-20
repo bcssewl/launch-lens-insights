@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useReasoning } from '@/contexts/ReasoningContext';
 import { useAlegeonTypewriter } from './useAlegeonTypewriter';
@@ -22,7 +23,6 @@ const VALID_RESEARCH_TYPES: AlgeonResearchType[] = [
 
 interface StreamingEvent {
   type: 'thinking_started' | 'thinking_chunk' | 'thinking_complete' | 'content_chunk' | 'completion' | 'error';
-  client_message_id: string;
   content?: string;
   accumulated_content?: string;
   final_content?: string;
@@ -46,35 +46,10 @@ interface StreamingEvent {
       total_tokens: number;
     };
   };
-  progress?: {
+  progress: {
     phase: 'reasoning' | 'generating' | 'complete';
     percentage: number;
     detail: string;
-  };
-}
-
-interface MessageStreamingState {
-  phase: 'idle' | 'reasoning' | 'generating' | 'complete';
-  thinkingText: string;
-  contentText: string;
-  citations: Array<{
-    url: string;
-    title: string;
-    description: string;
-  }>;
-  error: string | null;
-  progress: number;
-  progressDetail: string;
-  metadata?: {
-    duration?: number;
-    reasoning_duration?: number;
-    generation_duration?: number;
-    model_name?: string;
-    token_usage?: {
-      prompt_tokens: number;
-      completion_tokens: number;
-      total_tokens: number;
-    };
   };
 }
 
@@ -108,11 +83,7 @@ export interface AlegeonStreamingStateV2 {
   };
 }
 
-export const useAlegeonStreamingV2 = () => {
-  // Central map to manage all streaming messages
-  const [streamingStates, setStreamingStates] = useState<Map<string, MessageStreamingState>>(new Map());
-  
-  // Current active streaming state for compatibility with existing components
+export const useAlegeonStreamingV2 = (messageId: string | null) => {
   const [streamingState, setStreamingState] = useState<AlegeonStreamingStateV2>({
     isStreaming: false,
     currentPhase: 'idle',
@@ -128,10 +99,7 @@ export const useAlegeonStreamingV2 = () => {
     typewriterProgress: 0,
   });
 
-  // Current message ID being processed
-  const [currentMessageId, setCurrentMessageId] = useState<string | null>(null);
-
-  const { setThinkingStateForMessage, clearThinkingStateForMessage, getThinkingStateForMessage } = useReasoning();
+  const { setThinkingStateForMessage, clearThinkingStateForMessage } = useReasoning();
 
   // Typewriter effect for smooth display
   const { displayedText: typewriterText, isTyping, progress: typewriterProgress, fastForward } = useAlegeonTypewriter(
@@ -140,7 +108,7 @@ export const useAlegeonStreamingV2 = () => {
       speed: 25, // 25 characters per second
       enabled: streamingState.currentPhase === 'generating' || streamingState.bufferedText.length > 0,
       onComplete: () => {
-        console.log('🎯 Typewriter animation completed for message:', currentMessageId);
+        console.log('🎯 Typewriter animation completed for message:', messageId);
       }
     }
   );
@@ -166,7 +134,7 @@ export const useAlegeonStreamingV2 = () => {
   }, [typewriterText, isTyping, typewriterProgress]);
 
   const cleanup = useCallback(() => {
-    console.log('🧹 Cleaning up Algeon V2 streaming for message:', currentMessageId);
+    console.log('🧹 Cleaning up Algeon V2 streaming for message:', messageId);
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
@@ -190,13 +158,13 @@ export const useAlegeonStreamingV2 = () => {
     currentThinkingStateRef.current = null;
     
     // Clear thinking state for this specific message
-    if (currentMessageId) {
-      clearThinkingStateForMessage(currentMessageId);
+    if (messageId) {
+      clearThinkingStateForMessage(messageId);
     }
-  }, [currentMessageId, clearThinkingStateForMessage]);
+  }, [messageId, clearThinkingStateForMessage]);
 
   const resetState = useCallback(() => {
-    console.log('🔄 Resetting Algeon V2 streaming state for message:', currentMessageId);
+    console.log('🔄 Resetting Algeon V2 streaming state for message:', messageId);
     setStreamingState({
       isStreaming: false,
       currentPhase: 'idle',
@@ -213,19 +181,16 @@ export const useAlegeonStreamingV2 = () => {
     });
     
     // Clear thinking state for this specific message
-    if (currentMessageId) {
-      clearThinkingStateForMessage(currentMessageId);
+    if (messageId) {
+      clearThinkingStateForMessage(messageId);
     }
     
     cleanup();
-  }, [cleanup, currentMessageId, clearThinkingStateForMessage]);
+  }, [cleanup, messageId, clearThinkingStateForMessage]);
 
-  const startStreaming = useCallback(async (query: string, messageId: string, researchType: string = 'quick_facts'): Promise<string> => {
+  const startStreaming = useCallback(async (query: string, researchType: string = 'quick_facts'): Promise<string> => {
     console.log('🚀 Starting Algeon V2 streaming request for message:', messageId, 'query:', query.substring(0, 50));
     console.log('🔬 Research Type (input):', researchType);
-    
-    // Set the current message ID for this streaming session
-    setCurrentMessageId(messageId);
     
     // Validate research type - check if it's in our valid list
     let validatedResearchType: AlgeonResearchType;
@@ -275,8 +240,7 @@ export const useAlegeonStreamingV2 = () => {
           
           const payload = {
             query,
-            research_type: validatedResearchType,
-            client_message_id: messageId, // Now properly set from parameter
+            research_type: validatedResearchType, // Use the properly validated research type
             scope: "global",
             depth: "comprehensive",
             urgency: "medium",
@@ -292,133 +256,121 @@ export const useAlegeonStreamingV2 = () => {
           
           try {
             const data: StreamingEvent = JSON.parse(event.data);
-            const { client_message_id } = data;
+            console.log('📊 Parsed V2 event for message', messageId, ':', { type: data.type, phase: data.progress?.phase, percentage: data.progress?.percentage });
             
-            console.log('📊 Parsed V2 event:', { 
-              type: data.type, 
-              client_message_id,
-              guaranteed_sequence: true
-            });
-
-            // Skip events without client_message_id
-            if (!client_message_id) {
-              console.warn('⚠️ Event without client_message_id, skipping:', data.type);
-              return;
-            }
-
-            // Update the central map following the guaranteed event sequence
-            setStreamingStates(prevStates => {
-              const newStates = new Map(prevStates);
-              let currentState = newStates.get(client_message_id) || {
-                phase: 'idle',
-                thinkingText: '',
-                contentText: '',
-                citations: [],
-                error: null,
-                progress: 0,
-                progressDetail: ''
-              };
-
-              // Follow the guaranteed event sequence
+            setStreamingState(prev => {
+              const newState = { ...prev };
+              
+              // Update progress from every event
+              if (data.progress) {
+                newState.currentPhase = data.progress.phase;
+                newState.progress = data.progress.percentage;
+                newState.progressDetail = data.progress.detail;
+              }
+              
               switch (data.type) {
                 case 'thinking_started':
-                  console.log('🧠 [LIFECYCLE] Thinking phase started for message:', client_message_id);
-                  // PHASE TRANSITION: idle → reasoning
-                  currentState.phase = 'reasoning';
-                  currentState.thinkingText = ''; // Reset thinking text
+                  console.log('🧠 Thinking phase started for message:', messageId);
+                  newState.currentPhase = 'reasoning';
                   
-                  // Initialize thinking state
-                  const newThinkingState: ThinkingState = {
-                    phase: 'thinking',
-                    thoughts: [],
-                    isThinking: true,
-                    finalContent: ''
-                  };
-                  setThinkingStateForMessage(client_message_id, newThinkingState);
+                  if (messageId) {
+                    const newThinkingState: ThinkingState = {
+                      phase: 'thinking',
+                      thoughts: [],
+                      isThinking: true,
+                      finalContent: ''
+                    };
+                    currentThinkingStateRef.current = newThinkingState;
+                    setThinkingStateForMessage(messageId, newThinkingState);
+                  }
                   break;
 
                 case 'thinking_chunk':
-                  console.log('💭 [CHUNK] Thinking content for message', client_message_id, ':', data.content?.substring(0, 50));
-                  // Only append if we're in reasoning phase
-                  if (currentState.phase === 'reasoning' && data.content) {
-                    currentState.thinkingText += data.content;
+                  console.log('💭 Thinking chunk for message', messageId, ':', data.content?.substring(0, 50));
+                  if (data.content) {
+                    // Add thinking content to both the main message display and thinking state
+                    newState.bufferedText += data.content;
+                    newState.hasContent = true;
                     
-                    // Update thinking state with accumulated content
-                    const existingThinkingState = getThinkingStateForMessage(client_message_id);
-                    if (existingThinkingState) {
+                    // Also update the thinking state for the thinking panel
+                    if (messageId && currentThinkingStateRef.current) {
                       const updatedThinkingState: ThinkingState = {
-                        ...existingThinkingState,
-                        thoughts: [...existingThinkingState.thoughts, data.content],
+                        ...currentThinkingStateRef.current,
+                        thoughts: [...currentThinkingStateRef.current.thoughts, data.content],
                         isThinking: true
                       };
-                      setThinkingStateForMessage(client_message_id, updatedThinkingState);
+                      currentThinkingStateRef.current = updatedThinkingState;
+                      setThinkingStateForMessage(messageId, updatedThinkingState);
                     }
                   }
                   break;
 
                 case 'thinking_complete':
-                  console.log('✅ [LIFECYCLE] Thinking complete - transitioning to generating for message:', client_message_id);
-                  // PHASE TRANSITION: reasoning → generating
-                  currentState.phase = 'generating';
-                  currentState.contentText = ''; // Reset content text for new phase
+                  console.log('✅ Thinking phase complete for message:', messageId);
+                  newState.currentPhase = 'generating';
                   
-                  // Mark thinking as complete
-                  const completedThinkingState = getThinkingStateForMessage(client_message_id);
-                  if (completedThinkingState) {
-                    const updatedThinkingState: ThinkingState = {
-                      ...completedThinkingState,
+                  if (messageId && currentThinkingStateRef.current) {
+                    const completedThinkingState: ThinkingState = {
+                      ...currentThinkingStateRef.current,
                       phase: 'done',
                       isThinking: false
                     };
-                    setThinkingStateForMessage(client_message_id, updatedThinkingState);
+                    currentThinkingStateRef.current = completedThinkingState;
+                    setThinkingStateForMessage(messageId, completedThinkingState);
                   }
                   break;
 
                 case 'content_chunk':
-                  console.log('📝 [CHUNK] Content chunk for message', client_message_id, ', length:', data.content?.length);
-                  // Only append if we're in generating phase
-                  if (currentState.phase === 'generating' && data.content) {
-                    currentState.contentText += data.content;
+                  console.log('📝 Content chunk received for message', messageId, ', length:', data.content?.length);
+                  if (data.content) {
+                    newState.bufferedText += data.content;
+                    newState.hasContent = true;
                   }
                   break;
 
                 case 'completion':
-                  console.log('✅ [LIFECYCLE] Stream completion for message:', client_message_id);
-                  // PHASE TRANSITION: generating → complete
-                  currentState.phase = 'complete';
+                  console.log('✅ Stream completion received for message:', messageId);
+                  newState.isComplete = true;
+                  newState.isStreaming = false;
+                  newState.currentPhase = 'complete';
                   
-                  // Ensure final content is accurate using final_content from completion event
-                  if (data.final_content) {
-                    currentState.contentText = data.final_content;
-                    console.log('📝 Using final_content from completion event for accuracy');
+                  // Use accumulated content if available
+                  if (data.accumulated_content || data.final_content) {
+                    newState.bufferedText = data.accumulated_content || data.final_content || newState.bufferedText;
                   }
                   
                   // Process citations
                   if (data.citations) {
-                    currentState.citations = data.citations;
-                    console.log('📚 Citations processed:', data.citations.length);
+                    newState.citations = data.citations;
+                    console.log('📚 Citations processed for message', messageId, ':', data.citations.length);
                   }
                   
-                  // Store metadata
+                  // Store metadata - the backend sends duration fields correctly
                   if (data.metadata) {
-                    currentState.metadata = {
+                    newState.metadata = {
                       duration: data.metadata.duration,
                       reasoning_duration: data.metadata.reasoning_duration,
                       generation_duration: data.metadata.generation_duration,
                       model_name: data.metadata.model_name,
                       token_usage: data.metadata.token_usage
                     };
-                    console.log('📊 Metadata stored:', currentState.metadata);
+                    console.log('📊 Metadata stored for message', messageId, ':', {
+                      total: data.metadata.duration,
+                      reasoning: data.metadata.reasoning_duration,
+                      generation: data.metadata.generation_duration
+                    });
                   }
                   
-                  // Clean up thinking state after completion
-                  setTimeout(() => {
-                    clearThinkingStateForMessage(client_message_id);
-                  }, 2000);
+                  // Clear thinking state when complete
+                  if (messageId) {
+                    setTimeout(() => {
+                      clearThinkingStateForMessage(messageId);
+                    }, 2000); // Keep thinking visible for 2 seconds after completion
+                  }
                   
-                  // Resolve promise for the current message
-                  if (client_message_id === messageId && !hasResolvedRef.current) {
-                    const finalContent = currentState.contentText;
+                  // Resolve with final content
+                  if (!hasResolvedRef.current) {
+                    const finalContent = data.accumulated_content || data.final_content || prev.bufferedText;
                     setTimeout(() => {
                       if (!hasResolvedRef.current) {
                         hasResolvedRef.current = true;
@@ -430,14 +382,17 @@ export const useAlegeonStreamingV2 = () => {
                   break;
 
                 case 'error':
-                  console.error('❌ [ERROR] Stream error for message', client_message_id, ':', data.message);
-                  currentState.error = data.message || 'An error occurred during research';
-                  currentState.phase = 'complete';
+                  console.error('❌ V2 Stream error for message', messageId, ':', data.message);
+                  newState.error = data.message || 'An error occurred during research';
+                  newState.isStreaming = false;
+                  newState.currentPhase = 'complete';
                   
-                  // Clean up thinking state on error
-                  clearThinkingStateForMessage(client_message_id);
+                  // Clear thinking state on error
+                  if (messageId) {
+                    clearThinkingStateForMessage(messageId);
+                  }
                   
-                  if (client_message_id === messageId && !hasResolvedRef.current) {
+                  if (!hasResolvedRef.current) {
                     hasResolvedRef.current = true;
                     reject(new Error(data.message));
                     cleanup();
@@ -445,40 +400,11 @@ export const useAlegeonStreamingV2 = () => {
                   break;
 
                 default:
-                  console.warn('⚠️ Unknown event type (not in guaranteed sequence):', data.type);
+                  console.warn('⚠️ Unknown V2 event type for message', messageId, ':', data.type);
               }
-
-              // Update progress if provided
-              if (data.progress) {
-                currentState.progress = data.progress.percentage;
-                currentState.progressDetail = data.progress.detail;
-              }
-
-              newStates.set(client_message_id, currentState);
-              return newStates;
+              
+              return newState;
             });
-
-            // Update the current streaming state for the active message
-            if (client_message_id === messageId) {
-              setStreamingState(prev => {
-                const messageState = streamingStates.get(client_message_id);
-                if (!messageState) return prev;
-
-                return {
-                  ...prev,
-                  isStreaming: messageState.phase !== 'complete' && messageState.phase !== 'idle',
-                  currentPhase: messageState.phase,
-                  bufferedText: messageState.contentText,
-                  citations: messageState.citations,
-                  error: messageState.error,
-                  isComplete: messageState.phase === 'complete',
-                  progress: messageState.progress,
-                  progressDetail: messageState.progressDetail,
-                  hasContent: messageState.contentText.length > 0,
-                  metadata: messageState.metadata
-                };
-              });
-            }
             
           } catch (parseError) {
             console.error('❌ Error parsing V2 message for', messageId, ':', parseError);
@@ -588,57 +514,31 @@ export const useAlegeonStreamingV2 = () => {
         }
       }
     });
-  }, [resetState, cleanup, setThinkingStateForMessage, clearThinkingStateForMessage, getThinkingStateForMessage, streamingStates]);
+  }, [resetState, cleanup, messageId, setThinkingStateForMessage, clearThinkingStateForMessage]);
 
-  const stopStreaming = useCallback((isUserInitiated: boolean = true) => {
-    if (isUserInitiated) {
-      console.log('🛑 User initiated stop for Algeon V2 streaming, message:', currentMessageId);
-    } else {
-      console.log('🧹 System cleanup for Algeon V2 streaming, message:', currentMessageId);
-    }
-    
+  const stopStreaming = useCallback(() => {
+    console.log('🛑 Stopping Algeon V2 streaming for message:', messageId);
     setStreamingState(prev => ({ ...prev, isStreaming: false, currentPhase: 'complete' }));
     
-    if (currentMessageId) {
-      clearThinkingStateForMessage(currentMessageId);
+    if (messageId) {
+      clearThinkingStateForMessage(messageId);
     }
     
-    // Only reject the promise if it's a user-initiated stop
-    if (isUserInitiated && promiseRef.current) {
-      promiseRef.current.reject(new Error('Streaming stopped by user.'));
-    } else if (promiseRef.current) {
-      // For system cleanup, resolve with current content if available
-      setStreamingState(prev => {
-        const finalText = prev.bufferedText || prev.displayedText;
-        if (finalText && promiseRef.current) {
-          promiseRef.current.resolve(finalText);
-        }
-        return prev;
-      });
-    }
-    
+    promiseRef.current?.reject(new Error('Streaming stopped by user.'));
     cleanup();
-  }, [cleanup, currentMessageId, clearThinkingStateForMessage]);
+  }, [cleanup, messageId, clearThinkingStateForMessage]);
 
   useEffect(() => {
     return () => {
-      // This is system cleanup, not user-initiated
-      stopStreaming(false);
+      stopStreaming();
     };
   }, [stopStreaming]);
-
-  // Helper function to get state for any message
-  const getStreamStateFor = useCallback((messageId: string) => {
-    return streamingStates.get(messageId);
-  }, [streamingStates]);
 
   return {
     streamingState,
     startStreaming,
     stopStreaming,
     resetState,
-    fastForward,
-    getStreamStateFor,
-    streamingStates
+    fastForward
   };
 };

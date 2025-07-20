@@ -4,9 +4,7 @@ import { Message, initialMessages, formatTimestamp } from '@/constants/aiAssista
 import { useN8nWebhook } from '@/hooks/useN8nWebhook';
 import { useChatHistory } from '@/hooks/useChatHistory';
 import { usePerplexityStreaming } from '@/hooks/usePerplexityStreaming';
-import { useAlegeonStreamingV2 } from '@/hooks/useAlegeonStreamingV2';
 import { supabase } from '@/integrations/supabase/client';
-import { type AlgeonResearchType } from '@/utils/algeonResearchTypes';
 
 interface StreamingMessage extends Message {
   isStreaming?: boolean;
@@ -23,7 +21,7 @@ interface StreamingMessage extends Message {
   };
 }
 
-export const useMessages = (currentSessionId: string | null, updateSessionTitle?: (id: string, title: string) => void, currentTitle?: string) => {
+export const useMessages = (currentSessionId: string | null) => {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [isTyping, setIsTyping] = useState(false);
   const [canvasState, setCanvasState] = useState<{
@@ -41,13 +39,6 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
   
   // Initialize Perplexity-style streaming
   const { streamingState, startStreaming, stopStreaming } = usePerplexityStreaming();
-  
-  // Initialize Algeon V2 streaming
-  const { 
-    streamingState: alegeonStreamingState, 
-    startStreaming: startAlegeonStreaming, 
-    stopStreaming: stopAlegeonStreaming 
-  } = useAlegeonStreamingV2();
 
   const scrollToBottom = useCallback(() => {
     if (viewportRef.current) {
@@ -87,11 +78,11 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     }
   }, [currentSessionId, history, isInitialLoad]);
 
-  // Smart detection logic for when to use different AI models
-  const detectModelAndResearchType = useCallback((prompt: string): { model: string; researchType: AlgeonResearchType } => {
+  // Smart detection logic for when to use streaming (Perplexity-style research)
+  const detectResearchQuery = useCallback((prompt: string): boolean => {
     const trimmedPrompt = prompt.trim().toLowerCase();
     
-    // Simple conversations - use regular model
+    // Simple conversations - never stream
     const simplePatterns = [
       /^(hello|hi|hey|good morning|good afternoon)[\s\?\.!]*$/,
       /^(how are you|how\'s it going|what\'s up)[\s\?\.!]*$/,
@@ -102,37 +93,15 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     ];
     
     if (simplePatterns.some(pattern => pattern.test(trimmedPrompt))) {
-      return { model: 'regular', researchType: 'quick_facts' };
+      return false;
     }
     
-    // Research type detection based on keywords
-    if (trimmedPrompt.includes('market size') || trimmedPrompt.includes('market sizing')) {
-      return { model: 'algeon', researchType: 'market_sizing' };
-    }
-    if (trimmedPrompt.includes('competitor') || trimmedPrompt.includes('competitive')) {
-      return { model: 'algeon', researchType: 'competitive_analysis' };
-    }
-    if (trimmedPrompt.includes('regulation') || trimmedPrompt.includes('regulatory') || trimmedPrompt.includes('compliance')) {
-      return { model: 'algeon', researchType: 'regulatory_scan' };
-    }
-    if (trimmedPrompt.includes('trend') || trimmedPrompt.includes('trends')) {
-      return { model: 'algeon', researchType: 'trend_analysis' };
-    }
-    if (trimmedPrompt.includes('legal') || trimmedPrompt.includes('law')) {
-      return { model: 'algeon', researchType: 'legal_analysis' };
-    }
-    if (trimmedPrompt.includes('deep') || trimmedPrompt.includes('comprehensive') || trimmedPrompt.includes('detailed')) {
-      return { model: 'algeon', researchType: 'deep_analysis' };
-    }
-    if (trimmedPrompt.includes('industry report') || trimmedPrompt.includes('industry analysis')) {
-      return { model: 'algeon', researchType: 'industry_reports' };
-    }
-    
-    // Default research queries
+    // Research indicators - use streaming
     const researchKeywords = [
-      'analyze', 'research', 'strategy', 'insights', 'report', 'study',
+      'analyze', 'research', 'competitive', 'market', 'strategy', 'trends',
+      'industry', 'growth', 'opportunities', 'insights', 'report', 'study',
       'comparison', 'evaluation', 'assessment', 'forecast', 'outlook',
-      'landscape', 'ecosystem', 'opportunities', 'growth'
+      'landscape', 'ecosystem', 'regulations', 'compliance'
     ];
     
     const hasResearchKeywords = researchKeywords.some(keyword => 
@@ -143,11 +112,7 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     const isLongQuery = prompt.length > 30;
     const hasQuestionWords = /\b(what|how|why|when|where|which|should|could|would)\b/i.test(prompt);
     
-    if (hasResearchKeywords || (isLongQuery && hasQuestionWords)) {
-      return { model: 'algeon', researchType: 'quick_facts' };
-    }
-    
-    return { model: 'regular', researchType: 'quick_facts' };
+    return hasResearchKeywords || (isLongQuery && hasQuestionWords);
   }, []);
 
   // Handle instant responses for simple queries
@@ -179,22 +144,42 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     }
   }, [currentSessionId]);
 
-  const handleSendMessage = useCallback(async (
-    text?: string, 
-    messageText?: string, 
-    selectedModel?: string, 
-    selectedResearchType?: string,
-    sessionIdOverride?: string
-  ) => {
+  // Handle Stratix requests with smart routing
+  const handleStratixRequest = useCallback(async (prompt: string, sessionId: string | null): Promise<string> => {
+    if (!sessionId) {
+      throw new Error('Session ID required for Stratix communication');
+    }
+
+    try {
+      console.log('🎯 Stratix Request - Smart routing for:', prompt);
+      
+      const isResearchQuery = detectResearchQuery(prompt);
+      
+      if (isResearchQuery) {
+        console.log('🚀 Using Perplexity-style streaming for research query');
+        return await startStreaming(prompt, sessionId);
+      } else {
+        console.log('⚡ Using instant response for simple query');
+        return await handleInstantRequest(prompt);
+      }
+
+    } catch (error) {
+      console.error('❌ Stratix communication error:', error);
+      
+      // Fallback to instant request
+      console.log('🔄 Falling back to instant request');
+      return await handleInstantRequest(prompt);
+    }
+  }, [detectResearchQuery, startStreaming, handleInstantRequest]);
+
+  const handleSendMessage = useCallback(async (text?: string, messageText?: string, selectedModel?: string) => {
     const finalMessageText = text || messageText;
     if (!finalMessageText || finalMessageText.trim() === '') return;
 
-    const sessionId = sessionIdOverride || currentSessionId;
-    console.log('🚀 useMessages: Sending message in session:', sessionId, 'with model:', selectedModel);
+    console.log('🚀 useMessages: Sending message in session:', currentSessionId, 'with model:', selectedModel);
 
-    const userMessageId = uuidv4();
     const newUserMessage: Message = {
-      id: userMessageId,
+      id: uuidv4(),
       text: finalMessageText,
       sender: 'user',
       timestamp: new Date(),
@@ -203,7 +188,7 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     setMessages(prev => [...prev, newUserMessage]);
 
     // Save user message to history
-    if (sessionId) {
+    if (currentSessionId) {
       await addMessage(`USER: ${finalMessageText}`);
     }
 
@@ -223,44 +208,18 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     try {
       let aiResponseText: string;
 
-      // Auto-detect model and research type if not specified
-      const detectedSettings = detectModelAndResearchType(finalMessageText);
-      const modelToUse = selectedModel === 'algeon' ? 'algeon' : 
-                        selectedModel === 'stratix' ? 'stratix' : 
-                        detectedSettings.model;
-      const researchTypeToUse = selectedResearchType || detectedSettings.researchType;
-
-      // System cleanup of previous streaming sessions before starting new one
-      console.log('🧹 Cleaning up previous streaming sessions before new request');
-      stopStreaming();
-      stopAlegeonStreaming(false); // false = system cleanup, not user-initiated
-
-      if (modelToUse === 'algeon') {
-        console.log('🧠 Using Algeon model with research type:', researchTypeToUse);
-        try {
-          aiResponseText = await startAlegeonStreaming(finalMessageText, userMessageId, researchTypeToUse);
-        } catch (error) {
-          console.log('⚠️ Algeon streaming cleanup or error, using fallback');
-          // Check if this is just a cleanup error (not a real failure)
-          if (error.message === 'Streaming stopped by user.' || 
-              error.message.includes('cleanup')) {
-            console.log('🔄 Detected cleanup, using instant request as fallback');
-            aiResponseText = await handleInstantRequest(finalMessageText);
-          } else {
-            throw error; // Re-throw actual errors
-          }
-        }
-      } else if (modelToUse === 'stratix') {
+      // Route to Stratix if model is 'stratix'
+      if (selectedModel === 'stratix') {
         console.log('🎯 Using Stratix model with Perplexity-style streaming');
-        aiResponseText = await startStreaming(finalMessageText, sessionId || 'temp-session');
+        aiResponseText = await handleStratixRequest(finalMessageText, currentSessionId);
       } else {
-        // Use existing N8N webhook for regular model
+        // Use existing N8N webhook for all other models
         let contextMessage = finalMessageText;
         if (canvasState.isOpen && canvasState.content) {
           contextMessage = `Current document content:\n\n${canvasState.content}\n\n---\n\nUser message: ${finalMessageText}`;
         }
         
-        aiResponseText = await sendMessageToN8n(contextMessage, sessionId);
+        aiResponseText = await sendMessageToN8n(contextMessage, currentSessionId);
       }
       
       const aiResponse: Message = {
@@ -268,30 +227,16 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
         text: aiResponseText,
         sender: 'ai',
         timestamp: new Date(),
-        metadata: {
-          messageType: modelToUse === 'algeon' ? 'algeon_research' : 
-                      modelToUse === 'stratix' ? 'stratix_conversation' : 
-                      'standard',
-          researchType: modelToUse === 'algeon' ? researchTypeToUse : undefined
-        },
+        metadata: selectedModel === 'stratix' ? {
+          messageType: 'stratix_conversation'
+        } : { messageType: 'standard' },
       };
       
       setMessages(prev => [...prev, aiResponse]);
 
       // Save AI response to history
-      if (sessionId) {
+      if (currentSessionId) {
         await addMessage(`AI: ${aiResponseText}`);
-      }
-
-      // Auto-generate title if this is the first meaningful exchange
-      if (updateSessionTitle && sessionId && (!currentTitle || currentTitle === 'New Chat')) {
-        const messageCount = messages.filter(m => m.id !== 'initial').length;
-        if (messageCount <= 2) { // First user message + first AI response
-          const title = finalMessageText.length > 50 
-            ? finalMessageText.substring(0, 47) + '...' 
-            : finalMessageText;
-          updateSessionTitle(sessionId, title);
-        }
       }
 
     } catch (error) {
@@ -308,29 +253,13 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     } finally {
       setIsTyping(false);
     }
-  }, [
-    currentSessionId, 
-    addMessage, 
-    isConfigured, 
-    canvasState, 
-    sendMessageToN8n, 
-    detectModelAndResearchType,
-    handleInstantRequest,
-    startStreaming,
-    stopStreaming,
-    startAlegeonStreaming,
-    stopAlegeonStreaming,
-    messages,
-    updateSessionTitle,
-    currentTitle
-  ]);
+  }, [currentSessionId, addMessage, isConfigured, canvasState, sendMessageToN8n, handleStratixRequest]);
 
   const handleClearConversation = useCallback(() => {
     console.log('useMessages: Clearing conversation');
     setMessages(initialMessages);
     stopStreaming();
-    stopAlegeonStreaming(false); // System cleanup
-  }, [stopStreaming, stopAlegeonStreaming]);
+  }, [stopStreaming]);
 
   const handleDownloadChat = useCallback(() => {
     const chatContent = messages
@@ -415,10 +344,8 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     handleCanvasPrint,
     handleCanvasPdfDownload,
     streamingState,
-    stratixStreamingState: streamingState, // For backward compatibility
-    alegeonStreamingState,
     // Provide streaming state for components that need it
-    isStreamingForMessage: () => streamingState.isStreaming || alegeonStreamingState.isStreaming,
+    isStreamingForMessage: () => streamingState.isStreaming,
     getStreamingState: () => streamingState
   };
 };

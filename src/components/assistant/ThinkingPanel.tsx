@@ -18,7 +18,6 @@ const ThinkingPanel: React.FC<ThinkingPanelProps> = ({ messageId }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const thoughtsEndRef = useRef<HTMLDivElement>(null);
 
-  // Get thinking state for this specific message
   const thinkingState = getThinkingStateForMessage(messageId);
   const { phase = 'idle', thoughts = [], isThinking = false } = thinkingState || {};
 
@@ -27,8 +26,8 @@ const ThinkingPanel: React.FC<ThinkingPanelProps> = ({ messageId }) => {
     thoughtsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [thoughts]);
 
-  // Simple rendering logic - show if we have thoughts
-  if (!thinkingState || thoughts.length === 0) {
+  // Don't render if no thinking state or if idle
+  if (!thinkingState || phase === 'idle') {
     return null;
   }
 
