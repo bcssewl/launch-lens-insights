@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Search, Mic, Target, Globe, Paperclip } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -68,12 +69,12 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
 
   return (
     <TooltipProvider>
-      {/* Enhanced Container with Improved Vertical Alignment */}
-      <div className="flex flex-col items-center justify-center min-h-[80vh] w-full max-w-3xl mx-auto px-6 pt-16 md:pt-24 lg:pt-32 pb-12 text-center bg-transparent">
-        {/* Dynamic Greeting Section with Better Spacing */}
-        <div className="mb-8">
-          <div className="flex flex-col items-center">
-            <h1 className="text-4xl font-light text-foreground tracking-tight mb-3">
+      {/* Unified Container - combines background and content */}
+      <div className="flex flex-col items-center justify-center min-h-[80vh] w-full max-w-3xl mx-auto px-6 py-12 text-center bg-transparent">
+        {/* Dynamic Greeting Section */}
+        <div className="mb-12">
+          <div className="flex flex-col items-center mb-6">
+            <h1 className="text-4xl font-light text-foreground tracking-tight mb-2">
               {greetingLoading ? 'Welcome' : primaryGreeting}
             </h1>
             <h2 className="text-lg font-normal text-muted-foreground">
@@ -82,17 +83,17 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
           </div>
         </div>
 
-        {/* Input Area with Improved Spacing */}
-        <div className="w-full">
+        {/* Input Area */}
+        <div className="w-full mb-12">
           {/* Input Field Container */}
-          <div className="relative w-full bg-background border border-border rounded-2xl px-6 py-3 shadow-md hover:shadow-lg transition-all duration-200 mb-4">
+          <div className="relative w-full bg-background border border-border rounded-2xl px-6 py-3 shadow-md hover:shadow-lg transition-all duration-200 mb-3">
             {/* Sound wave visualization overlay */}
             <SoundWaveVisualization audioLevel={audioLevel} isRecording={isRecording} />
             
             <input 
               type="text" 
-              placeholder={isRecording ? "Listening..." : "e.g. Market sizing for solar energy in Egypt"} 
-              className={`w-full h-12 text-base bg-transparent border-none outline-none focus:outline-none placeholder:text-slate-400 ${isRecording ? 'pl-12' : ''}`} 
+              placeholder={isRecording ? "Listening..." : "Conduct Market Sizing, Competitor Analysis, Regulatory Scans, Trend Discovery"} 
+              className={`w-full h-12 text-base bg-transparent border-none outline-none focus:outline-none placeholder:text-muted-foreground ${isRecording ? 'pl-12' : ''}`} 
               disabled={isRecording} 
               onKeyDown={handleKeyDown} 
             />
@@ -101,8 +102,8 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
           {/* Attachments List */}
           <AttachmentsList attachedFiles={attachedFiles} onRemoveFile={removeFile} />
 
-          {/* Centered Icon Buttons Row */}
-          <div className="flex items-center justify-center gap-4 px-2">
+          {/* Icon Buttons Row - Positioned Below Input */}
+          <div className="flex items-center justify-between px-2">
             {/* Left Side Button Group */}
             <div className="flex items-center space-x-2">
               <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground">
