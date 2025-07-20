@@ -1,5 +1,4 @@
 
-
 import React, { useState } from 'react';
 import { Search, Mic, Target, Globe, Paperclip } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -73,20 +72,13 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
       <div className="flex flex-col items-center justify-center min-h-[70vh] px-6 py-12 text-center max-w-4xl mx-auto bg-transparent">
         {/* Dynamic Greeting Section */}
         <div className="mb-12">
-          <div className="flex items-center justify-center gap-4 mb-6">
-            <div className="flex flex-col items-center">
-              <h1 className="text-4xl font-light text-foreground tracking-tight mb-2">
-                {greetingLoading ? 'Welcome' : primaryGreeting}
-              </h1>
-              <h2 className="text-lg font-normal text-muted-foreground">
-                {greetingLoading ? 'How may I assist you today?' : assistanceMessage}
-              </h2>
-            </div>
-            <img 
-              src="/lovable-uploads/5cb6a965-c41d-482b-9c9a-da3a7fa02d8c.png" 
-              alt="NEXUS" 
-              className="h-16 mt-2 -ml-2" 
-            />
+          <div className="flex flex-col items-center mb-6">
+            <h1 className="text-4xl font-light text-foreground tracking-tight mb-2">
+              {greetingLoading ? 'Welcome' : primaryGreeting}
+            </h1>
+            <h2 className="text-lg font-normal text-muted-foreground">
+              {greetingLoading ? 'How may I assist you today?' : assistanceMessage}
+            </h2>
           </div>
           <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed">
             Instant insights, market analysis, data structuring, collection and strategic advice
@@ -207,4 +199,3 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
 };
 
 export default PerplexityEmptyState;
-
