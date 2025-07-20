@@ -455,6 +455,7 @@ export type Database = {
       }
       n8n_chat_history: {
         Row: {
+          client_message_id: string | null
           created_at: string
           id: string
           message: string
@@ -462,6 +463,7 @@ export type Database = {
           session_id: string
         }
         Insert: {
+          client_message_id?: string | null
           created_at?: string
           id?: string
           message: string
@@ -469,6 +471,7 @@ export type Database = {
           session_id: string
         }
         Update: {
+          client_message_id?: string | null
           created_at?: string
           id?: string
           message?: string

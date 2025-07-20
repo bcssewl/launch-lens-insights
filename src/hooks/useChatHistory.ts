@@ -55,11 +55,11 @@ export const useChatHistory = (sessionId: string | null) => {
     }
   };
 
-  const addMessage = async (message: string) => {
-    return addMessageToSession(message, sessionId);
+  const addMessage = async (message: string, clientMessageId?: string) => {
+    return addMessageToSession(message, sessionId, clientMessageId);
   };
 
-  const addMessageToSession = async (message: string, targetSessionId: string | null) => {
+  const addMessageToSession = async (message: string, targetSessionId: string | null, clientMessageId?: string) => {
     if (!targetSessionId) {
       console.warn('useChatHistory: No sessionId provided for addMessageToSession');
       return null;
@@ -109,6 +109,7 @@ export const useChatHistory = (sessionId: string | null) => {
           {
             session_id: targetSessionId,
             message,
+            client_message_id: clientMessageId || null,
           }
         ])
         .select()

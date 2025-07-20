@@ -1,6 +1,6 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.8';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    const { message, user } = await req.json();
+    const { message, user, session_id, client_message_id } = await req.json();
     
     if (!message) {
       return new Response(
@@ -77,6 +77,13 @@ serve(async (req) => {
     }
 
     console.log('Authenticated user:', authenticatedUser.id, authenticatedUser.email);
+    console.log('Client message ID:', client_message_id);
+    
+    // Initialize Supabase client for saving to chat history
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
     
     const webhookUrl = Deno.env.get('N8N_WEBHOOK_URL');
     
@@ -110,6 +117,8 @@ serve(async (req) => {
       },
       type: 'chat_message',
       message: message,
+      session_id: session_id || null,
+      client_message_id: client_message_id || null,
     };
 
     const response = await fetch(webhookUrl, {
@@ -146,8 +155,34 @@ serve(async (req) => {
     // Extract the response from the n8n response
     const responseMessage = data.response || data.message || 'No response received from service.';
 
+    // Save the AI response to chat history with client_message_id correlation
+    if (session_id && client_message_id) {
+      try {
+        const { error: historyError } = await supabase
+          .from('n8n_chat_history')
+          .insert([
+            {
+              session_id: session_id,
+              message: `AI: ${responseMessage}`,
+              client_message_id: client_message_id,
+            }
+          ]);
+
+        if (historyError) {
+          console.error('Error saving AI response to history:', historyError);
+        } else {
+          console.log('Successfully saved AI response to history with client_message_id:', client_message_id);
+        }
+      } catch (saveError) {
+        console.error('Error saving AI response to chat history:', saveError);
+      }
+    }
+
     return new Response(
-      JSON.stringify({ response: responseMessage }), 
+      JSON.stringify({ 
+        response: responseMessage,
+        client_message_id: client_message_id // Return the client message ID for correlation
+      }), 
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }

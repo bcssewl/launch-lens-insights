@@ -188,7 +188,7 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
     cleanup();
   }, [cleanup, messageId, clearThinkingStateForMessage]);
 
-  const startStreaming = useCallback(async (query: string, researchType: string = 'quick_facts'): Promise<string> => {
+  const startStreaming = useCallback(async (query: string, researchType: string = 'quick_facts', clientMessageId?: string): Promise<string> => {
     console.log('🚀 Starting Algeon V2 streaming request for message:', messageId, 'query:', query.substring(0, 50));
     console.log('🔬 Research Type (input):', researchType);
     
@@ -244,7 +244,8 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
             scope: "global",
             depth: "comprehensive",
             urgency: "medium",
-            stream: true
+            stream: true,
+            client_message_id: clientMessageId // Include client message ID for correlation
           };
           
           console.log('📤 Sending WebSocket V2 payload for message:', messageId, payload);

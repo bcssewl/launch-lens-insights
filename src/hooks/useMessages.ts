@@ -446,7 +446,7 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
   }, []);
 
   // Handle Algeon requests with enhanced citation support - Updated for V2
-  const handleAlegeonRequest = useCallback(async (message: string, researchType?: string, sessionId?: string | null): Promise<string> => {
+  const handleAlegeonRequest = useCallback(async (message: string, researchType?: string, sessionId?: string | null, clientMessageId?: string): Promise<string> => {
     try {
       console.log('🔬 Starting Algeon V2 streaming for message:', message.substring(0, 100));
       
@@ -454,7 +454,7 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
       alegeonCompletionProcessedRef.current = false;
       
       // Use the V2 Algeon streaming implementation
-      const result = await startAlegeonStreaming(message, researchType as any);
+      const result = await startAlegeonStreaming(message, researchType as any, clientMessageId);
       
       console.log('✅ Algeon V2 request completed:', {
         textLength: result.length
@@ -653,11 +653,15 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
 
     isAddingMessageRef.current = true;
 
+    // Generate client message ID for request-response correlation
+    const clientMessageId = uuidv4();
+
     const newUserMessage: ExtendedMessage = {
       id: uuidv4(),
       text: finalMessageText,
       sender: 'user',
       timestamp: new Date(),
+      clientMessageId,
     };
     
     dispatch({ type: 'ADD_MESSAGE', payload: newUserMessage });
@@ -703,7 +707,7 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
       // Route to Algeon if model is 'algeon' OR for research queries with 'best' model
       if (selectedModel === 'algeon' || (selectedModel === 'best' && detectResearchQuery(finalMessageText))) {
         console.log('🔬 Using Algeon model with typewriter animation');
-        aiResponseText = await handleAlegeonRequest(finalMessageText, researchType, currentSessionId);
+        aiResponseText = await handleAlegeonRequest(finalMessageText, researchType, currentSessionId, clientMessageId);
         // Note: Final message handling is done in the useEffect above
       }
       // Route to Stratix if model is 'stratix'
@@ -735,7 +739,7 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
         }
         
         console.log('📨 Sending to N8N webhook...');
-        aiResponseText = await sendMessageToN8n(contextMessage, currentSessionId);
+        aiResponseText = await sendMessageToN8n(contextMessage, currentSessionId, clientMessageId);
         
         // Don't create message if response is empty
         if (!aiResponseText || aiResponseText.trim() === '') {
@@ -748,6 +752,7 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
           text: aiResponseText,
           sender: 'ai',
           timestamp: new Date(),
+          clientMessageId, // Include client message ID for correlation
           metadata: { messageType: 'standard' },
         };
         

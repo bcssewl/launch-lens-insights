@@ -53,7 +53,7 @@ export const useN8nWebhook = () => {
     }
   }, [session]);
 
-  const sendMessageToN8n = useCallback(async (message: string, sessionId?: string | null): Promise<string> => {
+  const sendMessageToN8n = useCallback(async (message: string, sessionId?: string | null, clientMessageId?: string): Promise<string> => {
     let retryCount = 0;
     const maxRetries = 2;
 
@@ -77,6 +77,7 @@ export const useN8nWebhook = () => {
             created_at: string;
           } | null;
           session_id?: string;
+          client_message_id?: string;
         } = { 
           message,
           user: user ? {
@@ -90,6 +91,11 @@ export const useN8nWebhook = () => {
         // Add session_id if provided
         if (sessionId) {
           requestBody.session_id = sessionId;
+        }
+
+        // Add client_message_id if provided
+        if (clientMessageId) {
+          requestBody.client_message_id = clientMessageId;
         }
 
         const { data, error } = await supabase.functions.invoke('n8n-chat-webhook', {

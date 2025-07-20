@@ -6,6 +6,7 @@ export interface Message {
   text: string;
   sender: 'ai' | 'user';
   timestamp: Date;
+  clientMessageId?: string; // Frontend-generated UUID for request-response correlation
   metadata?: {
     isCompleted?: boolean;
     messageType?: 'progress_update' | 'completed_report' | 'standard' | 'stratix_conversation';
