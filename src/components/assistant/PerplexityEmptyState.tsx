@@ -77,7 +77,7 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
             <h1 className="text-4xl font-light text-foreground tracking-tight mb-2">
               {greetingLoading ? 'Welcome' : primaryGreeting}
             </h1>
-            <h2 className="text-lg font-normal text-muted-foreground">
+            <h2 className="text-lg font-normal text-muted-foreground mt-4">
               {greetingLoading ? 'How may I assist you today?' : assistanceMessage}
             </h2>
           </div>
