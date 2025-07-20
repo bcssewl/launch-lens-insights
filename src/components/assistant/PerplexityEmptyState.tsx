@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Search, Mic, Target, Globe, Paperclip } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -46,27 +46,28 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
   
   // Placeholder rotation state
   const [placeholderText, setPlaceholderText] = useState<string>('');
-  const [rotationTimerId, setRotationTimerId] = useState<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Generate new placeholder text
   const generatePlaceholder = useCallback(() => {
     return getConsultingPlaceholder(userCountry);
   }, [userCountry]);
 
-  // Reset rotation timer
-  const resetRotationTimer = useCallback(() => {
-    // Clear existing timer
-    if (rotationTimerId) {
-      clearInterval(rotationTimerId);
+  // Clear existing timer
+  const clearTimer = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
     }
+  }, []);
 
-    // Start new timer
-    const newTimerId = setInterval(() => {
+  // Start rotation timer
+  const startRotationTimer = useCallback(() => {
+    clearTimer();
+    timerRef.current = setInterval(() => {
       setPlaceholderText(generatePlaceholder());
     }, 12000); // 12 seconds
-
-    setRotationTimerId(newTimerId);
-  }, [rotationTimerId, generatePlaceholder]);
+  }, [clearTimer, generatePlaceholder]);
 
   // Initialize placeholder and start rotation timer
   useEffect(() => {
@@ -75,21 +76,19 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
       setPlaceholderText(generatePlaceholder());
       
       // Start rotation timer
-      resetRotationTimer();
+      startRotationTimer();
     }
 
     // Cleanup on unmount
     return () => {
-      if (rotationTimerId) {
-        clearInterval(rotationTimerId);
-      }
+      clearTimer();
     };
-  }, [userCountry, generatePlaceholder, resetRotationTimer]);
+  }, [userCountry, generatePlaceholder, startRotationTimer, clearTimer]);
 
   // Handle user input interactions - reset timer
   const handleInputInteraction = useCallback(() => {
-    resetRotationTimer();
-  }, [resetRotationTimer]);
+    startRotationTimer();
+  }, [startRotationTimer]);
 
   const handlePromptClick = (prompt: string) => {
     onSendMessage(prompt, attachedFiles, parentSelectedModel);
