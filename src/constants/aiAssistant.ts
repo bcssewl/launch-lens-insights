@@ -8,7 +8,8 @@ export interface Message {
   timestamp: Date;
   metadata?: {
     isCompleted?: boolean;
-    messageType?: 'progress_update' | 'completed_report' | 'standard' | 'stratix_conversation';
+    messageType?: 'progress_update' | 'completed_report' | 'standard' | 'stratix_conversation' | 'algeon_research';
+    researchType?: string;
   };
 }
 

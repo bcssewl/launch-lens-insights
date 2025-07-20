@@ -24,7 +24,8 @@ export interface ChatMessageData {
   timestamp: string;
   metadata?: {
     isCompleted?: boolean;
-    messageType?: 'progress_update' | 'completed_report' | 'standard' | 'stratix_conversation';
+    messageType?: 'progress_update' | 'completed_report' | 'standard' | 'stratix_conversation' | 'algeon_research';
+    researchType?: string;
   };
   alegeonCitations?: Array<{
     name: string;
