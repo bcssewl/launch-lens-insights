@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+
+import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Mic, Target, Globe, Paperclip } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -42,11 +43,53 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [showLocalUploader, setShowLocalUploader] = useState(false);
   const [selectedResearchType, setSelectedResearchType] = useState<string>('quick_facts');
+  
+  // Placeholder rotation state
+  const [placeholderText, setPlaceholderText] = useState<string>('');
+  const [rotationTimerId, setRotationTimerId] = useState<NodeJS.Timeout | null>(null);
 
-  // Generate dynamic consulting placeholder based on user's country
-  const consultingPlaceholder = useMemo(() => {
+  // Generate new placeholder text
+  const generatePlaceholder = useCallback(() => {
     return getConsultingPlaceholder(userCountry);
   }, [userCountry]);
+
+  // Reset rotation timer
+  const resetRotationTimer = useCallback(() => {
+    // Clear existing timer
+    if (rotationTimerId) {
+      clearInterval(rotationTimerId);
+    }
+
+    // Start new timer
+    const newTimerId = setInterval(() => {
+      setPlaceholderText(generatePlaceholder());
+    }, 12000); // 12 seconds
+
+    setRotationTimerId(newTimerId);
+  }, [rotationTimerId, generatePlaceholder]);
+
+  // Initialize placeholder and start rotation timer
+  useEffect(() => {
+    if (userCountry) {
+      // Set initial placeholder
+      setPlaceholderText(generatePlaceholder());
+      
+      // Start rotation timer
+      resetRotationTimer();
+    }
+
+    // Cleanup on unmount
+    return () => {
+      if (rotationTimerId) {
+        clearInterval(rotationTimerId);
+      }
+    };
+  }, [userCountry, generatePlaceholder, resetRotationTimer]);
+
+  // Handle user input interactions - reset timer
+  const handleInputInteraction = useCallback(() => {
+    resetRotationTimer();
+  }, [resetRotationTimer]);
 
   const handlePromptClick = (prompt: string) => {
     onSendMessage(prompt, attachedFiles, parentSelectedModel);
@@ -97,10 +140,13 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
             
             <input 
               type="text" 
-              placeholder={isRecording ? "Listening..." : consultingPlaceholder} 
+              placeholder={isRecording ? "Listening..." : placeholderText} 
               className={`w-full h-12 text-base bg-transparent border-none outline-none focus:outline-none placeholder:text-muted-foreground ${isRecording ? 'pl-12' : ''}`} 
               disabled={isRecording} 
-              onKeyDown={handleKeyDown} 
+              onKeyDown={handleKeyDown}
+              onChange={handleInputInteraction}
+              onFocus={handleInputInteraction}
+              onInput={handleInputInteraction}
             />
           </div>
 
