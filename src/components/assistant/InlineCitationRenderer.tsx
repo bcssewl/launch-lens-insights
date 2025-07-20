@@ -47,14 +47,23 @@ const InlineCitationRenderer: React.FC<InlineCitationRendererProps> = ({
             
             if (citation && citation.url) {
               return (
-                <button
+                <span
                   key={index}
                   onClick={() => onCitationClick?.(citation, citationIndex)}
-                  className="citation-link text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium no-underline border-b border-current border-dotted pb-0.5 transition-colors cursor-pointer bg-transparent p-0 inline"
+                  className="citation inline-block text-xs text-muted-foreground opacity-75 hover:opacity-100 bg-muted/20 hover:bg-muted/40 px-1 py-0.5 rounded align-super cursor-pointer transition-all duration-200"
                   title={citation.name}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      onCitationClick?.(citation, citationIndex);
+                    }
+                  }}
+                  aria-label={`Citation ${citationNumber}: ${citation.name}`}
                 >
-                  [{citationNumber}]
-                </button>
+                  {citationNumber}
+                </span>
               );
             }
           }
