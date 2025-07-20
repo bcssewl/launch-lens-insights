@@ -12,7 +12,7 @@ import { ReasoningProvider } from '@/contexts/ReasoningContext';
 import { useChatSessions } from '@/hooks/useChatSessions';
 import { useChatHistory } from '@/hooks/useChatHistory';
 import { useMessages } from '@/hooks/useMessages';
-
+import { useAlegeonStreamingV2 } from '@/hooks/useAlegeonStreamingV2';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTheme } from 'next-themes';
 import { Loader2 } from 'lucide-react';
@@ -55,12 +55,10 @@ const AIAssistantPage: React.FC = () => {
     handleCanvasPrint,
     handleCanvasPdfDownload,
     streamingState,
-    stratixStreamingState,
-    alegeonStreamingState, // This is the correct streaming state from useMessages
-    alegeonFastForward
+    stratixStreamingState
   } = useMessages(currentSessionId, updateSessionTitle, currentSession?.title);
   
-  // Remove duplicate Algeon streaming - this is handled in useMessages now
+  const { streamingState: alegeonStreamingStateV2, startStreaming: startAlegeonV2, fastForward } = useAlegeonStreamingV2(null);
   const [editedCanvasContent, setEditedCanvasContent] = useState(canvasState.content);
 
   useEffect(() => {
@@ -250,8 +248,8 @@ const AIAssistantPage: React.FC = () => {
                 onCanvasPrint={handleCanvasPrint}
                 streamingState={streamingState}
                 stratixStreamingState={stratixStreamingState}
-                alegeonStreamingState={alegeonStreamingState}
-                onAlegeonFastForward={alegeonFastForward}
+                alegeonStreamingState={alegeonStreamingStateV2}
+                onAlegeonFastForward={fastForward}
               />
             </div>
           </SidebarInset>

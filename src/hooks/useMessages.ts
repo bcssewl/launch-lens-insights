@@ -32,44 +32,23 @@ type MessageAction =
   | { type: 'UPDATE_STREAMING_MESSAGE'; payload: { id: string; updates: Partial<ExtendedMessage> } };
 
 function messageReducer(state: ExtendedMessage[], action: MessageAction): ExtendedMessage[] {
-  console.log('🔍 DEBUG: Message reducer called with:', {
-    action: action.type,
-    currentMessagesCount: state.length,
-    payload: action.type === 'ADD_MESSAGE' ? action.payload.id : 
-             action.type === 'ADD_STREAMING_MESSAGE' ? action.payload.id :
-             action.type === 'REPLACE_STREAMING_WITH_FINAL' ? `${action.payload.streamingId} -> ${action.payload.finalMessage.id}` :
-             'other'
-  });
-  
   switch (action.type) {
     case 'SET_MESSAGES':
-      console.log('🔍 DEBUG: SET_MESSAGES with', action.payload.length, 'messages');
       return action.payload;
     case 'ADD_MESSAGE':
-      console.log('🔍 DEBUG: ADD_MESSAGE with ID:', action.payload.id, 'Text:', action.payload.text?.substring(0, 30));
-      console.log('🔍 DEBUG: Current state before add:', state.map(m => ({ id: m.id, text: m.text?.substring(0, 20) })));
-      const newState = [...state, action.payload];
-      console.log('🔍 DEBUG: New state after add:', newState.map(m => ({ id: m.id, text: m.text?.substring(0, 20) })));
-      console.log('🔍 DEBUG: State length changed from', state.length, 'to', newState.length);
-      return newState;
+      return [...state, action.payload];
     case 'ADD_STREAMING_MESSAGE':
       // Remove any existing streaming message first
       const withoutStreaming = state.filter(msg => !msg.isStreaming);
-      console.log('🔍 DEBUG: ADD_STREAMING_MESSAGE, removed', state.length - withoutStreaming.length, 'streaming messages');
       return [...withoutStreaming, action.payload];
     case 'REPLACE_STREAMING_WITH_FINAL':
-      const replacedState = state.map(msg => 
+      return state.map(msg => 
         msg.id === action.payload.streamingId 
           ? action.payload.finalMessage 
           : msg
       );
-      console.log('🔍 DEBUG: REPLACE_STREAMING_WITH_FINAL, found match:', 
-        replacedState.some(msg => msg.id === action.payload.finalMessage.id));
-      return replacedState;
     case 'REMOVE_STREAMING_MESSAGE':
-      const filtered = state.filter(msg => msg.id !== action.payload);
-      console.log('🔍 DEBUG: REMOVE_STREAMING_MESSAGE, removed', state.length - filtered.length, 'messages');
-      return filtered;
+      return state.filter(msg => msg.id !== action.payload);
     case 'UPDATE_STREAMING_MESSAGE':
       return state.map(msg => 
         msg.id === action.payload.id 
@@ -158,14 +137,13 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     startStreaming: startAlegeonStreaming, 
     stopStreaming: stopAlegeonStreaming,
     fastForward: alegeonFastForward
-  } = useAlegeonStreamingV2(null); // Will be set dynamically per message
+  } = useAlegeonStreamingV2(currentSessionId);
 
   // Consistent streaming message ID
   const STREAMING_MESSAGE_ID = 'algeon-streaming-message';
   const isAddingMessageRef = useRef(false);
   const alegeonCompletionProcessedRef = useRef<boolean>(false); // Track if completion was processed
   const currentStreamingSessionRef = useRef<string | null>(null); // Track current streaming session
-  const currentStreamingMessageIdRef = useRef<string | null>(null); // Track current message ID for thinking panel
 
   // Improved scroll behavior - only auto-scroll when user is near bottom
   const scrollToBottom = useCallback(() => {
@@ -195,19 +173,11 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
   // Handle Algeon streaming state changes - separated into two effects
   // Effect 1: Handle streaming messages (display updates)
   useEffect(() => {
-    console.log('🔍 DEBUG: Algeon streaming state changed:', {
-      isStreaming: alegeonStreamingState.isStreaming,
-      hasContent: alegeonStreamingState.hasContent,
-      bufferedTextLength: alegeonStreamingState.bufferedText?.length || 0,
-      currentPhase: alegeonStreamingState.currentPhase,
-      currentStreamingMessageId: currentStreamingMessageIdRef.current
-    });
-    
     if (alegeonStreamingState.isStreaming && alegeonStreamingState.hasContent && alegeonStreamingState.bufferedText) {
       console.log('📝 Managing Algeon V2 streaming message display');
       
       const streamingMessage: ExtendedMessage = {
-        id: currentStreamingMessageIdRef.current || STREAMING_MESSAGE_ID,
+        id: STREAMING_MESSAGE_ID,
         text: alegeonStreamingState.bufferedText,
         sender: 'ai',
         timestamp: new Date(),
@@ -223,7 +193,6 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
         }))
       };
       
-      console.log('🔍 DEBUG: Dispatching streaming message:', streamingMessage);
       dispatch({ type: 'ADD_STREAMING_MESSAGE', payload: streamingMessage });
     }
   }, [
@@ -235,12 +204,6 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
 
   // Effect 2: Handle completion (final message creation) - ONCE per session
   useEffect(() => {
-    console.log('🔍 DEBUG: Completion check:', {
-      isComplete: alegeonStreamingState.isComplete,
-      hasBufferedText: !!alegeonStreamingState.bufferedText,
-      completionProcessed: alegeonCompletionProcessedRef.current
-    });
-    
     if (alegeonStreamingState.isComplete && 
         alegeonStreamingState.bufferedText && 
         !alegeonCompletionProcessedRef.current) {
@@ -250,7 +213,7 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
       
       // Create final message with citations preserved
       const finalMessage: ExtendedMessage = {
-        id: currentStreamingMessageIdRef.current || uuidv4(),
+        id: uuidv4(),
         text: alegeonStreamingState.bufferedText,
         sender: 'ai',
         timestamp: new Date(),
@@ -265,12 +228,10 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
         }))
       };
       
-      console.log('🔍 DEBUG: Creating final message:', finalMessage);
       dispatch({ 
         type: 'REPLACE_STREAMING_WITH_FINAL', 
-        payload: { finalMessage, streamingId: currentStreamingMessageIdRef.current || STREAMING_MESSAGE_ID }
+        payload: { finalMessage, streamingId: STREAMING_MESSAGE_ID }
       });
-      console.log('🔍 DEBUG: Dispatched REPLACE_STREAMING_WITH_FINAL');
       
       // Save final message to history with citations metadata - ONCE
       if (currentSessionId && alegeonStreamingState.bufferedText) {
@@ -489,31 +450,22 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     try {
       console.log('🔬 Starting Algeon V2 streaming for message:', message.substring(0, 100));
       
-      // Generate a unique message ID for this request
-      const messageId = uuidv4();
-      console.log('🆔 Generated message ID for thinking panel:', messageId);
-      
       // Reset completion flag for new request
       alegeonCompletionProcessedRef.current = false;
       
-      // Store the current message ID for the streaming message
-      currentStreamingMessageIdRef.current = messageId;
-      
-      // Use the V2 Algeon streaming implementation with the unique message ID
-      const result = await startAlegeonStreaming(message, researchType as any, messageId);
+      // Use the V2 Algeon streaming implementation
+      const result = await startAlegeonStreaming(message, researchType as any);
       
       console.log('✅ Algeon V2 request completed:', {
-        textLength: result.length,
-        messageId
+        textLength: result.length
       });
       
       return result;
       
     } catch (error) {
       console.error('❌ Algeon V2 streaming failed:', error);
-      dispatch({ type: 'REMOVE_STREAMING_MESSAGE', payload: currentStreamingMessageIdRef.current || STREAMING_MESSAGE_ID });
+      dispatch({ type: 'REMOVE_STREAMING_MESSAGE', payload: STREAMING_MESSAGE_ID });
       alegeonCompletionProcessedRef.current = false; // Reset on error
-      currentStreamingMessageIdRef.current = null;
       return 'I apologize, but I encountered an issue with the Algeon research system. Please try again or select a different model.';
     }
   }, [startAlegeonStreaming]);
@@ -740,7 +692,7 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     stopAlegeonStreaming();
     
     // Remove any existing streaming messages
-    dispatch({ type: 'REMOVE_STREAMING_MESSAGE', payload: currentStreamingMessageIdRef.current || STREAMING_MESSAGE_ID });
+    dispatch({ type: 'REMOVE_STREAMING_MESSAGE', payload: STREAMING_MESSAGE_ID });
     
     // Reset completion flag for new request
     alegeonCompletionProcessedRef.current = false;
@@ -816,7 +768,7 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     } catch (error) {
       console.error('Message sending error:', error);
       
-      dispatch({ type: 'REMOVE_STREAMING_MESSAGE', payload: currentStreamingMessageIdRef.current || STREAMING_MESSAGE_ID });
+      dispatch({ type: 'REMOVE_STREAMING_MESSAGE', payload: STREAMING_MESSAGE_ID });
       
       const errorResponse: ExtendedMessage = {
         id: uuidv4(),

@@ -154,21 +154,13 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
 
   // Update streaming state with typewriter values
   useEffect(() => {
-    console.log('🔍 DEBUG: Typewriter effect update:', {
-      messageId,
-      typewriterText: typewriterText?.substring(0, 50),
-      isTyping,
-      typewriterProgress,
-      bufferedText: streamingState.bufferedText?.substring(0, 50)
-    });
-    
     setStreamingState(prev => ({
       ...prev,
       displayedText: typewriterText,
       isTyping,
       typewriterProgress
     }));
-  }, [typewriterText, isTyping, typewriterProgress, messageId]);
+  }, [typewriterText, isTyping, typewriterProgress]);
 
   const cleanup = useCallback(() => {
     console.log('🧹 Cleaning up Algeon V2 streaming for message:', messageId);
@@ -225,10 +217,8 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
     cleanup();
   }, [cleanup, messageId, clearThinkingStateForMessage]);
 
-  const startStreaming = useCallback(async (query: string, researchType: string = 'quick_facts', clientMessageId?: string): Promise<string> => {
-    // Use provided clientMessageId or fallback to hook's messageId or generate one
-    const effectiveMessageId = clientMessageId || messageId || `msg-${Date.now()}`;
-    console.log('🚀 Starting Algeon V2 streaming request for message:', effectiveMessageId, 'query:', query.substring(0, 50));
+  const startStreaming = useCallback(async (query: string, researchType: string = 'quick_facts'): Promise<string> => {
+    console.log('🚀 Starting Algeon V2 streaming request for message:', messageId, 'query:', query.substring(0, 50));
     console.log('🔬 Research Type (input):', researchType);
     
     // Validate research type - check if it's in our valid list
@@ -266,9 +256,7 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
       }, STREAMING_TIMEOUT_MS);
 
       try {
-        // Use Supabase edge function for WebSocket routing to Railway
-        const wsUrl = `wss://jtnedstugyvkfthtsumh.supabase.co/functions/v1/algeon-websocket`;
-        console.log('🔗 Connecting to Supabase WebSocket:', wsUrl);
+        const wsUrl = 'wss://opti-agent3-wrappers.up.railway.app/api/research/stream';
         wsRef.current = new WebSocket(wsUrl);
 
         wsRef.current.onopen = () => {
@@ -282,14 +270,14 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
           const payload = {
             query,
             research_type: validatedResearchType,
-            client_message_id: effectiveMessageId,
+            client_message_id: messageId,
             scope: "global",
             depth: "comprehensive",
             urgency: "medium",
             stream: true
           };
           
-          console.log('📤 Sending WebSocket V2 payload for message:', effectiveMessageId, payload);
+          console.log('📤 Sending WebSocket V2 payload for message:', messageId, payload);
           wsRef.current.send(JSON.stringify(payload));
         };
 
@@ -423,7 +411,7 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
                   }, 2000);
                   
                   // Resolve promise for the current message
-                  if (client_message_id === effectiveMessageId && !hasResolvedRef.current) {
+                  if (client_message_id === messageId && !hasResolvedRef.current) {
                     const finalContent = currentState.contentText;
                     setTimeout(() => {
                       if (!hasResolvedRef.current) {
@@ -443,7 +431,7 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
                   // Clean up thinking state on error
                   clearThinkingStateForMessage(client_message_id);
                   
-                  if (client_message_id === effectiveMessageId && !hasResolvedRef.current) {
+                  if (client_message_id === messageId && !hasResolvedRef.current) {
                     hasResolvedRef.current = true;
                     reject(new Error(data.message));
                     cleanup();
@@ -465,7 +453,7 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
             });
 
             // Update the current streaming state for the active message
-            if (client_message_id === effectiveMessageId) {
+            if (client_message_id === messageId) {
               setStreamingState(prev => {
                 const messageState = streamingStates.get(client_message_id);
                 if (!messageState) return prev;
