@@ -11,14 +11,36 @@ import { useReasoning } from '@/contexts/ReasoningContext';
 
 interface ThinkingPanelProps {
   messageId: string;
+  alegeonStreamingState?: {
+    isStreaming: boolean;
+    currentPhase: string;
+  } | null;
+  streamingMessageId?: string | null;
 }
 
-const ThinkingPanel: React.FC<ThinkingPanelProps> = ({ messageId }) => {
+const ThinkingPanel: React.FC<ThinkingPanelProps> = ({ 
+  messageId, 
+  alegeonStreamingState,
+  streamingMessageId 
+}) => {
   const { getThinkingStateForMessage } = useReasoning();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const thoughtsEndRef = useRef<HTMLDivElement>(null);
 
-  const thinkingState = getThinkingStateForMessage(messageId);
+  // Try to get thinking state for this specific message first
+  let thinkingState = getThinkingStateForMessage(messageId);
+  
+  // If no thinking state found for this message, check if this is the actively streaming message
+  if (!thinkingState && streamingMessageId && alegeonStreamingState?.isStreaming) {
+    // Check if this message is the one currently streaming
+    const isStreamingMessage = messageId === streamingMessageId || 
+      (alegeonStreamingState.currentPhase === 'reasoning' || alegeonStreamingState.currentPhase === 'generating');
+    
+    if (isStreamingMessage) {
+      thinkingState = getThinkingStateForMessage(streamingMessageId);
+    }
+  }
+
   const { phase = 'idle', thoughts = [], isThinking = false } = thinkingState || {};
 
   useEffect(() => {
@@ -26,8 +48,8 @@ const ThinkingPanel: React.FC<ThinkingPanelProps> = ({ messageId }) => {
     thoughtsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [thoughts]);
 
-  // Don't render if no thinking state or if idle
-  if (!thinkingState || phase === 'idle') {
+  // Don't render if no thinking state, if idle, or if not actively thinking/streaming
+  if (!thinkingState || phase === 'idle' || (!isThinking && phase !== 'thinking')) {
     return null;
   }
 

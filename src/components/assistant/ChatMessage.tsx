@@ -182,7 +182,11 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
           >
             {/* Message-specific Agent's Thought Process Panel */}
             {isAi && (
-              <ThinkingPanel messageId={message.id} />
+              <ThinkingPanel 
+                messageId={message.id}
+                alegeonStreamingState={alegeonStreamingState}
+                streamingMessageId={showAlegeonStreaming ? message.id : null}
+              />
             )}
 
             {/* Enhanced Algeon V2 Streaming Overlay */}

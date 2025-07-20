@@ -239,7 +239,7 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
           
           const payload = {
             query,
-            research_type: validatedResearchType, // Use the properly validated research type
+            research_type: validatedResearchType,
             scope: "global",
             depth: "comprehensive",
             urgency: "medium",
@@ -272,6 +272,7 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
                   console.log('🧠 Thinking phase started for message:', messageId);
                   newState.currentPhase = 'reasoning';
                   
+                  // Store thinking state using the provided messageId for consistency
                   if (messageId) {
                     const newThinkingState: ThinkingState = {
                       phase: 'thinking',
@@ -280,6 +281,7 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
                       finalContent: ''
                     };
                     currentThinkingStateRef.current = newThinkingState;
+                    console.log('🧠 Setting thinking state for messageId:', messageId);
                     setThinkingStateForMessage(messageId, newThinkingState);
                   }
                   break;
@@ -295,6 +297,7 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
                         isThinking: true
                       };
                       currentThinkingStateRef.current = updatedThinkingState;
+                      console.log('🧠 Updating thinking state for messageId:', messageId, 'thoughts count:', updatedThinkingState.thoughts.length);
                       setThinkingStateForMessage(messageId, updatedThinkingState);
                     }
                   }
@@ -311,6 +314,7 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
                       isThinking: false
                     };
                     currentThinkingStateRef.current = completedThinkingState;
+                    console.log('🧠 Completing thinking state for messageId:', messageId);
                     setThinkingStateForMessage(messageId, completedThinkingState);
                   }
                   break;
@@ -340,7 +344,7 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
                     console.log('📚 Citations processed for message', messageId, ':', data.citations.length);
                   }
                   
-                  // Store metadata - the backend sends duration fields correctly
+                  // Store metadata
                   if (data.metadata) {
                     newState.metadata = {
                       duration: data.metadata.duration,
@@ -359,6 +363,7 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
                   // Clear thinking state when complete
                   if (messageId) {
                     setTimeout(() => {
+                      console.log('🧠 Clearing thinking state for completed message:', messageId);
                       clearThinkingStateForMessage(messageId);
                     }, 2000); // Keep thinking visible for 2 seconds after completion
                   }
