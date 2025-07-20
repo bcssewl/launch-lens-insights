@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useReasoning } from '@/contexts/ReasoningContext';
 import { useAlegeonTypewriter } from './useAlegeonTypewriter';
@@ -288,11 +287,7 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
                 case 'thinking_chunk':
                   console.log('💭 Thinking chunk for message', messageId, ':', data.content?.substring(0, 50));
                   if (data.content) {
-                    // Add thinking content to both the main message display and thinking state
-                    newState.bufferedText += data.content;
-                    newState.hasContent = true;
-                    
-                    // Also update the thinking state for the thinking panel
+                    // Only update the thinking state for the thinking panel - DO NOT add to bufferedText
                     if (messageId && currentThinkingStateRef.current) {
                       const updatedThinkingState: ThinkingState = {
                         ...currentThinkingStateRef.current,
