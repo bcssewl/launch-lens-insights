@@ -7,7 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ChevronDown, Microscope } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 
 const RESEARCH_TYPES = [
   { label: "Quick Facts", value: "quick_facts", description: "Fast answers for simple questions" },
@@ -32,23 +32,19 @@ const ResearchTypeSelector: React.FC<ResearchTypeSelectorProps> = ({
   isCompact = false
 }) => {
   const selectedOption = RESEARCH_TYPES.find(type => type.value === selectedType) || RESEARCH_TYPES[0];
-  const buttonSize = isCompact ? 'h-8 w-8' : 'h-10 w-10';
-  const iconSize = isCompact ? 'h-3 w-3' : 'h-4 w-4';
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          size="icon"
-          className={`${buttonSize} rounded-full hover:bg-muted transition-all duration-200`}
-          title={`Research Type: ${selectedOption.label}`}
+          className="h-10 px-3 rounded-full hover:bg-muted transition-all duration-200 text-muted-foreground hover:text-foreground flex items-center gap-2"
         >
-          <Microscope className={iconSize} />
-          <ChevronDown className="h-2 w-2 ml-0.5" />
+          <span className="text-sm font-medium">{selectedOption.label}</span>
+          <ChevronDown className="h-3 w-3" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80 bg-background border border-border shadow-lg">
+      <DropdownMenuContent align="start" className="w-80 bg-background border border-border shadow-lg z-50">
         {RESEARCH_TYPES.map((type) => (
           <DropdownMenuItem
             key={type.value}
