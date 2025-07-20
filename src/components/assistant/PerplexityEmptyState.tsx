@@ -83,16 +83,16 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
         </div>
 
         {/* Perplexity Pro-Style Input Area */}
-        <div className="w-full max-w-7xl mb-12">
+        <div className="w-full max-w-3xl mx-auto mb-12">
           {/* Input Field Container */}
-          <div className="relative bg-background border border-border rounded-xl px-6 py-6 shadow-sm hover:shadow-md transition-all duration-200 mb-3">
+          <div className="relative w-full max-w-3xl mx-auto bg-background border border-border rounded-2xl px-6 py-3 shadow-md hover:shadow-lg transition-all duration-200 mb-3">
             {/* Sound wave visualization overlay */}
             <SoundWaveVisualization audioLevel={audioLevel} isRecording={isRecording} />
             
             <input 
               type="text" 
               placeholder={isRecording ? "Listening..." : "Conduct Market Sizing, Competitor Analysis, Regulatory Scans, Trend Discovery"} 
-              className={`w-full h-16 text-lg bg-transparent border-none outline-none focus:outline-none placeholder:text-muted-foreground ${isRecording ? 'pl-12' : ''}`} 
+              className={`w-full h-12 text-lg bg-transparent border-none outline-none focus:outline-none placeholder:text-muted-foreground ${isRecording ? 'pl-12' : ''}`} 
               disabled={isRecording} 
               onKeyDown={handleKeyDown} 
             />
