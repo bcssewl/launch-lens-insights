@@ -32,24 +32,38 @@ type MessageAction =
   | { type: 'UPDATE_STREAMING_MESSAGE'; payload: { id: string; updates: Partial<ExtendedMessage> } };
 
 function messageReducer(state: ExtendedMessage[], action: MessageAction): ExtendedMessage[] {
+  console.log('🔄 MessageReducer called:', {
+    type: action.type,
+    currentStateLength: state.length,
+    payload: action.type === 'ADD_MESSAGE' ? { id: action.payload.id, text: action.payload.text.substring(0, 50) + '...' } : 'other'
+  });
+  
   switch (action.type) {
     case 'SET_MESSAGES':
+      console.log('📝 SET_MESSAGES: Setting', action.payload.length, 'messages');
       return action.payload;
     case 'ADD_MESSAGE':
-      return [...state, action.payload];
+      console.log('➕ ADD_MESSAGE: Adding message with id', action.payload.id);
+      const newState = [...state, action.payload];
+      console.log('✅ ADD_MESSAGE: New state length:', newState.length);
+      return newState;
     case 'ADD_STREAMING_MESSAGE':
+      console.log('🌊 ADD_STREAMING_MESSAGE: Adding streaming message');
       // Remove any existing streaming message first
       const withoutStreaming = state.filter(msg => !msg.isStreaming);
       return [...withoutStreaming, action.payload];
     case 'REPLACE_STREAMING_WITH_FINAL':
+      console.log('🔄 REPLACE_STREAMING_WITH_FINAL: Replacing streaming message');
       return state.map(msg => 
         msg.id === action.payload.streamingId 
           ? action.payload.finalMessage 
           : msg
       );
     case 'REMOVE_STREAMING_MESSAGE':
+      console.log('🗑️ REMOVE_STREAMING_MESSAGE: Removing streaming message');
       return state.filter(msg => msg.id !== action.payload);
     case 'UPDATE_STREAMING_MESSAGE':
+      console.log('🔄 UPDATE_STREAMING_MESSAGE: Updating streaming message');
       return state.map(msg => 
         msg.id === action.payload.id 
           ? { ...msg, ...action.payload.updates }
@@ -132,18 +146,34 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     startStreaming: startStratixStreaming, 
     stopStreaming: stopStratixStreaming 
   } = useStratixStreaming();
+
+  // Create a unique message ID for each user message that can be passed to Algeon
+  const [currentMessageId, setCurrentMessageId] = useState<string | null>(null);
+  
   const { 
     streamingState: alegeonStreamingState, 
     startStreaming: startAlegeonStreaming, 
     stopStreaming: stopAlegeonStreaming,
     fastForward: alegeonFastForward
-  } = useAlegeonStreamingV2(currentSessionId);
+  } = useAlegeonStreamingV2(currentMessageId);
 
   // Consistent streaming message ID
   const STREAMING_MESSAGE_ID = 'algeon-streaming-message';
   const isAddingMessageRef = useRef(false);
   const alegeonCompletionProcessedRef = useRef<boolean>(false); // Track if completion was processed
   const currentStreamingSessionRef = useRef<string | null>(null); // Track current streaming session
+
+  // Log message state changes for debugging
+  useEffect(() => {
+    console.log('🎯 Messages state updated:', {
+      length: messages.length,
+      lastMessage: messages.length > 0 ? {
+        id: messages[messages.length - 1].id,
+        sender: messages[messages.length - 1].sender,
+        text: messages[messages.length - 1].text.substring(0, 50) + '...'
+      } : 'none'
+    });
+  }, [messages]);
 
   // Improved scroll behavior - only auto-scroll when user is near bottom
   const scrollToBottom = useCallback(() => {
@@ -651,15 +681,20 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
 
     console.log('🚀 useMessages: Sending message with model:', selectedModel, 'sessionOverride:', sessionIdOverride);
 
+    // Generate a unique message ID for this user message that can be passed to Algeon
+    const userMessageId = uuidv4();
+    setCurrentMessageId(userMessageId);
+
     isAddingMessageRef.current = true;
 
     const newUserMessage: ExtendedMessage = {
-      id: uuidv4(),
+      id: userMessageId,
       text: finalMessageText,
       sender: 'user',
       timestamp: new Date(),
     };
     
+    console.log('📝 Dispatching ADD_MESSAGE for user message:', userMessageId);
     dispatch({ type: 'ADD_MESSAGE', payload: newUserMessage });
 
     // Save user message to history - use override session ID if provided
@@ -702,7 +737,7 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
 
       // Route to Algeon if model is 'algeon' OR for research queries with 'best' model
       if (selectedModel === 'algeon' || (selectedModel === 'best' && detectResearchQuery(finalMessageText))) {
-        console.log('🔬 Using Algeon model with typewriter animation');
+        console.log('🔬 Using Algeon model with typewriter animation, message ID:', userMessageId);
         aiResponseText = await handleAlegeonRequest(finalMessageText, researchType, currentSessionId);
         // Note: Final message handling is done in the useEffect above
       }
