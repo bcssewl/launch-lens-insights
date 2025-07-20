@@ -11,6 +11,7 @@ import QuickActionsDropdown from '@/components/assistant/QuickActionsDropdown';
 import ChatSessionsDropdown from '@/components/assistant/ChatSessionsDropdown';
 import ModelSelectionDropdown, { AIModel } from '@/components/assistant/ModelSelectionDropdown';
 import ResearchTypeSelector from '@/components/assistant/ResearchTypeSelector';
+import { Logo } from '@/components/icons';
 
 interface ChatSubheaderProps {
   isConfigured: boolean;
@@ -51,19 +52,9 @@ const ChatSubheader: React.FC<ChatSubheaderProps> = ({
 
   return (
     <div className="flex items-center justify-between w-full px-6 py-3">
-      {/* Model dropdown and research type selector on the left */}
-      <div className="flex items-center space-x-3">
-        <ModelSelectionDropdown 
-          selectedModel={selectedModel}
-          onModelSelect={handleModelSelect}
-        />
-        {selectedModel === 'algeon' && onResearchTypeChange && (
-          <ResearchTypeSelector
-            selectedType={selectedResearchType || 'business-research'}
-            onTypeChange={onResearchTypeChange}
-            isCompact={true}
-          />
-        )}
+      {/* Optivise logo on the left */}
+      <div className="flex items-center">
+        <Logo className="flex-shrink-0" />
       </div>
       
       {/* Profile button in the center */}
