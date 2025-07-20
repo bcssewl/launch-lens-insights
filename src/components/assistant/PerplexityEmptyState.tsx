@@ -69,7 +69,7 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
 
   return (
     <TooltipProvider>
-      <div className="flex flex-col items-center justify-center min-h-[70vh] px-6 py-12 text-center max-w-4xl mx-auto bg-transparent">
+      <div className="flex flex-col items-center justify-center min-h-[70vh] px-6 py-12 text-center max-w-6xl mx-auto bg-transparent">
         {/* Dynamic Greeting Section */}
         <div className="mb-12">
           <div className="flex flex-col items-center mb-6">
@@ -83,16 +83,16 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
         </div>
 
         {/* Perplexity Pro-Style Input Area */}
-        <div className="w-full max-w-4xl mb-12">
+        <div className="w-full max-w-5xl mb-12">
           {/* Input Field Container */}
-          <div className="relative bg-background border border-border rounded-xl px-6 py-4 shadow-sm hover:shadow-md transition-all duration-200 mb-3">
+          <div className="relative bg-background border border-border rounded-xl px-8 py-5 shadow-sm hover:shadow-md transition-all duration-200 mb-3">
             {/* Sound wave visualization overlay */}
             <SoundWaveVisualization audioLevel={audioLevel} isRecording={isRecording} />
             
             <input 
               type="text" 
               placeholder={isRecording ? "Listening..." : "Conduct Market Sizing, Competitor Analysis, Regulatory Scans, Trend Discovery"} 
-              className={`w-full h-12 text-base bg-transparent border-none outline-none focus:outline-none placeholder:text-muted-foreground ${isRecording ? 'pl-12' : ''}`} 
+              className={`w-full h-14 text-lg bg-transparent border-none outline-none focus:outline-none placeholder:text-muted-foreground ${isRecording ? 'pl-12' : ''}`} 
               disabled={isRecording} 
               onKeyDown={handleKeyDown} 
             />
