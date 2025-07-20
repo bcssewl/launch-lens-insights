@@ -69,7 +69,8 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
 
   return (
     <TooltipProvider>
-      <div className="flex flex-col items-center justify-center min-h-[70vh] px-6 py-12 text-center max-w-full mx-auto bg-transparent">
+      {/* Unified Container - combines background and content */}
+      <div className="flex flex-col items-center justify-center min-h-[70vh] w-full max-w-3xl mx-auto px-6 py-12 text-center bg-transparent">
         {/* Dynamic Greeting Section */}
         <div className="mb-12">
           <div className="flex flex-col items-center mb-6">
@@ -82,10 +83,10 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
           </div>
         </div>
 
-        {/* Perplexity Pro-Style Input Area */}
-        <div className="w-full max-w-3xl mx-auto mb-12">
+        {/* Input Area */}
+        <div className="w-full mb-12">
           {/* Input Field Container */}
-          <div className="relative w-full max-w-3xl mx-auto bg-background border border-border rounded-2xl px-6 py-3 shadow-md hover:shadow-lg transition-all duration-200 mb-3">
+          <div className="relative w-full bg-background border border-border rounded-2xl px-6 py-3 shadow-md hover:shadow-lg transition-all duration-200 mb-3">
             {/* Sound wave visualization overlay */}
             <SoundWaveVisualization audioLevel={audioLevel} isRecording={isRecording} />
             
@@ -167,12 +168,12 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
 
           {/* Error and Processing Messages */}
           {error && (
-            <div className="mt-4 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg max-w-3xl mx-auto">
+            <div className="mt-4 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
               {error}
             </div>
           )}
           {isProcessing && (
-            <div className="mt-4 text-sm text-blue-600 bg-blue-50 px-3 py-2 rounded-lg max-w-3xl mx-auto">
+            <div className="mt-4 text-sm text-blue-600 bg-blue-50 px-3 py-2 rounded-lg">
               Processing your voice recording...
             </div>
           )}
