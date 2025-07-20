@@ -3,7 +3,6 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { useReasoning } from '@/contexts/ReasoningContext';
 import { useAlegeonTypewriter } from './useAlegeonTypewriter';
 import { type AlgeonResearchType } from '@/utils/algeonResearchTypes';
-import { ThinkingParser } from '@/utils/thinkingParser';
 import type { ThinkingState } from '@/utils/thinkingParser';
 
 // Configuration constants
@@ -122,7 +121,7 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
     reject: (reason?: any) => void;
   } | null>(null);
   const hasResolvedRef = useRef<boolean>(false);
-  const thinkingParserRef = useRef<ThinkingParser | null>(null);
+  const currentThinkingStateRef = useRef<ThinkingState | null>(null);
 
   // Update streaming state with typewriter values
   useEffect(() => {
@@ -156,7 +155,7 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
     }
     hasResolvedRef.current = false;
     promiseRef.current = null;
-    thinkingParserRef.current = null;
+    currentThinkingStateRef.current = null;
     
     // Clear thinking state for this specific message
     if (messageId) {
@@ -186,11 +185,6 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
       clearThinkingStateForMessage(messageId);
     }
     
-    // Reset thinking parser
-    if (thinkingParserRef.current) {
-      thinkingParserRef.current.reset();
-    }
-    
     cleanup();
   }, [cleanup, messageId, clearThinkingStateForMessage]);
 
@@ -210,10 +204,6 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
     console.log('✅ Validated Research Type (final):', validatedResearchType);
     
     resetState();
-    
-    // Initialize thinking parser
-    thinkingParserRef.current = new ThinkingParser();
-    
     setStreamingState(prev => ({ ...prev, isStreaming: true, currentPhase: 'reasoning' }));
 
     return new Promise((resolve, reject) => {
@@ -282,40 +272,35 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
                 case 'thinking_started':
                   console.log('🧠 Thinking phase started for message:', messageId);
                   newState.currentPhase = 'reasoning';
+                  
+                  if (messageId) {
+                    const newThinkingState: ThinkingState = {
+                      phase: 'thinking',
+                      thoughts: [],
+                      isThinking: true,
+                      finalContent: ''
+                    };
+                    currentThinkingStateRef.current = newThinkingState;
+                    setThinkingStateForMessage(messageId, newThinkingState);
+                  }
                   break;
 
                 case 'thinking_chunk':
-                case 'content_chunk':
-                  console.log('📝 Processing chunk for message', messageId, 'type:', data.type, 'length:', data.content?.length);
-                  if (data.content && thinkingParserRef.current) {
-                    // Parse the content through the thinking parser
-                    thinkingParserRef.current.parse(data.content);
-                    const parserState = thinkingParserRef.current.getState();
+                  console.log('💭 Thinking chunk for message', messageId, ':', data.content?.substring(0, 50));
+                  if (data.content) {
+                    // Add thinking content to both the main message display and thinking state
+                    newState.bufferedText += data.content;
+                    newState.hasContent = true;
                     
-                    console.log('🧠 Parser state:', parserState.phase, 'thoughts:', parserState.thoughts.length, 'final content length:', parserState.finalContent.length);
-                    
-                    // Update thinking state for the panel
-                    if (messageId && parserState.thoughts.length > 0) {
-                      const thinkingState: ThinkingState = {
-                        phase: parserState.phase,
-                        thoughts: parserState.thoughts,
-                        isThinking: parserState.isThinking,
-                        finalContent: parserState.finalContent
+                    // Also update the thinking state for the thinking panel
+                    if (messageId && currentThinkingStateRef.current) {
+                      const updatedThinkingState: ThinkingState = {
+                        ...currentThinkingStateRef.current,
+                        thoughts: [...currentThinkingStateRef.current.thoughts, data.content],
+                        isThinking: true
                       };
-                      setThinkingStateForMessage(messageId, thinkingState);
-                    }
-                    
-                    // Update the main message content with final content
-                    if (parserState.finalContent) {
-                      newState.bufferedText = parserState.finalContent;
-                      newState.hasContent = true;
-                    }
-                    
-                    // Update phase based on parser state
-                    if (parserState.phase === 'generating') {
-                      newState.currentPhase = 'generating';
-                    } else if (parserState.phase === 'thinking') {
-                      newState.currentPhase = 'reasoning';
+                      currentThinkingStateRef.current = updatedThinkingState;
+                      setThinkingStateForMessage(messageId, updatedThinkingState);
                     }
                   }
                   break;
@@ -324,16 +309,22 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
                   console.log('✅ Thinking phase complete for message:', messageId);
                   newState.currentPhase = 'generating';
                   
-                  if (thinkingParserRef.current) {
-                    const parserState = thinkingParserRef.current.getState();
-                    if (messageId) {
-                      const completedThinkingState: ThinkingState = {
-                        ...parserState,
-                        phase: 'done',
-                        isThinking: false
-                      };
-                      setThinkingStateForMessage(messageId, completedThinkingState);
-                    }
+                  if (messageId && currentThinkingStateRef.current) {
+                    const completedThinkingState: ThinkingState = {
+                      ...currentThinkingStateRef.current,
+                      phase: 'done',
+                      isThinking: false
+                    };
+                    currentThinkingStateRef.current = completedThinkingState;
+                    setThinkingStateForMessage(messageId, completedThinkingState);
+                  }
+                  break;
+
+                case 'content_chunk':
+                  console.log('📝 Content chunk received for message', messageId, ', length:', data.content?.length);
+                  if (data.content) {
+                    newState.bufferedText += data.content;
+                    newState.hasContent = true;
                   }
                   break;
 
@@ -343,19 +334,9 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
                   newState.isStreaming = false;
                   newState.currentPhase = 'complete';
                   
-                  // Complete the thinking parser
-                  if (thinkingParserRef.current) {
-                    thinkingParserRef.current.complete();
-                    const finalParserState = thinkingParserRef.current.getState();
-                    
-                    // Use final content from parser or accumulated content
-                    const finalContent = finalParserState.finalContent || data.accumulated_content || data.final_content || newState.bufferedText;
-                    newState.bufferedText = finalContent;
-                  } else {
-                    // Fallback to accumulated content if parser is not available
-                    if (data.accumulated_content || data.final_content) {
-                      newState.bufferedText = data.accumulated_content || data.final_content || newState.bufferedText;
-                    }
+                  // Use accumulated content if available
+                  if (data.accumulated_content || data.final_content) {
+                    newState.bufferedText = data.accumulated_content || data.final_content || newState.bufferedText;
                   }
                   
                   // Process citations
@@ -364,7 +345,7 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
                     console.log('📚 Citations processed for message', messageId, ':', data.citations.length);
                   }
                   
-                  // Store metadata
+                  // Store metadata - the backend sends duration fields correctly
                   if (data.metadata) {
                     newState.metadata = {
                       duration: data.metadata.duration,
@@ -389,7 +370,7 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
                   
                   // Resolve with final content
                   if (!hasResolvedRef.current) {
-                    const finalContent = newState.bufferedText;
+                    const finalContent = data.accumulated_content || data.final_content || prev.bufferedText;
                     setTimeout(() => {
                       if (!hasResolvedRef.current) {
                         hasResolvedRef.current = true;
@@ -462,13 +443,12 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
             }));
             
             // Show error in thinking state instead of clearing it
-            if (messageId && thinkingParserRef.current) {
-              const parserState = thinkingParserRef.current.getState();
+            if (messageId && currentThinkingStateRef.current) {
               const errorThinkingState: ThinkingState = {
-                ...parserState,
+                ...currentThinkingStateRef.current,
                 phase: 'error',
                 isThinking: false,
-                thoughts: [...parserState.thoughts, `❌ ${errorMsg}`]
+                thoughts: [...currentThinkingStateRef.current.thoughts, `❌ ${errorMsg}`]
               };
               setThinkingStateForMessage(messageId, errorThinkingState);
             }
@@ -502,13 +482,12 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
                 reject(new Error(errorMsg));
                 
                 // Show error in thinking state instead of clearing it
-                if (messageId && thinkingParserRef.current) {
-                  const parserState = thinkingParserRef.current.getState();
+                if (messageId && currentThinkingStateRef.current) {
                   const errorThinkingState: ThinkingState = {
-                    ...parserState,
+                    ...currentThinkingStateRef.current,
                     phase: 'error',
                     isThinking: false,
-                    thoughts: [...parserState.thoughts, `❌ ${errorMsg}`]
+                    thoughts: [...currentThinkingStateRef.current.thoughts, `❌ ${errorMsg}`]
                   };
                   setThinkingStateForMessage(messageId, errorThinkingState);
                 }
