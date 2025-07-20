@@ -108,7 +108,7 @@ export interface AlegeonStreamingStateV2 {
   };
 }
 
-export const useAlegeonStreamingV2 = (messageId: string | null) => {
+export const useAlegeonStreamingV2 = () => {
   // Central map to manage all streaming messages
   const [streamingStates, setStreamingStates] = useState<Map<string, MessageStreamingState>>(new Map());
   
@@ -128,6 +128,9 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
     typewriterProgress: 0,
   });
 
+  // Current message ID being processed
+  const [currentMessageId, setCurrentMessageId] = useState<string | null>(null);
+
   const { setThinkingStateForMessage, clearThinkingStateForMessage, getThinkingStateForMessage } = useReasoning();
 
   // Typewriter effect for smooth display
@@ -137,7 +140,7 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
       speed: 25, // 25 characters per second
       enabled: streamingState.currentPhase === 'generating' || streamingState.bufferedText.length > 0,
       onComplete: () => {
-        console.log('🎯 Typewriter animation completed for message:', messageId);
+        console.log('🎯 Typewriter animation completed for message:', currentMessageId);
       }
     }
   );
@@ -163,7 +166,7 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
   }, [typewriterText, isTyping, typewriterProgress]);
 
   const cleanup = useCallback(() => {
-    console.log('🧹 Cleaning up Algeon V2 streaming for message:', messageId);
+    console.log('🧹 Cleaning up Algeon V2 streaming for message:', currentMessageId);
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
@@ -187,13 +190,13 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
     currentThinkingStateRef.current = null;
     
     // Clear thinking state for this specific message
-    if (messageId) {
-      clearThinkingStateForMessage(messageId);
+    if (currentMessageId) {
+      clearThinkingStateForMessage(currentMessageId);
     }
-  }, [messageId, clearThinkingStateForMessage]);
+  }, [currentMessageId, clearThinkingStateForMessage]);
 
   const resetState = useCallback(() => {
-    console.log('🔄 Resetting Algeon V2 streaming state for message:', messageId);
+    console.log('🔄 Resetting Algeon V2 streaming state for message:', currentMessageId);
     setStreamingState({
       isStreaming: false,
       currentPhase: 'idle',
@@ -210,16 +213,19 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
     });
     
     // Clear thinking state for this specific message
-    if (messageId) {
-      clearThinkingStateForMessage(messageId);
+    if (currentMessageId) {
+      clearThinkingStateForMessage(currentMessageId);
     }
     
     cleanup();
-  }, [cleanup, messageId, clearThinkingStateForMessage]);
+  }, [cleanup, currentMessageId, clearThinkingStateForMessage]);
 
-  const startStreaming = useCallback(async (query: string, researchType: string = 'quick_facts'): Promise<string> => {
+  const startStreaming = useCallback(async (query: string, messageId: string, researchType: string = 'quick_facts'): Promise<string> => {
     console.log('🚀 Starting Algeon V2 streaming request for message:', messageId, 'query:', query.substring(0, 50));
     console.log('🔬 Research Type (input):', researchType);
+    
+    // Set the current message ID for this streaming session
+    setCurrentMessageId(messageId);
     
     // Validate research type - check if it's in our valid list
     let validatedResearchType: AlgeonResearchType;
@@ -270,7 +276,7 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
           const payload = {
             query,
             research_type: validatedResearchType,
-            client_message_id: messageId,
+            client_message_id: messageId, // Now properly set from parameter
             scope: "global",
             depth: "comprehensive",
             urgency: "medium",
@@ -582,19 +588,19 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
         }
       }
     });
-  }, [resetState, cleanup, messageId, setThinkingStateForMessage, clearThinkingStateForMessage]);
+  }, [resetState, cleanup, setThinkingStateForMessage, clearThinkingStateForMessage, getThinkingStateForMessage, streamingStates]);
 
   const stopStreaming = useCallback(() => {
-    console.log('🛑 Stopping Algeon V2 streaming for message:', messageId);
+    console.log('🛑 Stopping Algeon V2 streaming for message:', currentMessageId);
     setStreamingState(prev => ({ ...prev, isStreaming: false, currentPhase: 'complete' }));
     
-    if (messageId) {
-      clearThinkingStateForMessage(messageId);
+    if (currentMessageId) {
+      clearThinkingStateForMessage(currentMessageId);
     }
     
     promiseRef.current?.reject(new Error('Streaming stopped by user.'));
     cleanup();
-  }, [cleanup, messageId, clearThinkingStateForMessage]);
+  }, [cleanup, currentMessageId, clearThinkingStateForMessage]);
 
   useEffect(() => {
     return () => {

@@ -147,15 +147,13 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     stopStreaming: stopStratixStreaming 
   } = useStratixStreaming();
 
-  // Create a unique message ID for each user message that can be passed to Algeon
-  const [currentMessageId, setCurrentMessageId] = useState<string | null>(null);
-  
+  // Remove currentMessageId state - no longer needed
   const { 
     streamingState: alegeonStreamingState, 
     startStreaming: startAlegeonStreaming, 
     stopStreaming: stopAlegeonStreaming,
     fastForward: alegeonFastForward
-  } = useAlegeonStreamingV2(currentMessageId);
+  } = useAlegeonStreamingV2(); // No longer pass messageId here
 
   // Consistent streaming message ID
   const STREAMING_MESSAGE_ID = 'algeon-streaming-message';
@@ -476,15 +474,15 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
   }, []);
 
   // Handle Algeon requests with enhanced citation support - Updated for V2
-  const handleAlegeonRequest = useCallback(async (message: string, researchType?: string, sessionId?: string | null): Promise<string> => {
+  const handleAlegeonRequest = useCallback(async (message: string, messageId: string, researchType?: string, sessionId?: string | null): Promise<string> => {
     try {
-      console.log('🔬 Starting Algeon V2 streaming for message:', message.substring(0, 100));
+      console.log('🔬 Starting Algeon V2 streaming for message ID:', messageId, 'query:', message.substring(0, 100));
       
       // Reset completion flag for new request
       alegeonCompletionProcessedRef.current = false;
       
-      // Use the V2 Algeon streaming implementation
-      const result = await startAlegeonStreaming(message, researchType as any);
+      // Use the V2 Algeon streaming implementation with message ID
+      const result = await startAlegeonStreaming(message, messageId, researchType as any);
       
       console.log('✅ Algeon V2 request completed:', {
         textLength: result.length
@@ -681,20 +679,16 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
 
     console.log('🚀 useMessages: Sending message with model:', selectedModel, 'sessionOverride:', sessionIdOverride);
 
-    // Generate a unique message ID for this user message that can be passed to Algeon
-    const userMessageId = uuidv4();
-    setCurrentMessageId(userMessageId);
-
     isAddingMessageRef.current = true;
 
     const newUserMessage: ExtendedMessage = {
-      id: userMessageId,
+      id: uuidv4(),
       text: finalMessageText,
       sender: 'user',
       timestamp: new Date(),
     };
     
-    console.log('📝 Dispatching ADD_MESSAGE for user message:', userMessageId);
+    console.log('📝 Dispatching ADD_MESSAGE for user message:', newUserMessage.id);
     dispatch({ type: 'ADD_MESSAGE', payload: newUserMessage });
 
     // Save user message to history - use override session ID if provided
@@ -737,8 +731,9 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
 
       // Route to Algeon if model is 'algeon' OR for research queries with 'best' model
       if (selectedModel === 'algeon' || (selectedModel === 'best' && detectResearchQuery(finalMessageText))) {
-        console.log('🔬 Using Algeon model with typewriter animation, message ID:', userMessageId);
-        aiResponseText = await handleAlegeonRequest(finalMessageText, researchType, currentSessionId);
+        console.log('🔬 Using Algeon model with typewriter animation, message ID:', newUserMessage.id);
+        // Pass the userMessageId directly to handleAlegeonRequest
+        aiResponseText = await handleAlegeonRequest(finalMessageText, newUserMessage.id, researchType, currentSessionId);
         // Note: Final message handling is done in the useEffect above
       }
       // Route to Stratix if model is 'stratix'
@@ -818,7 +813,7 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     } finally {
       setIsTyping(false);
     }
-  }, [currentSessionId, addMessage, isConfigured, canvasState, handleAlegeonRequest, stopStreaming, stopStratixStreaming, stopAlegeonStreaming, sendMessageToN8n, handleStratixRequest]);
+  }, [currentSessionId, addMessage, isConfigured, canvasState, handleAlegeonRequest, stopStreaming, stopStratixStreaming, stopAlegeonStreaming, sendMessageToN8n, handleStratixRequest, detectResearchQuery]);
 
   const handleClearConversation = useCallback(() => {
     console.log('useMessages: Clearing conversation');
