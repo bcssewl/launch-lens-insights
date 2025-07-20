@@ -1,11 +1,10 @@
 
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Bot, Lightbulb, FolderOpen, Settings as SettingsIcon, Folder } from 'lucide-react';
+import { Bot, Lightbulb, FolderOpen, Settings as SettingsIcon, Folder } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navigationItems = [
-  { href: "/dashboard", label: "Dashboard", icon: Home },
   { href: "/dashboard/assistant", label: "AI Advisor", icon: Bot },
   { href: "/dashboard/validate", label: "Analyze Idea", icon: Lightbulb },
   { href: "/dashboard/ideas", label: "Projects", icon: FolderOpen },

@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,11 +9,10 @@ import WaitlistPage from "./pages/WaitlistPage";
 import NotFound from "./pages/NotFound";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { AuthProvider } from "./contexts/AuthContext";
-import { ReasoningProvider } from "./contexts/ReasoningContext"; // Import the provider
+import { ReasoningProvider } from "./contexts/ReasoningContext";
 import SignUpPage from "./pages/SignUpPage";
 import LoginPage from "./pages/LoginPage";
 import EmailConfirmationPage from "./pages/EmailConfirmationPage";
-import DashboardPage from "./pages/DashboardPage";
 import ValidateIdeaPage from "./pages/ValidateIdeaPage";
 import AnalyzingIdeaPage from "./pages/AnalyzingIdeaPage";
 import ResultsPage from "./pages/ResultsPage";
@@ -41,7 +41,7 @@ const App = () => (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AuthProvider>
-          <ReasoningProvider> {/* Wrap the components with the provider */}
+          <ReasoningProvider>
             <TooltipProvider>
               <Toaster />
               <Sonner />
@@ -52,8 +52,8 @@ const App = () => (
                 <Route path="/signup" element={<SignUpPage />} />
                 <Route path="/auth/confirm" element={<EmailConfirmationPage />} />
                 
-                {/* Dashboard Routes */}
-                <Route path="/dashboard" element={<DashboardPage />} />
+                {/* Redirect dashboard to AI Assistant since dashboard is removed */}
+                <Route path="/dashboard" element={<Navigate to="/dashboard/assistant" replace />} />
                 <Route path="/dashboard/validate" element={<ValidateIdeaPage />} />
                 <Route path="/analyzing" element={<AnalyzingIdeaPage />} />
                 <Route path="/results" element={<ResultsPage />} />
