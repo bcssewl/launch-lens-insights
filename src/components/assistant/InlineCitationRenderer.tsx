@@ -47,14 +47,14 @@ const InlineCitationRenderer: React.FC<InlineCitationRendererProps> = ({
             
             if (citation && citation.url) {
               return (
-                <button
+                <sup
                   key={index}
                   onClick={() => onCitationClick?.(citation, citationIndex)}
-                  className="citation-link text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium no-underline border-b border-current border-dotted pb-0.5 transition-colors cursor-pointer bg-transparent p-0 inline"
+                  className="opt-cite text-[0.65rem] text-blue-400 hover:text-blue-300 cursor-pointer align-super transition-colors"
                   title={citation.name}
                 >
-                  [{citationNumber}]
-                </button>
+                  {citationNumber}
+                </sup>
               );
             }
           }
