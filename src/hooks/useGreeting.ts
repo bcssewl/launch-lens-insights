@@ -1,4 +1,5 @@
 
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,29 +11,34 @@ interface Profile {
 export const useGreeting = () => {
   const { user } = useAuth();
   const [firstName, setFirstName] = useState<string>('');
-  const [greeting, setGreeting] = useState<string>('');
+  const [primaryGreeting, setPrimaryGreeting] = useState<string>('');
+  const [assistanceMessage, setAssistanceMessage] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
 
-  // Get time-based greeting with professional messaging
+  // Get time-based greeting with professional messaging - returns object with two parts
   const getTimeBasedGreeting = (firstName: string) => {
     const hour = new Date().getHours();
     
     if (hour >= 5 && hour < 12) {
-      return firstName 
-        ? `Good morning, ${firstName}. How may I assist you today?`
-        : 'Good morning. How may I assist you today?';
+      return {
+        primary: firstName ? `Good morning, ${firstName}` : 'Good morning',
+        assistance: 'How may I assist you today?'
+      };
     } else if (hour >= 12 && hour < 17) {
-      return firstName 
-        ? `Good afternoon, ${firstName}. What can I help you with?`
-        : 'Good afternoon. What can I help you with?';
+      return {
+        primary: firstName ? `Good afternoon, ${firstName}` : 'Good afternoon',
+        assistance: 'What can I help you with?'
+      };
     } else if (hour >= 17 && hour < 22) {
-      return firstName 
-        ? `Good evening, ${firstName}. How can I support your work?`
-        : 'Good evening. How can I support your work?';
+      return {
+        primary: firstName ? `Good evening, ${firstName}` : 'Good evening',
+        assistance: 'How can I support your work?'
+      };
     } else {
-      return firstName 
-        ? `Working late, ${firstName}? Let me know how I can assist.`
-        : 'Working late? Let me know how I can assist.';
+      return {
+        primary: firstName ? `Working late, ${firstName}?` : 'Working late?',
+        assistance: 'Let me know how I can assist.'
+      };
     }
   };
 
@@ -44,7 +50,8 @@ export const useGreeting = () => {
   useEffect(() => {
     const fetchUserProfile = async () => {
       if (!user) {
-        setGreeting('Welcome. How may I assist you today?');
+        setPrimaryGreeting('Welcome');
+        setAssistanceMessage('How may I assist you today?');
         setFirstName('');
         setIsLoading(false);
         return;
@@ -68,15 +75,21 @@ export const useGreeting = () => {
         if (name) {
           const firstNameExtracted = extractFirstName(name);
           setFirstName(firstNameExtracted);
-          setGreeting(getTimeBasedGreeting(firstNameExtracted));
+          const greeting = getTimeBasedGreeting(firstNameExtracted);
+          setPrimaryGreeting(greeting.primary);
+          setAssistanceMessage(greeting.assistance);
         } else {
           setFirstName('');
-          setGreeting(getTimeBasedGreeting(''));
+          const greeting = getTimeBasedGreeting('');
+          setPrimaryGreeting(greeting.primary);
+          setAssistanceMessage(greeting.assistance);
         }
       } catch (error) {
         console.error('Error fetching user profile:', error);
         setFirstName('');
-        setGreeting(getTimeBasedGreeting(''));
+        const greeting = getTimeBasedGreeting('');
+        setPrimaryGreeting(greeting.primary);
+        setAssistanceMessage(greeting.assistance);
       } finally {  
         setIsLoading(false);
       }
@@ -89,12 +102,15 @@ export const useGreeting = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       if (user) {
-        setGreeting(getTimeBasedGreeting(firstName));
+        const greeting = getTimeBasedGreeting(firstName);
+        setPrimaryGreeting(greeting.primary);
+        setAssistanceMessage(greeting.assistance);
       }
     }, 60000); // Update every minute
 
     return () => clearInterval(interval);
   }, [firstName, user]);
 
-  return { greeting, isLoading, firstName };
+  return { primaryGreeting, assistanceMessage, isLoading, firstName };
 };
+

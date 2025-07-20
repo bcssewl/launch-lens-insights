@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import { Search, Mic, Target, Globe, Paperclip } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -22,7 +23,7 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
   onSendMessage,
   selectedModel: parentSelectedModel
 }) => {
-  const { greeting, isLoading: greetingLoading } = useGreeting();
+  const { primaryGreeting, assistanceMessage, isLoading: greetingLoading } = useGreeting();
   const {
     isRecording,
     isProcessing,
@@ -73,9 +74,14 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
         {/* Dynamic Greeting Section */}
         <div className="mb-12">
           <div className="flex items-center justify-center gap-4 mb-6">
-            <h1 className="text-4xl font-semibold text-foreground tracking-tight">
-              {greetingLoading ? 'Welcome' : greeting}
-            </h1>
+            <div className="flex flex-col items-center">
+              <h1 className="text-4xl font-light text-foreground tracking-tight mb-2">
+                {greetingLoading ? 'Welcome' : primaryGreeting}
+              </h1>
+              <h2 className="text-lg font-normal text-muted-foreground">
+                {greetingLoading ? 'How may I assist you today?' : assistanceMessage}
+              </h2>
+            </div>
             <img 
               src="/lovable-uploads/5cb6a965-c41d-482b-9c9a-da3a7fa02d8c.png" 
               alt="NEXUS" 
@@ -201,3 +207,4 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
 };
 
 export default PerplexityEmptyState;
+
