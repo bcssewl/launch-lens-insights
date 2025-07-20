@@ -37,7 +37,9 @@ const ThinkingPanel: React.FC<ThinkingPanelProps> = ({ messageId }) => {
       'opt-thinking-panel',
       'bg-gray-50/80 dark:bg-gray-800/40 backdrop-blur-sm',
       'border-t border-b border-border/30',
-      'transition-all duration-300 ease-in-out overflow-hidden'
+      'transition-all duration-300 ease-in-out overflow-hidden',
+      // Mobile responsiveness: Bottom sheet style on small screens
+      'sm:rounded-lg sm:mx-2 sm:mb-2'
     )}>
       <div
         className="flex items-center justify-between p-2 cursor-pointer"
@@ -51,7 +53,12 @@ const ThinkingPanel: React.FC<ThinkingPanelProps> = ({ messageId }) => {
         <ChevronUp className={cn('w-4 h-4 transition-transform', isCollapsed && 'rotate-180')} />
       </div>
       {!isCollapsed && (
-        <div className="p-2 border-t border-border/20 max-h-48 overflow-y-auto">
+        <div 
+          className="p-2 border-t border-border/20 max-h-48 overflow-y-auto"
+          role="log"
+          aria-live="polite"
+          aria-label="Agent reasoning process"
+        >
           <ul className="space-y-1">
             {thoughts.map((thought, index) => (
               <li key={index} className="opt-thought-line text-xs text-muted-foreground">
