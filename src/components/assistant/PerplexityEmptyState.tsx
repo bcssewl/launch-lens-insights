@@ -70,7 +70,7 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
   return (
     <TooltipProvider>
       {/* Unified Container - combines background and content */}
-      <div className="flex flex-col items-center justify-center min-h-[70vh] w-full max-w-3xl mx-auto px-6 py-12 text-center bg-transparent">
+      <div className="flex flex-col items-center justify-center min-h-screen w-full max-w-3xl mx-auto px-6 py-12 text-center bg-transparent">
         {/* Dynamic Greeting Section */}
         <div className="mb-12">
           <div className="flex flex-col items-center mb-6">
