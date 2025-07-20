@@ -9,7 +9,6 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import QuickActionsDropdown from '@/components/assistant/QuickActionsDropdown';
 import ChatSessionsDropdown from '@/components/assistant/ChatSessionsDropdown';
-import ModelSelectionDropdown, { AIModel } from '@/components/assistant/ModelSelectionDropdown';
 import ResearchTypeSelector from '@/components/assistant/ResearchTypeSelector';
 import { Logo } from '@/components/icons';
 
@@ -42,19 +41,21 @@ const ChatSubheader: React.FC<ChatSubheaderProps> = ({
 }) => {
   const { user, signOut } = useAuth();
 
-  const handleModelSelect = (model: AIModel) => {
-    onModelSelect(model.id);
-  };
-
   const handleLogout = async () => {
     await signOut();
   };
 
   return (
     <div className="flex items-center justify-between w-full px-6 py-3">
-      {/* Optivise logo on the left */}
+      {/* Research type selector on the left */}
       <div className="flex items-center">
-        <Logo className="flex-shrink-0" />
+        {onResearchTypeChange && (
+          <ResearchTypeSelector
+            selectedType={selectedResearchType || 'quick_facts'}
+            onTypeChange={onResearchTypeChange}
+            isCompact={false}
+          />
+        )}
       </div>
       
       {/* Profile button in the center */}
