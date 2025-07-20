@@ -1,9 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
-import { AppSidebar } from '@/components/AppSidebar';
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { FloatingElements } from '@/components/landing/FloatingElements';
-import DashboardHeader from '@/components/DashboardHeader';
-import MobileDashboardHeader from '@/components/mobile/MobileDashboardHeader';
+import TopHeader from '@/components/navigation/TopHeader';
+import BottomNavigation from '@/components/navigation/BottomNavigation';
 import ChatArea from '@/components/assistant/ChatArea';
 import CanvasView from '@/components/assistant/CanvasView';
 import FullscreenChatLayout from '@/components/assistant/FullscreenChatLayout';
@@ -16,7 +15,6 @@ import { useAlegeonStreamingV2 } from '@/hooks/useAlegeonStreamingV2';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTheme } from 'next-themes';
 import { Loader2 } from 'lucide-react';
-import type { AIModel } from '@/components/assistant/ModelSelectionDropdown';
 
 const AIAssistantPage: React.FC = () => {
   const isMobile = useIsMobile();
@@ -66,23 +64,6 @@ const AIAssistantPage: React.FC = () => {
   }, [canvasState.content]);
 
   useEffect(() => {
-    console.log('=== AI Assistant Page Debug ===');
-    console.log('Current route:', window.location.pathname);
-    console.log('Current session ID:', currentSessionId);
-    console.log('Theme mode:', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
-    console.log('Theme from hook:', theme);
-
-    const rootStyles = getComputedStyle(document.documentElement);
-    console.log('CSS Variables:', {
-      background: rootStyles.getPropertyValue('--background'),
-      surface: rootStyles.getPropertyValue('--surface'),
-      primary: rootStyles.getPropertyValue('--primary'),
-      accent: rootStyles.getPropertyValue('--accent')
-    });
-    console.log('=== End Debug ===');
-  }, [theme, currentSessionId]);
-
-  useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'F11') {
         event.preventDefault();
@@ -98,20 +79,16 @@ const AIAssistantPage: React.FC = () => {
   const handleSendMessageWithSession = async (text: string, attachments?: any[], modelOverride?: string, researchType?: string) => {
     const modelToUse = modelOverride || selectedModel;
     const researchTypeToUse = researchType || selectedResearchType;
-    console.log('AIAssistantPage: Sending message with session:', currentSessionId, 'model:', modelToUse, 'research type:', researchTypeToUse);
 
     if (!currentSessionId) {
-      console.log('AIAssistantPage: No current session, creating new one...');
       const newSession = await createSession();
       if (!newSession) {
         console.error('AIAssistantPage: Failed to create new session');
         return;
       }
-      console.log('AIAssistantPage: Created new session:', newSession.id);
       
       await new Promise(resolve => setTimeout(resolve, 200));
       
-      console.log('AIAssistantPage: Sending message with new session ID:', newSession.id);
       handleSendMessage(text, undefined, modelToUse, researchTypeToUse, newSession.id);
     } else {
       handleSendMessage(text, undefined, modelToUse, researchTypeToUse);
@@ -119,7 +96,6 @@ const AIAssistantPage: React.FC = () => {
   };
 
   const handleClearConversationWithHistory = async () => {
-    console.log('AIAssistantPage: Clearing conversation and history for session:', currentSessionId);
     handleClearConversation();
     if (currentSessionId) {
       await clearHistory();
@@ -127,7 +103,6 @@ const AIAssistantPage: React.FC = () => {
   };
 
   const handleSessionSelect = (sessionId: string) => {
-    console.log('AIAssistantPage: Session selected:', sessionId);
     if (sessionId === '') {
       navigateToSession(null);
     } else {
@@ -140,12 +115,10 @@ const AIAssistantPage: React.FC = () => {
   };
 
   const handleCanvasContentUpdate = (newContent: string) => {
-    console.log('AIAssistantPage: Canvas content updated');
     setEditedCanvasContent(newContent);
   };
 
   const handleModelSelect = (modelId: string) => {
-    console.log('AIAssistantPage: Model selected:', modelId);
     setSelectedModel(modelId);
     if (modelId === 'algeon') {
       setSelectedResearchType('quick_facts');
@@ -153,7 +126,6 @@ const AIAssistantPage: React.FC = () => {
   };
 
   const handleResearchTypeChange = (type: string) => {
-    console.log('AIAssistantPage: Research type selected:', type);
     setSelectedResearchType(type);
   };
 
@@ -162,17 +134,12 @@ const AIAssistantPage: React.FC = () => {
       <div className="min-h-screen flex w-full apple-hero relative">
         <FloatingElements />
         <ReasoningProvider>
-          <SidebarProvider>
-            <AppSidebar />
-            <SidebarInset className="flex-1 flex flex-col bg-transparent">
-              <div className="flex-1 flex items-center justify-center">
-                <div className="text-center">
-                  <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-                  <p className="text-muted-foreground">Loading chat session...</p>
-                </div>
-              </div>
-            </SidebarInset>
-          </SidebarProvider>
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+              <p className="text-muted-foreground">Loading chat session...</p>
+            </div>
+          </div>
         </ReasoningProvider>
       </div>
     );
@@ -205,55 +172,53 @@ const AIAssistantPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex w-full apple-hero relative">
+    <div className="min-h-screen flex flex-col w-full apple-hero relative">
       <FloatingElements />
       
       <ReasoningProvider>
-        <SidebarProvider>
-          <AppSidebar />
-          
-          <SidebarInset className="flex-1 flex flex-col bg-transparent h-screen">
-            {isMobile ? (
-              <MobileDashboardHeader title="AI Assistant" />
-            ) : (
-              <div className="flex-shrink-0 bg-transparent">
-                <div className="px-6 flex items-center justify-between py-[10px]">
-                  <ChatSubheader 
-                    isConfigured={isConfigured} 
-                    currentSessionId={currentSessionId} 
-                    isFullscreen={isFullscreen} 
-                    onToggleFullscreen={toggleFullscreen} 
-                    onDownloadChat={handleDownloadChat} 
-                    onClearConversation={handleClearConversationWithHistory} 
-                    onSessionSelect={handleSessionSelect}
-                    selectedModel={selectedModel}
-                    onModelSelect={handleModelSelect}
-                    selectedResearchType={selectedResearchType}
-                    onResearchTypeChange={handleResearchTypeChange}
-                  />
-                </div>
+        <TopHeader />
+        
+        <div className="flex-1 flex flex-col bg-transparent">
+          {!isMobile && (
+            <div className="flex-shrink-0 bg-transparent border-b border-border-subtle">
+              <div className="px-6 py-3">
+                <ChatSubheader 
+                  isConfigured={isConfigured} 
+                  currentSessionId={currentSessionId} 
+                  isFullscreen={isFullscreen} 
+                  onToggleFullscreen={toggleFullscreen} 
+                  onDownloadChat={handleDownloadChat} 
+                  onClearConversation={handleClearConversationWithHistory} 
+                  onSessionSelect={handleSessionSelect}
+                  selectedModel={selectedModel}
+                  onModelSelect={handleModelSelect}
+                  selectedResearchType={selectedResearchType}
+                  onResearchTypeChange={handleResearchTypeChange}
+                />
               </div>
-            )}
-            
-            <div className="flex-1 min-h-0 bg-transparent">
-              <ChatArea 
-                messages={messages} 
-                isTyping={isTyping} 
-                viewportRef={viewportRef} 
-                onSendMessage={handleSendMessageWithSession}
-                selectedModel={selectedModel}
-                onOpenCanvas={handleOpenCanvas} 
-                onCloseCanvas={handleCloseCanvas} 
-                onCanvasDownload={handleCanvasDownload} 
-                onCanvasPrint={handleCanvasPrint}
-                streamingState={streamingState}
-                stratixStreamingState={stratixStreamingState}
-                alegeonStreamingState={alegeonStreamingStateV2}
-                onAlegeonFastForward={fastForward}
-              />
             </div>
-          </SidebarInset>
-        </SidebarProvider>
+          )}
+          
+          <div className="flex-1 min-h-0 bg-transparent pb-20">
+            <ChatArea 
+              messages={messages} 
+              isTyping={isTyping} 
+              viewportRef={viewportRef} 
+              onSendMessage={handleSendMessageWithSession}
+              selectedModel={selectedModel}
+              onOpenCanvas={handleOpenCanvas} 
+              onCloseCanvas={handleCloseCanvas} 
+              onCanvasDownload={handleCanvasDownload} 
+              onCanvasPrint={handleCanvasPrint}
+              streamingState={streamingState}
+              stratixStreamingState={stratixStreamingState}
+              alegeonStreamingState={alegeonStreamingStateV2}
+              onAlegeonFastForward={fastForward}
+            />
+          </div>
+        </div>
+
+        <BottomNavigation />
 
         <CanvasView 
           isOpen={canvasState.isOpen} 

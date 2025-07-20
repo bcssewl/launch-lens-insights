@@ -130,17 +130,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             )}
 
             {messages.map((msg) => {
-              console.log('🔄 ChatArea V2: Rendering message', {
-                messageId: msg.id,
-                sender: msg.sender,
-                hasStreamingState: !!streamingState,
-                hasStratixStreaming: !!stratixStreamingState?.isStreaming,
-                hasAlegeonStreaming: !!alegeonStreamingState?.isStreaming,
-                alegeonPhase: alegeonStreamingState?.currentPhase,
-                messageText: msg.text.substring(0, 50),
-                timestamp: msg.timestamp
-              });
-
               return (
                 <ChatMessage 
                   key={msg.id} 
@@ -162,11 +151,11 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             })}
             {isTyping && <TypingIndicator />}
           </div>
-          <div className="h-24" />
+          <div className="h-32" />
         </ScrollArea>
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0">
+      <div className="absolute bottom-0 left-0 right-0 mb-20">
         <div className="max-w-4xl mx-auto px-6 py-4">
           <EnhancedChatInput 
             onSendMessage={onSendMessage} 
