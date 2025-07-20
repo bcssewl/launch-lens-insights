@@ -176,7 +176,7 @@ const AIAssistantPage: React.FC = () => {
       <ReasoningProvider>
         <div className="flex-1 flex flex-col bg-transparent">
           {!isMobile && (
-            <div className="flex-shrink-0 bg-transparent border-b border-border-subtle">
+            <div className="flex-shrink-0 bg-transparent">
               <ChatSubheader 
                 isConfigured={isConfigured} 
                 currentSessionId={currentSessionId} 
