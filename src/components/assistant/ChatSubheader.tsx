@@ -39,7 +39,7 @@ const ChatSubheader: React.FC<ChatSubheaderProps> = ({
   };
 
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex items-center justify-between w-full">
       {/* Model dropdown and research type selector on the left */}
       <div className="flex items-center space-x-3">
         <ModelSelectionDropdown 
@@ -55,8 +55,8 @@ const ChatSubheader: React.FC<ChatSubheaderProps> = ({
         )}
       </div>
       
-      {/* Control buttons on the right */}
-      <div className="flex items-center space-x-2">
+      {/* Control buttons moved to the far right */}
+      <div className="flex items-center space-x-2 ml-auto">
         <QuickActionsDropdown 
           onDownloadChat={onDownloadChat}
           onClearConversation={onClearConversation}
