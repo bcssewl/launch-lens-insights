@@ -21,7 +21,7 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
   onSendMessage,
   selectedModel: parentSelectedModel
 }) => {
-  const { primaryGreeting, assistanceMessage, isLoading: greetingLoading } = useGreeting();
+  const { primaryGreeting, assistanceMessage, isLoading: greetingLoading, userCountry } = useGreeting();
   const {
     isRecording,
     isProcessing,

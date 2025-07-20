@@ -1,8 +1,7 @@
-
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { getUserCountry } from '@/lib/geolocation';
 
 interface Profile {
   full_name?: string;
@@ -13,6 +12,7 @@ export const useGreeting = () => {
   const [firstName, setFirstName] = useState<string>('');
   const [primaryGreeting, setPrimaryGreeting] = useState<string>('');
   const [assistanceMessage, setAssistanceMessage] = useState<string>('');
+  const [userCountry, setUserCountry] = useState<string>('your region');
   const [isLoading, setIsLoading] = useState(true);
 
   // Get time-based greeting with professional messaging - returns object with two parts
@@ -98,6 +98,21 @@ export const useGreeting = () => {
     fetchUserProfile();
   }, [user]);
 
+  // Fetch user country on mount
+  useEffect(() => {
+    const fetchUserCountry = async () => {
+      try {
+        const country = await getUserCountry();
+        setUserCountry(country);
+      } catch (error) {
+        console.error('Error fetching user country:', error);
+        // userCountry remains as 'your region' fallback
+      }
+    };
+
+    fetchUserCountry();
+  }, []);
+
   // Update greeting every minute to keep time-based greeting current
   useEffect(() => {
     const interval = setInterval(() => {
@@ -111,6 +126,5 @@ export const useGreeting = () => {
     return () => clearInterval(interval);
   }, [firstName, user]);
 
-  return { primaryGreeting, assistanceMessage, isLoading, firstName };
+  return { primaryGreeting, assistanceMessage, isLoading, firstName, userCountry };
 };
-
