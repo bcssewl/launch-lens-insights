@@ -27,6 +27,16 @@ const ThinkingPanel: React.FC<ThinkingPanelProps> = ({ messageId }) => {
     thoughtsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [thoughts]);
 
+  // Debug logging for troubleshooting
+  console.log('🧠 ThinkingPanel render check:', {
+    messageId,
+    thinkingState: !!thinkingState,
+    phase,
+    thoughtsLength: thoughts.length,
+    isThinking,
+    shouldRender: !!(thinkingState && thoughts.length > 0)
+  });
+
   // Simple rendering logic - show if we have thoughts
   if (!thinkingState || thoughts.length === 0) {
     return null;
