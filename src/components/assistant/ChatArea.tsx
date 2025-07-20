@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import ChatMessage from '@/components/assistant/ChatMessage';
@@ -7,7 +6,6 @@ import PerplexityEmptyState from '@/components/assistant/PerplexityEmptyState';
 import EnhancedChatInput from '@/components/assistant/EnhancedChatInput';
 import StreamingProgress from '@/components/assistant/StreamingProgress';
 import StreamingError from '@/components/assistant/StreamingError';
-import ResearchTypeSelector from './ResearchTypeSelector';
 import { Message } from '@/constants/aiAssistant';
 import type { StratixStreamingState } from '@/types/stratixStreaming';
 import type { AlegeonStreamingStateV2 } from '@/hooks/useAlegeonStreamingV2';
@@ -16,7 +14,7 @@ interface ChatAreaProps {
   messages: Message[];
   isTyping: boolean;
   viewportRef: React.RefObject<HTMLDivElement>;
-  onSendMessage: (message: string, attachments?: any[], selectedModel?: string, researchType?: string) => void;
+  onSendMessage: (message: string, attachments?: any[], selectedModel?: string) => void;
   selectedModel: string;
   canvasState?: {
     isOpen: boolean;
@@ -64,7 +62,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   onAlegeonFastForward
 }) => {
   const [canvasPreviewMessages, setCanvasPreviewMessages] = useState<Set<string>>(new Set());
-  const [researchType, setResearchType] = useState('quick_facts');
 
   const handleToggleCanvasPreview = useCallback((messageId: string) => {
     setCanvasPreviewMessages(prev => {
@@ -77,10 +74,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       return newSet;
     });
   }, []);
-
-  const handleSendMessageWithResearch = useCallback((message: string, attachments?: any[], model?: string) => {
-    onSendMessage(message, attachments, model, researchType);
-  }, [onSendMessage, researchType]);
 
   const hasConversation = messages.length > 1 || isTyping;
 
@@ -103,7 +96,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     return (
       <div className="flex flex-col flex-1 min-h-0 w-full relative bg-transparent">
         <PerplexityEmptyState 
-          onSendMessage={handleSendMessageWithResearch}
+          onSendMessage={onSendMessage}
           selectedModel={selectedModel}
         />
       </div>
@@ -165,21 +158,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       <div className="absolute bottom-0 left-0 right-0 mb-20">
         <div className="max-w-4xl mx-auto px-6 py-4">
           <EnhancedChatInput 
-            onSendMessage={handleSendMessageWithResearch} 
+            onSendMessage={onSendMessage} 
             isTyping={isTyping}
             isCompact={true}
             selectedModel={selectedModel}
-          />
-        </div>
-      </div>
-
-      {/* Research Type Selector positioned below the chat input */}
-      <div className="absolute bottom-4 left-0 right-0">
-        <div className="max-w-4xl mx-auto px-6 flex justify-center">
-          <ResearchTypeSelector
-            selectedType={researchType}
-            onTypeChange={setResearchType}
-            isCompact={false}
           />
         </div>
       </div>
