@@ -291,8 +291,7 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
             console.log('📊 Parsed V2 event:', { 
               type: data.type, 
               client_message_id,
-              phase: data.progress?.phase, 
-              percentage: data.progress?.percentage 
+              guaranteed_sequence: true
             });
 
             // Skip events without client_message_id
@@ -301,7 +300,7 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
               return;
             }
 
-            // Update the central map
+            // Update the central map following the guaranteed event sequence
             setStreamingStates(prevStates => {
               const newStates = new Map(prevStates);
               let currentState = newStates.get(client_message_id) || {
@@ -314,29 +313,31 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
                 progressDetail: ''
               };
 
-              // Update state based on event type
+              // Follow the guaranteed event sequence
               switch (data.type) {
                 case 'thinking_started':
-                  console.log('🧠 Thinking phase started for message:', client_message_id);
+                  console.log('🧠 [LIFECYCLE] Thinking phase started for message:', client_message_id);
+                  // PHASE TRANSITION: idle → reasoning
                   currentState.phase = 'reasoning';
+                  currentState.thinkingText = ''; // Reset thinking text
                   
-                  // Store thinking state using client_message_id
+                  // Initialize thinking state
                   const newThinkingState: ThinkingState = {
                     phase: 'thinking',
                     thoughts: [],
                     isThinking: true,
                     finalContent: ''
                   };
-                  console.log('🧠 Setting thinking state for messageId:', client_message_id);
                   setThinkingStateForMessage(client_message_id, newThinkingState);
                   break;
 
                 case 'thinking_chunk':
-                  console.log('💭 Thinking chunk for message', client_message_id, ':', data.content?.substring(0, 50));
-                  if (data.content) {
+                  console.log('💭 [CHUNK] Thinking content for message', client_message_id, ':', data.content?.substring(0, 50));
+                  // Only append if we're in reasoning phase
+                  if (currentState.phase === 'reasoning' && data.content) {
                     currentState.thinkingText += data.content;
                     
-                    // Update thinking state with new thought
+                    // Update thinking state with accumulated content
                     const existingThinkingState = getThinkingStateForMessage(client_message_id);
                     if (existingThinkingState) {
                       const updatedThinkingState: ThinkingState = {
@@ -344,16 +345,18 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
                         thoughts: [...existingThinkingState.thoughts, data.content],
                         isThinking: true
                       };
-                      console.log('🧠 Updating thinking state for messageId:', client_message_id, 'thoughts count:', updatedThinkingState.thoughts.length);
                       setThinkingStateForMessage(client_message_id, updatedThinkingState);
                     }
                   }
                   break;
 
                 case 'thinking_complete':
-                  console.log('✅ Thinking phase complete for message:', client_message_id);
+                  console.log('✅ [LIFECYCLE] Thinking complete - transitioning to generating for message:', client_message_id);
+                  // PHASE TRANSITION: reasoning → generating
                   currentState.phase = 'generating';
+                  currentState.contentText = ''; // Reset content text for new phase
                   
+                  // Mark thinking as complete
                   const completedThinkingState = getThinkingStateForMessage(client_message_id);
                   if (completedThinkingState) {
                     const updatedThinkingState: ThinkingState = {
@@ -361,31 +364,33 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
                       phase: 'done',
                       isThinking: false
                     };
-                    console.log('🧠 Completing thinking state for messageId:', client_message_id);
                     setThinkingStateForMessage(client_message_id, updatedThinkingState);
                   }
                   break;
 
                 case 'content_chunk':
-                  console.log('📝 Content chunk received for message', client_message_id, ', length:', data.content?.length);
-                  if (data.content) {
+                  console.log('📝 [CHUNK] Content chunk for message', client_message_id, ', length:', data.content?.length);
+                  // Only append if we're in generating phase
+                  if (currentState.phase === 'generating' && data.content) {
                     currentState.contentText += data.content;
                   }
                   break;
 
                 case 'completion':
-                  console.log('✅ Stream completion received for message:', client_message_id);
+                  console.log('✅ [LIFECYCLE] Stream completion for message:', client_message_id);
+                  // PHASE TRANSITION: generating → complete
                   currentState.phase = 'complete';
                   
-                  // Use final content if available
-                  if (data.final_content || data.accumulated_content) {
-                    currentState.contentText = data.final_content || data.accumulated_content || currentState.contentText;
+                  // Ensure final content is accurate using final_content from completion event
+                  if (data.final_content) {
+                    currentState.contentText = data.final_content;
+                    console.log('📝 Using final_content from completion event for accuracy');
                   }
                   
                   // Process citations
                   if (data.citations) {
                     currentState.citations = data.citations;
-                    console.log('📚 Citations processed for message', client_message_id, ':', data.citations.length);
+                    console.log('📚 Citations processed:', data.citations.length);
                   }
                   
                   // Store metadata
@@ -397,15 +402,15 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
                       model_name: data.metadata.model_name,
                       token_usage: data.metadata.token_usage
                     };
+                    console.log('📊 Metadata stored:', currentState.metadata);
                   }
                   
-                  // Clear thinking state when complete
+                  // Clean up thinking state after completion
                   setTimeout(() => {
-                    console.log('🧠 Clearing thinking state for completed message:', client_message_id);
                     clearThinkingStateForMessage(client_message_id);
                   }, 2000);
                   
-                  // Resolve with final content for the current message
+                  // Resolve promise for the current message
                   if (client_message_id === messageId && !hasResolvedRef.current) {
                     const finalContent = currentState.contentText;
                     setTimeout(() => {
@@ -419,11 +424,11 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
                   break;
 
                 case 'error':
-                  console.error('❌ V2 Stream error for message', client_message_id, ':', data.message);
+                  console.error('❌ [ERROR] Stream error for message', client_message_id, ':', data.message);
                   currentState.error = data.message || 'An error occurred during research';
                   currentState.phase = 'complete';
                   
-                  // Clear thinking state on error
+                  // Clean up thinking state on error
                   clearThinkingStateForMessage(client_message_id);
                   
                   if (client_message_id === messageId && !hasResolvedRef.current) {
@@ -434,10 +439,10 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
                   break;
 
                 default:
-                  console.warn('⚠️ Unknown V2 event type:', data.type);
+                  console.warn('⚠️ Unknown event type (not in guaranteed sequence):', data.type);
               }
 
-              // Update progress from event data
+              // Update progress if provided
               if (data.progress) {
                 currentState.progress = data.progress.percentage;
                 currentState.progressDetail = data.progress.detail;
