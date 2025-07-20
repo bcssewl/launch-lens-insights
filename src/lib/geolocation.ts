@@ -1,4 +1,3 @@
-
 interface IPApiResponse {
   country_name: string;
   country: string;
@@ -58,4 +57,33 @@ export const getUserCountry = async (): Promise<string> => {
 // Optional: Function to clear cache if needed
 export const clearCountryCache = (): void => {
   cachedCountry = null;
+};
+
+const CONSULTING_TEMPLATES = [
+  "Strategic landscape of [industry] in [country]",
+  "Market sizing of [industry] in [country]",
+  "Competitive analysis of [industry] players in [country]",
+  "Regulatory overview for [industry] in [country]",
+  "Entry strategy for [industry] in [country]"
+];
+
+const INDUSTRIES = [
+  "fintech",
+  "agtech", 
+  "AI",
+  "automotive",
+  "renewable energy",
+  "healthcare",
+  "logistics"
+];
+
+export const getConsultingPlaceholder = (country: string): string => {
+  // Randomly select a template and industry
+  const template = CONSULTING_TEMPLATES[Math.floor(Math.random() * CONSULTING_TEMPLATES.length)];
+  const industry = INDUSTRIES[Math.floor(Math.random() * INDUSTRIES.length)];
+  
+  // Replace placeholders with actual values
+  return template
+    .replace('[industry]', industry)
+    .replace('[country]', country);
 };

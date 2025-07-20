@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Search, Mic, Target, Globe, Paperclip } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -11,6 +11,7 @@ import ProjectSelectionModal from './ProjectSelectionModal';
 import LocalFileUploader from './LocalFileUploader';
 import AttachmentsList from './AttachmentsList';
 import ResearchTypeSelector from './ResearchTypeSelector';
+import { getConsultingPlaceholder } from '@/lib/geolocation';
 
 interface PerplexityEmptyStateProps {
   onSendMessage: (message: string, attachments?: any[], selectedModel?: string) => void;
@@ -41,6 +42,11 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [showLocalUploader, setShowLocalUploader] = useState(false);
   const [selectedResearchType, setSelectedResearchType] = useState<string>('quick_facts');
+
+  // Generate dynamic consulting placeholder based on user's country
+  const consultingPlaceholder = useMemo(() => {
+    return getConsultingPlaceholder(userCountry);
+  }, [userCountry]);
 
   const handlePromptClick = (prompt: string) => {
     onSendMessage(prompt, attachedFiles, parentSelectedModel);
@@ -91,7 +97,7 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
             
             <input 
               type="text" 
-              placeholder={isRecording ? "Listening..." : "Conduct Market Sizing, Competitor Analysis, Regulatory Scans, Trend Discovery"} 
+              placeholder={isRecording ? "Listening..." : consultingPlaceholder} 
               className={`w-full h-12 text-base bg-transparent border-none outline-none focus:outline-none placeholder:text-muted-foreground ${isRecording ? 'pl-12' : ''}`} 
               disabled={isRecording} 
               onKeyDown={handleKeyDown} 
