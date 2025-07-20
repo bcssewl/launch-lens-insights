@@ -10,28 +10,28 @@ interface AttachmentOptionsDropdownProps {
   onLocalFileSelect: () => void;
 }
 
-const AttachmentOptionsDropdown: React.FC<AttachmentOptionsDropdownProps> = ({
-  children,
-  onDatabaseSelect,
-  onLocalFileSelect,
-}) => {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        {children}
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56 bg-background border border-border shadow-lg">
-        <DropdownMenuItem onClick={onDatabaseSelect} className="cursor-pointer">
-          <Database className="mr-2 h-4 w-4" />
-          Files from: Projects (Mock)
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={onLocalFileSelect} className="cursor-pointer">
-          <Upload className="mr-2 h-4 w-4" />
-          Files stored locally
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-};
+const AttachmentOptionsDropdown = React.forwardRef<HTMLDivElement, AttachmentOptionsDropdownProps>(
+  ({ children, onDatabaseSelect, onLocalFileSelect }, ref) => {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          {children}
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56 bg-background border border-border shadow-lg">
+          <DropdownMenuItem onClick={onDatabaseSelect} className="cursor-pointer">
+            <Database className="mr-2 h-4 w-4" />
+            Files from: Projects (Mock)
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={onLocalFileSelect} className="cursor-pointer">
+            <Upload className="mr-2 h-4 w-4" />
+            Files stored locally
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+);
+
+AttachmentOptionsDropdown.displayName = 'AttachmentOptionsDropdown';
 
 export default AttachmentOptionsDropdown;
