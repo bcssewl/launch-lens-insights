@@ -2,12 +2,24 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useReasoning } from '@/contexts/ReasoningContext';
 import { useAlegeonTypewriter } from './useAlegeonTypewriter';
-import { detectAlgeonResearchType, type AlgeonResearchType } from '@/utils/algeonResearchTypes';
+import { type AlgeonResearchType } from '@/utils/algeonResearchTypes';
 import type { ThinkingState } from '@/utils/thinkingParser';
 
 // Configuration constants
 const STREAMING_TIMEOUT_MS = 720000; // 12 minutes
 const HEARTBEAT_INTERVAL = 30000; // 30 seconds
+
+// Valid research types for validation
+const VALID_RESEARCH_TYPES: AlgeonResearchType[] = [
+  'quick_facts',
+  'market_sizing',
+  'competitive_analysis',
+  'regulatory_scan',
+  'trend_analysis',
+  'legal_analysis',
+  'deep_analysis',
+  'industry_reports'
+];
 
 interface StreamingEvent {
   type: 'thinking_started' | 'thinking_chunk' | 'thinking_complete' | 'content_chunk' | 'completion' | 'error';
@@ -180,16 +192,16 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
     console.log('🚀 Starting Algeon V2 streaming request for message:', messageId, 'query:', query.substring(0, 50));
     console.log('🔬 Research Type (input):', researchType);
     
-    // Validate and normalize research type
+    // Validate research type - check if it's in our valid list
     let validatedResearchType: AlgeonResearchType;
-    try {
-      validatedResearchType = detectAlgeonResearchType(researchType);
-    } catch (error) {
+    if (VALID_RESEARCH_TYPES.includes(researchType as AlgeonResearchType)) {
+      validatedResearchType = researchType as AlgeonResearchType;
+    } else {
       console.warn('⚠️ Invalid research type provided, using fallback:', researchType);
       validatedResearchType = 'quick_facts'; // Safe fallback
     }
     
-    console.log('✅ Validated Research Type:', validatedResearchType);
+    console.log('✅ Validated Research Type (final):', validatedResearchType);
     
     resetState();
     setStreamingState(prev => ({ ...prev, isStreaming: true, currentPhase: 'reasoning' }));
@@ -228,7 +240,7 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
           
           const payload = {
             query,
-            research_type: validatedResearchType, // Use validated research type
+            research_type: validatedResearchType, // Use the properly validated research type
             scope: "global",
             depth: "comprehensive",
             urgency: "medium",
