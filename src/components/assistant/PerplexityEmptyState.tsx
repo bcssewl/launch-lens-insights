@@ -80,9 +80,6 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
               {greetingLoading ? 'How may I assist you today?' : assistanceMessage}
             </h2>
           </div>
-          <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed">
-            Instant insights, market analysis, data structuring, collection and strategic advice
-          </p>
         </div>
 
         {/* Perplexity Pro-Style Input Area */}
