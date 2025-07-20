@@ -275,14 +275,21 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
 
                 case 'thinking_chunk':
                   console.log('💭 Thinking chunk for message', messageId, ':', data.content?.substring(0, 50));
-                  if (data.content && messageId && currentThinkingStateRef.current) {
-                    const updatedThinkingState: ThinkingState = {
-                      ...currentThinkingStateRef.current,
-                      thoughts: [...currentThinkingStateRef.current.thoughts, data.content],
-                      isThinking: true
-                    };
-                    currentThinkingStateRef.current = updatedThinkingState;
-                    setThinkingStateForMessage(messageId, updatedThinkingState);
+                  if (data.content) {
+                    // Add thinking content to both the main message display and thinking state
+                    newState.bufferedText += data.content;
+                    newState.hasContent = true;
+                    
+                    // Also update the thinking state for the thinking panel
+                    if (messageId && currentThinkingStateRef.current) {
+                      const updatedThinkingState: ThinkingState = {
+                        ...currentThinkingStateRef.current,
+                        thoughts: [...currentThinkingStateRef.current.thoughts, data.content],
+                        isThinking: true
+                      };
+                      currentThinkingStateRef.current = updatedThinkingState;
+                      setThinkingStateForMessage(messageId, updatedThinkingState);
+                    }
                   }
                   break;
 
@@ -326,7 +333,7 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
                     console.log('📚 Citations processed for message', messageId, ':', data.citations.length);
                   }
                   
-                  // Store metadata
+                  // Store metadata - the backend sends duration fields correctly
                   if (data.metadata) {
                     newState.metadata = {
                       duration: data.metadata.duration,
@@ -446,11 +453,19 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
             hasResolvedRef.current = true;
             
             setStreamingState(prev => {
-              if (event.code === 1000 && prev.hasContent) {
+              // Check if we received a completion event OR if this is a normal close (1000) with content
+              if (event.code === 1000 && (prev.isComplete || prev.hasContent)) {
                 const finalText = prev.bufferedText || prev.displayedText;
                 resolve(finalText);
                 return { ...prev, isStreaming: false, isComplete: true, currentPhase: 'complete' };
+              } else if (event.code === 1000) {
+                // Normal close but no content - this might be expected if completion event was already processed
+                console.log('🔌 Normal WebSocket close (1000) - treating as success');
+                const finalText = prev.bufferedText || prev.displayedText || '';
+                resolve(finalText);
+                return { ...prev, isStreaming: false, isComplete: true, currentPhase: 'complete' };
               } else {
+                // Any other close code is an error
                 const errorMsg = `Connection lost: ${event.code} ${event.reason || 'WebSocket closed unexpectedly'}`;
                 reject(new Error(errorMsg));
                 
