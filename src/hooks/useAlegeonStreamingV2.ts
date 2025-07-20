@@ -266,7 +266,9 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
       }, STREAMING_TIMEOUT_MS);
 
       try {
-        const wsUrl = 'wss://opti-agent3-wrappers.up.railway.app/api/research/stream';
+        // Use Supabase edge function for WebSocket routing to Railway
+        const wsUrl = `wss://jtnedstugyvkfthtsumh.supabase.co/functions/v1/algeon-websocket`;
+        console.log('🔗 Connecting to Supabase WebSocket:', wsUrl);
         wsRef.current = new WebSocket(wsUrl);
 
         wsRef.current.onopen = () => {
