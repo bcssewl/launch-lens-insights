@@ -11,7 +11,7 @@ import AttachmentOptionsDropdown from './AttachmentOptionsDropdown';
 import ProjectSelectionModal from './ProjectSelectionModal';
 import LocalFileUploader from './LocalFileUploader';
 import AttachmentsList from './AttachmentsList';
-import ModelSelectionDropdown, { AIModel } from './ModelSelectionDropdown';
+import ResearchTypeSelector from './ResearchTypeSelector';
 
 interface PerplexityEmptyStateProps {
   onSendMessage: (message: string, attachments?: any[], selectedModel?: string) => void;
@@ -41,10 +41,10 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
   } = useFileAttachments();
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [showLocalUploader, setShowLocalUploader] = useState(false);
-  const [localSelectedModel, setLocalSelectedModel] = useState<string>(parentSelectedModel);
+  const [selectedResearchType, setSelectedResearchType] = useState<string>('quick_facts');
 
   const handlePromptClick = (prompt: string) => {
-    onSendMessage(prompt, attachedFiles, localSelectedModel);
+    onSendMessage(prompt, attachedFiles, parentSelectedModel);
   };
 
   const handleVoiceRecording = () => {
@@ -62,9 +62,9 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
     }
   };
 
-  const handleModelSelect = (model: AIModel) => {
-    setLocalSelectedModel(model.id);
-    console.log('Selected AI model:', model.name);
+  const handleResearchTypeChange = (type: string) => {
+    setSelectedResearchType(type);
+    console.log('Selected research type:', type);
   };
 
   return (
@@ -112,7 +112,10 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
               <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground">
                 <Target className="h-5 w-5" />
               </Button>
-              <ModelSelectionDropdown selectedModel={localSelectedModel} onModelSelect={handleModelSelect} />
+              <ResearchTypeSelector 
+                selectedType={selectedResearchType} 
+                onTypeChange={handleResearchTypeChange} 
+              />
             </div>
 
             {/* Right Side Button Group */}
