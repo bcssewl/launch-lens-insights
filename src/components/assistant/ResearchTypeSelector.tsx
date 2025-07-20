@@ -44,12 +44,12 @@ const ResearchTypeSelector: React.FC<ResearchTypeSelectorProps> = ({
           <ChevronDown className="h-3 w-3" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-80 bg-background border border-border shadow-lg z-50">
+      <DropdownMenuContent align="start" className="w-64 bg-background border border-border shadow-lg z-50 max-h-80 overflow-y-auto">
         {RESEARCH_TYPES.map((type) => (
           <DropdownMenuItem
             key={type.value}
             onClick={() => onTypeChange(type.value)}
-            className={`p-3 cursor-pointer hover:bg-muted ${
+            className={`p-2 cursor-pointer hover:bg-muted ${
               selectedType === type.value ? 'bg-muted' : ''
             }`}
           >
