@@ -1,7 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
 import { FloatingElements } from '@/components/landing/FloatingElements';
-import TopHeader from '@/components/navigation/TopHeader';
 import BottomNavigation from '@/components/navigation/BottomNavigation';
 import ChatArea from '@/components/assistant/ChatArea';
 import CanvasView from '@/components/assistant/CanvasView';
@@ -176,8 +174,6 @@ const AIAssistantPage: React.FC = () => {
       <FloatingElements />
       
       <ReasoningProvider>
-        <TopHeader />
-        
         <div className="flex-1 flex flex-col bg-transparent">
           {!isMobile && (
             <div className="flex-shrink-0 bg-transparent border-b border-border-subtle">
