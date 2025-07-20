@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,18 +13,26 @@ export const useGreeting = () => {
   const [greeting, setGreeting] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
 
-  // Get time-based greeting
-  const getTimeBasedGreeting = () => {
+  // Get time-based greeting with professional messaging
+  const getTimeBasedGreeting = (firstName: string) => {
     const hour = new Date().getHours();
     
     if (hour >= 5 && hour < 12) {
-      return 'Good morning';
+      return firstName 
+        ? `Good morning, ${firstName}. How may I assist you today?`
+        : 'Good morning. How may I assist you today?';
     } else if (hour >= 12 && hour < 17) {
-      return 'Good afternoon';
+      return firstName 
+        ? `Good afternoon, ${firstName}. What can I help you with?`
+        : 'Good afternoon. What can I help you with?';
     } else if (hour >= 17 && hour < 22) {
-      return 'Good evening';
+      return firstName 
+        ? `Good evening, ${firstName}. How can I support your work?`
+        : 'Good evening. How can I support your work?';
     } else {
-      return 'Good night';
+      return firstName 
+        ? `Working late, ${firstName}? Let me know how I can assist.`
+        : 'Working late? Let me know how I can assist.';
     }
   };
 
@@ -35,7 +44,7 @@ export const useGreeting = () => {
   useEffect(() => {
     const fetchUserProfile = async () => {
       if (!user) {
-        setGreeting('Welcome');
+        setGreeting('Welcome. How may I assist you today?');
         setFirstName('');
         setIsLoading(false);
         return;
@@ -59,16 +68,16 @@ export const useGreeting = () => {
         if (name) {
           const firstNameExtracted = extractFirstName(name);
           setFirstName(firstNameExtracted);
-          setGreeting(`${getTimeBasedGreeting()}, ${firstNameExtracted}!`);
+          setGreeting(getTimeBasedGreeting(firstNameExtracted));
         } else {
           setFirstName('');
-          setGreeting(`${getTimeBasedGreeting()}!`);
+          setGreeting(getTimeBasedGreeting(''));
         }
       } catch (error) {
         console.error('Error fetching user profile:', error);
         setFirstName('');
-        setGreeting(`${getTimeBasedGreeting()}!`);
-      } finally {
+        setGreeting(getTimeBasedGreeting(''));
+      } finally {  
         setIsLoading(false);
       }
     };
@@ -79,10 +88,8 @@ export const useGreeting = () => {
   // Update greeting every minute to keep time-based greeting current
   useEffect(() => {
     const interval = setInterval(() => {
-      if (firstName) {
-        setGreeting(`${getTimeBasedGreeting()}, ${firstName}!`);
-      } else if (user) {
-        setGreeting(`${getTimeBasedGreeting()}!`);
+      if (user) {
+        setGreeting(getTimeBasedGreeting(firstName));
       }
     }, 60000); // Update every minute
 
