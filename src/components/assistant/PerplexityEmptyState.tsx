@@ -92,7 +92,7 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
             <input 
               type="text" 
               placeholder={isRecording ? "Listening..." : "Conduct Market Sizing, Competitor Analysis, Regulatory Scans, Trend Discovery"} 
-              className={`w-full h-14 text-lg bg-transparent border-none outline-none focus:outline-none placeholder:text-muted-foreground ${isRecording ? 'pl-12' : ''}`} 
+              className={`w-full h-14 text-base bg-transparent border-none outline-none focus:outline-none placeholder:text-muted-foreground ${isRecording ? 'pl-12' : ''}`} 
               disabled={isRecording} 
               onKeyDown={handleKeyDown} 
             />
