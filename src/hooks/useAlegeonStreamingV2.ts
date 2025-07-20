@@ -154,13 +154,21 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
 
   // Update streaming state with typewriter values
   useEffect(() => {
+    console.log('🔍 DEBUG: Typewriter effect update:', {
+      messageId,
+      typewriterText: typewriterText?.substring(0, 50),
+      isTyping,
+      typewriterProgress,
+      bufferedText: streamingState.bufferedText?.substring(0, 50)
+    });
+    
     setStreamingState(prev => ({
       ...prev,
       displayedText: typewriterText,
       isTyping,
       typewriterProgress
     }));
-  }, [typewriterText, isTyping, typewriterProgress]);
+  }, [typewriterText, isTyping, typewriterProgress, messageId]);
 
   const cleanup = useCallback(() => {
     console.log('🧹 Cleaning up Algeon V2 streaming for message:', messageId);

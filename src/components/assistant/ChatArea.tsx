@@ -77,6 +77,11 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   }, []);
 
   const hasConversation = messages.length > 1 || isTyping;
+  
+  // Debug: Log messages array state
+  console.log('🔍 DEBUG: ChatArea received', messages.length, 'messages:', 
+    messages.map(m => ({ id: m.id, text: m.text?.substring(0, 30), sender: m.sender }))
+  );
 
   useEffect(() => {
     if (hasConversation && viewportRef.current) {
@@ -130,7 +135,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
               />
             )}
 
+            
             {messages.map((msg) => {
+              // Debug logging
+              console.log('🔍 DEBUG: Rendering message:', { id: msg.id, text: msg.text?.substring(0, 30), sender: msg.sender });
               return (
                 <ChatMessage 
                   key={msg.id} 

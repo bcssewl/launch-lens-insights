@@ -32,23 +32,40 @@ type MessageAction =
   | { type: 'UPDATE_STREAMING_MESSAGE'; payload: { id: string; updates: Partial<ExtendedMessage> } };
 
 function messageReducer(state: ExtendedMessage[], action: MessageAction): ExtendedMessage[] {
+  console.log('🔍 DEBUG: Message reducer called with:', {
+    action: action.type,
+    currentMessagesCount: state.length,
+    payload: action.type === 'ADD_MESSAGE' ? action.payload.id : 
+             action.type === 'ADD_STREAMING_MESSAGE' ? action.payload.id :
+             action.type === 'REPLACE_STREAMING_WITH_FINAL' ? `${action.payload.streamingId} -> ${action.payload.finalMessage.id}` :
+             'other'
+  });
+  
   switch (action.type) {
     case 'SET_MESSAGES':
+      console.log('🔍 DEBUG: SET_MESSAGES with', action.payload.length, 'messages');
       return action.payload;
     case 'ADD_MESSAGE':
+      console.log('🔍 DEBUG: ADD_MESSAGE with ID:', action.payload.id);
       return [...state, action.payload];
     case 'ADD_STREAMING_MESSAGE':
       // Remove any existing streaming message first
       const withoutStreaming = state.filter(msg => !msg.isStreaming);
+      console.log('🔍 DEBUG: ADD_STREAMING_MESSAGE, removed', state.length - withoutStreaming.length, 'streaming messages');
       return [...withoutStreaming, action.payload];
     case 'REPLACE_STREAMING_WITH_FINAL':
-      return state.map(msg => 
+      const newState = state.map(msg => 
         msg.id === action.payload.streamingId 
           ? action.payload.finalMessage 
           : msg
       );
+      console.log('🔍 DEBUG: REPLACE_STREAMING_WITH_FINAL, found match:', 
+        newState.some(msg => msg.id === action.payload.finalMessage.id));
+      return newState;
     case 'REMOVE_STREAMING_MESSAGE':
-      return state.filter(msg => msg.id !== action.payload);
+      const filtered = state.filter(msg => msg.id !== action.payload);
+      console.log('🔍 DEBUG: REMOVE_STREAMING_MESSAGE, removed', state.length - filtered.length, 'messages');
+      return filtered;
     case 'UPDATE_STREAMING_MESSAGE':
       return state.map(msg => 
         msg.id === action.payload.id 
@@ -174,6 +191,14 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
   // Handle Algeon streaming state changes - separated into two effects
   // Effect 1: Handle streaming messages (display updates)
   useEffect(() => {
+    console.log('🔍 DEBUG: Algeon streaming state changed:', {
+      isStreaming: alegeonStreamingState.isStreaming,
+      hasContent: alegeonStreamingState.hasContent,
+      bufferedTextLength: alegeonStreamingState.bufferedText?.length || 0,
+      currentPhase: alegeonStreamingState.currentPhase,
+      currentStreamingMessageId: currentStreamingMessageIdRef.current
+    });
+    
     if (alegeonStreamingState.isStreaming && alegeonStreamingState.hasContent && alegeonStreamingState.bufferedText) {
       console.log('📝 Managing Algeon V2 streaming message display');
       
@@ -194,6 +219,7 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
         }))
       };
       
+      console.log('🔍 DEBUG: Dispatching streaming message:', streamingMessage);
       dispatch({ type: 'ADD_STREAMING_MESSAGE', payload: streamingMessage });
     }
   }, [
@@ -205,6 +231,12 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
 
   // Effect 2: Handle completion (final message creation) - ONCE per session
   useEffect(() => {
+    console.log('🔍 DEBUG: Completion check:', {
+      isComplete: alegeonStreamingState.isComplete,
+      hasBufferedText: !!alegeonStreamingState.bufferedText,
+      completionProcessed: alegeonCompletionProcessedRef.current
+    });
+    
     if (alegeonStreamingState.isComplete && 
         alegeonStreamingState.bufferedText && 
         !alegeonCompletionProcessedRef.current) {
@@ -229,10 +261,12 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
         }))
       };
       
+      console.log('🔍 DEBUG: Creating final message:', finalMessage);
       dispatch({ 
         type: 'REPLACE_STREAMING_WITH_FINAL', 
         payload: { finalMessage, streamingId: currentStreamingMessageIdRef.current || STREAMING_MESSAGE_ID }
       });
+      console.log('🔍 DEBUG: Dispatched REPLACE_STREAMING_WITH_FINAL');
       
       // Save final message to history with citations metadata - ONCE
       if (currentSessionId && alegeonStreamingState.bufferedText) {
