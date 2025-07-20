@@ -1,9 +1,11 @@
+
 import React, { useState } from 'react';
 import { Search, Mic, Target, Globe, Paperclip } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useVoiceRecording } from '@/hooks/useVoiceRecording';
 import { useFileAttachments } from '@/hooks/useFileAttachments';
+import { useGreeting } from '@/hooks/useGreeting';
 import SoundWaveVisualization from './SoundWaveVisualization';
 import AttachmentOptionsDropdown from './AttachmentOptionsDropdown';
 import ProjectSelectionModal from './ProjectSelectionModal';
@@ -15,10 +17,12 @@ interface PerplexityEmptyStateProps {
   onSendMessage: (message: string, attachments?: any[], selectedModel?: string) => void;
   selectedModel: string;
 }
+
 const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
   onSendMessage,
   selectedModel: parentSelectedModel
 }) => {
+  const { greeting, isLoading: greetingLoading } = useGreeting();
   const {
     isRecording,
     isProcessing,
@@ -37,11 +41,12 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
   } = useFileAttachments();
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [showLocalUploader, setShowLocalUploader] = useState(false);
-  // Use the model from parent, but allow local override for this component
   const [localSelectedModel, setLocalSelectedModel] = useState<string>(parentSelectedModel);
+
   const handlePromptClick = (prompt: string) => {
     onSendMessage(prompt, attachedFiles, localSelectedModel);
   };
+
   const handleVoiceRecording = () => {
     if (isRecording) {
       stopRecording();
@@ -49,25 +54,37 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
       startRecording();
     }
   };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && e.currentTarget.value.trim()) {
       handlePromptClick(e.currentTarget.value);
       e.currentTarget.value = '';
     }
   };
+
   const handleModelSelect = (model: AIModel) => {
     setLocalSelectedModel(model.id);
     console.log('Selected AI model:', model.name);
   };
-  return <TooltipProvider>
+
+  return (
+    <TooltipProvider>
       <div className="flex flex-col items-center justify-center min-h-[70vh] px-6 py-12 text-center max-w-4xl mx-auto bg-transparent">
-        {/* Logo/Branding Section */}
+        {/* Dynamic Greeting Section */}
         <div className="mb-12">
           <div className="flex items-center justify-center gap-4 mb-6">
-            <h1 className="text-4xl font-semibold text-foreground tracking-tight">Optivise</h1>
-            <img src="/lovable-uploads/5cb6a965-c41d-482b-9c9a-da3a7fa02d8c.png" alt="NEXUS" className="h-24 mt-2 -ml-4" />
+            <h1 className="text-4xl font-semibold text-foreground tracking-tight">
+              {greetingLoading ? 'Welcome' : greeting}
+            </h1>
+            <img 
+              src="/lovable-uploads/5cb6a965-c41d-482b-9c9a-da3a7fa02d8c.png" 
+              alt="NEXUS" 
+              className="h-16 mt-2 -ml-2" 
+            />
           </div>
-          <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed">Instant insights, market analysis, data structuring, collection and strategic advice </p>
+          <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed">
+            Instant insights, market analysis, data structuring, collection and strategic advice
+          </p>
         </div>
 
         {/* Perplexity Pro-Style Input Area */}
@@ -77,7 +94,13 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
             {/* Sound wave visualization overlay */}
             <SoundWaveVisualization audioLevel={audioLevel} isRecording={isRecording} />
             
-            <input type="text" placeholder={isRecording ? "Listening..." : "Ask anything or @ mention a Space"} className={`w-full h-12 text-base bg-transparent border-none outline-none focus:outline-none placeholder:text-muted-foreground ${isRecording ? 'pl-12' : ''}`} disabled={isRecording} onKeyDown={handleKeyDown} />
+            <input 
+              type="text" 
+              placeholder={isRecording ? "Listening..." : "Ask anything or @ mention a Space"} 
+              className={`w-full h-12 text-base bg-transparent border-none outline-none focus:outline-none placeholder:text-muted-foreground ${isRecording ? 'pl-12' : ''}`} 
+              disabled={isRecording} 
+              onKeyDown={handleKeyDown} 
+            />
           </div>
 
           {/* Attachments List */}
@@ -115,7 +138,13 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className={`h-10 w-10 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground ${isRecording ? 'bg-red-100 hover:bg-red-200 text-red-600' : ''} ${isProcessing ? 'opacity-50' : ''}`} onClick={handleVoiceRecording} disabled={isProcessing}>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className={`h-10 w-10 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground ${isRecording ? 'bg-red-100 hover:bg-red-200 text-red-600' : ''} ${isProcessing ? 'opacity-50' : ''}`} 
+                    onClick={handleVoiceRecording} 
+                    disabled={isProcessing}
+                  >
                     <Mic className={`h-5 w-5 ${isRecording ? 'animate-pulse' : ''}`} />
                   </Button>
                 </TooltipTrigger>
@@ -129,12 +158,8 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
                   <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20">
                     <div className="flex items-center space-x-0.5">
                       <div className="w-0.5 h-2 bg-current rounded-full animate-pulse" />
-                      <div className="w-0.5 h-3 bg-current rounded-full animate-pulse" style={{
-                      animationDelay: '0.1s'
-                    }} />
-                      <div className="w-0.5 h-2 bg-current rounded-full animate-pulse" style={{
-                      animationDelay: '0.2s'
-                    }} />
+                      <div className="w-0.5 h-3 bg-current rounded-full animate-pulse" style={{ animationDelay: '0.1s' }} />
+                      <div className="w-0.5 h-2 bg-current rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
                     </div>
                   </Button>
                 </TooltipTrigger>
@@ -146,19 +171,33 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
           </div>
 
           {/* Error and Processing Messages */}
-          {error && <div className="mt-4 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg max-w-3xl mx-auto">
+          {error && (
+            <div className="mt-4 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg max-w-3xl mx-auto">
               {error}
-            </div>}
-          {isProcessing && <div className="mt-4 text-sm text-blue-600 bg-blue-50 px-3 py-2 rounded-lg max-w-3xl mx-auto">
+            </div>
+          )}
+          {isProcessing && (
+            <div className="mt-4 text-sm text-blue-600 bg-blue-50 px-3 py-2 rounded-lg max-w-3xl mx-auto">
               Processing your voice recording...
-            </div>}
+            </div>
+          )}
         </div>
       </div>
 
       {/* Modals */}
-      <ProjectSelectionModal open={showProjectModal} onClose={() => setShowProjectModal(false)} onAttach={addDatabaseFile} />
+      <ProjectSelectionModal 
+        open={showProjectModal} 
+        onClose={() => setShowProjectModal(false)} 
+        onAttach={addDatabaseFile} 
+      />
       
-      <LocalFileUploader open={showLocalUploader} onClose={() => setShowLocalUploader(false)} onFileSelect={addLocalFile} />
-    </TooltipProvider>;
+      <LocalFileUploader 
+        open={showLocalUploader} 
+        onClose={() => setShowLocalUploader(false)} 
+        onFileSelect={addLocalFile} 
+      />
+    </TooltipProvider>
+  );
 };
+
 export default PerplexityEmptyState;
