@@ -16,7 +16,7 @@ const BottomNavigation: React.FC = () => {
   const location = useLocation();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-surface border-t border-border-subtle z-50">
+    <nav className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-lg border-t border-border-subtle/50 z-50">
       <div className="max-w-6xl mx-auto px-4 py-3">
         <div className="flex items-center justify-center space-x-2 overflow-x-auto">
           {navigationItems.map((item) => {
@@ -31,7 +31,7 @@ const BottomNavigation: React.FC = () => {
                   "flex items-center space-x-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap",
                   isActive
                     ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-text-secondary hover:text-text-primary hover:bg-surface-elevated"
+                    : "text-text-secondary hover:text-text-primary hover:bg-surface-elevated/50"
                 )}
               >
                 <IconComponent className="h-4 w-4 flex-shrink-0" />
