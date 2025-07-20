@@ -181,21 +181,19 @@ const AIAssistantPage: React.FC = () => {
         <div className="flex-1 flex flex-col bg-transparent">
           {!isMobile && (
             <div className="flex-shrink-0 bg-transparent border-b border-border-subtle">
-              <div className="px-6 py-3">
-                <ChatSubheader 
-                  isConfigured={isConfigured} 
-                  currentSessionId={currentSessionId} 
-                  isFullscreen={isFullscreen} 
-                  onToggleFullscreen={toggleFullscreen} 
-                  onDownloadChat={handleDownloadChat} 
-                  onClearConversation={handleClearConversationWithHistory} 
-                  onSessionSelect={handleSessionSelect}
-                  selectedModel={selectedModel}
-                  onModelSelect={handleModelSelect}
-                  selectedResearchType={selectedResearchType}
-                  onResearchTypeChange={handleResearchTypeChange}
-                />
-              </div>
+              <ChatSubheader 
+                isConfigured={isConfigured} 
+                currentSessionId={currentSessionId} 
+                isFullscreen={isFullscreen} 
+                onToggleFullscreen={toggleFullscreen} 
+                onDownloadChat={handleDownloadChat} 
+                onClearConversation={handleClearConversationWithHistory} 
+                onSessionSelect={handleSessionSelect}
+                selectedModel={selectedModel}
+                onModelSelect={handleModelSelect}
+                selectedResearchType={selectedResearchType}
+                onResearchTypeChange={handleResearchTypeChange}
+              />
             </div>
           )}
           
