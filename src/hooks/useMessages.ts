@@ -46,22 +46,26 @@ function messageReducer(state: ExtendedMessage[], action: MessageAction): Extend
       console.log('🔍 DEBUG: SET_MESSAGES with', action.payload.length, 'messages');
       return action.payload;
     case 'ADD_MESSAGE':
-      console.log('🔍 DEBUG: ADD_MESSAGE with ID:', action.payload.id);
-      return [...state, action.payload];
+      console.log('🔍 DEBUG: ADD_MESSAGE with ID:', action.payload.id, 'Text:', action.payload.text?.substring(0, 30));
+      console.log('🔍 DEBUG: Current state before add:', state.map(m => ({ id: m.id, text: m.text?.substring(0, 20) })));
+      const newState = [...state, action.payload];
+      console.log('🔍 DEBUG: New state after add:', newState.map(m => ({ id: m.id, text: m.text?.substring(0, 20) })));
+      console.log('🔍 DEBUG: State length changed from', state.length, 'to', newState.length);
+      return newState;
     case 'ADD_STREAMING_MESSAGE':
       // Remove any existing streaming message first
       const withoutStreaming = state.filter(msg => !msg.isStreaming);
       console.log('🔍 DEBUG: ADD_STREAMING_MESSAGE, removed', state.length - withoutStreaming.length, 'streaming messages');
       return [...withoutStreaming, action.payload];
     case 'REPLACE_STREAMING_WITH_FINAL':
-      const newState = state.map(msg => 
+      const replacedState = state.map(msg => 
         msg.id === action.payload.streamingId 
           ? action.payload.finalMessage 
           : msg
       );
       console.log('🔍 DEBUG: REPLACE_STREAMING_WITH_FINAL, found match:', 
-        newState.some(msg => msg.id === action.payload.finalMessage.id));
-      return newState;
+        replacedState.some(msg => msg.id === action.payload.finalMessage.id));
+      return replacedState;
     case 'REMOVE_STREAMING_MESSAGE':
       const filtered = state.filter(msg => msg.id !== action.payload);
       console.log('🔍 DEBUG: REMOVE_STREAMING_MESSAGE, removed', state.length - filtered.length, 'messages');
