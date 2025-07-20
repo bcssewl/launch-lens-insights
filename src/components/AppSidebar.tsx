@@ -1,28 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarRail,
-  useSidebar
-} from "@/components/ui/sidebar";
+import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarRail, useSidebar } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Logo } from '@/components/icons';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -31,57 +11,73 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { ChatSearchModal } from '@/components/search/ChatSearchModal';
 import { useHotkeys } from 'react-hotkeys-hook';
-
-const priorityNavItems = [
-  { href: "/dashboard/assistant", label: "Advisor", icon: Bot },
-  { href: "/dashboard/projects", label: "Projects (Mock)", icon: Folder },
-];
-
-const otherNavItems = [
-  { href: "/dashboard", label: "Dashboard", icon: Home },
-  { href: "/dashboard/validate", label: "Analyze Idea", icon: Lightbulb },
-  { href: "/dashboard/ideas", label: "Projects", icon: FolderOpen },
-  { href: "/dashboard/settings", label: "Settings", icon: SettingsIcon },
-];
-
+const priorityNavItems = [{
+  href: "/dashboard/assistant",
+  label: "Advisor",
+  icon: Bot
+}, {
+  href: "/dashboard/projects",
+  label: "Projects (Mock)",
+  icon: Folder
+}];
+const otherNavItems = [{
+  href: "/dashboard",
+  label: "Dashboard",
+  icon: Home
+}, {
+  href: "/dashboard/validate",
+  label: "Analyze Idea",
+  icon: Lightbulb
+}, {
+  href: "/dashboard/ideas",
+  label: "Projects",
+  icon: FolderOpen
+}, {
+  href: "/dashboard/settings",
+  label: "Settings",
+  icon: SettingsIcon
+}];
 export const AppSidebar: React.FC = () => {
   const location = useLocation();
-  const { user, signOut } = useAuth();
+  const {
+    user,
+    signOut
+  } = useAuth();
   const [profile, setProfile] = useState<any>(null);
   const [chatSessions, setChatSessions] = useState<any[]>([]);
   const [isMoreOpen, setIsMoreOpen] = useState(true);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const { setOpen, isMobile, state } = useSidebar();
+  const {
+    setOpen,
+    isMobile,
+    state
+  } = useSidebar();
   const [collapseTimer, setCollapseTimer] = useState<NodeJS.Timeout | null>(null);
 
   // Global search hotkey
-  useHotkeys('ctrl+k,cmd+k', (e) => {
+  useHotkeys('ctrl+k,cmd+k', e => {
     e.preventDefault();
     setIsSearchOpen(true);
-  }, { enableOnFormTags: true });
-
+  }, {
+    enableOnFormTags: true
+  });
   useEffect(() => {
     if (user) {
       loadProfile();
       loadChatSessions();
     }
   }, [user]);
-
   const loadProfile = async () => {
     if (!user) return;
-    
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .maybeSingle();
-      
+      const {
+        data,
+        error
+      } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
       if (error) {
         console.error('Error loading profile:', error);
         return;
       }
-      
       if (data) {
         setProfile(data);
       } else {
@@ -93,27 +89,22 @@ export const AppSidebar: React.FC = () => {
       console.error('Error loading profile:', error);
     }
   };
-
   const createProfile = async () => {
     if (!user) return;
-    
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .insert({
-          id: user.id,
-          email: user.email,
-          full_name: user.user_metadata?.full_name || '',
-          avatar_url: user.user_metadata?.avatar_url || null
-        })
-        .select()
-        .single();
-      
+      const {
+        data,
+        error
+      } = await supabase.from('profiles').insert({
+        id: user.id,
+        email: user.email,
+        full_name: user.user_metadata?.full_name || '',
+        avatar_url: user.user_metadata?.avatar_url || null
+      }).select().single();
       if (error) {
         console.error('Error creating profile:', error);
         return;
       }
-      
       if (data) {
         setProfile(data);
         console.log('Profile created successfully');
@@ -122,29 +113,24 @@ export const AppSidebar: React.FC = () => {
       console.error('Error creating profile:', error);
     }
   };
-
   const loadChatSessions = async () => {
     if (!user) return;
-    
     try {
-      const { data, error } = await supabase
-        .from('chat_sessions')
-        .select('id, title, created_at')
-        .eq('user_id', user.id)
-        .order('updated_at', { ascending: false })
-        .limit(10);
-      
+      const {
+        data,
+        error
+      } = await supabase.from('chat_sessions').select('id, title, created_at').eq('user_id', user.id).order('updated_at', {
+        ascending: false
+      }).limit(10);
       if (error) {
         console.error('Error loading chat sessions:', error);
         return;
       }
-      
       setChatSessions(data || []);
     } catch (error) {
       console.error('Error loading chat sessions:', error);
     }
   };
-
   const handleLogout = async () => {
     await signOut();
   };
@@ -157,7 +143,6 @@ export const AppSidebar: React.FC = () => {
     }
     setOpen(true);
   };
-
   const handleMouseLeave = () => {
     const timer = setTimeout(() => {
       setOpen(false);
@@ -179,15 +164,8 @@ export const AppSidebar: React.FC = () => {
     const urlParams = new URLSearchParams(location.search);
     return location.pathname === '/dashboard/assistant' && urlParams.get('session') === sessionId;
   };
-
-  return (
-    <div className="relative">
-      <Sidebar 
-        collapsible="icon" 
-        className="border-r border-border-subtle bg-surface"
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-      >
+  return <div className="relative">
+      <Sidebar collapsible="icon" className="border-r border-border-subtle bg-surface" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
         <SidebarHeader className="p-4 bg-surface border-b border-border-subtle">
           <div className="flex items-center justify-center group-data-[collapsible=icon]:justify-center px-3">
             <Logo />
@@ -199,29 +177,18 @@ export const AppSidebar: React.FC = () => {
           <SidebarGroup>
             <SidebarGroupContent className="px-2 group-data-[collapsible=icon]:px-1">
               <SidebarMenu>
-                {priorityNavItems.map((item) => (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={location.pathname === item.href}
-                      tooltip={item.label}
-                      className="group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 text-text-secondary hover:text-text-primary hover:bg-surface-elevated data-[active=true]:text-primary data-[active=true]:bg-surface-elevated transition-colors"
-                    >
+                {priorityNavItems.map(item => <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton asChild isActive={location.pathname === item.href} tooltip={item.label} className="group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 text-text-secondary hover:text-text-primary hover:bg-surface-elevated data-[active=true]:text-primary data-[active=true]:bg-surface-elevated transition-colors">
                       <Link to={item.href} className="flex items-center gap-3 px-3 py-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 group-data-[collapsible=icon]:gap-0">
                         <item.icon className="h-5 w-5 flex-shrink-0" />
                         <span className="group-data-[collapsible=icon]:sr-only">{item.label}</span>
                       </Link>
                     </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
+                  </SidebarMenuItem>)}
                 
                 {/* Search Button */}
                 <SidebarMenuItem>
-                  <SidebarMenuButton
-                    onClick={() => setIsSearchOpen(true)}
-                    tooltip="Search Chats (Ctrl+K)"
-                    className="group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 text-text-secondary hover:text-text-primary hover:bg-surface-elevated transition-colors cursor-pointer flex items-center gap-3 px-3 py-2 group-data-[collapsible=icon]:gap-0"
-                  >
+                  <SidebarMenuButton onClick={() => setIsSearchOpen(true)} tooltip="Search Chats (Ctrl+K)" className="group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 text-text-secondary hover:text-text-primary hover:bg-surface-elevated transition-colors cursor-pointer flex items-center gap-3 px-3 py-2 group-data-[collapsible=icon]:gap-0">
                     <Search className="h-5 w-5 flex-shrink-0" />
                     <span className="group-data-[collapsible=icon]:sr-only">Search Chats</span>
                   </SidebarMenuButton>
@@ -231,10 +198,7 @@ export const AppSidebar: React.FC = () => {
           </SidebarGroup>
 
           {/* Chat Search Modal */}
-          <ChatSearchModal 
-            isOpen={isSearchOpen}
-            onClose={() => setIsSearchOpen(false)}
-          />
+          <ChatSearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
 
           {/* Chats Section - Always visible and separate from More section */}
           <SidebarGroup>
@@ -243,65 +207,26 @@ export const AppSidebar: React.FC = () => {
             </SidebarGroupLabel>
             <SidebarGroupContent className="px-2 group-data-[collapsible=icon]:px-1">
               <SidebarMenu>
-                {chatSessions.length === 0 ? (
-                  <SidebarMenuItem>
+                {chatSessions.length === 0 ? <SidebarMenuItem>
                     <div className="px-3 py-2 text-xs text-text-secondary/50 group-data-[collapsible=icon]:hidden">
                       No chats yet
                     </div>
-                  </SidebarMenuItem>
-                ) : (
-                  chatSessions.map((session) => (
-                    <SidebarMenuItem key={session.id}>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={isActiveChatSession(session.id)}
-                        tooltip={session.title}
-                        className="group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 text-text-secondary hover:text-text-primary hover:bg-surface-elevated data-[active=true]:text-primary data-[active=true]:bg-surface-elevated transition-colors"
-                      >
+                  </SidebarMenuItem> : chatSessions.map(session => <SidebarMenuItem key={session.id}>
+                      <SidebarMenuButton asChild isActive={isActiveChatSession(session.id)} tooltip={session.title} className="group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 text-text-secondary hover:text-text-primary hover:bg-surface-elevated data-[active=true]:text-primary data-[active=true]:bg-surface-elevated transition-colors">
                         <Link to={`/dashboard/assistant?session=${session.id}`} className="flex items-center gap-3 px-3 py-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 group-data-[collapsible=icon]:gap-0">
                           <span className="group-data-[collapsible=icon]:sr-only text-sm truncate">
                             {session.title || 'New Chat'}
                           </span>
                         </Link>
                       </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))
-                )}
+                    </SidebarMenuItem>)}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
 
           {/* Collapsible group for other navigation items */}
           <Collapsible open={isMoreOpen} onOpenChange={setIsMoreOpen}>
-            <SidebarGroup>
-              <CollapsibleTrigger asChild>
-                <SidebarGroupLabel className="group-data-[collapsible=icon]:sr-only hover:bg-surface-elevated cursor-pointer flex items-center justify-between p-2 rounded-md">
-                  <span>More</span>
-                  <ChevronDown className={`h-4 w-4 transition-transform ${isMoreOpen ? 'rotate-180' : ''}`} />
-                </SidebarGroupLabel>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <SidebarGroupContent className="px-2 group-data-[collapsible=icon]:px-1">
-                  <SidebarMenu>
-                    {otherNavItems.map((item) => (
-                      <SidebarMenuItem key={item.href}>
-                        <SidebarMenuButton
-                          asChild
-                          isActive={location.pathname === item.href || (item.href === "/dashboard" && location.pathname.startsWith("/dashboard") && location.pathname.split('/').length <= 2)}
-                          tooltip={item.label}
-                          className="group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 text-text-secondary hover:text-text-primary hover:bg-surface-elevated data-[active=true]:text-primary data-[active=true]:bg-surface-elevated transition-colors"
-                        >
-                          <Link to={item.href} className="flex items-center gap-3 px-3 py-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 group-data-[collapsible=icon]:gap-0">
-                            <item.icon className="h-5 w-5 flex-shrink-0" />
-                            <span className="group-data-[collapsible=icon]:sr-only">{item.label}</span>
-                          </Link>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    ))}
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </CollapsibleContent>
-            </SidebarGroup>
+            
           </Collapsible>
         </SidebarContent>
         
@@ -360,6 +285,5 @@ export const AppSidebar: React.FC = () => {
         <SidebarRail />
       </Sidebar>
       
-    </div>
-  );
+    </div>;
 };
