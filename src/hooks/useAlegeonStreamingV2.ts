@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useReasoning } from '@/contexts/ReasoningContext';
 import { useAlegeonTypewriter } from './useAlegeonTypewriter';
@@ -240,12 +239,12 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
           
           const payload = {
             query,
-            research_type: validatedResearchType, // Use the properly validated research type
+            research_type: validatedResearchType,
             scope: "global",
             depth: "comprehensive",
             urgency: "medium",
             stream: true,
-            client_message_id: clientMessageId // Include client message ID for correlation
+            client_message_id: clientMessageId
           };
           
           console.log('📤 Sending WebSocket V2 payload for message:', messageId, payload);
@@ -331,22 +330,31 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
 
                 case 'completion':
                   console.log('✅ Stream completion received for message:', messageId);
+                  console.log('📊 Completion event - Current streamed content length:', prev.bufferedText.length);
+                  console.log('📊 Completion event - Final content available:', !!data.final_content);
+                  
+                  // CRITICAL FIX: Preserve streamed content, don't replace it
                   newState.isComplete = true;
                   newState.isStreaming = false;
                   newState.currentPhase = 'complete';
                   
-                  // Use accumulated content if available
-                  if (data.accumulated_content || data.final_content) {
-                    newState.bufferedText = data.accumulated_content || data.final_content || newState.bufferedText;
+                  // Keep the streamed content intact - this is the key fix
+                  // Only use final_content as fallback if no streamed content exists
+                  if (!prev.bufferedText && (data.accumulated_content || data.final_content)) {
+                    console.log('⚠️ Using final_content as fallback - no streamed content available');
+                    newState.bufferedText = data.accumulated_content || data.final_content || '';
+                  } else {
+                    console.log('✅ Preserving streamed content:', prev.bufferedText.length, 'characters');
+                    // Keep existing buffered text - this preserves the smooth streaming experience
                   }
                   
-                  // Process citations
+                  // Process citations from completion event
                   if (data.citations) {
                     newState.citations = data.citations;
                     console.log('📚 Citations processed for message', messageId, ':', data.citations.length);
                   }
                   
-                  // Store metadata - the backend sends duration fields correctly
+                  // Store metadata
                   if (data.metadata) {
                     newState.metadata = {
                       duration: data.metadata.duration,
@@ -366,12 +374,15 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
                   if (messageId) {
                     setTimeout(() => {
                       clearThinkingStateForMessage(messageId);
-                    }, 2000); // Keep thinking visible for 2 seconds after completion
+                    }, 2000);
                   }
                   
-                  // Resolve with final content
+                  // Resolve with preserved streamed content
                   if (!hasResolvedRef.current) {
-                    const finalContent = data.accumulated_content || data.final_content || prev.bufferedText;
+                    // Use the preserved buffered text, not the final_content
+                    const finalContent = prev.bufferedText || data.accumulated_content || data.final_content || '';
+                    console.log('🎯 Resolving with preserved content length:', finalContent.length);
+                    
                     setTimeout(() => {
                       if (!hasResolvedRef.current) {
                         hasResolvedRef.current = true;
