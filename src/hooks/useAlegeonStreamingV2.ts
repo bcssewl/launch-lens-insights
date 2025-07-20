@@ -590,21 +590,40 @@ export const useAlegeonStreamingV2 = () => {
     });
   }, [resetState, cleanup, setThinkingStateForMessage, clearThinkingStateForMessage, getThinkingStateForMessage, streamingStates]);
 
-  const stopStreaming = useCallback(() => {
-    console.log('🛑 Stopping Algeon V2 streaming for message:', currentMessageId);
+  const stopStreaming = useCallback((isUserInitiated: boolean = true) => {
+    if (isUserInitiated) {
+      console.log('🛑 User initiated stop for Algeon V2 streaming, message:', currentMessageId);
+    } else {
+      console.log('🧹 System cleanup for Algeon V2 streaming, message:', currentMessageId);
+    }
+    
     setStreamingState(prev => ({ ...prev, isStreaming: false, currentPhase: 'complete' }));
     
     if (currentMessageId) {
       clearThinkingStateForMessage(currentMessageId);
     }
     
-    promiseRef.current?.reject(new Error('Streaming stopped by user.'));
+    // Only reject the promise if it's a user-initiated stop
+    if (isUserInitiated && promiseRef.current) {
+      promiseRef.current.reject(new Error('Streaming stopped by user.'));
+    } else if (promiseRef.current) {
+      // For system cleanup, resolve with current content if available
+      setStreamingState(prev => {
+        const finalText = prev.bufferedText || prev.displayedText;
+        if (finalText && promiseRef.current) {
+          promiseRef.current.resolve(finalText);
+        }
+        return prev;
+      });
+    }
+    
     cleanup();
   }, [cleanup, currentMessageId, clearThinkingStateForMessage]);
 
   useEffect(() => {
     return () => {
-      stopStreaming();
+      // This is system cleanup, not user-initiated
+      stopStreaming(false);
     };
   }, [stopStreaming]);
 
