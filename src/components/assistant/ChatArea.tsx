@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import ChatMessage from '@/components/assistant/ChatMessage';
 import TypingIndicator from '@/components/assistant/TypingIndicator';
-import PerplexityEmptyState from '@/components/assistant/PerplexityEmptyState';
+import AnimatedChatTransition from '@/components/assistant/AnimatedChatTransition';
 import EnhancedChatInput from '@/components/assistant/EnhancedChatInput';
 import StreamingProgress from '@/components/assistant/StreamingProgress';
 import StreamingError from '@/components/assistant/StreamingError';
@@ -92,18 +92,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     }
   }, [hasConversation, viewportRef]);
 
-  if (!hasConversation) {
-    return (
-      <div className="flex flex-col flex-1 min-h-0 w-full relative bg-transparent">
-        <PerplexityEmptyState 
-          onSendMessage={onSendMessage}
-          selectedModel={selectedModel}
-        />
-      </div>
-    );
-  }
-
-  return (
+  // Chat content component
+  const ChatContent = () => (
     <div className="h-full flex flex-col relative bg-background/10 backdrop-blur-sm">
       <div className="flex-1 overflow-hidden">
         <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
@@ -165,6 +155,18 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           />
         </div>
       </div>
+    </div>
+  );
+
+  return (
+    <div className="flex flex-col flex-1 min-h-0 w-full relative">
+      <AnimatedChatTransition
+        onSendMessage={onSendMessage}
+        selectedModel={selectedModel}
+        hasMessages={hasConversation}
+      >
+        <ChatContent />
+      </AnimatedChatTransition>
     </div>
   );
 };
