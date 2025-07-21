@@ -137,8 +137,7 @@ export const AppSidebar: React.FC = () => {
   return (
     <Sidebar 
       collapsible="icon" 
-      className="border-r border-border-subtle bg-surface z-50" 
-      defaultOpen={true}
+      className="border-r border-border-subtle bg-surface z-50"
     >
       <SidebarHeader className="p-4 bg-surface border-b border-border-subtle">
         <div className="flex items-center justify-center group-data-[collapsible=icon]:justify-center px-3">
