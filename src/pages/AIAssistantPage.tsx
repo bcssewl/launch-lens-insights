@@ -4,7 +4,6 @@ import DashboardLayout from '@/layouts/DashboardLayout';
 import { FloatingElements } from '@/components/landing/FloatingElements';
 import ChatArea from '@/components/assistant/ChatArea';
 import CanvasView from '@/components/assistant/CanvasView';
-import FullscreenChatLayout from '@/components/assistant/FullscreenChatLayout';
 import ChatSubheader from '@/components/assistant/ChatSubheader';
 import { ReasoningProvider } from '@/contexts/ReasoningContext';
 import { useChatSessions } from '@/hooks/useChatSessions';
@@ -17,7 +16,6 @@ import { Loader2 } from 'lucide-react';
 
 const AIAssistantPage: React.FC = () => {
   const isMobile = useIsMobile();
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [selectedModel, setSelectedModel] = useState<string>('best');
   const [selectedResearchType, setSelectedResearchType] = useState<string>('quick_facts');
   const { theme } = useTheme();
@@ -62,19 +60,6 @@ const AIAssistantPage: React.FC = () => {
     setEditedCanvasContent(canvasState.content);
   }, [canvasState.content]);
 
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'F11') {
-        event.preventDefault();
-        setIsFullscreen(!isFullscreen);
-      } else if (event.key === 'Escape' && isFullscreen) {
-        setIsFullscreen(false);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isFullscreen]);
-
   const handleSendMessageWithSession = async (text: string, attachments?: any[], modelOverride?: string, researchType?: string) => {
     const modelToUse = modelOverride || selectedModel;
     const researchTypeToUse = researchType || selectedResearchType;
@@ -109,10 +94,6 @@ const AIAssistantPage: React.FC = () => {
     }
   };
 
-  const toggleFullscreen = () => {
-    setIsFullscreen(!isFullscreen);
-  };
-
   const handleCanvasContentUpdate = (newContent: string) => {
     setEditedCanvasContent(newContent);
   };
@@ -144,32 +125,6 @@ const AIAssistantPage: React.FC = () => {
     );
   }
 
-  if (isFullscreen) {
-    return (
-      <ReasoningProvider>
-        <FullscreenChatLayout 
-          messages={messages} 
-          isTyping={isTyping} 
-          viewportRef={viewportRef} 
-          isConfigured={isConfigured} 
-          currentSessionId={currentSessionId} 
-          onSendMessage={handleSendMessageWithSession} 
-          onDownloadChat={handleDownloadChat} 
-          onClearConversation={handleClearConversationWithHistory} 
-          onSessionSelect={handleSessionSelect} 
-          onToggleFullscreen={toggleFullscreen}
-          selectedModel={selectedModel}
-          canvasState={canvasState} 
-          onOpenCanvas={handleOpenCanvas} 
-          onCloseCanvas={handleCloseCanvas} 
-          onCanvasDownload={handleCanvasDownload} 
-          onCanvasPrint={handleCanvasPrint}
-          streamingState={streamingState}
-        />
-      </ReasoningProvider>
-    );
-  }
-
   return (
     <DashboardLayout>
       <div className="flex-1 flex flex-col relative">
@@ -182,8 +137,6 @@ const AIAssistantPage: React.FC = () => {
                 <ChatSubheader 
                   isConfigured={isConfigured} 
                   currentSessionId={currentSessionId} 
-                  isFullscreen={isFullscreen} 
-                  onToggleFullscreen={toggleFullscreen} 
                   onDownloadChat={handleDownloadChat} 
                   onClearConversation={handleClearConversationWithHistory} 
                   onSessionSelect={handleSessionSelect}

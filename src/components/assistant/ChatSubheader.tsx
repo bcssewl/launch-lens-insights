@@ -1,7 +1,5 @@
 
 import React from 'react';
-import { Button } from '@/components/ui/button';
-import { Maximize2, Minimize2 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { UserCircle, Settings as SettingsIcon, LogOut, Lightbulb } from 'lucide-react';
@@ -16,8 +14,6 @@ import { Logo } from '@/components/icons';
 interface ChatSubheaderProps {
   isConfigured: boolean;
   currentSessionId?: string | null;
-  isFullscreen: boolean;
-  onToggleFullscreen: () => void;
   onDownloadChat: () => void;
   onClearConversation: () => void;
   onSessionSelect: (sessionId: string) => void;
@@ -30,8 +26,6 @@ interface ChatSubheaderProps {
 const ChatSubheader: React.FC<ChatSubheaderProps> = ({
   isConfigured,
   currentSessionId,
-  isFullscreen,
-  onToggleFullscreen,
   onDownloadChat,
   onClearConversation,
   onSessionSelect,
@@ -115,19 +109,6 @@ const ChatSubheader: React.FC<ChatSubheaderProps> = ({
           currentSessionId={currentSessionId}
           onSessionSelect={onSessionSelect}
         />
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onToggleFullscreen}
-          className="h-8 w-8"
-          aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-        >
-          {isFullscreen ? (
-            <Minimize2 className="h-4 w-4" />
-          ) : (
-            <Maximize2 className="h-4 w-4" />
-          )}
-        </Button>
       </div>
     </div>
   );
