@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { FloatingElements } from '@/components/landing/FloatingElements';
@@ -168,8 +169,8 @@ const AIAssistantPage: React.FC = () => {
               />
             </div>
 
-            {/* Sticky input bar with ChatGPT-style spacing */}
-            <div className="sticky bottom-0 left-0 right-0 border-t bg-background/50 backdrop-blur-sm z-50 pb-2 md:pb-4">
+            {/* Sticky input bar with ChatGPT-style spacing - no border for seamless integration */}
+            <div className="sticky bottom-0 left-0 right-0 bg-background/50 backdrop-blur-sm z-50 pb-2 md:pb-4">
               <div className="max-w-4xl mx-auto px-6 py-3 md:py-4">
                 <EnhancedChatInput 
                   onSendMessage={handleSendMessageWithSession} 
