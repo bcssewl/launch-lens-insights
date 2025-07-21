@@ -38,6 +38,9 @@ const ChatInputControls: React.FC<ChatInputControlsProps> = ({
   const iconSize = isCompact ? 'h-3 w-3' : 'h-4 w-4';
   const buttonSize = isCompact ? 'h-8 w-8' : 'h-10 w-10';
 
+  // Show research type selector for research-capable models
+  const showResearchSelector = ['algeon', 'stratix', 'nexus'].includes(selectedModel) && onResearchTypeChange;
+
   return (
     <>
       <AttachmentOptionsDropdown
@@ -54,7 +57,7 @@ const ChatInputControls: React.FC<ChatInputControlsProps> = ({
         </Button>
       </AttachmentOptionsDropdown>
       
-      {selectedModel === 'algeon' && onResearchTypeChange && (
+      {showResearchSelector && (
         <ResearchTypeSelector
           selectedType={researchType}
           onTypeChange={onResearchTypeChange}

@@ -177,6 +177,8 @@ const AIAssistantPage: React.FC = () => {
                   isTyping={isTyping}
                   isCompact={hasConversation}
                   selectedModel={selectedModel}
+                  selectedResearchType={selectedResearchType}
+                  onResearchTypeChange={handleResearchTypeChange}
                 />
               </div>
             </div>

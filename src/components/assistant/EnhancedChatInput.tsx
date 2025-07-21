@@ -13,18 +13,21 @@ interface EnhancedChatInputProps {
   isTyping: boolean;
   isCompact?: boolean;
   selectedModel: string;
+  selectedResearchType?: string;
+  onResearchTypeChange?: (type: string) => void;
 }
 
 const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({ 
   onSendMessage, 
   isTyping, 
   isCompact = false,
-  selectedModel
+  selectedModel,
+  selectedResearchType = 'quick_facts',
+  onResearchTypeChange
 }) => {
   const [inputValue, setInputValue] = useState('');
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [showFileUploader, setShowFileUploader] = useState(false);
-  const [researchType, setResearchType] = useState('quick_facts');
   
   const { isRecording, isProcessing, audioLevel, error, startRecording, stopRecording, clearError } = useVoiceRecording();
   const { attachedFiles, addDatabaseFile, addLocalFile, removeFile, clearFiles } = useFileAttachments();
@@ -38,7 +41,7 @@ const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
 
   const handleSendMessage = () => {
     if (inputValue.trim() === '') return;
-    onSendMessage(inputValue, attachedFiles, selectedModel, researchType);
+    onSendMessage(inputValue, attachedFiles, selectedModel, selectedResearchType);
     setInputValue('');
     clearFiles();
   };
@@ -112,12 +115,12 @@ const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
                   isProcessing={isProcessing}
                   inputValue={inputValue}
                   selectedModel={selectedModel}
-                  researchType={researchType}
+                  researchType={selectedResearchType}
                   onVoiceRecording={handleVoiceRecording}
                   onSendMessage={handleSendMessage}
                   onDatabaseSelect={handleDatabaseSelect}
                   onLocalFileSelect={handleLocalFileSelect}
-                  onResearchTypeChange={setResearchType}
+                  onResearchTypeChange={onResearchTypeChange}
                 />
               </ChatInputCore>
             </div>
@@ -144,12 +147,12 @@ const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
               isProcessing={isProcessing}
               inputValue={inputValue}
               selectedModel={selectedModel}
-              researchType={researchType}
+              researchType={selectedResearchType}
               onVoiceRecording={handleVoiceRecording}
               onSendMessage={handleSendMessage}
               onDatabaseSelect={handleDatabaseSelect}
               onLocalFileSelect={handleLocalFileSelect}
-              onResearchTypeChange={setResearchType}
+              onResearchTypeChange={onResearchTypeChange}
             />
           </ChatInputCore>
         )}
