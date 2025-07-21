@@ -130,7 +130,7 @@ const AIAssistantPage: React.FC = () => {
 
   return (
     <DashboardLayout>
-      <div className="h-full flex flex-col relative">
+      <div className="h-screen flex flex-col relative">
         <FloatingElements />
         
         <ReasoningProvider>
@@ -151,7 +151,7 @@ const AIAssistantPage: React.FC = () => {
               </div>
             )}
             
-            <div className="flex-1 min-h-0 bg-transparent relative">
+            <div className="flex-1 min-h-0 bg-transparent relative pb-24">
               <ChatArea 
                 messages={messages} 
                 isTyping={isTyping} 
@@ -169,8 +169,8 @@ const AIAssistantPage: React.FC = () => {
               />
             </div>
 
-            {/* Fixed input bar at bottom of screen */}
-            <div className="fixed bottom-0 left-0 right-0 border-t bg-background/50 backdrop-blur-sm z-50">
+            {/* Fixed input bar at bottom of screen - positioned above bottom navigation */}
+            <div className="fixed bottom-20 left-0 right-0 border-t bg-background/50 backdrop-blur-sm z-40">
               <div className="max-w-4xl mx-auto px-6 py-4">
                 <EnhancedChatInput 
                   onSendMessage={handleSendMessageWithSession} 
