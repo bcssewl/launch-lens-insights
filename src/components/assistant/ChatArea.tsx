@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import ChatMessage from '@/components/assistant/ChatMessage';
@@ -9,24 +10,13 @@ import StreamingOverlay from '@/components/assistant/StreamingOverlay';
 import StratixStreamingOverlay from '@/components/assistant/StratixStreamingOverlay';
 import AlegeonStreamingOverlay from '@/components/assistant/AlegeonStreamingOverlay';
 import { Message } from '@/constants/aiAssistant';
+import type { StratixStreamingState } from '@/types/stratixStreaming';
 
 interface StreamingState {
   isStreaming: boolean;
   progress?: number;
   status?: string;
   error?: string;
-}
-
-interface StratixStreamingState {
-  isStreaming: boolean;
-  progress?: number;
-  status?: string;
-  error?: string;
-  currentPhase?: string;
-  overallProgress?: number;
-  activeAgents?: any[];
-  discoveredSources?: any[];
-  partialText?: string;
 }
 
 interface ChatAreaProps {
@@ -87,9 +77,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       });
     } else if (stratixStreamingState) {
       setStreamingProgress({
-        current: stratixStreamingState.progress || 0,
+        current: stratixStreamingState.overallProgress || 0,
         total: 100,
-        status: stratixStreamingState.status || 'Analyzing...'
+        status: stratixStreamingState.currentPhase || 'Analyzing...'
       });
     } else if (alegeonStreamingState) {
       setStreamingProgress({
@@ -133,10 +123,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             )}
 
             {!hasMessages ? (
-              <ChatEmptyState 
-                onSendMessage={handleSendMessageWrapper}
-                selectedModel={selectedModel}
-              />
+              <ChatEmptyState />
             ) : (
               <>
                 {messages.map((message, index) => (
@@ -185,6 +172,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
       {stratixStreamingState?.isStreaming && (
         <StratixStreamingOverlay
+          isVisible={true}
           streamingState={stratixStreamingState}
         />
       )}
