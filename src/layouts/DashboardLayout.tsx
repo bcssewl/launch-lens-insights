@@ -13,7 +13,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   return (
     <>
       <SkipNav href="#main-content">Skip to main content</SkipNav>
-      <SidebarProvider defaultOpen={true}>
+      <SidebarProvider defaultOpen={false}>
         <div className="min-h-screen flex w-full overflow-x-hidden apple-hero">
           <AppSidebar />
           <SidebarInset className="flex-1">

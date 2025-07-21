@@ -40,7 +40,7 @@ export const AppSidebar: React.FC = () => {
   const [chatSessions, setChatSessions] = useState<any[]>([]);
   const [isChatsOpen, setIsChatsOpen] = useState(true);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const { setOpen, isMobile, state } = useSidebar();
+  const { setOpen, isMobile, open } = useSidebar();
   const [isHovered, setIsHovered] = useState(false);
 
   // Auto-collapse timer
@@ -61,14 +61,7 @@ export const AppSidebar: React.FC = () => {
     }
   }, [user]);
 
-  // Auto-collapse behavior: start collapsed on desktop
-  useEffect(() => {
-    if (!isMobile) {
-      setOpen(false); // Start collapsed
-    }
-  }, [isMobile, setOpen]);
-
-  // Handle hover behavior with improved event handling
+  // Handle hover behavior with proper state management
   const handleMouseEnter = useCallback(() => {
     if (!isMobile) {
       console.log('Sidebar mouse enter - expanding');
@@ -166,7 +159,6 @@ export const AppSidebar: React.FC = () => {
     await signOut();
   };
 
-  // Helper function to check if a chat session is currently active
   const isActiveChatSession = (sessionId: string) => {
     const urlParams = new URLSearchParams(location.search);
     return location.pathname === '/dashboard/assistant' && urlParams.get('session') === sessionId;
@@ -175,7 +167,7 @@ export const AppSidebar: React.FC = () => {
   return (
     <Sidebar 
       collapsible="icon" 
-      className="border-r border-border-subtle bg-surface z-50 transition-all duration-300"
+      className="border-r border-border-subtle bg-surface z-50 transition-all duration-300 ease-in-out"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
