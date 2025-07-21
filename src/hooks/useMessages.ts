@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Message } from '@/constants/aiAssistant';
 import { useChatHistory } from '@/hooks/useChatHistory';
@@ -19,11 +20,14 @@ export const useMessages = (sessionId: string | null, updateSessionTitle?: (sess
   });
   
   const viewportRef = useRef<HTMLDivElement>(null);
-  const { greeting } = useGreeting();
+  const { primaryGreeting, assistanceMessage } = useGreeting();
   const { history, loading: isLoadingHistory, addMessageToSession } = useChatHistory(sessionId);
-  const { generateTitle } = useAutoTitle();
-  const { sendMessage: sendToN8n, isConfigured, streamingState } = useN8nWebhook();
+  const { generateAndSetTitle } = useAutoTitle();
+  const { sendMessageToN8n, isConfigured } = useN8nWebhook();
   const { createDocument, updateDocument } = useCanvasDocument();
+
+  // Combine greeting parts into a single greeting message
+  const greeting = `${primaryGreeting}. ${assistanceMessage}`;
 
   // Load messages from history when session changes
   useEffect(() => {
@@ -37,7 +41,7 @@ export const useMessages = (sessionId: string | null, updateSessionTitle?: (sess
         // Convert history to messages format
         const historyMessages: Message[] = history.map(item => ({
           id: item.id,
-          content: item.message,
+          text: item.message,
           sender: 'ai', // Assuming history messages are from AI
           timestamp: new Date(item.created_at),
         }));
@@ -47,7 +51,7 @@ export const useMessages = (sessionId: string | null, updateSessionTitle?: (sess
         // Show greeting for empty sessions
         setMessages([{
           id: 'initial',
-          content: greeting,
+          text: greeting,
           sender: 'ai',
           timestamp: new Date(),
         }]);
@@ -57,7 +61,7 @@ export const useMessages = (sessionId: string | null, updateSessionTitle?: (sess
       // No session - show greeting
       setMessages([{
         id: 'initial',
-        content: greeting,
+        text: greeting,
         sender: 'ai',
         timestamp: new Date(),
       }]);
@@ -73,7 +77,7 @@ export const useMessages = (sessionId: string | null, updateSessionTitle?: (sess
     // Optimistically add message to the state
     const newMessage: Message = {
       id: messageId,
-      content: messageContent,
+      text: messageContent,
       sender: 'user',
       timestamp: timestamp,
     };
@@ -81,7 +85,7 @@ export const useMessages = (sessionId: string | null, updateSessionTitle?: (sess
 
     try {
       // Send message to n8n webhook and save to history
-      const response = await sendToN8n(messageContent, targetSessionId, selectedModel, researchType, messageId);
+      const response = await sendMessageToN8n(messageContent, targetSessionId, messageId);
 
       if (!response) {
         throw new Error('Failed to send message to n8n');
@@ -89,10 +93,15 @@ export const useMessages = (sessionId: string | null, updateSessionTitle?: (sess
 
       // Generate title if this is the first real message in the session
       if (messages.length <= 1 && targetSessionId && updateSessionTitle) {
-        const newTitle = await generateTitle(targetSessionId, messageContent);
-        if (newTitle) {
-          updateSessionTitle(targetSessionId, newTitle);
-        }
+        // Use the new generateAndSetTitle function
+        await generateAndSetTitle(
+          targetSessionId, 
+          messageContent, 
+          response,
+          async (sessionId: string, title: string) => {
+            updateSessionTitle(sessionId, title);
+          }
+        );
       }
     } catch (error) {
       console.error('useMessages: Error sending message:', error);
@@ -108,7 +117,7 @@ export const useMessages = (sessionId: string | null, updateSessionTitle?: (sess
   };
 
   const handleDownloadChat = () => {
-    const chatContent = messages.map(msg => `${msg.sender}: ${msg.content}`).join('\n');
+    const chatContent = messages.map(msg => `${msg.sender}: ${msg.text}`).join('\n');
     const blob = new Blob([chatContent], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -152,7 +161,11 @@ export const useMessages = (sessionId: string | null, updateSessionTitle?: (sess
     if (!canvasState.messageId) return;
 
     try {
-      await updateDocument(canvasState.messageId, canvasState.content);
+      // Update document with proper parameters
+      await updateDocument(canvasState.messageId, {
+        content: canvasState.content,
+        title: 'AI Report'
+      });
     } catch (error) {
       console.error("Error updating document:", error);
     }
@@ -173,7 +186,7 @@ export const useMessages = (sessionId: string | null, updateSessionTitle?: (sess
     handleCanvasDownload,
     handleCanvasPrint,
     handleCanvasPdfDownload,
-    streamingState,
+    streamingState: null, // Placeholder for streaming state
     stratixStreamingState: null, // Placeholder for stratix streaming
   };
 };
