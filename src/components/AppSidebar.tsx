@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarRail, useSidebar } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { ChatSearchModal } from '@/components/search/ChatSearchModal';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { Logo } from '@/components/icons';
+
 const mainNavItems = [{
   href: "/dashboard/assistant",
   label: "AI Advisor",
@@ -31,21 +32,18 @@ const mainNavItems = [{
   label: "Settings",
   icon: SettingsIcon
 }];
+
 export const AppSidebar: React.FC = () => {
   const location = useLocation();
-  const {
-    user,
-    signOut
-  } = useAuth();
+  const { user, signOut } = useAuth();
   const [profile, setProfile] = useState<any>(null);
   const [chatSessions, setChatSessions] = useState<any[]>([]);
   const [isChatsOpen, setIsChatsOpen] = useState(true);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const {
-    setOpen,
-    isMobile,
-    state
-  } = useSidebar();
+  const { setOpen, isMobile, state } = useSidebar();
+  const [isHovered, setIsHovered] = useState(false);
+
+  // Auto-collapse timer
   const [collapseTimer, setCollapseTimer] = useState<NodeJS.Timeout | null>(null);
 
   // Global search hotkey
@@ -55,6 +53,7 @@ export const AppSidebar: React.FC = () => {
   }, {
     enableOnFormTags: true
   });
+
   useEffect(() => {
     if (user) {
       loadProfile();
@@ -62,19 +61,54 @@ export const AppSidebar: React.FC = () => {
     }
   }, [user]);
 
-  // Ensure sidebar is open by default on desktop
+  // Auto-collapse behavior: start collapsed on desktop
   useEffect(() => {
-    if (!isMobile && state === 'collapsed') {
-      setOpen(true);
+    if (!isMobile) {
+      setOpen(false); // Start collapsed
     }
-  }, [isMobile, state, setOpen]);
+  }, [isMobile, setOpen]);
+
+  // Handle hover behavior
+  const handleMouseEnter = useCallback(() => {
+    if (!isMobile) {
+      setIsHovered(true);
+      setOpen(true);
+      
+      // Clear any existing timer
+      if (collapseTimer) {
+        clearTimeout(collapseTimer);
+        setCollapseTimer(null);
+      }
+    }
+  }, [isMobile, setOpen, collapseTimer]);
+
+  const handleMouseLeave = useCallback(() => {
+    if (!isMobile) {
+      setIsHovered(false);
+      
+      // Start 2-second timer to collapse
+      const timer = setTimeout(() => {
+        setOpen(false);
+        setCollapseTimer(null);
+      }, 2000);
+      
+      setCollapseTimer(timer);
+    }
+  }, [isMobile, setOpen]);
+
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (collapseTimer) {
+        clearTimeout(collapseTimer);
+      }
+    };
+  }, [collapseTimer]);
+
   const loadProfile = async () => {
     if (!user) return;
     try {
-      const {
-        data,
-        error
-      } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
+      const { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
       if (error) {
         console.error('Error loading profile:', error);
         return;
@@ -88,13 +122,11 @@ export const AppSidebar: React.FC = () => {
       console.error('Error loading profile:', error);
     }
   };
+
   const createProfile = async () => {
     if (!user) return;
     try {
-      const {
-        data,
-        error
-      } = await supabase.from('profiles').insert({
+      const { data, error } = await supabase.from('profiles').insert({
         id: user.id,
         email: user.email,
         full_name: user.user_metadata?.full_name || '',
@@ -112,15 +144,11 @@ export const AppSidebar: React.FC = () => {
       console.error('Error creating profile:', error);
     }
   };
+
   const loadChatSessions = async () => {
     if (!user) return;
     try {
-      const {
-        data,
-        error
-      } = await supabase.from('chat_sessions').select('id, title, created_at').eq('user_id', user.id).order('updated_at', {
-        ascending: false
-      }).limit(10);
+      const { data, error } = await supabase.from('chat_sessions').select('id, title, created_at').eq('user_id', user.id).order('updated_at', { ascending: false }).limit(10);
       if (error) {
         console.error('Error loading chat sessions:', error);
         return;
@@ -130,6 +158,7 @@ export const AppSidebar: React.FC = () => {
       console.error('Error loading chat sessions:', error);
     }
   };
+
   const handleLogout = async () => {
     await signOut();
   };
@@ -139,9 +168,14 @@ export const AppSidebar: React.FC = () => {
     const urlParams = new URLSearchParams(location.search);
     return location.pathname === '/dashboard/assistant' && urlParams.get('session') === sessionId;
   };
-  return <Sidebar collapsible="icon" className="border-r border-border-subtle bg-surface z-50">
-      
-      
+
+  return (
+    <Sidebar 
+      collapsible="icon" 
+      className="border-r border-border-subtle bg-surface z-50 transition-all duration-300"
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
       <SidebarContent className="flex-grow bg-surface">
         {/* Main navigation items */}
         <SidebarGroup>
@@ -150,18 +184,29 @@ export const AppSidebar: React.FC = () => {
           </SidebarGroupLabel>
           <SidebarGroupContent className="px-2 group-data-[collapsible=icon]:px-1">
             <SidebarMenu>
-              {mainNavItems.map(item => <SidebarMenuItem key={item.href}>
-                  <SidebarMenuButton asChild isActive={location.pathname === item.href} tooltip={item.label} className="group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 text-text-secondary hover:text-text-primary hover:bg-surface-elevated data-[active=true]:text-primary data-[active=true]:bg-surface-elevated transition-colors">
+              {mainNavItems.map(item => (
+                <SidebarMenuItem key={item.href}>
+                  <SidebarMenuButton 
+                    asChild 
+                    isActive={location.pathname === item.href} 
+                    tooltip={item.label} 
+                    className="group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 text-text-secondary hover:text-text-primary hover:bg-surface-elevated data-[active=true]:text-primary data-[active=true]:bg-surface-elevated transition-colors"
+                  >
                     <Link to={item.href} className="flex items-center gap-3 px-3 py-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 group-data-[collapsible=icon]:gap-0">
                       <item.icon className="h-5 w-5 flex-shrink-0" />
                       <span className="group-data-[collapsible=icon]:sr-only">{item.label}</span>
                     </Link>
                   </SidebarMenuButton>
-                </SidebarMenuItem>)}
+                </SidebarMenuItem>
+              ))}
               
               {/* Search Button */}
               <SidebarMenuItem>
-                <SidebarMenuButton onClick={() => setIsSearchOpen(true)} tooltip="Search Chats (Ctrl+K)" className="group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 text-text-secondary hover:text-text-primary hover:bg-surface-elevated transition-colors cursor-pointer flex items-center gap-3 px-3 py-2 group-data-[collapsible=icon]:gap-0">
+                <SidebarMenuButton 
+                  onClick={() => setIsSearchOpen(true)} 
+                  tooltip="Search Chats (Ctrl+K)" 
+                  className="group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 text-text-secondary hover:text-text-primary hover:bg-surface-elevated transition-colors cursor-pointer flex items-center gap-3 px-3 py-2 group-data-[collapsible=icon]:gap-0"
+                >
                   <Search className="h-5 w-5 flex-shrink-0" />
                   <span className="group-data-[collapsible=icon]:sr-only">Search Chats</span>
                 </SidebarMenuButton>
@@ -180,26 +225,37 @@ export const AppSidebar: React.FC = () => {
               <SidebarGroupLabel className="group-data-[collapsible=icon]:sr-only px-2 text-xs font-medium text-text-secondary/70 cursor-pointer hover:text-text-secondary flex items-center justify-between">
                 Chats
                 <ChevronDown className="h-4 w-4 transition-transform group-data-[collapsible=icon]:hidden" style={{
-                transform: isChatsOpen ? 'rotate(0deg)' : 'rotate(-90deg)'
-              }} />
+                  transform: isChatsOpen ? 'rotate(0deg)' : 'rotate(-90deg)'
+                }} />
               </SidebarGroupLabel>
             </CollapsibleTrigger>
             <CollapsibleContent>
               <SidebarGroupContent className="px-2 group-data-[collapsible=icon]:px-1">
                 <SidebarMenu>
-                  {chatSessions.length === 0 ? <SidebarMenuItem>
+                  {chatSessions.length === 0 ? (
+                    <SidebarMenuItem>
                       <div className="px-3 py-2 text-xs text-text-secondary/50 group-data-[collapsible=icon]:hidden">
                         No chats yet
                       </div>
-                    </SidebarMenuItem> : chatSessions.map(session => <SidebarMenuItem key={session.id}>
-                        <SidebarMenuButton asChild isActive={isActiveChatSession(session.id)} tooltip={session.title} className="group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 text-text-secondary hover:text-text-primary hover:bg-surface-elevated data-[active=true]:text-primary data-[active=true]:bg-surface-elevated transition-colors">
+                    </SidebarMenuItem>
+                  ) : (
+                    chatSessions.map(session => (
+                      <SidebarMenuItem key={session.id}>
+                        <SidebarMenuButton 
+                          asChild 
+                          isActive={isActiveChatSession(session.id)} 
+                          tooltip={session.title} 
+                          className="group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 text-text-secondary hover:text-text-primary hover:bg-surface-elevated data-[active=true]:text-primary data-[active=true]:bg-surface-elevated transition-colors"
+                        >
                           <Link to={`/dashboard/assistant?session=${session.id}`} className="flex items-center gap-3 px-3 py-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 group-data-[collapsible=icon]:gap-0">
                             <span className="group-data-[collapsible=icon]:sr-only text-sm truncate">
                               {session.title || 'New Chat'}
                             </span>
                           </Link>
                         </SidebarMenuButton>
-                      </SidebarMenuItem>)}
+                      </SidebarMenuItem>
+                    ))
+                  )}
                 </SidebarMenu>
               </SidebarGroupContent>
             </CollapsibleContent>
@@ -242,7 +298,8 @@ export const AppSidebar: React.FC = () => {
               <Link to="/dashboard/settings" className="flex items-center">
                 <SettingsIcon className="mr-2 h-4 w-4" />
                 <span>Settings</span>
-              </Link></DropdownMenuItem>
+              </Link>
+            </DropdownMenuItem>
             <DropdownMenuItem asChild className="text-text-secondary hover:text-text-primary hover:bg-surface-elevated-2">
               <Link to="/dashboard/billing" className="flex items-center">
                 <Lightbulb className="mr-2 h-4 w-4" />
@@ -259,5 +316,6 @@ export const AppSidebar: React.FC = () => {
       </SidebarFooter>
       
       <SidebarRail />
-    </Sidebar>;
+    </Sidebar>
+  );
 };
