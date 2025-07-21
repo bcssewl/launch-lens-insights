@@ -65,6 +65,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   const [canvasPreviewMessages, setCanvasPreviewMessages] = useState<Set<string>>(new Set());
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showEmptyState, setShowEmptyState] = useState(true);
+  const [hasStartedConversation, setHasStartedConversation] = useState(false);
 
   const handleToggleCanvasPreview = useCallback((messageId: string) => {
     setCanvasPreviewMessages(prev => {
@@ -78,29 +79,37 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     });
   }, []);
 
-  const hasConversation = messages.length > 1 || isTyping;
+  const hasConversation = messages.length > 1 || (messages.length === 1 && messages[0].role === 'assistant');
 
   // Handle the transition animation when first message is sent
   const handleSendMessageWithTransition = useCallback(
     (message: string, attachments?: any[], selectedModel?: string) => {
-      if (!hasConversation && showEmptyState) {
+      if (!hasStartedConversation && showEmptyState) {
         setIsTransitioning(true);
-        // Start the transition animation
+        setHasStartedConversation(true);
+        
+        // Start hiding the empty state immediately
         setTimeout(() => {
           setShowEmptyState(false);
-        }, 300); // Small delay to allow input to slide down first
+        }, 100);
+        
+        // Reset transition state after animation completes
+        setTimeout(() => {
+          setIsTransitioning(false);
+        }, 700);
       }
       onSendMessage(message, attachments, selectedModel);
     },
-    [hasConversation, showEmptyState, onSendMessage]
+    [hasStartedConversation, showEmptyState, onSendMessage]
   );
 
   // Reset states when conversation is cleared
   useEffect(() => {
-    if (!hasConversation && !isTransitioning) {
+    if (!hasConversation && !isTransitioning && !isTyping) {
       setShowEmptyState(true);
+      setHasStartedConversation(false);
     }
-  }, [hasConversation, isTransitioning]);
+  }, [hasConversation, isTransitioning, isTyping]);
 
   useEffect(() => {
     if (hasConversation && viewportRef.current) {
@@ -117,7 +126,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     }
   }, [hasConversation, viewportRef]);
 
-  if (showEmptyState && !hasConversation) {
+  // Show empty state only when there's no conversation and we haven't started transitioning
+  if (showEmptyState && !hasConversation && !hasStartedConversation) {
     return (
       <div className="flex flex-col flex-1 min-h-0 w-full relative bg-transparent">
         <PerplexityEmptyState 
@@ -175,24 +185,29 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                 />
               );
             })}
-            {isTyping && <TypingIndicator />}
+            
+            {/* Only show typing indicator after transition is complete and we have a conversation */}
+            {isTyping && hasStartedConversation && !isTransitioning && <TypingIndicator />}
           </div>
           <div className="h-32" />
         </ScrollArea>
       </div>
 
-      <div className={`absolute left-0 right-0 mb-20 transition-all duration-700 ease-in-out ${
-        isTransitioning ? 'bottom-0' : 'bottom-0'
-      }`}>
-        <div className="max-w-4xl mx-auto px-6 py-4">
-          <EnhancedChatInput 
-            onSendMessage={onSendMessage} 
-            isTyping={isTyping}
-            isCompact={true}
-            selectedModel={selectedModel}
-          />
+      {/* Fixed input at bottom - only show after conversation has started */}
+      {hasStartedConversation && (
+        <div className={`fixed left-0 right-0 bottom-20 transition-all duration-700 ease-in-out ${
+          isTransitioning ? 'opacity-0 transform translate-y-8' : 'opacity-100 transform translate-y-0'
+        }`}>
+          <div className="max-w-4xl mx-auto px-6 py-4">
+            <EnhancedChatInput 
+              onSendMessage={onSendMessage} 
+              isTyping={isTyping}
+              isCompact={true}
+              selectedModel={selectedModel}
+            />
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
