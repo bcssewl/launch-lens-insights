@@ -68,9 +68,10 @@ export const AppSidebar: React.FC = () => {
     }
   }, [isMobile, setOpen]);
 
-  // Handle hover behavior
+  // Handle hover behavior with improved event handling
   const handleMouseEnter = useCallback(() => {
     if (!isMobile) {
+      console.log('Sidebar mouse enter - expanding');
       setIsHovered(true);
       setOpen(true);
       
@@ -84,10 +85,12 @@ export const AppSidebar: React.FC = () => {
 
   const handleMouseLeave = useCallback(() => {
     if (!isMobile) {
+      console.log('Sidebar mouse leave - starting collapse timer');
       setIsHovered(false);
       
       // Start 2-second timer to collapse
       const timer = setTimeout(() => {
+        console.log('Collapsing sidebar after timer');
         setOpen(false);
         setCollapseTimer(null);
       }, 2000);
