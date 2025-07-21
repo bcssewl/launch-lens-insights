@@ -1,14 +1,39 @@
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import ChatMessage from '@/components/assistant/ChatMessage';
 import EnhancedChatInput from '@/components/assistant/EnhancedChatInput';
 import ChatEmptyState from '@/components/assistant/ChatEmptyState';
 import StreamingError from '@/components/assistant/StreamingError';
-import { StreamingProgress } from '@/components/assistant/StreamingProgress';
-import { StreamingOverlay } from '@/components/assistant/StreamingOverlay';
-import { StratixStreamingOverlay } from '@/components/assistant/StratixStreamingOverlay';
-import { AlegeonStreamingOverlay } from '@/components/assistant/AlegeonStreamingOverlay';
-import type { Message, StreamingState, StratixStreamingState } from '@/types/stratixStreaming';
+import StreamingProgress from '@/components/assistant/StreamingProgress';
+import StreamingOverlay from '@/components/assistant/StreamingOverlay';
+import StratixStreamingOverlay from '@/components/assistant/StratixStreamingOverlay';
+import AlegeonStreamingOverlay from '@/components/assistant/AlegeonStreamingOverlay';
+
+interface Message {
+  id: string;
+  content: string;
+  role: 'user' | 'assistant';
+  timestamp: Date;
+  attachments?: any[];
+  modelUsed?: string;
+  thinking?: string;
+  citations?: any[];
+}
+
+interface StreamingState {
+  isStreaming: boolean;
+  progress?: number;
+  status?: string;
+  error?: string;
+}
+
+interface StratixStreamingState {
+  isStreaming: boolean;
+  progress?: number;
+  status?: string;
+  error?: string;
+}
 
 interface ChatAreaProps {
   messages: Message[];
@@ -116,9 +141,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                     key={`${message.id}-${index}`}
                     message={message}
                     onOpenCanvas={onOpenCanvas}
-                    onCloseCanvas={onCloseCanvas}
-                    onCanvasDownload={onCanvasDownload}
-                    onCanvasPrint={onCanvasPrint}
                   />
                 ))}
                 
