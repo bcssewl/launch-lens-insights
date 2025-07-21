@@ -68,8 +68,6 @@ const FullscreenChatLayout: React.FC<FullscreenChatLayoutProps> = ({
         <ChatSubheader
           isConfigured={isConfigured}
           currentSessionId={currentSessionId}
-          isFullscreen={true}
-          onToggleFullscreen={onToggleFullscreen}
           onDownloadChat={onDownloadChat}
           onClearConversation={onClearConversation}
           onSessionSelect={onSessionSelect}
