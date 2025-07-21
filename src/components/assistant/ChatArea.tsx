@@ -128,45 +128,43 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     return (
       <div className="h-full flex flex-col relative bg-background/10 backdrop-blur-sm">
         {/* Greeting fading up */}
-        <div className="absolute top-0 left-0 right-0 h-full flex items-center justify-center animate-greeting-fade-up pointer-events-none">
+        <div className="absolute top-0 left-0 right-0 h-full flex items-center justify-center animate-greeting-fade-up pointer-events-none z-10">
           <PerplexityEmptyState 
-            onSendMessage={handleSendMessageWithTransition}
+            onSendMessage={() => {}} // Disabled during transition
             selectedModel={selectedModel}
           />
         </div>
 
         {/* Chat area fading in */}
-        <div className="flex-1 overflow-hidden animate-chat-area-fade-in">
-          <div className="h-full animate-backdrop-fade-in">
-            <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
-              <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
-                {messages.map((msg) => (
-                  <ChatMessage 
-                    key={msg.id} 
-                    message={{ ...msg, timestamp: formatTimestamp(msg.timestamp) }}
-                    onOpenCanvas={onOpenCanvas}
-                    onCanvasDownload={onCanvasDownload}
-                    onCanvasPrint={onCanvasPrint}
-                    onToggleCanvasPreview={handleToggleCanvasPreview}
-                    isCanvasPreview={canvasPreviewMessages.has(msg.id)}
-                    isStreaming={false}
-                    streamingUpdates={[]}
-                    streamingSources={[]}
-                    streamingProgress={{ phase: '', progress: 0 }}
-                    stratixStreamingState={stratixStreamingState}
-                    alegeonStreamingState={alegeonStreamingState}
-                    onAlegeonFastForward={onAlegeonFastForward}
-                  />
-                ))}
-                {isTyping && <TypingIndicator />}
-              </div>
-              <div className="h-32" />
-            </ScrollArea>
-          </div>
+        <div className="flex-1 overflow-hidden animate-chat-area-fade-in opacity-0">
+          <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
+            <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
+              {messages.map((msg) => (
+                <ChatMessage 
+                  key={msg.id} 
+                  message={{ ...msg, timestamp: formatTimestamp(msg.timestamp) }}
+                  onOpenCanvas={onOpenCanvas}
+                  onCanvasDownload={onCanvasDownload}
+                  onCanvasPrint={onCanvasPrint}
+                  onToggleCanvasPreview={handleToggleCanvasPreview}
+                  isCanvasPreview={canvasPreviewMessages.has(msg.id)}
+                  isStreaming={false}
+                  streamingUpdates={[]}
+                  streamingSources={[]}
+                  streamingProgress={{ phase: '', progress: 0 }}
+                  stratixStreamingState={stratixStreamingState}
+                  alegeonStreamingState={alegeonStreamingState}
+                  onAlegeonFastForward={onAlegeonFastForward}
+                />
+              ))}
+              {isTyping && <TypingIndicator />}
+            </div>
+            <div className="h-32" />
+          </ScrollArea>
         </div>
 
-        {/* Input sliding down */}
-        <div className="absolute bottom-0 left-0 right-0 mb-20 animate-input-slide-down">
+        {/* Fixed input at bottom with slide animation */}
+        <div className="fixed bottom-20 left-0 right-0 z-20 animate-input-slide-down">
           <div className="max-w-4xl mx-auto px-6 py-4">
             <EnhancedChatInput 
               onSendMessage={handleSendMessageWithTransition} 
