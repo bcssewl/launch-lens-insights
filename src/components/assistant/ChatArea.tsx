@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import ChatMessage from '@/components/assistant/ChatMessage';
@@ -6,6 +7,7 @@ import PerplexityEmptyState from '@/components/assistant/PerplexityEmptyState';
 import EnhancedChatInput from '@/components/assistant/EnhancedChatInput';
 import StreamingProgress from '@/components/assistant/StreamingProgress';
 import StreamingError from '@/components/assistant/StreamingError';
+import { useChatTransition } from '@/hooks/useChatTransition';
 import { Message } from '@/constants/aiAssistant';
 import type { StratixStreamingState } from '@/types/stratixStreaming';
 import type { AlegeonStreamingStateV2 } from '@/hooks/useAlegeonStreamingV2';
@@ -62,6 +64,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   onAlegeonFastForward
 }) => {
   const [canvasPreviewMessages, setCanvasPreviewMessages] = useState<Set<string>>(new Set());
+  const { transitionState, startTransition, resetToLanding, isLanding, isTransitioning, isChatting } = useChatTransition();
 
   const handleToggleCanvasPreview = useCallback((messageId: string) => {
     setCanvasPreviewMessages(prev => {
@@ -75,10 +78,26 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     });
   }, []);
 
-  const hasConversation = messages.length > 1 || isTyping;
+  const hasMessages = messages.length > 0;
 
+  // Handle sending message with transition
+  const handleSendMessageWithTransition = useCallback((message: string, attachments?: any[], selectedModel?: string) => {
+    if (isLanding) {
+      startTransition();
+    }
+    onSendMessage(message, attachments, selectedModel);
+  }, [isLanding, startTransition, onSendMessage]);
+
+  // Reset to landing when no messages
   useEffect(() => {
-    if (hasConversation && viewportRef.current) {
+    if (!hasMessages && !isTyping && isChatting) {
+      resetToLanding();
+    }
+  }, [hasMessages, isTyping, isChatting, resetToLanding]);
+
+  // Auto-scroll during chat
+  useEffect(() => {
+    if (isChatting && viewportRef.current) {
       const timer = setTimeout(() => {
         if (viewportRef.current) {
           viewportRef.current.scrollTo({
@@ -90,19 +109,78 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
       return () => clearTimeout(timer);
     }
-  }, [hasConversation, viewportRef]);
+  }, [isChatting, messages, isTyping, viewportRef]);
 
-  if (!hasConversation) {
+  // Landing State - Show centered input
+  if (isLanding) {
     return (
       <div className="flex flex-col flex-1 min-h-0 w-full relative bg-transparent">
         <PerplexityEmptyState 
-          onSendMessage={onSendMessage}
+          onSendMessage={handleSendMessageWithTransition}
           selectedModel={selectedModel}
         />
       </div>
     );
   }
 
+  // Transitioning State - Show animation
+  if (isTransitioning) {
+    return (
+      <div className="h-full flex flex-col relative bg-background/10 backdrop-blur-sm">
+        {/* Greeting fading up */}
+        <div className="absolute top-0 left-0 right-0 h-full flex items-center justify-center animate-greeting-fade-up pointer-events-none">
+          <PerplexityEmptyState 
+            onSendMessage={handleSendMessageWithTransition}
+            selectedModel={selectedModel}
+          />
+        </div>
+
+        {/* Chat area fading in */}
+        <div className="flex-1 overflow-hidden animate-chat-area-fade-in">
+          <div className="h-full animate-backdrop-fade-in">
+            <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
+              <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
+                {messages.map((msg) => (
+                  <ChatMessage 
+                    key={msg.id} 
+                    message={{ ...msg, timestamp: formatTimestamp(msg.timestamp) }}
+                    onOpenCanvas={onOpenCanvas}
+                    onCanvasDownload={onCanvasDownload}
+                    onCanvasPrint={onCanvasPrint}
+                    onToggleCanvasPreview={handleToggleCanvasPreview}
+                    isCanvasPreview={canvasPreviewMessages.has(msg.id)}
+                    isStreaming={false}
+                    streamingUpdates={[]}
+                    streamingSources={[]}
+                    streamingProgress={{ phase: '', progress: 0 }}
+                    stratixStreamingState={stratixStreamingState}
+                    alegeonStreamingState={alegeonStreamingState}
+                    onAlegeonFastForward={onAlegeonFastForward}
+                  />
+                ))}
+                {isTyping && <TypingIndicator />}
+              </div>
+              <div className="h-32" />
+            </ScrollArea>
+          </div>
+        </div>
+
+        {/* Input sliding down */}
+        <div className="absolute bottom-0 left-0 right-0 mb-20 animate-input-slide-down">
+          <div className="max-w-4xl mx-auto px-6 py-4">
+            <EnhancedChatInput 
+              onSendMessage={handleSendMessageWithTransition} 
+              isTyping={isTyping}
+              isCompact={true}
+              selectedModel={selectedModel}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Active Chat State - Normal chat interface
   return (
     <div className="h-full flex flex-col relative bg-background/10 backdrop-blur-sm">
       <div className="flex-1 overflow-hidden">
@@ -129,26 +207,24 @@ const ChatArea: React.FC<ChatAreaProps> = ({
               />
             )}
 
-            {messages.map((msg) => {
-              return (
-                <ChatMessage 
-                  key={msg.id} 
-                  message={{ ...msg, timestamp: formatTimestamp(msg.timestamp) }}
-                  onOpenCanvas={onOpenCanvas}
-                  onCanvasDownload={onCanvasDownload}
-                  onCanvasPrint={onCanvasPrint}
-                  onToggleCanvasPreview={handleToggleCanvasPreview}
-                  isCanvasPreview={canvasPreviewMessages.has(msg.id)}
-                  isStreaming={false}
-                  streamingUpdates={[]}
-                  streamingSources={[]}
-                  streamingProgress={{ phase: '', progress: 0 }}
-                  stratixStreamingState={stratixStreamingState}
-                  alegeonStreamingState={alegeonStreamingState}
-                  onAlegeonFastForward={onAlegeonFastForward}
-                />
-              );
-            })}
+            {messages.map((msg) => (
+              <ChatMessage 
+                key={msg.id} 
+                message={{ ...msg, timestamp: formatTimestamp(msg.timestamp) }}
+                onOpenCanvas={onOpenCanvas}
+                onCanvasDownload={onCanvasDownload}
+                onCanvasPrint={onCanvasPrint}
+                onToggleCanvasPreview={handleToggleCanvasPreview}
+                isCanvasPreview={canvasPreviewMessages.has(msg.id)}
+                isStreaming={false}
+                streamingUpdates={[]}
+                streamingSources={[]}
+                streamingProgress={{ phase: '', progress: 0 }}
+                stratixStreamingState={stratixStreamingState}
+                alegeonStreamingState={alegeonStreamingState}
+                onAlegeonFastForward={onAlegeonFastForward}
+              />
+            ))}
             {isTyping && <TypingIndicator />}
           </div>
           <div className="h-32" />
@@ -158,7 +234,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       <div className="absolute bottom-0 left-0 right-0 mb-20">
         <div className="max-w-4xl mx-auto px-6 py-4">
           <EnhancedChatInput 
-            onSendMessage={onSendMessage} 
+            onSendMessage={handleSendMessageWithTransition} 
             isTyping={isTyping}
             isCompact={true}
             selectedModel={selectedModel}
