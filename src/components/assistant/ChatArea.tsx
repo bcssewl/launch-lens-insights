@@ -79,16 +79,19 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     });
   }, []);
 
-  const hasConversation = messages.length > 1 || (messages.length === 1 && messages[0].sender === 'ai');
+  // Check if there's an actual conversation (not just user messages)
+  const hasConversation = messages.length > 0;
 
   // Handle the transition animation when first message is sent
   const handleSendMessageWithTransition = useCallback(
     (message: string, attachments?: any[], selectedModel?: string) => {
+      // Only trigger animation on first message when empty state is visible
       if (!hasStartedConversation && showEmptyState) {
+        console.log('Starting transition animation');
         setIsTransitioning(true);
         setHasStartedConversation(true);
         
-        // Start hiding the empty state immediately
+        // Start hiding the empty state after a brief delay to allow animation to start
         setTimeout(() => {
           setShowEmptyState(false);
         }, 100);
@@ -106,6 +109,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   // Reset states when conversation is cleared
   useEffect(() => {
     if (!hasConversation && !isTransitioning && !isTyping) {
+      console.log('Resetting to empty state');
       setShowEmptyState(true);
       setHasStartedConversation(false);
     }
@@ -126,8 +130,10 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     }
   }, [hasConversation, viewportRef]);
 
-  // Show empty state only when there's no conversation and we haven't started transitioning
-  if (showEmptyState && !hasConversation && !hasStartedConversation) {
+  // Show empty state when there's no conversation and we haven't started transitioning
+  // OR when we're still in transition but haven't hidden the empty state yet
+  if (showEmptyState && (!hasConversation || isTransitioning)) {
+    console.log('Showing empty state, isTransitioning:', isTransitioning);
     return (
       <div className="flex flex-col flex-1 min-h-0 w-full relative bg-transparent">
         <PerplexityEmptyState 
@@ -139,6 +145,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     );
   }
 
+  console.log('Showing chat interface');
   return (
     <div className="h-full flex flex-col relative bg-background/10 backdrop-blur-sm">
       <div className="flex-1 overflow-hidden">
@@ -186,14 +193,14 @@ const ChatArea: React.FC<ChatAreaProps> = ({
               );
             })}
             
-            {/* Only show typing indicator after transition is complete and we have a conversation */}
-            {isTyping && hasStartedConversation && !isTransitioning && <TypingIndicator />}
+            {/* Show typing indicator when typing and not transitioning */}
+            {isTyping && !isTransitioning && <TypingIndicator />}
           </div>
           <div className="h-32" />
         </ScrollArea>
       </div>
 
-      {/* Fixed input at bottom - only show after conversation has started */}
+      {/* Fixed input at bottom - show when conversation has started */}
       {hasStartedConversation && (
         <div className={`fixed left-0 right-0 bottom-20 transition-all duration-700 ease-in-out ${
           isTransitioning ? 'opacity-0 transform translate-y-8' : 'opacity-100 transform translate-y-0'
