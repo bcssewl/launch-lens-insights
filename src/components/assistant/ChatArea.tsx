@@ -64,7 +64,17 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   onAlegeonFastForward
 }) => {
   const [canvasPreviewMessages, setCanvasPreviewMessages] = useState<Set<string>>(new Set());
-  const { transitionState, startTransition, resetToLanding, isLanding, isTransitioning, isChatting } = useChatTransition();
+  const { 
+    transitionState, 
+    startTransition, 
+    resetToLanding, 
+    cleanup,
+    isLanding, 
+    isTransitioning, 
+    isSettling,
+    isChatting,
+    isAnimating
+  } = useChatTransition();
 
   const handleToggleCanvasPreview = useCallback((messageId: string) => {
     setCanvasPreviewMessages(prev => {
@@ -82,24 +92,39 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
   // Handle sending message with transition
   const handleSendMessageWithTransition = useCallback((message: string, attachments?: any[], selectedModel?: string) => {
+    // Only start transition if we're in landing state
     if (isLanding) {
       startTransition();
     }
     onSendMessage(message, attachments, selectedModel);
   }, [isLanding, startTransition, onSendMessage]);
 
-  // Reset to landing when no messages
+  // Reset to landing when no messages - but only if not animating
   useEffect(() => {
-    if (!hasMessages && !isTyping && isChatting) {
-      resetToLanding();
+    if (!hasMessages && !isTyping && isChatting && !isAnimating) {
+      // Add a small delay to prevent race conditions
+      const resetTimer = setTimeout(() => {
+        if (!hasMessages && !isTyping && isChatting && !isAnimating) {
+          resetToLanding();
+        }
+      }, 50);
+      
+      return () => clearTimeout(resetTimer);
     }
-  }, [hasMessages, isTyping, isChatting, resetToLanding]);
+  }, [hasMessages, isTyping, isChatting, isAnimating, resetToLanding]);
 
-  // Auto-scroll during chat
+  // Cleanup on unmount
   useEffect(() => {
-    if (isChatting && viewportRef.current) {
+    return () => {
+      cleanup();
+    };
+  }, [cleanup]);
+
+  // Auto-scroll during chat - but not during animation
+  useEffect(() => {
+    if (isChatting && !isAnimating && viewportRef.current) {
       const timer = setTimeout(() => {
-        if (viewportRef.current) {
+        if (viewportRef.current && isChatting && !isAnimating) {
           viewportRef.current.scrollTo({
             top: viewportRef.current.scrollHeight,
             behavior: 'smooth'
@@ -109,7 +134,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
       return () => clearTimeout(timer);
     }
-  }, [isChatting, messages, isTyping, viewportRef]);
+  }, [isChatting, isAnimating, messages, isTyping, viewportRef]);
 
   // Landing State - Show centered input
   if (isLanding) {
@@ -123,8 +148,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     );
   }
 
-  // Transitioning State - Show animation
-  if (isTransitioning) {
+  // Transitioning or Settling State - Show animation
+  if (isTransitioning || isSettling) {
     return (
       <div className="h-full flex flex-col relative bg-background/10 backdrop-blur-sm">
         {/* Greeting fading up */}
@@ -167,8 +192,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         <div className="fixed bottom-20 left-0 right-0 z-20 animate-input-slide-down">
           <div className="max-w-4xl mx-auto px-6 py-4">
             <EnhancedChatInput 
-              onSendMessage={handleSendMessageWithTransition} 
-              isTyping={isTyping}
+              onSendMessage={() => {}} // Disabled during animation
+              isTyping={true} // Show as disabled
               isCompact={true}
               selectedModel={selectedModel}
             />

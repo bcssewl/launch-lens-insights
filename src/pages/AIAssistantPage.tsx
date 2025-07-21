@@ -19,6 +19,7 @@ const AIAssistantPage: React.FC = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [selectedModel, setSelectedModel] = useState<string>('best');
   const [selectedResearchType, setSelectedResearchType] = useState<string>('quick_facts');
+  const [isProcessingMessage, setIsProcessingMessage] = useState(false);
   const { theme } = useTheme();
 
   const {
@@ -75,25 +76,40 @@ const AIAssistantPage: React.FC = () => {
   }, [isFullscreen]);
 
   const handleSendMessageWithSession = async (text: string, attachments?: any[], modelOverride?: string, researchType?: string) => {
-    const modelToUse = modelOverride || selectedModel;
-    const researchTypeToUse = researchType || selectedResearchType;
+    // Prevent multiple simultaneous message processing
+    if (isProcessingMessage) return;
+    
+    setIsProcessingMessage(true);
+    
+    try {
+      const modelToUse = modelOverride || selectedModel;
+      const researchTypeToUse = researchType || selectedResearchType;
 
-    if (!currentSessionId) {
-      const newSession = await createSession();
-      if (!newSession) {
-        console.error('AIAssistantPage: Failed to create new session');
-        return;
+      if (!currentSessionId) {
+        const newSession = await createSession();
+        if (!newSession) {
+          console.error('AIAssistantPage: Failed to create new session');
+          return;
+        }
+        
+        // Wait for session to be fully created before proceeding
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        handleSendMessage(text, undefined, modelToUse, researchTypeToUse, newSession.id);
+      } else {
+        handleSendMessage(text, undefined, modelToUse, researchTypeToUse);
       }
-      
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
-      handleSendMessage(text, undefined, modelToUse, researchTypeToUse, newSession.id);
-    } else {
-      handleSendMessage(text, undefined, modelToUse, researchTypeToUse);
+    } finally {
+      // Add a delay before allowing next message to prevent race conditions
+      setTimeout(() => {
+        setIsProcessingMessage(false);
+      }, 500);
     }
   };
 
   const handleClearConversationWithHistory = async () => {
+    if (isProcessingMessage) return;
+    
     handleClearConversation();
     if (currentSessionId) {
       await clearHistory();
@@ -101,6 +117,9 @@ const AIAssistantPage: React.FC = () => {
   };
 
   const handleSessionSelect = (sessionId: string) => {
+    // Prevent session changes during message processing
+    if (isProcessingMessage) return;
+    
     if (sessionId === '') {
       navigateToSession(null);
     } else {
