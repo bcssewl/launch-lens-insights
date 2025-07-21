@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import ChatMessage from '@/components/assistant/ChatMessage';
@@ -88,30 +87,32 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     });
   }, []);
 
-  const hasMessages = messages.length > 0;
+  // Check if we have real messages (not just the initial greeting)
+  const hasRealMessages = messages.length > 1 || (messages.length === 1 && messages[0].id !== 'initial');
 
   // Handle sending message with transition
   const handleSendMessageWithTransition = useCallback((message: string, attachments?: any[], selectedModel?: string) => {
-    // Only start transition if we're in landing state
-    if (isLanding) {
+    // Only start transition if we're in landing state AND don't have real messages
+    if (isLanding && !hasRealMessages) {
       startTransition();
     }
     onSendMessage(message, attachments, selectedModel);
-  }, [isLanding, startTransition, onSendMessage]);
+  }, [isLanding, hasRealMessages, startTransition, onSendMessage]);
 
-  // Reset to landing when no messages - but only if not animating
+  // Reset to landing when no real messages - but only if not animating and not settling
   useEffect(() => {
-    if (!hasMessages && !isTyping && isChatting && !isAnimating) {
+    if (!hasRealMessages && !isTyping && isChatting && !isAnimating && !isSettling) {
       // Add a small delay to prevent race conditions
       const resetTimer = setTimeout(() => {
-        if (!hasMessages && !isTyping && isChatting && !isAnimating) {
+        if (!hasRealMessages && !isTyping && isChatting && !isAnimating && !isSettling) {
+          console.log('ChatArea: Resetting to landing - no real messages');
           resetToLanding();
         }
-      }, 50);
+      }, 100);
       
       return () => clearTimeout(resetTimer);
     }
-  }, [hasMessages, isTyping, isChatting, isAnimating, resetToLanding]);
+  }, [hasRealMessages, isTyping, isChatting, isAnimating, isSettling, resetToLanding]);
 
   // Cleanup on unmount
   useEffect(() => {

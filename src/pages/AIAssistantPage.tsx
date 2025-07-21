@@ -26,6 +26,7 @@ const AIAssistantPage: React.FC = () => {
     currentSessionId,
     setCurrentSessionId,
     navigateToSession,
+    startNewChat,
     createSession,
     sessions,
     updateSessionTitle
@@ -85,7 +86,13 @@ const AIAssistantPage: React.FC = () => {
       const modelToUse = modelOverride || selectedModel;
       const researchTypeToUse = researchType || selectedResearchType;
 
-      if (!currentSessionId) {
+      // Check if we have any actual messages (not just the initial greeting)
+      const hasRealMessages = messages.length > 1 || (messages.length === 1 && messages[0].id !== 'initial');
+      
+      // If we're in a session but it has no real messages, create a new session
+      // OR if we have no session at all, create one
+      if (!currentSessionId || (currentSessionId && !hasRealMessages)) {
+        console.log('Creating new session for message - current session:', currentSessionId, 'has real messages:', hasRealMessages);
         const newSession = await createSession();
         if (!newSession) {
           console.error('AIAssistantPage: Failed to create new session');
@@ -97,6 +104,8 @@ const AIAssistantPage: React.FC = () => {
         
         handleSendMessage(text, undefined, modelToUse, researchTypeToUse, newSession.id);
       } else {
+        // Use existing session if it has messages
+        console.log('Using existing session with messages:', currentSessionId);
         handleSendMessage(text, undefined, modelToUse, researchTypeToUse);
       }
     } finally {
@@ -114,6 +123,8 @@ const AIAssistantPage: React.FC = () => {
     if (currentSessionId) {
       await clearHistory();
     }
+    // After clearing, start a new chat
+    startNewChat();
   };
 
   const handleSessionSelect = (sessionId: string) => {
@@ -121,7 +132,7 @@ const AIAssistantPage: React.FC = () => {
     if (isProcessingMessage) return;
     
     if (sessionId === '') {
-      navigateToSession(null);
+      startNewChat();
     } else {
       navigateToSession(sessionId);
     }

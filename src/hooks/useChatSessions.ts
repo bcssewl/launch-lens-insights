@@ -178,11 +178,18 @@ export const useChatSessions = () => {
     }
   };
 
+  const startNewChat = () => {
+    console.log('Starting new chat - clearing session');
+    setCurrentSessionId(null);
+    navigate('/dashboard/assistant', { replace: true });
+  };
+
   return {
     sessions,
     currentSessionId,
     setCurrentSessionId,
     navigateToSession,
+    startNewChat,
     loading,
     creating,
     createSession,
