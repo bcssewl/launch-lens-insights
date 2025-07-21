@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Search, Mic, Target, Globe, Paperclip } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -17,11 +18,13 @@ import { getConsultingPlaceholder } from '@/lib/geolocation';
 interface PerplexityEmptyStateProps {
   onSendMessage: (message: string, attachments?: any[], selectedModel?: string) => void;
   selectedModel: string;
+  isTransitioning?: boolean;
 }
 
 const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
   onSendMessage,
-  selectedModel: parentSelectedModel
+  selectedModel: parentSelectedModel,
+  isTransitioning = false
 }) => {
   const { primaryGreeting, assistanceMessage, isLoading: greetingLoading, userCountry } = useGreeting();
   const {
@@ -116,10 +119,14 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
 
   return (
     <TooltipProvider>
-      {/* Unified Container - combines background and content */}
+      {/* Unified Container - combines background and content with transition animations */}
       <div className="flex flex-col items-center justify-center min-h-[80vh] w-full max-w-3xl mx-auto px-6 py-12 text-center bg-transparent">
-        {/* Dynamic Greeting Section */}
-        <div className="mb-12">
+        {/* Dynamic Greeting Section with slide-up animation */}
+        <div className={`mb-12 transition-all duration-700 ease-in-out ${
+          isTransitioning 
+            ? 'transform -translate-y-16 opacity-0' 
+            : 'transform translate-y-0 opacity-100'
+        }`}>
           <div className="flex flex-col items-center mb-6">
             <h1 className="text-4xl font-light text-foreground tracking-tight mb-2">
               {greetingLoading ? 'Welcome' : primaryGreeting}
@@ -130,8 +137,12 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
           </div>
         </div>
 
-        {/* Input Area */}
-        <div className="w-full mb-12">
+        {/* Input Area with slide-down animation */}
+        <div className={`w-full mb-12 transition-all duration-700 ease-in-out ${
+          isTransitioning 
+            ? 'transform translate-y-[60vh]' 
+            : 'transform translate-y-0'
+        }`}>
           {/* Input Field Container */}
           <div className="relative w-full bg-background border border-border rounded-2xl px-6 py-3 shadow-md hover:shadow-lg transition-all duration-200 mb-3">
             {/* Sound wave visualization overlay */}
@@ -250,3 +261,4 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
 };
 
 export default PerplexityEmptyState;
+

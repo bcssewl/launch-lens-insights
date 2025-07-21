@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import ChatMessage from '@/components/assistant/ChatMessage';
@@ -62,6 +63,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   onAlegeonFastForward
 }) => {
   const [canvasPreviewMessages, setCanvasPreviewMessages] = useState<Set<string>>(new Set());
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [showEmptyState, setShowEmptyState] = useState(true);
 
   const handleToggleCanvasPreview = useCallback((messageId: string) => {
     setCanvasPreviewMessages(prev => {
@@ -76,6 +79,28 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   }, []);
 
   const hasConversation = messages.length > 1 || isTyping;
+
+  // Handle the transition animation when first message is sent
+  const handleSendMessageWithTransition = useCallback(
+    (message: string, attachments?: any[], selectedModel?: string) => {
+      if (!hasConversation && showEmptyState) {
+        setIsTransitioning(true);
+        // Start the transition animation
+        setTimeout(() => {
+          setShowEmptyState(false);
+        }, 300); // Small delay to allow input to slide down first
+      }
+      onSendMessage(message, attachments, selectedModel);
+    },
+    [hasConversation, showEmptyState, onSendMessage]
+  );
+
+  // Reset states when conversation is cleared
+  useEffect(() => {
+    if (!hasConversation && !isTransitioning) {
+      setShowEmptyState(true);
+    }
+  }, [hasConversation, isTransitioning]);
 
   useEffect(() => {
     if (hasConversation && viewportRef.current) {
@@ -92,12 +117,13 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     }
   }, [hasConversation, viewportRef]);
 
-  if (!hasConversation) {
+  if (showEmptyState && !hasConversation) {
     return (
       <div className="flex flex-col flex-1 min-h-0 w-full relative bg-transparent">
         <PerplexityEmptyState 
-          onSendMessage={onSendMessage}
+          onSendMessage={handleSendMessageWithTransition}
           selectedModel={selectedModel}
+          isTransitioning={isTransitioning}
         />
       </div>
     );
@@ -155,7 +181,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         </ScrollArea>
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 mb-20">
+      <div className={`absolute left-0 right-0 mb-20 transition-all duration-700 ease-in-out ${
+        isTransitioning ? 'bottom-0' : 'bottom-0'
+      }`}>
         <div className="max-w-4xl mx-auto px-6 py-4">
           <EnhancedChatInput 
             onSendMessage={onSendMessage} 
