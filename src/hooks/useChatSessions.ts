@@ -31,6 +31,10 @@ export const useChatSessions = () => {
     if (sessionParam && sessionParam !== currentSessionId) {
       console.log('Setting session from URL:', sessionParam);
       setCurrentSessionId(sessionParam);
+    } else if (!sessionParam && currentSessionId) {
+      // If no session in URL but we have a current session, clear it
+      console.log('No session in URL, clearing current session');
+      setCurrentSessionId(null);
     }
   }, [searchParams, currentSessionId]);
 

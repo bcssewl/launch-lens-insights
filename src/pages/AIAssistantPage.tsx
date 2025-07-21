@@ -89,10 +89,10 @@ const AIAssistantPage: React.FC = () => {
       // Check if we have any actual messages (not just the initial greeting)
       const hasRealMessages = messages.length > 1 || (messages.length === 1 && messages[0].id !== 'initial');
       
-      // If we're in a session but it has no real messages, create a new session
-      // OR if we have no session at all, create one
-      if (!currentSessionId || (currentSessionId && !hasRealMessages)) {
-        console.log('Creating new session for message - current session:', currentSessionId, 'has real messages:', hasRealMessages);
+      // If we have no session at all, create one
+      // If we're in a session but it has no real messages, and it's a fresh session, use it
+      if (!currentSessionId) {
+        console.log('Creating new session for message - no current session');
         const newSession = await createSession();
         if (!newSession) {
           console.error('AIAssistantPage: Failed to create new session');
@@ -104,8 +104,8 @@ const AIAssistantPage: React.FC = () => {
         
         handleSendMessage(text, undefined, modelToUse, researchTypeToUse, newSession.id);
       } else {
-        // Use existing session if it has messages
-        console.log('Using existing session with messages:', currentSessionId);
+        // Use existing session - the useMessages hook will handle loading history
+        console.log('Using existing session:', currentSessionId, 'has real messages:', hasRealMessages);
         handleSendMessage(text, undefined, modelToUse, researchTypeToUse);
       }
     } finally {
@@ -131,6 +131,7 @@ const AIAssistantPage: React.FC = () => {
     // Prevent session changes during message processing
     if (isProcessingMessage) return;
     
+    console.log('AIAssistantPage: Session selected:', sessionId);
     if (sessionId === '') {
       startNewChat();
     } else {
