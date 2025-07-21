@@ -19,14 +19,12 @@ const AIAssistantPage: React.FC = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [selectedModel, setSelectedModel] = useState<string>('best');
   const [selectedResearchType, setSelectedResearchType] = useState<string>('quick_facts');
-  const [isProcessingMessage, setIsProcessingMessage] = useState(false);
   const { theme } = useTheme();
 
   const {
     currentSessionId,
     setCurrentSessionId,
     navigateToSession,
-    startNewChat,
     createSession,
     sessions,
     updateSessionTitle
@@ -77,63 +75,34 @@ const AIAssistantPage: React.FC = () => {
   }, [isFullscreen]);
 
   const handleSendMessageWithSession = async (text: string, attachments?: any[], modelOverride?: string, researchType?: string) => {
-    // Prevent multiple simultaneous message processing
-    if (isProcessingMessage) return;
-    
-    setIsProcessingMessage(true);
-    
-    try {
-      const modelToUse = modelOverride || selectedModel;
-      const researchTypeToUse = researchType || selectedResearchType;
+    const modelToUse = modelOverride || selectedModel;
+    const researchTypeToUse = researchType || selectedResearchType;
 
-      // Check if we have any actual messages (not just the initial greeting)
-      const hasRealMessages = messages.length > 1 || (messages.length === 1 && messages[0].id !== 'initial');
-      
-      // If we have no session at all, create one
-      // If we're in a session but it has no real messages, and it's a fresh session, use it
-      if (!currentSessionId) {
-        console.log('Creating new session for message - no current session');
-        const newSession = await createSession();
-        if (!newSession) {
-          console.error('AIAssistantPage: Failed to create new session');
-          return;
-        }
-        
-        // Wait for session to be fully created before proceeding
-        await new Promise(resolve => setTimeout(resolve, 200));
-        
-        handleSendMessage(text, undefined, modelToUse, researchTypeToUse, newSession.id);
-      } else {
-        // Use existing session - the useMessages hook will handle loading history
-        console.log('Using existing session:', currentSessionId, 'has real messages:', hasRealMessages);
-        handleSendMessage(text, undefined, modelToUse, researchTypeToUse);
+    if (!currentSessionId) {
+      const newSession = await createSession();
+      if (!newSession) {
+        console.error('AIAssistantPage: Failed to create new session');
+        return;
       }
-    } finally {
-      // Add a delay before allowing next message to prevent race conditions
-      setTimeout(() => {
-        setIsProcessingMessage(false);
-      }, 500);
+      
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      handleSendMessage(text, undefined, modelToUse, researchTypeToUse, newSession.id);
+    } else {
+      handleSendMessage(text, undefined, modelToUse, researchTypeToUse);
     }
   };
 
   const handleClearConversationWithHistory = async () => {
-    if (isProcessingMessage) return;
-    
     handleClearConversation();
     if (currentSessionId) {
       await clearHistory();
     }
-    // After clearing, start a new chat
-    startNewChat();
   };
 
   const handleSessionSelect = (sessionId: string) => {
-    // Prevent session changes during message processing
-    if (isProcessingMessage) return;
-    
-    console.log('AIAssistantPage: Session selected:', sessionId);
     if (sessionId === '') {
-      startNewChat();
+      navigateToSession(null);
     } else {
       navigateToSession(sessionId);
     }

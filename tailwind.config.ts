@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -143,24 +142,7 @@ export default {
         marquee: {
           from: { transform: 'translateX(0)' },
           to: { transform: 'translateX(calc(-100% - var(--gap)))' }
-        },
-        // Chat Animation Keyframes
-        "input-slide-down": {
-          "0%": { transform: "translateY(-50vh)" },
-          "100%": { transform: "translateY(0)" },
-        },
-        "greeting-fade-up": {
-          "0%": { opacity: "1", transform: "translateY(0)" },
-          "100%": { opacity: "0", transform: "translateY(-20px)" },
-        },
-        "chat-area-fade-in": {
-          "0%": { opacity: "0", transform: "translateY(20px)" },
-          "100%": { opacity: "1", transform: "translateY(0)" },
-        },
-        "backdrop-fade-in": {
-          "0%": { opacity: "0" },
-          "100%": { opacity: "1" },
-        },
+        }
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -168,11 +150,6 @@ export default {
         "gradient": "gradient-animation 15s ease infinite",
         "pulse-glow": "pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
         marquee: 'marquee var(--duration) linear infinite',
-        // Chat Animations
-        "input-slide-down": "input-slide-down 400ms cubic-bezier(0.25, 0.46, 0.45, 0.94)",
-        "greeting-fade-up": "greeting-fade-up 300ms ease-out",
-        "chat-area-fade-in": "chat-area-fade-in 300ms ease-out 200ms both",
-        "backdrop-fade-in": "backdrop-fade-in 300ms ease-out 200ms both",
       },
     },
   },

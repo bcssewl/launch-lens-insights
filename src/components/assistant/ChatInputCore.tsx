@@ -69,7 +69,7 @@ const ChatInputCore: React.FC<ChatInputCoreProps> = ({
         onRemoveFile={onRemoveFile} 
       />
       
-      <form onSubmit={(e) => { e.preventDefault(); onSendMessage(); }} className="relative">
+      <div className="relative">
         {!isCompact && (
           <div className="absolute top-4 left-4 flex items-start pointer-events-none z-10">
             <Search className="h-5 w-5 text-muted-foreground mt-0.5" />
@@ -93,7 +93,7 @@ const ChatInputCore: React.FC<ChatInputCoreProps> = ({
         <div className={`absolute ${isCompact ? 'bottom-2 right-2' : 'top-2 right-2'} flex items-${isCompact ? 'end' : 'start'} space-x-1`}>
           {children}
         </div>
-      </form>
+      </div>
     </>
   );
 };
