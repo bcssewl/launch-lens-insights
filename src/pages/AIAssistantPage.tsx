@@ -179,6 +179,7 @@ const AIAssistantPage: React.FC = () => {
                   selectedModel={selectedModel}
                   selectedResearchType={selectedResearchType}
                   onResearchTypeChange={handleResearchTypeChange}
+                  onModelSelect={handleModelSelect}
                 />
               </div>
             </div>

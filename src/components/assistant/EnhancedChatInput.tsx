@@ -15,6 +15,7 @@ interface EnhancedChatInputProps {
   selectedModel: string;
   selectedResearchType?: string;
   onResearchTypeChange?: (type: string) => void;
+  onModelSelect?: (modelId: string) => void;
 }
 
 const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({ 
@@ -23,7 +24,8 @@ const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
   isCompact = false,
   selectedModel,
   selectedResearchType = 'quick_facts',
-  onResearchTypeChange
+  onResearchTypeChange,
+  onModelSelect
 }) => {
   const [inputValue, setInputValue] = useState('');
   const [showProjectModal, setShowProjectModal] = useState(false);
@@ -121,6 +123,7 @@ const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
                   onDatabaseSelect={handleDatabaseSelect}
                   onLocalFileSelect={handleLocalFileSelect}
                   onResearchTypeChange={onResearchTypeChange}
+                  onModelSelect={onModelSelect}
                 />
               </ChatInputCore>
             </div>
@@ -153,6 +156,7 @@ const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
               onDatabaseSelect={handleDatabaseSelect}
               onLocalFileSelect={handleLocalFileSelect}
               onResearchTypeChange={onResearchTypeChange}
+              onModelSelect={onModelSelect}
             />
           </ChatInputCore>
         )}

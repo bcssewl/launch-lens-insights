@@ -7,7 +7,6 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import QuickActionsDropdown from '@/components/assistant/QuickActionsDropdown';
 import ChatSessionsDropdown from '@/components/assistant/ChatSessionsDropdown';
-import ModelSelectionDropdown, { AIModel } from '@/components/assistant/ModelSelectionDropdown';
 import ResearchTypeSelector from '@/components/assistant/ResearchTypeSelector';
 import { Logo } from '@/components/icons';
 
@@ -35,10 +34,6 @@ const ChatSubheader: React.FC<ChatSubheaderProps> = ({
   onResearchTypeChange
 }) => {
   const { user, signOut } = useAuth();
-
-  const handleModelSelect = (model: AIModel) => {
-    onModelSelect(model.id);
-  };
 
   const handleLogout = async () => {
     await signOut();
@@ -101,10 +96,6 @@ const ChatSubheader: React.FC<ChatSubheaderProps> = ({
       
       {/* Control buttons moved to the far right */}
       <div className="flex items-center space-x-2">
-        <ModelSelectionDropdown
-          selectedModel={selectedModel}
-          onModelSelect={handleModelSelect}
-        />
         <QuickActionsDropdown 
           onDownloadChat={onDownloadChat}
           onClearConversation={onClearConversation}

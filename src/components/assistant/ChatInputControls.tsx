@@ -5,6 +5,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { ArrowRight, Send, Mic, Plus, Paperclip } from 'lucide-react';
 import AttachmentOptionsDropdown from './AttachmentOptionsDropdown';
 import ResearchTypeSelector from './ResearchTypeSelector';
+import ModelSelectionDropdown, { AIModel } from './ModelSelectionDropdown';
 
 interface ChatInputControlsProps {
   isCompact: boolean;
@@ -19,6 +20,7 @@ interface ChatInputControlsProps {
   onDatabaseSelect: () => void;
   onLocalFileSelect: () => void;
   onResearchTypeChange?: (type: string) => void;
+  onModelSelect?: (modelId: string) => void;
 }
 
 const ChatInputControls: React.FC<ChatInputControlsProps> = ({
@@ -34,12 +36,19 @@ const ChatInputControls: React.FC<ChatInputControlsProps> = ({
   onDatabaseSelect,
   onLocalFileSelect,
   onResearchTypeChange,
+  onModelSelect,
 }) => {
   const iconSize = isCompact ? 'h-3 w-3' : 'h-4 w-4';
   const buttonSize = isCompact ? 'h-8 w-8' : 'h-10 w-10';
 
   // Show research type selector only for algeon model
   const showResearchSelector = selectedModel === 'algeon' && onResearchTypeChange;
+
+  const handleModelSelect = (model: AIModel) => {
+    if (onModelSelect) {
+      onModelSelect(model.id);
+    }
+  };
 
   return (
     <>
@@ -56,6 +65,11 @@ const ChatInputControls: React.FC<ChatInputControlsProps> = ({
           <Paperclip className={iconSize} />
         </Button>
       </AttachmentOptionsDropdown>
+      
+      <ModelSelectionDropdown
+        selectedModel={selectedModel}
+        onModelSelect={handleModelSelect}
+      />
       
       {showResearchSelector && (
         <ResearchTypeSelector
