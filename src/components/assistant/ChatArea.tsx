@@ -95,7 +95,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
   if (!hasConversation) {
     return (
-      <div className="h-full flex flex-col bg-transparent">
+      <div className="h-full flex flex-col bg-transparent relative">
         <div className="flex-1 flex flex-col justify-center">
           <PerplexityEmptyState 
             onSendMessage={onSendMessage}
@@ -103,7 +103,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           />
         </div>
         
-        <div className="flex-shrink-0 border-t bg-background/50 backdrop-blur-sm">
+        {/* Fixed input bar at bottom */}
+        <div className="absolute bottom-0 left-0 right-0 border-t bg-background/50 backdrop-blur-sm z-10">
           <div className="max-w-4xl mx-auto px-6 py-4">
             <EnhancedChatInput 
               onSendMessage={onSendMessage} 
@@ -118,7 +119,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   }
 
   return (
-    <div className="h-full flex flex-col bg-background/10 backdrop-blur-sm">
+    <div className="h-full flex flex-col bg-background/10 backdrop-blur-sm relative">
       <div className="flex-1 min-h-0 overflow-hidden">
         <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
           <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
@@ -165,13 +166,13 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             })}
             {isTyping && <TypingIndicator />}
           </div>
-          {/* Add bottom padding to prevent content from being hidden behind input */}
+          {/* Add bottom padding to prevent content from being hidden behind fixed input */}
           <div className="h-32" />
         </ScrollArea>
       </div>
 
       {/* Fixed input bar at bottom */}
-      <div className="flex-shrink-0 border-t bg-background/50 backdrop-blur-sm">
+      <div className="absolute bottom-0 left-0 right-0 border-t bg-background/50 backdrop-blur-sm z-10">
         <div className="max-w-4xl mx-auto px-6 py-4">
           <EnhancedChatInput 
             onSendMessage={onSendMessage} 

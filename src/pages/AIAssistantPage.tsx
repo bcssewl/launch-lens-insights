@@ -148,7 +148,7 @@ const AIAssistantPage: React.FC = () => {
               </div>
             )}
             
-            <div className="flex-1 min-h-0 bg-transparent">
+            <div className="flex-1 min-h-0 bg-transparent relative">
               <ChatArea 
                 messages={messages} 
                 isTyping={isTyping} 
