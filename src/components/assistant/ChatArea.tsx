@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import ChatMessage from '@/components/assistant/ChatMessage';
@@ -9,17 +8,7 @@ import StreamingProgress from '@/components/assistant/StreamingProgress';
 import StreamingOverlay from '@/components/assistant/StreamingOverlay';
 import StratixStreamingOverlay from '@/components/assistant/StratixStreamingOverlay';
 import AlegeonStreamingOverlay from '@/components/assistant/AlegeonStreamingOverlay';
-
-interface Message {
-  id: string;
-  content: string;
-  role: 'user' | 'assistant';
-  timestamp: Date;
-  attachments?: any[];
-  modelUsed?: string;
-  thinking?: string;
-  citations?: any[];
-}
+import { Message } from '@/constants/aiAssistant';
 
 interface StreamingState {
   isStreaming: boolean;
@@ -33,6 +22,11 @@ interface StratixStreamingState {
   progress?: number;
   status?: string;
   error?: string;
+  currentPhase?: string;
+  overallProgress?: number;
+  activeAgents?: any[];
+  discoveredSources?: any[];
+  partialText?: string;
 }
 
 interface ChatAreaProps {
@@ -114,6 +108,15 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
   const hasMessages = messages.length > 0;
 
+  // Convert Message to ChatMessage format
+  const convertToChomMessage = (message: Message) => ({
+    id: message.id,
+    text: message.text,
+    sender: message.sender,
+    timestamp: typeof message.timestamp === 'string' ? message.timestamp : message.timestamp.toLocaleTimeString(),
+    metadata: message.metadata
+  });
+
   return (
     <div className="h-full flex flex-col relative bg-background/10 backdrop-blur-sm">
       {/* Chat Messages Area - takes all available space above input */}
@@ -139,7 +142,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                 {messages.map((message, index) => (
                   <ChatMessage
                     key={`${message.id}-${index}`}
-                    message={message}
+                    message={convertToChomMessage(message)}
                     onOpenCanvas={onOpenCanvas}
                   />
                 ))}
@@ -172,26 +175,23 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       </div>
 
       {/* Streaming Overlays */}
-      {showStreamingIndicator && streamingProgress && (
+      {streamingState?.isStreaming && (
         <StreamingProgress
-          current={streamingProgress.current}
-          total={streamingProgress.total}
-          status={streamingProgress.status}
+          currentPhase={streamingState.status || 'Processing...'}
+          progress={streamingState.progress || 0}
+          discoveredSources={[]}
         />
       )}
 
-      {streamingState?.isStreaming && (
-        <StreamingOverlay streamingState={streamingState} />
-      )}
-
       {stratixStreamingState?.isStreaming && (
-        <StratixStreamingOverlay streamingState={stratixStreamingState} />
+        <StratixStreamingOverlay
+          streamingState={stratixStreamingState}
+        />
       )}
 
       {alegeonStreamingState?.isStreaming && (
         <AlegeonStreamingOverlay 
           streamingState={alegeonStreamingState}
-          onFastForward={onAlegeonFastForward}
         />
       )}
     </div>

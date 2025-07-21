@@ -22,7 +22,7 @@ interface FullscreenChatLayoutProps {
     messageId: string | null;
     content: string;
   };
-  onOpenCanvas?: (messageId: string, content: string) => void;
+  onOpenCanvas?: (content: string) => void;
   onCloseCanvas?: () => void;
   onCanvasDownload?: () => void;
   onCanvasPrint?: () => void;
@@ -81,13 +81,12 @@ const FullscreenChatLayout: React.FC<FullscreenChatLayoutProps> = ({
           messages={messages}
           isTyping={isTyping}
           viewportRef={viewportRef}
-          onSendMessage={onSendMessage}
+          onSendMessage={(text) => onSendMessage(text)}
           selectedModel={selectedModel}
-          canvasState={canvasState}
-          onOpenCanvas={onOpenCanvas}
-          onCloseCanvas={onCloseCanvas}
-          onCanvasDownload={onCanvasDownload}
-          onCanvasPrint={onCanvasPrint}
+          onOpenCanvas={onOpenCanvas || (() => {})}
+          onCloseCanvas={onCloseCanvas || (() => {})}
+          onCanvasDownload={onCanvasDownload || (() => {})}
+          onCanvasPrint={onCanvasPrint || (() => {})}
           streamingState={streamingState}
         />
       </div>

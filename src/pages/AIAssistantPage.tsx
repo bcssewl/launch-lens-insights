@@ -152,14 +152,14 @@ const AIAssistantPage: React.FC = () => {
           viewportRef={viewportRef} 
           isConfigured={isConfigured} 
           currentSessionId={currentSessionId} 
-          onSendMessage={handleSendMessageWithSession} 
+          onSendMessage={(message: string) => handleSendMessageWithSession(message)} 
           onDownloadChat={handleDownloadChat} 
           onClearConversation={handleClearConversationWithHistory} 
           onSessionSelect={handleSessionSelect} 
           onToggleFullscreen={toggleFullscreen}
           selectedModel={selectedModel}
           canvasState={canvasState} 
-          onOpenCanvas={handleOpenCanvas} 
+          onOpenCanvas={(content: string) => handleOpenCanvas('', content)} 
           onCloseCanvas={handleCloseCanvas} 
           onCanvasDownload={handleCanvasDownload} 
           onCanvasPrint={handleCanvasPrint}
@@ -200,7 +200,7 @@ const AIAssistantPage: React.FC = () => {
               viewportRef={viewportRef} 
               onSendMessage={handleSendMessageWithSession}
               selectedModel={selectedModel}
-              onOpenCanvas={handleOpenCanvas} 
+              onOpenCanvas={(content: string) => handleOpenCanvas('', content)} 
               onCloseCanvas={handleCloseCanvas} 
               onCanvasDownload={handleCanvasDownload} 
               onCanvasPrint={handleCanvasPrint}
