@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import DashboardLayout from '@/layouts/DashboardLayout';
 import { FloatingElements } from '@/components/landing/FloatingElements';
 import ChatArea from '@/components/assistant/ChatArea';
 import CanvasView from '@/components/assistant/CanvasView';
@@ -129,17 +130,17 @@ const AIAssistantPage: React.FC = () => {
 
   if (isLoadingHistory) {
     return (
-      <div className="min-h-screen flex w-full apple-hero relative">
-        <FloatingElements />
-        <ReasoningProvider>
-          <div className="flex-1 flex items-center justify-center">
+      <DashboardLayout>
+        <div className="flex-1 flex items-center justify-center relative">
+          <FloatingElements />
+          <ReasoningProvider>
             <div className="text-center">
               <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
               <p className="text-muted-foreground">Loading chat session...</p>
             </div>
-          </div>
-        </ReasoningProvider>
-      </div>
+          </ReasoningProvider>
+        </div>
+      </DashboardLayout>
     );
   }
 
@@ -170,69 +171,71 @@ const AIAssistantPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col w-full apple-hero relative">
-      <FloatingElements />
-      
-      <ReasoningProvider>
-        <div className="flex-1 flex flex-col bg-transparent">
-          {!isMobile && (
-            <div className="flex-shrink-0 bg-transparent">
-              <ChatSubheader 
-                isConfigured={isConfigured} 
-                currentSessionId={currentSessionId} 
-                isFullscreen={isFullscreen} 
-                onToggleFullscreen={toggleFullscreen} 
-                onDownloadChat={handleDownloadChat} 
-                onClearConversation={handleClearConversationWithHistory} 
-                onSessionSelect={handleSessionSelect}
+    <DashboardLayout>
+      <div className="flex-1 flex flex-col relative">
+        <FloatingElements />
+        
+        <ReasoningProvider>
+          <div className="flex-1 flex flex-col bg-transparent">
+            {!isMobile && (
+              <div className="flex-shrink-0 bg-transparent">
+                <ChatSubheader 
+                  isConfigured={isConfigured} 
+                  currentSessionId={currentSessionId} 
+                  isFullscreen={isFullscreen} 
+                  onToggleFullscreen={toggleFullscreen} 
+                  onDownloadChat={handleDownloadChat} 
+                  onClearConversation={handleClearConversationWithHistory} 
+                  onSessionSelect={handleSessionSelect}
+                  selectedModel={selectedModel}
+                  onModelSelect={handleModelSelect}
+                  selectedResearchType={selectedResearchType}
+                  onResearchTypeChange={handleResearchTypeChange}
+                />
+              </div>
+            )}
+            
+            <div className="flex-1 min-h-0 bg-transparent">
+              <ChatArea 
+                messages={messages} 
+                isTyping={isTyping} 
+                viewportRef={viewportRef} 
+                onSendMessage={handleSendMessageWithSession}
                 selectedModel={selectedModel}
-                onModelSelect={handleModelSelect}
-                selectedResearchType={selectedResearchType}
-                onResearchTypeChange={handleResearchTypeChange}
+                onOpenCanvas={handleOpenCanvas} 
+                onCloseCanvas={handleCloseCanvas} 
+                onCanvasDownload={handleCanvasDownload} 
+                onCanvasPrint={handleCanvasPrint}
+                streamingState={streamingState}
+                stratixStreamingState={stratixStreamingState}
+                alegeonStreamingState={alegeonStreamingStateV2}
+                onAlegeonFastForward={fastForward}
               />
             </div>
-          )}
-          
-          <div className="flex-1 min-h-0 bg-transparent">
-            <ChatArea 
-              messages={messages} 
-              isTyping={isTyping} 
-              viewportRef={viewportRef} 
-              onSendMessage={handleSendMessageWithSession}
-              selectedModel={selectedModel}
-              onOpenCanvas={handleOpenCanvas} 
-              onCloseCanvas={handleCloseCanvas} 
-              onCanvasDownload={handleCanvasDownload} 
-              onCanvasPrint={handleCanvasPrint}
-              streamingState={streamingState}
-              stratixStreamingState={stratixStreamingState}
-              alegeonStreamingState={alegeonStreamingStateV2}
-              onAlegeonFastForward={fastForward}
-            />
           </div>
-        </div>
 
-        <CanvasView 
-          isOpen={canvasState.isOpen} 
-          onClose={handleCloseCanvas} 
-          content={editedCanvasContent} 
-          title="AI Report" 
-          onDownload={handleCanvasDownload} 
-          onPrint={handleCanvasPdfDownload} 
-          messages={messages} 
-          isTyping={isTyping} 
-          viewportRef={viewportRef} 
-          onSendMessage={handleSendMessageWithSession}
-          selectedModel={selectedModel}
-          canvasState={canvasState} 
-          onOpenCanvas={handleOpenCanvas} 
-          onCloseCanvas={handleCloseCanvas} 
-          onCanvasDownload={handleCanvasDownload} 
-          onCanvasPrint={handleCanvasPdfDownload} 
-          onContentUpdate={handleCanvasContentUpdate} 
-        />
-      </ReasoningProvider>
-    </div>
+          <CanvasView 
+            isOpen={canvasState.isOpen} 
+            onClose={handleCloseCanvas} 
+            content={editedCanvasContent} 
+            title="AI Report" 
+            onDownload={handleCanvasDownload} 
+            onPrint={handleCanvasPdfDownload} 
+            messages={messages} 
+            isTyping={isTyping} 
+            viewportRef={viewportRef} 
+            onSendMessage={handleSendMessageWithSession}
+            selectedModel={selectedModel}
+            canvasState={canvasState} 
+            onOpenCanvas={handleOpenCanvas} 
+            onCloseCanvas={handleCloseCanvas} 
+            onCanvasDownload={handleCanvasDownload} 
+            onCanvasPrint={handleCanvasPdfDownload} 
+            onContentUpdate={handleCanvasContentUpdate} 
+          />
+        </ReasoningProvider>
+      </div>
+    </DashboardLayout>
   );
 };
 
