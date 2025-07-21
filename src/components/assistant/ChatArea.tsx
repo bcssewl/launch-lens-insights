@@ -79,7 +79,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     });
   }, []);
 
-  const hasConversation = messages.length > 1 || (messages.length === 1 && messages[0].role === 'assistant');
+  const hasConversation = messages.length > 1 || (messages.length === 1 && messages[0].sender === 'ai');
 
   // Handle the transition animation when first message is sent
   const handleSendMessageWithTransition = useCallback(
