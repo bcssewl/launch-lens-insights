@@ -5,6 +5,7 @@ import { FloatingElements } from '@/components/landing/FloatingElements';
 import ChatArea from '@/components/assistant/ChatArea';
 import CanvasView from '@/components/assistant/CanvasView';
 import ChatSubheader from '@/components/assistant/ChatSubheader';
+import EnhancedChatInput from '@/components/assistant/EnhancedChatInput';
 import { ReasoningProvider } from '@/contexts/ReasoningContext';
 import { useChatSessions } from '@/hooks/useChatSessions';
 import { useChatHistory } from '@/hooks/useChatHistory';
@@ -125,6 +126,8 @@ const AIAssistantPage: React.FC = () => {
     );
   }
 
+  const hasConversation = messages.length > 1 || isTyping;
+
   return (
     <DashboardLayout>
       <div className="h-full flex flex-col relative">
@@ -164,6 +167,18 @@ const AIAssistantPage: React.FC = () => {
                 alegeonStreamingState={alegeonStreamingStateV2}
                 onAlegeonFastForward={fastForward}
               />
+            </div>
+
+            {/* Fixed input bar at bottom of screen */}
+            <div className="fixed bottom-0 left-0 right-0 border-t bg-background/50 backdrop-blur-sm z-50">
+              <div className="max-w-4xl mx-auto px-6 py-4">
+                <EnhancedChatInput 
+                  onSendMessage={handleSendMessageWithSession} 
+                  isTyping={isTyping}
+                  isCompact={hasConversation}
+                  selectedModel={selectedModel}
+                />
+              </div>
             </div>
           </div>
 
