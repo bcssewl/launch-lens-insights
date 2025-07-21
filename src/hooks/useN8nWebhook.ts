@@ -124,6 +124,34 @@ export const useN8nWebhook = () => {
           console.warn('Empty response received from AI service:', data);
           return "I apologize, but I didn't receive a proper response. Please try asking your question again.";
         }
+
+        // Save the complete conversation to history if sessionId is provided
+        if (sessionId) {
+          try {
+            const conversationEntry = `USER: ${message}\n\nAI: ${responseText}`;
+            
+            // Use the chat history hook to save the conversation
+            const { data: historyData, error: historyError } = await supabase
+              .from('n8n_chat_history')
+              .insert([
+                {
+                  session_id: sessionId,
+                  message: conversationEntry,
+                  client_message_id: clientMessageId || null,
+                }
+              ])
+              .select()
+              .single();
+
+            if (historyError) {
+              console.error('Error saving conversation to history:', historyError);
+            } else {
+              console.log('Conversation saved to history:', historyData);
+            }
+          } catch (historyError) {
+            console.error('Error saving conversation:', historyError);
+          }
+        }
         
         return responseText;
       } catch (error: any) {

@@ -10,6 +10,44 @@ import { v4 as uuidv4 } from 'uuid';
 import type { StratixStreamingState } from '@/types/stratixStreaming';
 import type { AlegeonStreamingStateV2 } from '@/hooks/useAlegeonStreamingV2';
 
+// Helper function to parse messages that contain both user and AI content
+const parseMessageContent = (content: string, originalId: string, timestamp: Date): Message[] => {
+  const messages: Message[] = [];
+  
+  // Split by USER: and AI: prefixes
+  const parts = content.split(/(USER:|AI:)/);
+  let currentSender: 'user' | 'ai' | null = null;
+  
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i].trim();
+    
+    if (part === 'USER:') {
+      currentSender = 'user';
+    } else if (part === 'AI:') {
+      currentSender = 'ai';
+    } else if (part && currentSender) {
+      messages.push({
+        id: `${originalId}-${messages.length}`,
+        text: part.trim(),
+        sender: currentSender,
+        timestamp: timestamp,
+      });
+    }
+  }
+  
+  // If no prefixes found, treat as AI message (backward compatibility)
+  if (messages.length === 0 && content.trim()) {
+    messages.push({
+      id: originalId,
+      text: content.trim(),
+      sender: 'ai',
+      timestamp: timestamp,
+    });
+  }
+  
+  return messages;
+};
+
 export const useMessages = (sessionId: string | null, updateSessionTitle?: (sessionId: string, title: string) => void, currentTitle?: string) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
@@ -38,14 +76,20 @@ export const useMessages = (sessionId: string | null, updateSessionTitle?: (sess
     if (sessionId && !isLoadingHistory) {
       if (history.length > 0) {
         console.log('useMessages: Loading messages from history');
-        // Convert history to messages format
-        const historyMessages: Message[] = history.map(item => ({
-          id: item.id,
-          text: item.message,
-          sender: 'ai', // Assuming history messages are from AI
-          timestamp: new Date(item.created_at),
-        }));
-        setMessages(historyMessages);
+        // Parse all historical messages to extract user and AI parts
+        const allMessages: Message[] = [];
+        
+        history.forEach(item => {
+          const parsedMessages = parseMessageContent(
+            item.message, 
+            item.id, 
+            new Date(item.created_at)
+          );
+          allMessages.push(...parsedMessages);
+        });
+        
+        console.log('useMessages: Parsed messages:', allMessages.length);
+        setMessages(allMessages);
       } else {
         console.log('useMessages: No history found, showing greeting');
         // Show greeting for empty sessions
@@ -74,14 +118,14 @@ export const useMessages = (sessionId: string | null, updateSessionTitle?: (sess
     const timestamp = new Date();
     const targetSessionId = sessionOverride || sessionId;
 
-    // Optimistically add message to the state
-    const newMessage: Message = {
+    // Optimistically add user message to the state
+    const newUserMessage: Message = {
       id: messageId,
       text: messageContent,
       sender: 'user',
       timestamp: timestamp,
     };
-    setMessages(prev => [...prev, newMessage]);
+    setMessages(prev => [...prev, newUserMessage]);
 
     try {
       // Send message to n8n webhook and save to history
@@ -90,6 +134,15 @@ export const useMessages = (sessionId: string | null, updateSessionTitle?: (sess
       if (!response) {
         throw new Error('Failed to send message to n8n');
       }
+
+      // Add AI response to messages
+      const aiMessage: Message = {
+        id: `${messageId}-ai`,
+        text: response,
+        sender: 'ai',
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, aiMessage]);
 
       // Generate title if this is the first real message in the session
       if (messages.length <= 1 && targetSessionId && updateSessionTitle) {
