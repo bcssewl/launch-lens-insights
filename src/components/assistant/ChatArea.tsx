@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import ChatMessage from '@/components/assistant/ChatMessage';
@@ -94,18 +95,31 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
   if (!hasConversation) {
     return (
-      <div className="flex flex-col flex-1 min-h-0 w-full relative bg-transparent">
-        <PerplexityEmptyState 
-          onSendMessage={onSendMessage}
-          selectedModel={selectedModel}
-        />
+      <div className="h-full flex flex-col bg-transparent">
+        <div className="flex-1 flex flex-col justify-center">
+          <PerplexityEmptyState 
+            onSendMessage={onSendMessage}
+            selectedModel={selectedModel}
+          />
+        </div>
+        
+        <div className="flex-shrink-0 border-t bg-background/50 backdrop-blur-sm">
+          <div className="max-w-4xl mx-auto px-6 py-4">
+            <EnhancedChatInput 
+              onSendMessage={onSendMessage} 
+              isTyping={isTyping}
+              isCompact={false}
+              selectedModel={selectedModel}
+            />
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="h-full flex flex-col relative bg-background/10 backdrop-blur-sm">
-      <div className="flex-1 overflow-hidden">
+    <div className="h-full flex flex-col bg-background/10 backdrop-blur-sm">
+      <div className="flex-1 min-h-0 overflow-hidden">
         <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
           <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
             {streamingState?.error && (
@@ -151,11 +165,13 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             })}
             {isTyping && <TypingIndicator />}
           </div>
+          {/* Add bottom padding to prevent content from being hidden behind input */}
           <div className="h-32" />
         </ScrollArea>
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 mb-20">
+      {/* Fixed input bar at bottom */}
+      <div className="flex-shrink-0 border-t bg-background/50 backdrop-blur-sm">
         <div className="max-w-4xl mx-auto px-6 py-4">
           <EnhancedChatInput 
             onSendMessage={onSendMessage} 

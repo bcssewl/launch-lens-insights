@@ -112,7 +112,7 @@ const AIAssistantPage: React.FC = () => {
   if (isLoadingHistory) {
     return (
       <DashboardLayout>
-        <div className="flex-1 flex items-center justify-center relative">
+        <div className="h-full flex items-center justify-center relative">
           <FloatingElements />
           <ReasoningProvider>
             <div className="text-center">
@@ -127,11 +127,11 @@ const AIAssistantPage: React.FC = () => {
 
   return (
     <DashboardLayout>
-      <div className="flex-1 flex flex-col relative">
+      <div className="h-full flex flex-col relative">
         <FloatingElements />
         
         <ReasoningProvider>
-          <div className="flex-1 flex flex-col bg-transparent">
+          <div className="h-full flex flex-col bg-transparent">
             {!isMobile && (
               <div className="flex-shrink-0 bg-transparent">
                 <ChatSubheader 
