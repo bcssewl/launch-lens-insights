@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarRail, useSidebar } from "@/components/ui/sidebar";
@@ -44,6 +43,13 @@ export const AppSidebar: React.FC = () => {
       loadChatSessions();
     }
   }, [user]);
+
+  // Ensure sidebar is open by default on desktop
+  useEffect(() => {
+    if (!isMobile && state === 'collapsed') {
+      setOpen(true);
+    }
+  }, [isMobile, state, setOpen]);
 
   const loadProfile = async () => {
     if (!user) return;
@@ -122,31 +128,6 @@ export const AppSidebar: React.FC = () => {
     await signOut();
   };
 
-  // Handle hover expand/collapse functionality
-  const handleMouseEnter = () => {
-    if (collapseTimer) {
-      clearTimeout(collapseTimer);
-      setCollapseTimer(null);
-    }
-    setOpen(true);
-  };
-
-  const handleMouseLeave = () => {
-    const timer = setTimeout(() => {
-      setOpen(false);
-    }, 2000);
-    setCollapseTimer(timer);
-  };
-
-  // Clean up timer on unmount
-  useEffect(() => {
-    return () => {
-      if (collapseTimer) {
-        clearTimeout(collapseTimer);
-      }
-    };
-  }, [collapseTimer]);
-
   // Helper function to check if a chat session is currently active
   const isActiveChatSession = (sessionId: string) => {
     const urlParams = new URLSearchParams(location.search);
@@ -154,160 +135,156 @@ export const AppSidebar: React.FC = () => {
   };
 
   return (
-    <div className="relative">
-      <Sidebar 
-        collapsible="icon" 
-        className="border-r border-border-subtle bg-surface" 
-        onMouseEnter={handleMouseEnter} 
-        onMouseLeave={handleMouseLeave}
-      >
-        <SidebarHeader className="p-4 bg-surface border-b border-border-subtle">
-          <div className="flex items-center justify-center group-data-[collapsible=icon]:justify-center px-3">
-            <Logo />
-          </div>
-        </SidebarHeader>
-        
-        <SidebarContent className="flex-grow bg-surface">
-          {/* Main navigation items */}
-          <SidebarGroup>
-            <SidebarGroupLabel className="group-data-[collapsible=icon]:sr-only px-2 text-xs font-medium text-text-secondary/70">
-              Navigation
-            </SidebarGroupLabel>
-            <SidebarGroupContent className="px-2 group-data-[collapsible=icon]:px-1">
-              <SidebarMenu>
-                {mainNavItems.map(item => (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton 
-                      asChild 
-                      isActive={location.pathname === item.href} 
-                      tooltip={item.label} 
-                      className="group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 text-text-secondary hover:text-text-primary hover:bg-surface-elevated data-[active=true]:text-primary data-[active=true]:bg-surface-elevated transition-colors"
-                    >
-                      <Link to={item.href} className="flex items-center gap-3 px-3 py-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 group-data-[collapsible=icon]:gap-0">
-                        <item.icon className="h-5 w-5 flex-shrink-0" />
-                        <span className="group-data-[collapsible=icon]:sr-only">{item.label}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-                
-                {/* Search Button */}
-                <SidebarMenuItem>
+    <Sidebar 
+      collapsible="icon" 
+      className="border-r border-border-subtle bg-surface z-50" 
+      defaultOpen={true}
+    >
+      <SidebarHeader className="p-4 bg-surface border-b border-border-subtle">
+        <div className="flex items-center justify-center group-data-[collapsible=icon]:justify-center px-3">
+          <Logo />
+        </div>
+      </SidebarHeader>
+      
+      <SidebarContent className="flex-grow bg-surface">
+        {/* Main navigation items */}
+        <SidebarGroup>
+          <SidebarGroupLabel className="group-data-[collapsible=icon]:sr-only px-2 text-xs font-medium text-text-secondary/70">
+            Navigation
+          </SidebarGroupLabel>
+          <SidebarGroupContent className="px-2 group-data-[collapsible=icon]:px-1">
+            <SidebarMenu>
+              {mainNavItems.map(item => (
+                <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton 
-                    onClick={() => setIsSearchOpen(true)} 
-                    tooltip="Search Chats (Ctrl+K)" 
-                    className="group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 text-text-secondary hover:text-text-primary hover:bg-surface-elevated transition-colors cursor-pointer flex items-center gap-3 px-3 py-2 group-data-[collapsible=icon]:gap-0"
+                    asChild 
+                    isActive={location.pathname === item.href} 
+                    tooltip={item.label} 
+                    className="group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 text-text-secondary hover:text-text-primary hover:bg-surface-elevated data-[active=true]:text-primary data-[active=true]:bg-surface-elevated transition-colors"
                   >
-                    <Search className="h-5 w-5 flex-shrink-0" />
-                    <span className="group-data-[collapsible=icon]:sr-only">Search Chats</span>
+                    <Link to={item.href} className="flex items-center gap-3 px-3 py-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 group-data-[collapsible=icon]:gap-0">
+                      <item.icon className="h-5 w-5 flex-shrink-0" />
+                      <span className="group-data-[collapsible=icon]:sr-only">{item.label}</span>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+              ))}
+              
+              {/* Search Button */}
+              <SidebarMenuItem>
+                <SidebarMenuButton 
+                  onClick={() => setIsSearchOpen(true)} 
+                  tooltip="Search Chats (Ctrl+K)" 
+                  className="group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 text-text-secondary hover:text-text-primary hover:bg-surface-elevated transition-colors cursor-pointer flex items-center gap-3 px-3 py-2 group-data-[collapsible=icon]:gap-0"
+                >
+                  <Search className="h-5 w-5 flex-shrink-0" />
+                  <span className="group-data-[collapsible=icon]:sr-only">Search Chats</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
 
-          {/* Chat Search Modal */}
-          <ChatSearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+        {/* Chat Search Modal */}
+        <ChatSearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
 
-          {/* Chats Section */}
-          <Collapsible open={isChatsOpen} onOpenChange={setIsChatsOpen}>
-            <SidebarGroup>
-              <CollapsibleTrigger asChild>
-                <SidebarGroupLabel className="group-data-[collapsible=icon]:sr-only px-2 text-xs font-medium text-text-secondary/70 cursor-pointer hover:text-text-secondary flex items-center justify-between">
-                  Chats
-                  <ChevronDown className="h-4 w-4 transition-transform group-data-[collapsible=icon]:hidden" style={{
-                    transform: isChatsOpen ? 'rotate(0deg)' : 'rotate(-90deg)'
-                  }} />
-                </SidebarGroupLabel>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <SidebarGroupContent className="px-2 group-data-[collapsible=icon]:px-1">
-                  <SidebarMenu>
-                    {chatSessions.length === 0 ? (
-                      <SidebarMenuItem>
-                        <div className="px-3 py-2 text-xs text-text-secondary/50 group-data-[collapsible=icon]:hidden">
-                          No chats yet
-                        </div>
+        {/* Chats Section */}
+        <Collapsible open={isChatsOpen} onOpenChange={setIsChatsOpen}>
+          <SidebarGroup>
+            <CollapsibleTrigger asChild>
+              <SidebarGroupLabel className="group-data-[collapsible=icon]:sr-only px-2 text-xs font-medium text-text-secondary/70 cursor-pointer hover:text-text-secondary flex items-center justify-between">
+                Chats
+                <ChevronDown className="h-4 w-4 transition-transform group-data-[collapsible=icon]:hidden" style={{
+                  transform: isChatsOpen ? 'rotate(0deg)' : 'rotate(-90deg)'
+                }} />
+              </SidebarGroupLabel>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <SidebarGroupContent className="px-2 group-data-[collapsible=icon]:px-1">
+                <SidebarMenu>
+                  {chatSessions.length === 0 ? (
+                    <SidebarMenuItem>
+                      <div className="px-3 py-2 text-xs text-text-secondary/50 group-data-[collapsible=icon]:hidden">
+                        No chats yet
+                      </div>
+                    </SidebarMenuItem>
+                  ) : (
+                    chatSessions.map(session => (
+                      <SidebarMenuItem key={session.id}>
+                        <SidebarMenuButton 
+                          asChild 
+                          isActive={isActiveChatSession(session.id)} 
+                          tooltip={session.title} 
+                          className="group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 text-text-secondary hover:text-text-primary hover:bg-surface-elevated data-[active=true]:text-primary data-[active=true]:bg-surface-elevated transition-colors"
+                        >
+                          <Link to={`/dashboard/assistant?session=${session.id}`} className="flex items-center gap-3 px-3 py-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 group-data-[collapsible=icon]:gap-0">
+                            <span className="group-data-[collapsible=icon]:sr-only text-sm truncate">
+                              {session.title || 'New Chat'}
+                            </span>
+                          </Link>
+                        </SidebarMenuButton>
                       </SidebarMenuItem>
-                    ) : (
-                      chatSessions.map(session => (
-                        <SidebarMenuItem key={session.id}>
-                          <SidebarMenuButton 
-                            asChild 
-                            isActive={isActiveChatSession(session.id)} 
-                            tooltip={session.title} 
-                            className="group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 text-text-secondary hover:text-text-primary hover:bg-surface-elevated data-[active=true]:text-primary data-[active=true]:bg-surface-elevated transition-colors"
-                          >
-                            <Link to={`/dashboard/assistant?session=${session.id}`} className="flex items-center gap-3 px-3 py-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1 group-data-[collapsible=icon]:gap-0">
-                              <span className="group-data-[collapsible=icon]:sr-only text-sm truncate">
-                                {session.title || 'New Chat'}
-                              </span>
-                            </Link>
-                          </SidebarMenuButton>
-                        </SidebarMenuItem>
-                      ))
-                    )}
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </CollapsibleContent>
-            </SidebarGroup>
-          </Collapsible>
-        </SidebarContent>
-        
-        <SidebarFooter className="p-4 border-t border-border-subtle bg-surface">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="flex items-center space-x-3 p-2 rounded-md hover:bg-surface-elevated w-full text-left group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:space-x-0 group-data-[collapsible=icon]:px-1 transition-colors">
-                <Avatar className="h-8 w-8 flex-shrink-0">
-                  <AvatarImage src={profile?.avatar_url} alt="User Avatar" />
-                  <AvatarFallback className="bg-primary text-primary-foreground">
-                    {user?.email?.charAt(0).toUpperCase() || 'U'}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="group-data-[collapsible=icon]:sr-only">
-                  <p className="text-sm font-medium text-text-primary">
-                    {profile?.full_name || user?.email || 'User'}
-                  </p>
-                  <Link to="/dashboard/billing" className="text-xs text-primary hover:underline">
-                    Upgrade Plan
-                  </Link>
-                </div>
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent side="top" align="start" className="w-56 mb-2 ml-1 bg-surface-elevated border-border-subtle">
-              <DropdownMenuLabel className="text-text-primary">
-                {profile?.full_name || user?.email || 'User'}
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator className="bg-border-subtle" />
-              <DropdownMenuItem asChild className="text-text-secondary hover:text-text-primary hover:bg-surface-elevated-2">
-                <Link to="/dashboard/profile" className="flex items-center">
-                  <UserCircle className="mr-2 h-4 w-4" />
-                  <span>Profile</span>
+                    ))
+                  )}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </CollapsibleContent>
+          </SidebarGroup>
+        </Collapsible>
+      </SidebarContent>
+      
+      <SidebarFooter className="p-4 border-t border-border-subtle bg-surface">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="flex items-center space-x-3 p-2 rounded-md hover:bg-surface-elevated w-full text-left group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:space-x-0 group-data-[collapsible=icon]:px-1 transition-colors">
+              <Avatar className="h-8 w-8 flex-shrink-0">
+                <AvatarImage src={profile?.avatar_url} alt="User Avatar" />
+                <AvatarFallback className="bg-primary text-primary-foreground">
+                  {user?.email?.charAt(0).toUpperCase() || 'U'}
+                </AvatarFallback>
+              </Avatar>
+              <div className="group-data-[collapsible=icon]:sr-only">
+                <p className="text-sm font-medium text-text-primary">
+                  {profile?.full_name || user?.email || 'User'}
+                </p>
+                <Link to="/dashboard/billing" className="text-xs text-primary hover:underline">
+                  Upgrade Plan
                 </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild className="text-text-secondary hover:text-text-primary hover:bg-surface-elevated-2">
-                <Link to="/dashboard/settings" className="flex items-center">
-                  <SettingsIcon className="mr-2 h-4 w-4" />
-                  <span>Settings</span>
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild className="text-text-secondary hover:text-text-primary hover:bg-surface-elevated-2">
-                <Link to="/dashboard/billing" className="flex items-center">
-                  <Lightbulb className="mr-2 h-4 w-4" />
-                  <span>Billing / Upgrade</span>
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-border-subtle" />
-              <DropdownMenuItem onClick={handleLogout} className="text-text-secondary hover:text-text-primary hover:bg-surface-elevated-2">
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Log out</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </SidebarFooter>
-        
-        <SidebarRail />
-      </Sidebar>
-    </div>
+              </div>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent side="top" align="start" className="w-56 mb-2 ml-1 bg-surface-elevated border-border-subtle">
+            <DropdownMenuLabel className="text-text-primary">
+              {profile?.full_name || user?.email || 'User'}
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator className="bg-border-subtle" />
+            <DropdownMenuItem asChild className="text-text-secondary hover:text-text-primary hover:bg-surface-elevated-2">
+              <Link to="/dashboard/profile" className="flex items-center">
+                <UserCircle className="mr-2 h-4 w-4" />
+                <span>Profile</span>
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild className="text-text-secondary hover:text-text-primary hover:bg-surface-elevated-2">
+              <Link to="/dashboard/settings" className="flex items-center">
+                <SettingsIcon className="mr-2 h-4 w-4" />
+                <span>Settings</span>
+              </Link></DropdownMenuItem>
+            <DropdownMenuItem asChild className="text-text-secondary hover:text-text-primary hover:bg-surface-elevated-2">
+              <Link to="/dashboard/billing" className="flex items-center">
+                <Lightbulb className="mr-2 h-4 w-4" />
+                <span>Billing / Upgrade</span>
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator className="bg-border-subtle" />
+            <DropdownMenuItem onClick={handleLogout} className="text-text-secondary hover:text-text-primary hover:bg-surface-elevated-2">
+              <LogOut className="mr-2 h-4 w-4" />
+              <span>Log out</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </SidebarFooter>
+      
+      <SidebarRail />
+    </Sidebar>
   );
 };

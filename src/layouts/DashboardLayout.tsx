@@ -13,22 +13,20 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   return (
     <>
       <SkipNav href="#main-content">Skip to main content</SkipNav>
-      <SidebarProvider>
-        <div className="min-h-screen flex flex-col w-full overflow-x-hidden apple-hero">
-          <div className="flex min-h-screen w-full">
-            <AppSidebar />
-            <SidebarInset>
-              <TopHeader />
-              <main 
-                id="main-content"
-                className="flex-1 overflow-y-auto overflow-x-hidden"
-                role="main"
-                aria-label="Main content"
-              >
-                {children}
-              </main>
-            </SidebarInset>
-          </div>
+      <SidebarProvider defaultOpen={true}>
+        <div className="min-h-screen flex w-full overflow-x-hidden apple-hero">
+          <AppSidebar />
+          <SidebarInset className="flex-1">
+            <TopHeader />
+            <main 
+              id="main-content"
+              className="flex-1 overflow-y-auto overflow-x-hidden"
+              role="main"
+              aria-label="Main content"
+            >
+              {children}
+            </main>
+          </SidebarInset>
         </div>
       </SidebarProvider>
     </>
