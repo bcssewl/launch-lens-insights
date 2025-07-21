@@ -25,19 +25,9 @@ const AI_MODELS: AIModel[] = [
     isDefault: true
   },
   {
-    id: 'nexus',
-    name: 'Nexus',
-    description: 'Best at collecting and analyzing data'
-  },
-  {
     id: 'algeon',
     name: 'Algeon',
-    description: 'Excels at math & strategy'
-  },
-  {
-    id: 'stratix',
-    name: 'Stratix',
-    description: 'Advanced research agent for market analysis, competitor intelligence & strategic insights'
+    description: 'Excels at math & strategy with research capabilities'
   }
 ];
 
@@ -88,7 +78,7 @@ const ModelSelectionDropdown: React.FC<ModelSelectionDropdownProps> = ({
           <p className="text-xs text-muted-foreground">Select the best model for your task</p>
         </div>
         
-        <ScrollArea className="h-[320px]" type="always">
+        <ScrollArea className="h-[160px]" type="always">
           <div className="px-1.5 pb-1.5 space-y-1">
             {AI_MODELS.map((model) => (
               <DropdownMenuItem

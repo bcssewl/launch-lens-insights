@@ -101,6 +101,10 @@ const ChatSubheader: React.FC<ChatSubheaderProps> = ({
       
       {/* Control buttons moved to the far right */}
       <div className="flex items-center space-x-2">
+        <ModelSelectionDropdown
+          selectedModel={selectedModel}
+          onModelSelect={handleModelSelect}
+        />
         <QuickActionsDropdown 
           onDownloadChat={onDownloadChat}
           onClearConversation={onClearConversation}
