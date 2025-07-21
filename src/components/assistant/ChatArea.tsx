@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import ChatMessage from '@/components/assistant/ChatMessage';
@@ -63,9 +62,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   onAlegeonFastForward
 }) => {
   const [canvasPreviewMessages, setCanvasPreviewMessages] = useState<Set<string>>(new Set());
-  const [isTransitioning, setIsTransitioning] = useState(false);
-  const [showEmptyState, setShowEmptyState] = useState(true);
-  const [hasStartedConversation, setHasStartedConversation] = useState(false);
 
   const handleToggleCanvasPreview = useCallback((messageId: string) => {
     setCanvasPreviewMessages(prev => {
@@ -79,41 +75,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     });
   }, []);
 
-  // Check if there's an actual conversation (not just user messages)
-  const hasConversation = messages.length > 0;
-
-  // Handle the transition animation when first message is sent
-  const handleSendMessageWithTransition = useCallback(
-    (message: string, attachments?: any[], selectedModel?: string) => {
-      // Only trigger animation on first message when empty state is visible
-      if (!hasStartedConversation && showEmptyState) {
-        console.log('Starting transition animation');
-        setIsTransitioning(true);
-        setHasStartedConversation(true);
-        
-        // Start hiding the empty state after a brief delay to allow animation to start
-        setTimeout(() => {
-          setShowEmptyState(false);
-        }, 100);
-        
-        // Reset transition state after animation completes
-        setTimeout(() => {
-          setIsTransitioning(false);
-        }, 700);
-      }
-      onSendMessage(message, attachments, selectedModel);
-    },
-    [hasStartedConversation, showEmptyState, onSendMessage]
-  );
-
-  // Reset states when conversation is cleared
-  useEffect(() => {
-    if (!hasConversation && !isTransitioning && !isTyping) {
-      console.log('Resetting to empty state');
-      setShowEmptyState(true);
-      setHasStartedConversation(false);
-    }
-  }, [hasConversation, isTransitioning, isTyping]);
+  const hasConversation = messages.length > 1 || isTyping;
 
   useEffect(() => {
     if (hasConversation && viewportRef.current) {
@@ -130,22 +92,17 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     }
   }, [hasConversation, viewportRef]);
 
-  // Show empty state when there's no conversation and we haven't started transitioning
-  // OR when we're still in transition but haven't hidden the empty state yet
-  if (showEmptyState && (!hasConversation || isTransitioning)) {
-    console.log('Showing empty state, isTransitioning:', isTransitioning);
+  if (!hasConversation) {
     return (
       <div className="flex flex-col flex-1 min-h-0 w-full relative bg-transparent">
         <PerplexityEmptyState 
-          onSendMessage={handleSendMessageWithTransition}
+          onSendMessage={onSendMessage}
           selectedModel={selectedModel}
-          isTransitioning={isTransitioning}
         />
       </div>
     );
   }
 
-  console.log('Showing chat interface');
   return (
     <div className="h-full flex flex-col relative bg-background/10 backdrop-blur-sm">
       <div className="flex-1 overflow-hidden">
@@ -192,29 +149,22 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                 />
               );
             })}
-            
-            {/* Show typing indicator when typing and not transitioning */}
-            {isTyping && !isTransitioning && <TypingIndicator />}
+            {isTyping && <TypingIndicator />}
           </div>
           <div className="h-32" />
         </ScrollArea>
       </div>
 
-      {/* Fixed input at bottom - show when conversation has started */}
-      {hasStartedConversation && (
-        <div className={`fixed left-0 right-0 bottom-20 transition-all duration-700 ease-in-out ${
-          isTransitioning ? 'opacity-0 transform translate-y-8' : 'opacity-100 transform translate-y-0'
-        }`}>
-          <div className="max-w-4xl mx-auto px-6 py-4">
-            <EnhancedChatInput 
-              onSendMessage={onSendMessage} 
-              isTyping={isTyping}
-              isCompact={true}
-              selectedModel={selectedModel}
-            />
-          </div>
+      <div className="absolute bottom-0 left-0 right-0 mb-20">
+        <div className="max-w-4xl mx-auto px-6 py-4">
+          <EnhancedChatInput 
+            onSendMessage={onSendMessage} 
+            isTyping={isTyping}
+            isCompact={true}
+            selectedModel={selectedModel}
+          />
         </div>
-      )}
+      </div>
     </div>
   );
 };
