@@ -16,8 +16,8 @@ const BottomNavigation: React.FC = () => {
   const location = useLocation();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50">
-      <div className="max-w-6xl mx-auto px-4 py-3">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-background/80 backdrop-blur-sm border-t">
+      <div className="max-w-6xl mx-auto px-4 py-2">
         <div className="flex items-center justify-center space-x-2 overflow-x-auto">
           {navigationItems.map((item) => {
             const isActive = location.pathname === item.href;
@@ -28,7 +28,7 @@ const BottomNavigation: React.FC = () => {
                 key={item.href}
                 to={item.href}
                 className={cn(
-                  "flex items-center space-x-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap",
+                  "flex items-center space-x-2 px-3 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap",
                   isActive
                     ? "bg-primary text-primary-foreground shadow-sm"
                     : "text-text-secondary hover:text-text-primary hover:bg-surface-elevated/50"

@@ -153,8 +153,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             })}
             {isTyping && <TypingIndicator />}
           </div>
-          {/* Add bottom padding to prevent content from being hidden behind fixed input */}
-          <div className="h-32" />
+          {/* Add bottom padding to account for sticky input bar */}
+          <div className="h-20 md:h-24" />
         </ScrollArea>
       </div>
     </div>

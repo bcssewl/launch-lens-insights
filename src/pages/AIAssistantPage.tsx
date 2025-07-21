@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { FloatingElements } from '@/components/landing/FloatingElements';
@@ -151,7 +150,7 @@ const AIAssistantPage: React.FC = () => {
               </div>
             )}
             
-            <div className="flex-1 min-h-0 bg-transparent relative pb-24">
+            <div className="flex-1 min-h-0 bg-transparent relative">
               <ChatArea 
                 messages={messages} 
                 isTyping={isTyping} 
@@ -169,9 +168,9 @@ const AIAssistantPage: React.FC = () => {
               />
             </div>
 
-            {/* Fixed input bar at bottom of screen - positioned above bottom navigation */}
-            <div className="fixed bottom-20 left-0 right-0 border-t bg-background/50 backdrop-blur-sm z-40">
-              <div className="max-w-4xl mx-auto px-6 py-4">
+            {/* Sticky input bar with ChatGPT-style spacing */}
+            <div className="sticky bottom-0 left-0 right-0 border-t bg-background/50 backdrop-blur-sm z-50 pb-2 md:pb-4">
+              <div className="max-w-4xl mx-auto px-6 py-3 md:py-4">
                 <EnhancedChatInput 
                   onSendMessage={handleSendMessageWithSession} 
                   isTyping={isTyping}
