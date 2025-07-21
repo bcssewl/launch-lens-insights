@@ -1,6 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
 import { FloatingElements } from '@/components/landing/FloatingElements';
-import BottomNavigation from '@/components/navigation/BottomNavigation';
 import ChatArea from '@/components/assistant/ChatArea';
 import CanvasView from '@/components/assistant/CanvasView';
 import FullscreenChatLayout from '@/components/assistant/FullscreenChatLayout';
@@ -193,7 +193,7 @@ const AIAssistantPage: React.FC = () => {
             </div>
           )}
           
-          <div className="flex-1 min-h-0 bg-transparent pb-20">
+          <div className="flex-1 min-h-0 bg-transparent">
             <ChatArea 
               messages={messages} 
               isTyping={isTyping} 
@@ -211,8 +211,6 @@ const AIAssistantPage: React.FC = () => {
             />
           </div>
         </div>
-
-        <BottomNavigation />
 
         <CanvasView 
           isOpen={canvasState.isOpen} 
