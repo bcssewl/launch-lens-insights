@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import ChatMessage from '@/components/assistant/ChatMessage';
@@ -105,7 +106,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 
   return (
     <div className="h-full flex flex-col relative bg-background/10 backdrop-blur-sm">
-      <div className="flex-1 overflow-hidden">
+      {/* Chat Messages Area - takes remaining space above input */}
+      <div className="flex-1 overflow-hidden pb-32">
         <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
           <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
             {streamingState?.error && (
@@ -151,11 +153,11 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             })}
             {isTyping && <TypingIndicator />}
           </div>
-          <div className="h-32" />
         </ScrollArea>
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 mb-20">
+      {/* Fixed Input Area - always positioned at bottom */}
+      <div className="fixed bottom-20 left-0 right-0 z-10">
         <div className="max-w-4xl mx-auto px-6 py-4">
           <EnhancedChatInput 
             onSendMessage={onSendMessage} 
