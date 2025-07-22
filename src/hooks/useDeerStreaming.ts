@@ -157,7 +157,6 @@ export const useDeerStreaming = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
         },
         body: JSON.stringify(requestBody),
         signal: abortControllerRef.current.signal
