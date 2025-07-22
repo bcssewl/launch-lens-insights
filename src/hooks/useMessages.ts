@@ -1,3 +1,4 @@
+
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useCanvas } from '@/hooks/useCanvas';
@@ -41,8 +42,8 @@ export const useMessages = (sessionId: string | null, updateSessionTitle: (sessi
     updateCanvasContent
   } = useCanvas();
   
-  const { streamingState, startStreaming, endStreaming } = useStratixStreaming();
-  const { streamingState: alegeonStreamingState, startStreaming: startAlegeon, endStreaming: endAlegeon } = useAlegeonStreaming();
+  const { streamingState, startStreaming, stopStreaming } = useStratixStreaming();
+  const { streamingState: alegeonStreamingState, startStreaming: startAlegeon, stopStreaming: stopAlegeon } = useAlegeonStreaming();
   const { streamingState: alegeonStreamingStateV2, startStreaming: startAlegeonV2, fastForward } = useAlegeonStreamingV2(null);
 
   useEffect(() => {
@@ -121,9 +122,9 @@ export const useMessages = (sessionId: string | null, updateSessionTitle: (sessi
 
     const messageId = uuidv4();
     const currentTime = new Date().toISOString();
-    const sessionId = sessionIdOverride || currentSessionId;
+    const currentSessionId = sessionIdOverride || sessionId;
     const modelToUse = modelOverride || 'gpt-4o-mini';
-    const researchTypeToUse = researchTypeOverride || 'quick_facts';
+    const researchTypeToUse = researchTypeOverride || 'best';
 
     // Optimistically update the UI with the user's message
     const userMessage: Message = {
@@ -165,9 +166,9 @@ export const useMessages = (sessionId: string | null, updateSessionTitle: (sessi
           },
           body: JSON.stringify({
             query: trimmedText,
-            research_type: researchTypeToUse, // Send exactly what user selected
+            research_type: researchTypeToUse, // Send exactly what user selected, including "best"
             context: {
-              sessionId: sessionId,
+              sessionId: currentSessionId,
               previousMessages: messages.slice(-5).map(msg => ({
                 role: msg.sender === 'user' ? 'user' : 'assistant',
                 content: msg.content
@@ -202,9 +203,9 @@ export const useMessages = (sessionId: string | null, updateSessionTitle: (sessi
         scrollToBottom();
         
         // Update session title if it's the first message
-        if (messages.length === 1 && sessionId) {
+        if (messages.length === 1 && currentSessionId) {
           const newTitle = alegeonData.response.substring(0, 40);
-          await updateSessionTitle(sessionId, newTitle);
+          await updateSessionTitle(currentSessionId, newTitle);
         }
         
         return;
@@ -218,23 +219,23 @@ export const useMessages = (sessionId: string | null, updateSessionTitle: (sessi
         setMessages(prevMessages => prevMessages.filter(msg => !msg.isLoading));
         setIsTyping(false);
         
-        startStreaming(trimmedText, sessionId, (content, sources) => {
-          // Streaming update function
-          setMessages(prevMessages => [...prevMessages, {
-            id: uuidv4(),
-            sender: 'assistant',
-            content: content,
-            timestamp: new Date().toISOString(),
-            sources: sources || []
-          }]);
-          scrollToBottom();
-        }, async (fullContent: string) => {
-          // Completion callback
-          if (messages.length === 1 && sessionId) {
-            const newTitle = fullContent.substring(0, 40);
-            await updateSessionTitle(sessionId, newTitle);
-          }
-        });
+        const result = await startStreaming(trimmedText, currentSessionId || '');
+        
+        // Add the streamed result as a message
+        setMessages(prevMessages => [...prevMessages, {
+          id: uuidv4(),
+          sender: 'assistant',
+          content: result,
+          timestamp: new Date().toISOString(),
+          sources: []
+        }]);
+        scrollToBottom();
+        
+        // Update session title if it's the first message
+        if (messages.length === 1 && currentSessionId) {
+          const newTitle = result.substring(0, 40);
+          await updateSessionTitle(currentSessionId, newTitle);
+        }
         
         return;
       }
@@ -249,7 +250,7 @@ export const useMessages = (sessionId: string | null, updateSessionTitle: (sessi
         body: JSON.stringify({
           message: trimmedText,
           model: modelToUse,
-          sessionId: sessionId
+          sessionId: currentSessionId
         }),
       });
 
@@ -279,9 +280,9 @@ export const useMessages = (sessionId: string | null, updateSessionTitle: (sessi
       scrollToBottom();
       
       // Update session title if it's the first message
-      if (messages.length === 1 && sessionId) {
+      if (messages.length === 1 && currentSessionId) {
         const newTitle = data.response.substring(0, 40);
-        await updateSessionTitle(sessionId, newTitle);
+        await updateSessionTitle(currentSessionId, newTitle);
       }
       
     } catch (error: any) {
