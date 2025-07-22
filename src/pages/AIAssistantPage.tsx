@@ -14,12 +14,11 @@ import { useAlegeonStreamingV2 } from '@/hooks/useAlegeonStreamingV2';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTheme } from 'next-themes';
 import { Loader2 } from 'lucide-react';
-import { adaptMessageToLegacy } from '@/types/message';
 
 const AIAssistantPage: React.FC = () => {
   const isMobile = useIsMobile();
   const [selectedModel, setSelectedModel] = useState<string>('best');
-  const [selectedResearchType, setSelectedResearchType] = useState<string>('best');
+  const [selectedResearchType, setSelectedResearchType] = useState<string>('quick_facts');
   const { theme } = useTheme();
 
   const {
@@ -55,7 +54,7 @@ const AIAssistantPage: React.FC = () => {
     stratixStreamingState
   } = useMessages(currentSessionId, updateSessionTitle, currentSession?.title);
   
-  const { streamingState: alegeonStreamingStateV2, startStreaming: startAlegeonV2, fastForward } = useAlegeonStreamingV2(currentSessionId);
+  const { streamingState: alegeonStreamingStateV2, startStreaming: startAlegeonV2, fastForward } = useAlegeonStreamingV2(null);
   const [editedCanvasContent, setEditedCanvasContent] = useState(canvasState.content);
 
   useEffect(() => {
@@ -103,7 +102,7 @@ const AIAssistantPage: React.FC = () => {
   const handleModelSelect = (modelId: string) => {
     setSelectedModel(modelId);
     if (modelId === 'algeon') {
-      setSelectedResearchType('best');
+      setSelectedResearchType('quick_facts');
     }
   };
 
@@ -128,28 +127,6 @@ const AIAssistantPage: React.FC = () => {
   }
 
   const hasConversation = messages.length > 1 || isTyping;
-
-  // Convert messages to legacy format for components that expect it
-  const legacyMessages = messages.map(adaptMessageToLegacy);
-
-  // Create a compatible streaming state that includes all required properties
-  const compatibleStreamingState = {
-    isStreaming: stratixStreamingState.isStreaming,
-    currentPhase: stratixStreamingState.currentPhase,
-    progress: stratixStreamingState.overallProgress, // Map overallProgress to progress
-    overallProgress: stratixStreamingState.overallProgress, // Include the original property
-    partialText: stratixStreamingState.partialText, // Include the partialText property
-    error: stratixStreamingState.error || undefined,
-    searchQueries: [], // Default empty array
-    discoveredSources: stratixStreamingState.discoveredSources.map(source => ({
-      name: source.name,
-      url: source.url,
-      type: source.type,
-      confidence: source.confidence
-    })),
-    activeAgents: stratixStreamingState.activeAgents?.map(agent => agent.name) || [],
-    collaborationMode: stratixStreamingState.collaborationMode
-  };
 
   return (
     <DashboardLayout>
@@ -176,7 +153,7 @@ const AIAssistantPage: React.FC = () => {
             
             <div className="flex-1 min-h-0 bg-transparent relative">
               <ChatArea 
-                messages={legacyMessages} 
+                messages={messages} 
                 isTyping={isTyping} 
                 viewportRef={viewportRef} 
                 onSendMessage={handleSendMessageWithSession}
@@ -185,8 +162,8 @@ const AIAssistantPage: React.FC = () => {
                 onCloseCanvas={handleCloseCanvas} 
                 onCanvasDownload={handleCanvasDownload} 
                 onCanvasPrint={handleCanvasPrint}
-                streamingState={compatibleStreamingState}
-                stratixStreamingState={compatibleStreamingState}
+                streamingState={streamingState}
+                stratixStreamingState={stratixStreamingState}
                 alegeonStreamingState={alegeonStreamingStateV2}
                 onAlegeonFastForward={fastForward}
               />
@@ -216,7 +193,7 @@ const AIAssistantPage: React.FC = () => {
             title="AI Report" 
             onDownload={handleCanvasDownload} 
             onPrint={handleCanvasPdfDownload} 
-            messages={legacyMessages} 
+            messages={messages} 
             isTyping={isTyping} 
             viewportRef={viewportRef} 
             onSendMessage={handleSendMessageWithSession}
