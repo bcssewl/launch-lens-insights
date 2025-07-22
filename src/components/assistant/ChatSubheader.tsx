@@ -7,7 +7,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import QuickActionsDropdown from '@/components/assistant/QuickActionsDropdown';
 import ChatSessionsDropdown from '@/components/assistant/ChatSessionsDropdown';
-import ResearchTypeSelector from '@/components/assistant/ResearchTypeSelector';
+import ModelSelectionDropdown, { AIModel } from '@/components/assistant/ModelSelectionDropdown';
 import { Logo } from '@/components/icons';
 
 interface ChatSubheaderProps {
@@ -37,6 +37,10 @@ const ChatSubheader: React.FC<ChatSubheaderProps> = ({
 
   const handleLogout = async () => {
     await signOut();
+  };
+
+  const handleModelSelect = (model: AIModel) => {
+    onModelSelect(model.id);
   };
 
   return (
@@ -96,6 +100,10 @@ const ChatSubheader: React.FC<ChatSubheaderProps> = ({
       
       {/* Control buttons moved to the far right */}
       <div className="flex items-center space-x-2">
+        <ModelSelectionDropdown
+          selectedModel={selectedModel}
+          onModelSelect={handleModelSelect}
+        />
         <QuickActionsDropdown 
           onDownloadChat={onDownloadChat}
           onClearConversation={onClearConversation}
