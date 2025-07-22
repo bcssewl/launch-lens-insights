@@ -6,12 +6,80 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { cn } from '@/lib/utils';
 
+interface Citation {
+  name: string;
+  url: string;
+  type?: string;
+}
+
 interface MarkdownRendererProps {
   content: string;
   className?: string;
+  citations?: Citation[];
+  onCitationClick?: (citation: Citation, index: number) => void;
 }
 
-const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className }) => {
+const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ 
+  content, 
+  className, 
+  citations = [], 
+  onCitationClick 
+}) => {
+  // Process citations in text content
+  const processCitationsInText = (text: string): React.ReactNode => {
+    if (!citations.length) return text;
+    
+    const citationPattern = /\[(\d+)\]/g;
+    const parts: React.ReactNode[] = [];
+    let lastIndex = 0;
+    let match;
+    
+    while ((match = citationPattern.exec(text)) !== null) {
+      const citationNumber = parseInt(match[1]);
+      const citationIndex = citationNumber - 1;
+      const citation = citations[citationIndex];
+      
+      // Add text before citation
+      if (match.index > lastIndex) {
+        parts.push(text.slice(lastIndex, match.index));
+      }
+      
+      if (citation && citation.url) {
+        // Add citation element
+        parts.push(
+          <span
+            key={`citation-${citationNumber}-${match.index}`}
+            onClick={() => onCitationClick?.(citation, citationIndex)}
+            className="citation inline-block text-xs text-muted-foreground opacity-75 hover:opacity-100 bg-muted/20 hover:bg-muted/40 px-1 py-0.5 rounded align-super cursor-pointer transition-all duration-200"
+            title={citation.name}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onCitationClick?.(citation, citationIndex);
+              }
+            }}
+            aria-label={`Citation ${citationNumber}: ${citation.name}`}
+          >
+            {citationNumber}
+          </span>
+        );
+      } else {
+        parts.push(match[0]);
+      }
+      
+      lastIndex = match.index + match[0].length;
+    }
+    
+    // Add remaining text
+    if (lastIndex < text.length) {
+      parts.push(text.slice(lastIndex));
+    }
+    
+    return parts.length > 1 ? <>{parts}</> : text;
+  };
+
   return (
     <div className={cn("markdown-content prose prose-gray dark:prose-invert max-w-none", className)}>
       <ReactMarkdown
@@ -22,13 +90,25 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className 
           h2: ({ children }) => <h2 className="text-base font-bold mb-2 mt-1">{children}</h2>,
           h3: ({ children }) => <h3 className="text-sm font-bold mb-1 mt-1">{children}</h3>,
           
-          // Paragraphs
-          p: ({ children }) => <p className="mb-2 last:mb-0 leading-relaxed">{children}</p>,
+          // Paragraphs with citation processing
+          p: ({ children }) => (
+            <p className="mb-2 last:mb-0 leading-relaxed">
+              {React.Children.map(children, child => 
+                typeof child === 'string' ? processCitationsInText(child) : child
+              )}
+            </p>
+          ),
           
           // Lists
           ul: ({ children }) => <ul className="list-disc pl-4 mb-2 space-y-1">{children}</ul>,
           ol: ({ children }) => <ol className="list-decimal pl-4 mb-2 space-y-1">{children}</ol>,
-          li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+          li: ({ children }) => (
+            <li className="leading-relaxed">
+              {React.Children.map(children, child => 
+                typeof child === 'string' ? processCitationsInText(child) : child
+              )}
+            </li>
+          ),
           
           // Emphasis
           strong: ({ children }) => <strong className="font-bold">{children}</strong>,
@@ -90,19 +170,42 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className 
             </blockquote>
           ),
           
-          // Tables
+          // Enhanced Tables with proper styling and responsive design
           table: ({ children }) => (
-            <div className="overflow-x-auto my-2">
-              <table className="min-w-full border border-muted rounded">{children}</table>
+            <div className="overflow-x-auto my-4 border border-muted rounded-lg shadow-sm">
+              <table className="min-w-full border-collapse bg-background">
+                {children}
+              </table>
             </div>
           ),
-          th: ({ children }) => (
-            <th className="border border-muted bg-muted px-2 py-1 text-left font-semibold text-xs">
+          thead: ({ children }) => (
+            <thead className="bg-muted/50">
               {children}
+            </thead>
+          ),
+          tbody: ({ children }) => (
+            <tbody className="divide-y divide-muted">
+              {children}
+            </tbody>
+          ),
+          tr: ({ children }) => (
+            <tr className="hover:bg-muted/20 transition-colors">
+              {children}
+            </tr>
+          ),
+          th: ({ children }) => (
+            <th className="px-4 py-3 text-left font-semibold text-sm text-foreground border-b border-muted">
+              {React.Children.map(children, child => 
+                typeof child === 'string' ? processCitationsInText(child) : child
+              )}
             </th>
           ),
           td: ({ children }) => (
-            <td className="border border-muted px-2 py-1 text-xs">{children}</td>
+            <td className="px-4 py-3 text-sm text-foreground border-b border-muted/50">
+              {React.Children.map(children, child => 
+                typeof child === 'string' ? processCitationsInText(child) : child
+              )}
+            </td>
           ),
           
           // Horizontal rule
