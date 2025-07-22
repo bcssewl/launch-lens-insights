@@ -1,6 +1,7 @@
 
 // Valid research types for Algeon API
 export type AlgeonResearchType = 
+  | 'best'
   | 'quick_facts'
   | 'market_sizing'
   | 'competitive_analysis'
@@ -12,6 +13,7 @@ export type AlgeonResearchType =
 
 // Map of research types to their corresponding AI models
 const RESEARCH_TYPE_MODELS: Record<AlgeonResearchType, string> = {
+  'best': 'Sonar Reasoning Pro', // Default for best mode, can be overridden by detection
   'quick_facts': 'Sonar',
   'market_sizing': 'Sonar Pro',
   'competitive_analysis': 'Sonar Reasoning Pro',
@@ -24,6 +26,7 @@ const RESEARCH_TYPE_MODELS: Record<AlgeonResearchType, string> = {
 
 // Keywords that help identify the research type
 const RESEARCH_TYPE_KEYWORDS: Record<AlgeonResearchType, string[]> = {
+  'best': [], // No specific keywords for best mode
   'quick_facts': ['what is', 'define', 'explain', 'overview', 'summary', 'brief'],
   'market_sizing': ['market size', 'tam', 'sam', 'som', 'market value', 'market worth', 'revenue potential'],
   'competitive_analysis': ['competitors', 'competition', 'competitive landscape', 'market players', 'rivals'],
@@ -42,6 +45,7 @@ export function detectAlgeonResearchType(query: string): AlgeonResearchType {
   
   // Check for specific research type keywords
   for (const [type, keywords] of Object.entries(RESEARCH_TYPE_KEYWORDS)) {
+    if (type === 'best') continue; // Skip best mode in detection
     if (keywords.some(keyword => lowerQuery.includes(keyword))) {
       return type as AlgeonResearchType;
     }
@@ -62,4 +66,19 @@ export function detectAlgeonResearchType(query: string): AlgeonResearchType {
  */
 export function getModelForResearchType(type: AlgeonResearchType): string {
   return RESEARCH_TYPE_MODELS[type];
+}
+
+/**
+ * Automatically determines the best research type and model for a query
+ * Used when research type is set to "best"
+ */
+export function getBestResearchTypeForQuery(query: string): {
+  researchType: AlgeonResearchType;
+  model: string;
+} {
+  const detectedType = detectAlgeonResearchType(query);
+  return {
+    researchType: detectedType,
+    model: getModelForResearchType(detectedType)
+  };
 }

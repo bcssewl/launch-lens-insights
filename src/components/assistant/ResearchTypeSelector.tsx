@@ -10,6 +10,7 @@ import {
 import { ChevronDown } from 'lucide-react';
 
 const RESEARCH_TYPES = [
+  { label: "Best", value: "best", description: "AI automatically selects the optimal research type" },
   { label: "Quick Facts", value: "quick_facts", description: "Fast answers for simple questions" },
   { label: "Market Sizing", value: "market_sizing", description: "TAM/SAM/SOM analysis with metrics" },
   { label: "Competitive Analysis", value: "competitive_analysis", description: "Detailed competitor comparisons" },

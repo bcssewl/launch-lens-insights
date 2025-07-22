@@ -22,7 +22,7 @@ const EnhancedChatInput: React.FC<EnhancedChatInputProps> = ({
   isTyping, 
   isCompact = false,
   selectedModel,
-  selectedResearchType = 'quick_facts',
+  selectedResearchType = 'best',
   onResearchTypeChange
 }) => {
   const [inputValue, setInputValue] = useState('');
