@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useReasoning } from '@/contexts/ReasoningContext';
 import { useAlegeonTypewriter } from './useAlegeonTypewriter';
@@ -8,8 +9,9 @@ import type { ThinkingState } from '@/utils/thinkingParser';
 const STREAMING_TIMEOUT_MS = 720000; // 12 minutes
 const HEARTBEAT_INTERVAL = 30000; // 30 seconds
 
-// Valid research types for validation
+// Valid research types for validation - UPDATED to include 'best'
 const VALID_RESEARCH_TYPES: AlgeonResearchType[] = [
+  'best',
   'quick_facts',
   'market_sizing',
   'competitive_analysis',
