@@ -6,9 +6,11 @@ import TypingIndicator from '@/components/assistant/TypingIndicator';
 import PerplexityEmptyState from '@/components/assistant/PerplexityEmptyState';
 import StreamingProgress from '@/components/assistant/StreamingProgress';
 import StreamingError from '@/components/assistant/StreamingError';
+import DeerStreamingOverlay from '@/components/assistant/DeerStreamingOverlay';
 import { Message } from '@/constants/aiAssistant';
 import type { StratixStreamingState } from '@/types/stratixStreaming';
 import type { AlegeonStreamingStateV2 } from '@/hooks/useAlegeonStreamingV2';
+import type { DeerStreamingState } from '@/hooks/useDeerStreaming';
 
 interface ChatAreaProps {
   messages: Message[];
@@ -45,6 +47,7 @@ interface ChatAreaProps {
   stratixStreamingState?: StratixStreamingState;
   alegeonStreamingState?: AlegeonStreamingStateV2;
   onAlegeonFastForward?: () => void;
+  deerStreamingState?: DeerStreamingState;
 }
 
 const ChatArea: React.FC<ChatAreaProps> = ({
@@ -59,7 +62,8 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   streamingState,
   stratixStreamingState,
   alegeonStreamingState,
-  onAlegeonFastForward
+  onAlegeonFastForward,
+  deerStreamingState
 }) => {
   const [canvasPreviewMessages, setCanvasPreviewMessages] = useState<Set<string>>(new Set());
 
@@ -119,7 +123,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
               />
             )}
 
-            {streamingState?.isStreaming && !stratixStreamingState?.isStreaming && !alegeonStreamingState?.isStreaming && (
+            {streamingState?.isStreaming && !stratixStreamingState?.isStreaming && !alegeonStreamingState?.isStreaming && !deerStreamingState?.isStreaming && (
               <StreamingProgress
                 currentPhase={streamingState.currentPhase}
                 progress={streamingState.progress}
@@ -128,6 +132,13 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                 activeAgents={streamingState.activeAgents?.map(name => ({ name, status: 'active' as const, progress: 50 })) || []}
                 collaborationMode={streamingState.collaborationMode as 'sequential' | 'parallel' | 'hierarchical' | null}
                 isVisible={true}
+              />
+            )}
+
+            {deerStreamingState && (deerStreamingState.isStreaming || deerStreamingState.finalContent || deerStreamingState.activities.length > 0) && (
+              <DeerStreamingOverlay
+                streamingState={deerStreamingState}
+                className="mb-6"
               />
             )}
 

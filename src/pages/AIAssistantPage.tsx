@@ -11,6 +11,7 @@ import { useChatSessions } from '@/hooks/useChatSessions';
 import { useChatHistory } from '@/hooks/useChatHistory';
 import { useMessages } from '@/hooks/useMessages';
 import { useAlegeonStreamingV2 } from '@/hooks/useAlegeonStreamingV2';
+import { useDeerStreaming } from '@/hooks/useDeerStreaming';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTheme } from 'next-themes';
 import { Loader2 } from 'lucide-react';
@@ -55,6 +56,7 @@ const AIAssistantPage: React.FC = () => {
   } = useMessages(currentSessionId, updateSessionTitle, currentSession?.title);
   
   const { streamingState: alegeonStreamingStateV2, startStreaming: startAlegeonV2, fastForward } = useAlegeonStreamingV2(null);
+  const { streamingState: deerStreamingState, startStreaming: startDeerStreaming } = useDeerStreaming();
   const [editedCanvasContent, setEditedCanvasContent] = useState(canvasState.content);
 
   useEffect(() => {
@@ -74,9 +76,29 @@ const AIAssistantPage: React.FC = () => {
       
       await new Promise(resolve => setTimeout(resolve, 200));
       
-      handleSendMessage(text, undefined, modelToUse, researchTypeToUse, newSession.id);
+      // Handle Deer model streaming
+      if (modelToUse === 'deer') {
+        console.log('🦌 Starting Deer streaming for new session:', newSession.id);
+        try {
+          await startDeerStreaming(text, newSession.id);
+        } catch (error) {
+          console.error('🦌 Deer streaming error:', error);
+        }
+      } else {
+        handleSendMessage(text, undefined, modelToUse, researchTypeToUse, newSession.id);
+      }
     } else {
-      handleSendMessage(text, undefined, modelToUse, researchTypeToUse);
+      // Handle Deer model streaming for existing session
+      if (modelToUse === 'deer') {
+        console.log('🦌 Starting Deer streaming for existing session:', currentSessionId);
+        try {
+          await startDeerStreaming(text, currentSessionId);
+        } catch (error) {
+          console.error('🦌 Deer streaming error:', error);
+        }
+      } else {
+        handleSendMessage(text, undefined, modelToUse, researchTypeToUse);
+      }
     }
   };
 
@@ -166,6 +188,7 @@ const AIAssistantPage: React.FC = () => {
                 stratixStreamingState={stratixStreamingState}
                 alegeonStreamingState={alegeonStreamingStateV2}
                 onAlegeonFastForward={fastForward}
+                deerStreamingState={deerStreamingState}
               />
             </div>
 
