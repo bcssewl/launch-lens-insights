@@ -1,12 +1,12 @@
 import React, { useRef, useEffect } from 'react';
-import { ChatMessage } from './ChatMessage';
+import ChatMessage from './ChatMessage';
 import { cn } from '@/lib/utils';
 import { useChatHistory } from '@/hooks/useChatHistory';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Skeleton } from "@/components/ui/skeleton"
-import { RunningDots } from './RunningDots';
-import { StreamingOverlay } from './StreamingOverlay';
-import { SourceCard } from './SourceCard';
+import TypingIndicator from './TypingIndicator';
+import StreamingOverlay from './StreamingOverlay';
+import SourceCard from './SourceCard';
 import DeerStreamingOverlay from './DeerStreamingOverlay';
 
 interface ChatAreaProps {
@@ -70,8 +70,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                 message={message}
                 isStreaming={streamingState?.isStreaming && streamingState?.currentMessageId === message.id}
                 streamingUpdates={streamingState?.updates}
-                onOpenCanvas={onOpenCanvas}
-                onCloseCanvas={onCloseCanvas}
+                onOpenCanvas={onOpenCanvas ? (messageId: string, content: string) => onOpenCanvas() : undefined}
                 onCanvasDownload={onCanvasDownload}
                 onCanvasPrint={onCanvasPrint}
                 onAlegeonFastForward={onAlegeonFastForward}
@@ -80,7 +79,13 @@ const ChatArea: React.FC<ChatAreaProps> = ({
               {stratixStreamingState?.sources && stratixStreamingState?.sources[message.id] && (
                 <div className="mt-2 space-y-2">
                   {Object.values(stratixStreamingState.sources[message.id]).map((source: any, index: number) => (
-                    <SourceCard key={index} source={source} />
+                    <SourceCard 
+                      key={index} 
+                      name={source.name}
+                      url={source.url}
+                      type={source.type || 'web'}
+                      confidence={source.confidence || 80}
+                    />
                   ))}
                 </div>
               )}
@@ -88,15 +93,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           );
         })}
         {isTyping && selectedModel !== 'deer' && (
-          <div className="flex items-center gap-3">
-            <Avatar className="w-8 h-8">
-              <AvatarImage src="/logo-small.png" alt="AI Assistant" />
-              <AvatarFallback>AI</AvatarFallback>
-            </Avatar>
-            <p className="text-sm text-muted-foreground">
-              <RunningDots />
-            </p>
-          </div>
+          <TypingIndicator />
         )}
       </div>
       

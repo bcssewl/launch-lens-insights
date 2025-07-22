@@ -189,7 +189,7 @@ const AIAssistantPage: React.FC = () => {
                 viewportRef={viewportRef} 
                 onSendMessage={handleSendMessageWithSession}
                 selectedModel={selectedModel}
-                onOpenCanvas={handleOpenCanvas} 
+                onOpenCanvas={() => {}}
                 onCloseCanvas={handleCloseCanvas} 
                 onCanvasDownload={handleCanvasDownload} 
                 onCanvasPrint={handleCanvasPrint}
