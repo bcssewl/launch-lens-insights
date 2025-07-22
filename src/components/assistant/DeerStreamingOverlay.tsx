@@ -2,18 +2,21 @@ import React, { useState } from 'react';
 import { Card, CardContent } from '../ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
 import { Badge } from '../ui/badge';
-import { ChevronDown, ChevronRight, Activity, Search, Code, ExternalLink } from 'lucide-react';
+import { ChevronDown, ChevronRight, Activity, Search, Code, ExternalLink, AlertCircle, RefreshCw } from 'lucide-react';
+import { Button } from '../ui/button';
 import { DeerStreamingState, DeerActivity } from '../../hooks/useDeerStreaming';
 import MarkdownRenderer from './MarkdownRenderer';
 
 interface DeerStreamingOverlayProps {
   streamingState: DeerStreamingState;
   className?: string;
+  onRetry?: () => void;
 }
 
 const DeerStreamingOverlay: React.FC<DeerStreamingOverlayProps> = ({
   streamingState,
-  className = ''
+  className = '',
+  onRetry
 }) => {
   const [activitiesExpanded, setActivitiesExpanded] = useState(true);
   
@@ -69,6 +72,34 @@ const DeerStreamingOverlay: React.FC<DeerStreamingOverlayProps> = ({
 
   return (
     <div className={`space-y-4 ${className}`}>
+      {/* Error State */}
+      {error && (
+        <Card className="border-destructive/50 bg-destructive/5">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="font-medium text-destructive">Connection Error</span>
+                </div>
+                <p className="text-sm text-destructive/80 mb-3">{error}</p>
+                {onRetry && (
+                  <Button 
+                    onClick={onRetry} 
+                    variant="outline" 
+                    size="sm"
+                    className="border-destructive/20 text-destructive hover:bg-destructive/10"
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Try Again
+                  </Button>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Activities Section */}
       {activities.length > 0 && (
         <Card className="border-primary/20">
@@ -174,21 +205,8 @@ const DeerStreamingOverlay: React.FC<DeerStreamingOverlayProps> = ({
         </Card>
       )}
 
-      {/* Error State */}
-      {error && (
-        <Card className="border-destructive/50 bg-destructive/5">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-destructive">
-              <Activity className="h-4 w-4" />
-              <span className="font-medium">Error</span>
-            </div>
-            <p className="text-sm text-destructive/80 mt-1">{error}</p>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Streaming Indicator */}
-      {isStreaming && (
+      {isStreaming && !error && (
         <div className="flex items-center justify-center gap-2 text-muted-foreground text-sm">
           <div className="flex gap-1">
             <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />

@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { FloatingElements } from '@/components/landing/FloatingElements';
 import ChatArea from '@/components/assistant/ChatArea';
@@ -58,6 +57,7 @@ const AIAssistantPage: React.FC = () => {
   const { streamingState: alegeonStreamingStateV2, startStreaming: startAlegeonV2, fastForward } = useAlegeonStreamingV2(null);
   const { streamingState: deerStreamingState, startStreaming: startDeerStreaming } = useDeerStreaming();
   const [editedCanvasContent, setEditedCanvasContent] = useState(canvasState.content);
+  const [lastDeerQuery, setLastDeerQuery] = useState<{ text: string, sessionId: string }>({ text: '', sessionId: '' });
 
   useEffect(() => {
     setEditedCanvasContent(canvasState.content);
@@ -79,6 +79,7 @@ const AIAssistantPage: React.FC = () => {
       // Handle Deer model streaming
       if (modelToUse === 'deer') {
         console.log('🦌 Starting Deer streaming for new session:', newSession.id);
+        setLastDeerQuery({ text, sessionId: newSession.id });
         try {
           await startDeerStreaming(text, newSession.id);
         } catch (error) {
@@ -91,6 +92,7 @@ const AIAssistantPage: React.FC = () => {
       // Handle Deer model streaming for existing session
       if (modelToUse === 'deer') {
         console.log('🦌 Starting Deer streaming for existing session:', currentSessionId);
+        setLastDeerQuery({ text, sessionId: currentSessionId });
         try {
           await startDeerStreaming(text, currentSessionId);
         } catch (error) {
@@ -101,6 +103,13 @@ const AIAssistantPage: React.FC = () => {
       }
     }
   };
+
+  const handleDeerRetry = useCallback(() => {
+    if (lastDeerQuery.text && lastDeerQuery.sessionId) {
+      console.log('🦌 Retrying Deer streaming...', lastDeerQuery);
+      startDeerStreaming(lastDeerQuery.text, lastDeerQuery.sessionId);
+    }
+  }, [lastDeerQuery, startDeerStreaming]);
 
   const handleClearConversationWithHistory = async () => {
     handleClearConversation();
@@ -189,6 +198,7 @@ const AIAssistantPage: React.FC = () => {
                 alegeonStreamingState={alegeonStreamingStateV2}
                 onAlegeonFastForward={fastForward}
                 deerStreamingState={deerStreamingState}
+                onDeerRetry={handleDeerRetry}
               />
             </div>
 

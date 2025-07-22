@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useRef } from 'react';
 
 export interface DeerStreamingState {
@@ -42,6 +43,8 @@ interface StreamEvent {
 }
 
 const DEER_API_URL = 'https://amused-amazement-deer-agent.up.railway.app/api/chat/stream';
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000; // 1 second
 
 export const useDeerStreaming = () => {
   const [streamingState, setStreamingState] = useState<DeerStreamingState>({
@@ -65,6 +68,15 @@ export const useDeerStreaming = () => {
       sources: []
     });
   }, []);
+
+  const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+  const isCorsError = (error: Error): boolean => {
+    return error.message.includes('CORS') || 
+           error.message.includes('Cross-Origin') ||
+           error.message.includes('Failed to fetch') ||
+           error.name === 'TypeError';
+  };
 
   const extractSourcesFromToolMessage = (content: string): DeerSource[] => {
     try {
@@ -119,56 +131,29 @@ export const useDeerStreaming = () => {
     });
   }, []);
 
-  const startStreaming = useCallback(async (
-    prompt: string,
-    sessionId: string,
-    conversationHistory: DeerMessage[] = []
+  const makeStreamingRequest = async (
+    requestBody: DeerRequestBody,
+    retryCount: number = 0
   ): Promise<void> => {
-    console.log('🦌 Starting Deer streaming...', { prompt, sessionId });
-    
-    // Reset state and prepare for new stream
-    resetState();
-    abortControllerRef.current = new AbortController();
-
-    setStreamingState(prev => ({
-      ...prev,
-      isStreaming: true,
-      error: null
-    }));
-
     try {
-      // Prepare request body
-      const messages: DeerMessage[] = [
-        ...conversationHistory,
-        { role: 'user', content: prompt }
-      ];
-
-      const requestBody: DeerRequestBody = {
-        messages,
-        thread_id: sessionId,
-        resources: [],
-        max_plan_iterations: 3
-      };
-
-      console.log('🦌 Sending request to Deer API:', requestBody);
-
-      // Make the streaming request
+      console.log(`🦌 Making request attempt ${retryCount + 1}/${MAX_RETRIES + 1}`);
+      
       const response = await fetch(DEER_API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(requestBody),
-        signal: abortControllerRef.current.signal
+        signal: abortControllerRef.current?.signal
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
       }
 
       const reader = response.body?.getReader();
       if (!reader) {
-        throw new Error('No reader available');
+        throw new Error('No reader available from response');
       }
 
       const decoder = new TextDecoder();
@@ -178,7 +163,7 @@ export const useDeerStreaming = () => {
         const { done, value } = await reader.read();
         
         if (done) {
-          console.log('🦌 Stream completed');
+          console.log('🦌 Stream completed successfully');
           break;
         }
 
@@ -202,7 +187,57 @@ export const useDeerStreaming = () => {
         }
       }
 
-      // Mark as completed
+    } catch (error: any) {
+      console.error(`🦌 Request attempt ${retryCount + 1} failed:`, error);
+      
+      // Check if this is a CORS or network error and we have retries left
+      if (isCorsError(error) && retryCount < MAX_RETRIES && !abortControllerRef.current?.signal.aborted) {
+        console.log(`🦌 CORS/Network error detected, retrying in ${RETRY_DELAY}ms...`);
+        await delay(RETRY_DELAY * (retryCount + 1)); // Exponential backoff
+        return makeStreamingRequest(requestBody, retryCount + 1);
+      }
+      
+      throw error;
+    }
+  };
+
+  const startStreaming = useCallback(async (
+    prompt: string,
+    sessionId: string,
+    conversationHistory: DeerMessage[] = []
+  ): Promise<void> => {
+    console.log('🦌 Starting Deer streaming...', { prompt, sessionId });
+    
+    // Reset state and prepare for new stream
+    resetState();
+    abortControllerRef.current = new AbortController();
+
+    setStreamingState(prev => ({
+      ...prev,
+      isStreaming: true,
+      error: null
+    }));
+
+    try {
+      // Prepare request body with exact format from API docs
+      const messages: DeerMessage[] = [
+        ...conversationHistory,
+        { role: 'user', content: prompt }
+      ];
+
+      const requestBody: DeerRequestBody = {
+        messages,
+        thread_id: sessionId,
+        resources: [],
+        max_plan_iterations: 3
+      };
+
+      console.log('🦌 Sending request to Deer API:', requestBody);
+
+      // Make the streaming request with retry logic
+      await makeStreamingRequest(requestBody);
+
+      // Mark as completed if we reach here without errors
       setStreamingState(prev => ({
         ...prev,
         isStreaming: false,
@@ -219,10 +254,20 @@ export const useDeerStreaming = () => {
           isStreaming: false
         }));
       } else {
+        let errorMessage = 'An error occurred during streaming';
+        
+        if (isCorsError(error)) {
+          errorMessage = 'Connection error: Please check your network connection and try again';
+        } else if (error.message.includes('HTTP error')) {
+          errorMessage = `Server error: ${error.message}`;
+        } else {
+          errorMessage = error.message || errorMessage;
+        }
+        
         setStreamingState(prev => ({
           ...prev,
           isStreaming: false,
-          error: error.message || 'An error occurred during streaming'
+          error: errorMessage
         }));
       }
     }
