@@ -37,6 +37,9 @@ const ChatInputControls: React.FC<ChatInputControlsProps> = ({
 }) => {
   const iconSize = isCompact ? 'h-3 w-3' : 'h-4 w-4';
   const buttonSize = isCompact ? 'h-8 w-8' : 'h-10 w-10';
+  
+  // Debug log to see what selectedModel value we're getting
+  console.log('🔍 ChatInputControls - selectedModel:', selectedModel, 'researchType:', researchType);
 
   return (
     <>
