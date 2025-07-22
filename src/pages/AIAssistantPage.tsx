@@ -132,11 +132,13 @@ const AIAssistantPage: React.FC = () => {
   // Convert messages to legacy format for components that expect it
   const legacyMessages = messages.map(adaptMessageToLegacy);
 
-  // Create a compatible streaming state that includes required properties
+  // Create a compatible streaming state that includes all required properties
   const compatibleStreamingState = {
     isStreaming: stratixStreamingState.isStreaming,
     currentPhase: stratixStreamingState.currentPhase,
     progress: stratixStreamingState.overallProgress, // Map overallProgress to progress
+    overallProgress: stratixStreamingState.overallProgress, // Include the original property
+    partialText: stratixStreamingState.partialText, // Include the partialText property
     error: stratixStreamingState.error || undefined,
     searchQueries: [], // Default empty array
     discoveredSources: stratixStreamingState.discoveredSources.map(source => ({
@@ -145,7 +147,7 @@ const AIAssistantPage: React.FC = () => {
       type: source.type,
       confidence: source.confidence
     })),
-    activeAgents: stratixStreamingState.activeAgents?.map(agent => agent.name),
+    activeAgents: stratixStreamingState.activeAgents?.map(agent => agent.name) || [],
     collaborationMode: stratixStreamingState.collaborationMode
   };
 

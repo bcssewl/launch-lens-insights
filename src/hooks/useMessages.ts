@@ -6,21 +6,7 @@ import { useAlegeonStreaming } from '@/hooks/useAlegeonStreaming';
 import { useAlegeonStreamingV2 } from '@/hooks/useAlegeonStreamingV2';
 import { useToast } from "@/components/ui/use-toast";
 import { useIsMobile } from '@/hooks/use-mobile';
-
-interface Message {
-  id: string;
-  sender: 'user' | 'assistant';
-  content: string;
-  timestamp: string;
-  isLoading?: boolean;
-  isError?: boolean;
-  sources?: any[];
-}
-
-interface CanvasState {
-  isOpen: boolean;
-  content: string;
-}
+import { Message } from '@/types/message';
 
 export const useMessages = (sessionId: string | null, updateSessionTitle: (sessionId: string, newTitle: string) => Promise<void>, sessionTitle?: string) => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -42,7 +28,7 @@ export const useMessages = (sessionId: string | null, updateSessionTitle: (sessi
   } = useCanvas();
   
   const { streamingState, startStreaming, stopStreaming } = useStratixStreaming();
-  const { streamingState: alegeonStreamingState, startStreaming: startAlegeon, stopStreaming: stopAlegeon } = useAlegeonStreaming();
+  const { streamingState: alegeonStreamingState, startStreaming: startAlegeon, stopStreaming: stopAlegeon } = useAlegeonStreaming(null);
   const { streamingState: alegeonStreamingStateV2, startStreaming: startAlegeonV2, fastForward } = useAlegeonStreamingV2(sessionId);
 
   useEffect(() => {
