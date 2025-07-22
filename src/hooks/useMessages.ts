@@ -1,4 +1,3 @@
-
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useCanvas } from '@/hooks/useCanvas';
@@ -44,7 +43,7 @@ export const useMessages = (sessionId: string | null, updateSessionTitle: (sessi
   
   const { streamingState, startStreaming, stopStreaming } = useStratixStreaming();
   const { streamingState: alegeonStreamingState, startStreaming: startAlegeon, stopStreaming: stopAlegeon } = useAlegeonStreaming();
-  const { streamingState: alegeonStreamingStateV2, startStreaming: startAlegeonV2, fastForward } = useAlegeonStreamingV2(null);
+  const { streamingState: alegeonStreamingStateV2, startStreaming: startAlegeonV2, fastForward } = useAlegeonStreamingV2(sessionId);
 
   useEffect(() => {
     const loadChatHistory = async () => {
@@ -124,7 +123,7 @@ export const useMessages = (sessionId: string | null, updateSessionTitle: (sessi
     const currentTime = new Date().toISOString();
     const currentSessionId = sessionIdOverride || sessionId;
     const modelToUse = modelOverride || 'gpt-4o-mini';
-    const researchTypeToUse = researchTypeOverride || 'best';
+    const researchTypeToUse = researchTypeOverride || 'quick_facts';
 
     // Optimistically update the UI with the user's message
     const userMessage: Message = {
@@ -157,8 +156,7 @@ export const useMessages = (sessionId: string | null, updateSessionTitle: (sessi
       if (modelToUse === 'algeon') {
         console.log('🎯 Algeon Request - Research Type:', researchTypeToUse);
         
-        // Pass the research type directly to backend without local detection
-        // The backend will handle "best" mode routing
+        // Pass the research type directly to backend - including "best" for smart routing
         const alegeonResponse = await fetch('https://ai-agent-research-optivise-production.up.railway.app/research', {
           method: 'POST',
           headers: {

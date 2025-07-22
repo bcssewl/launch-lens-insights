@@ -14,11 +14,12 @@ import { useAlegeonStreamingV2 } from '@/hooks/useAlegeonStreamingV2';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTheme } from 'next-themes';
 import { Loader2 } from 'lucide-react';
+import { adaptMessageToLegacy } from '@/types/message';
 
 const AIAssistantPage: React.FC = () => {
   const isMobile = useIsMobile();
   const [selectedModel, setSelectedModel] = useState<string>('best');
-  const [selectedResearchType, setSelectedResearchType] = useState<string>('quick_facts');
+  const [selectedResearchType, setSelectedResearchType] = useState<string>('best');
   const { theme } = useTheme();
 
   const {
@@ -54,7 +55,7 @@ const AIAssistantPage: React.FC = () => {
     stratixStreamingState
   } = useMessages(currentSessionId, updateSessionTitle, currentSession?.title);
   
-  const { streamingState: alegeonStreamingStateV2, startStreaming: startAlegeonV2, fastForward } = useAlegeonStreamingV2(null);
+  const { streamingState: alegeonStreamingStateV2, startStreaming: startAlegeonV2, fastForward } = useAlegeonStreamingV2(currentSessionId);
   const [editedCanvasContent, setEditedCanvasContent] = useState(canvasState.content);
 
   useEffect(() => {
@@ -102,7 +103,7 @@ const AIAssistantPage: React.FC = () => {
   const handleModelSelect = (modelId: string) => {
     setSelectedModel(modelId);
     if (modelId === 'algeon') {
-      setSelectedResearchType('quick_facts');
+      setSelectedResearchType('best');
     }
   };
 
@@ -127,6 +128,26 @@ const AIAssistantPage: React.FC = () => {
   }
 
   const hasConversation = messages.length > 1 || isTyping;
+
+  // Convert messages to legacy format for components that expect it
+  const legacyMessages = messages.map(adaptMessageToLegacy);
+
+  // Create a compatible streaming state that includes required properties
+  const compatibleStreamingState = {
+    isStreaming: stratixStreamingState.isStreaming,
+    currentPhase: stratixStreamingState.currentPhase,
+    progress: stratixStreamingState.overallProgress, // Map overallProgress to progress
+    error: stratixStreamingState.error || undefined,
+    searchQueries: [], // Default empty array
+    discoveredSources: stratixStreamingState.discoveredSources.map(source => ({
+      name: source.name,
+      url: source.url,
+      type: source.type,
+      confidence: source.confidence
+    })),
+    activeAgents: stratixStreamingState.activeAgents?.map(agent => agent.name),
+    collaborationMode: stratixStreamingState.collaborationMode
+  };
 
   return (
     <DashboardLayout>
@@ -153,7 +174,7 @@ const AIAssistantPage: React.FC = () => {
             
             <div className="flex-1 min-h-0 bg-transparent relative">
               <ChatArea 
-                messages={messages} 
+                messages={legacyMessages} 
                 isTyping={isTyping} 
                 viewportRef={viewportRef} 
                 onSendMessage={handleSendMessageWithSession}
@@ -162,8 +183,8 @@ const AIAssistantPage: React.FC = () => {
                 onCloseCanvas={handleCloseCanvas} 
                 onCanvasDownload={handleCanvasDownload} 
                 onCanvasPrint={handleCanvasPrint}
-                streamingState={streamingState}
-                stratixStreamingState={stratixStreamingState}
+                streamingState={compatibleStreamingState}
+                stratixStreamingState={compatibleStreamingState}
                 alegeonStreamingState={alegeonStreamingStateV2}
                 onAlegeonFastForward={fastForward}
               />
@@ -193,7 +214,7 @@ const AIAssistantPage: React.FC = () => {
             title="AI Report" 
             onDownload={handleCanvasDownload} 
             onPrint={handleCanvasPdfDownload} 
-            messages={messages} 
+            messages={legacyMessages} 
             isTyping={isTyping} 
             viewportRef={viewportRef} 
             onSendMessage={handleSendMessageWithSession}
