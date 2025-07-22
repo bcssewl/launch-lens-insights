@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { FloatingElements } from '@/components/landing/FloatingElements';
 import ChatArea from '@/components/assistant/ChatArea';
@@ -10,7 +11,6 @@ import { useChatSessions } from '@/hooks/useChatSessions';
 import { useChatHistory } from '@/hooks/useChatHistory';
 import { useMessages } from '@/hooks/useMessages';
 import { useAlegeonStreamingV2 } from '@/hooks/useAlegeonStreamingV2';
-import { useDeerStreaming } from '@/hooks/useDeerStreaming';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTheme } from 'next-themes';
 import { Loader2 } from 'lucide-react';
@@ -55,9 +55,7 @@ const AIAssistantPage: React.FC = () => {
   } = useMessages(currentSessionId, updateSessionTitle, currentSession?.title);
   
   const { streamingState: alegeonStreamingStateV2, startStreaming: startAlegeonV2, fastForward } = useAlegeonStreamingV2(null);
-  const { streamingState: deerStreamingState, startStreaming: startDeerStreaming } = useDeerStreaming();
   const [editedCanvasContent, setEditedCanvasContent] = useState(canvasState.content);
-  const [lastDeerQuery, setLastDeerQuery] = useState<{ text: string, sessionId: string }>({ text: '', sessionId: '' });
 
   useEffect(() => {
     setEditedCanvasContent(canvasState.content);
@@ -76,40 +74,11 @@ const AIAssistantPage: React.FC = () => {
       
       await new Promise(resolve => setTimeout(resolve, 200));
       
-      // Handle Deer model streaming
-      if (modelToUse === 'deer') {
-        console.log('🦌 Starting Deer streaming for new session:', newSession.id);
-        setLastDeerQuery({ text, sessionId: newSession.id });
-        try {
-          await startDeerStreaming(text, newSession.id);
-        } catch (error) {
-          console.error('🦌 Deer streaming error:', error);
-        }
-      } else {
-        handleSendMessage(text, undefined, modelToUse, researchTypeToUse, newSession.id);
-      }
+      handleSendMessage(text, undefined, modelToUse, researchTypeToUse, newSession.id);
     } else {
-      // Handle Deer model streaming for existing session
-      if (modelToUse === 'deer') {
-        console.log('🦌 Starting Deer streaming for existing session:', currentSessionId);
-        setLastDeerQuery({ text, sessionId: currentSessionId });
-        try {
-          await startDeerStreaming(text, currentSessionId);
-        } catch (error) {
-          console.error('🦌 Deer streaming error:', error);
-        }
-      } else {
-        handleSendMessage(text, undefined, modelToUse, researchTypeToUse);
-      }
+      handleSendMessage(text, undefined, modelToUse, researchTypeToUse);
     }
   };
-
-  const handleDeerRetry = useCallback(() => {
-    if (lastDeerQuery.text && lastDeerQuery.sessionId) {
-      console.log('🦌 Retrying Deer streaming...', lastDeerQuery);
-      startDeerStreaming(lastDeerQuery.text, lastDeerQuery.sessionId);
-    }
-  }, [lastDeerQuery, startDeerStreaming]);
 
   const handleClearConversationWithHistory = async () => {
     handleClearConversation();
@@ -189,7 +158,7 @@ const AIAssistantPage: React.FC = () => {
                 viewportRef={viewportRef} 
                 onSendMessage={handleSendMessageWithSession}
                 selectedModel={selectedModel}
-                onOpenCanvas={() => {}}
+                onOpenCanvas={handleOpenCanvas} 
                 onCloseCanvas={handleCloseCanvas} 
                 onCanvasDownload={handleCanvasDownload} 
                 onCanvasPrint={handleCanvasPrint}
@@ -197,8 +166,6 @@ const AIAssistantPage: React.FC = () => {
                 stratixStreamingState={stratixStreamingState}
                 alegeonStreamingState={alegeonStreamingStateV2}
                 onAlegeonFastForward={fastForward}
-                deerStreamingState={deerStreamingState}
-                onDeerRetry={handleDeerRetry}
               />
             </div>
 

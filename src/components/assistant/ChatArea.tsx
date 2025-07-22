@@ -1,30 +1,50 @@
-import React, { useRef, useEffect } from 'react';
-import ChatMessage from './ChatMessage';
-import { cn } from '@/lib/utils';
-import { useChatHistory } from '@/hooks/useChatHistory';
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Skeleton } from "@/components/ui/skeleton"
-import TypingIndicator from './TypingIndicator';
-import StreamingOverlay from './StreamingOverlay';
-import SourceCard from './SourceCard';
-import DeerStreamingOverlay from './DeerStreamingOverlay';
+
+import React, { useState, useCallback, useEffect } from 'react';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import ChatMessage from '@/components/assistant/ChatMessage';
+import TypingIndicator from '@/components/assistant/TypingIndicator';
+import PerplexityEmptyState from '@/components/assistant/PerplexityEmptyState';
+import StreamingProgress from '@/components/assistant/StreamingProgress';
+import StreamingError from '@/components/assistant/StreamingError';
+import { Message } from '@/constants/aiAssistant';
+import type { StratixStreamingState } from '@/types/stratixStreaming';
+import type { AlegeonStreamingStateV2 } from '@/hooks/useAlegeonStreamingV2';
 
 interface ChatAreaProps {
-  messages: any[];
+  messages: Message[];
   isTyping: boolean;
   viewportRef: React.RefObject<HTMLDivElement>;
-  onSendMessage: (message: string, attachments?: any[], modelOverride?: string, researchType?: string) => Promise<void>;
+  onSendMessage: (message: string, attachments?: any[], selectedModel?: string) => void;
   selectedModel: string;
-  onOpenCanvas: () => void;
-  onCloseCanvas: () => void;
-  onCanvasDownload: () => void;
-  onCanvasPrint: () => void;
-  streamingState?: any;
-  stratixStreamingState?: any;
-  alegeonStreamingState?: any;
+  canvasState?: {
+    isOpen: boolean;
+    messageId: string | null;
+    content: string;
+  };
+  onOpenCanvas?: (messageId: string, content: string) => void;
+  onCloseCanvas?: () => void;
+  onCanvasDownload?: () => void;
+  onCanvasPrint?: () => void;
+  streamingState?: {
+    isStreaming: boolean;
+    currentPhase: string;
+    progress: number;
+    error?: string | null;
+    errorCode?: string;
+    retryAfter?: number;
+    searchQueries: string[];
+    discoveredSources: Array<{
+      name: string;
+      url: string;
+      type: string;
+      confidence: number;
+    }>;
+    activeAgents?: string[];
+    collaborationMode?: string;
+  };
+  stratixStreamingState?: StratixStreamingState;
+  alegeonStreamingState?: AlegeonStreamingStateV2;
   onAlegeonFastForward?: () => void;
-  deerStreamingState?: any;
-  onDeerRetry?: () => void;
 }
 
 const ChatArea: React.FC<ChatAreaProps> = ({
@@ -34,82 +54,115 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   onSendMessage,
   selectedModel,
   onOpenCanvas,
-  onCloseCanvas,
   onCanvasDownload,
   onCanvasPrint,
   streamingState,
   stratixStreamingState,
   alegeonStreamingState,
-  onAlegeonFastForward,
-  deerStreamingState,
-  onDeerRetry
+  onAlegeonFastForward
 }) => {
-  const bottomRef = useRef(null);
+  const [canvasPreviewMessages, setCanvasPreviewMessages] = useState<Set<string>>(new Set());
+
+  const handleToggleCanvasPreview = useCallback((messageId: string) => {
+    setCanvasPreviewMessages(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(messageId)) {
+        newSet.delete(messageId);
+      } else {
+        newSet.add(messageId);
+      }
+      return newSet;
+    });
+  }, []);
+
+  const hasConversation = messages.length > 1 || isTyping;
 
   useEffect(() => {
-    // Scroll to the bottom when messages change
-    if (bottomRef.current) {
-      bottomRef.current.scrollIntoView({ behavior: 'smooth' });
+    if (hasConversation && viewportRef.current) {
+      const timer = setTimeout(() => {
+        if (viewportRef.current) {
+          viewportRef.current.scrollTo({
+            top: viewportRef.current.scrollHeight,
+            behavior: 'smooth'
+          });
+        }
+      }, 100);
+
+      return () => clearTimeout(timer);
     }
-  }, [messages]);
+  }, [hasConversation, viewportRef]);
 
-  return (
-    <div className="flex-1 overflow-hidden bg-transparent">
-      <div className="px-6 py-4 bg-transparent">
-        <h1 className="font-semibold text-lg">Chat</h1>
-        <p className="text-sm text-muted-foreground">
-          This is a sample chat area.
-        </p>
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-6 space-y-4">
-        {messages.map((message, index) => {
-          return (
-            <div key={index}>
-              <ChatMessage
-                message={message}
-                isStreaming={streamingState?.isStreaming && streamingState?.currentMessageId === message.id}
-                streamingUpdates={streamingState?.updates}
-                onOpenCanvas={onOpenCanvas ? (messageId: string, content: string) => onOpenCanvas() : undefined}
-                onCanvasDownload={onCanvasDownload}
-                onCanvasPrint={onCanvasPrint}
-                onAlegeonFastForward={onAlegeonFastForward}
-                alegeonStreamingState={alegeonStreamingState}
-              />
-              {stratixStreamingState?.sources && stratixStreamingState?.sources[message.id] && (
-                <div className="mt-2 space-y-2">
-                  {Object.values(stratixStreamingState.sources[message.id]).map((source: any, index: number) => (
-                    <SourceCard 
-                      key={index} 
-                      name={source.name}
-                      url={source.url}
-                      type={source.type || 'web'}
-                      confidence={source.confidence || 80}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        })}
-        {isTyping && selectedModel !== 'deer' && (
-          <TypingIndicator />
-        )}
-      </div>
-      
-      {/* Deer Streaming Overlay */}
-      {deerStreamingState && (deerStreamingState.isStreaming || deerStreamingState.error || deerStreamingState.finalContent) && (
-        <div className="max-w-4xl mx-auto px-6 mb-6">
-          <DeerStreamingOverlay 
-            streamingState={deerStreamingState}
-            onRetry={onDeerRetry}
+  if (!hasConversation) {
+    return (
+      <div className="h-full flex flex-col bg-transparent">
+        <div className="flex-1 flex flex-col justify-center">
+          <PerplexityEmptyState 
+            onSendMessage={onSendMessage}
+            selectedModel={selectedModel}
           />
         </div>
-      )}
-      
-      <div ref={bottomRef} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-full flex flex-col bg-background/10 backdrop-blur-sm">
+      <div className="flex-1 min-h-0 overflow-hidden">
+        <ScrollArea className="h-full w-full" viewportRef={viewportRef}>
+          <div className="max-w-4xl mx-auto px-6 py-8 space-y-8">
+            {streamingState?.error && (
+              <StreamingError
+                error={streamingState.error}
+                errorCode={streamingState.errorCode}
+                retryAfter={streamingState.retryAfter}
+                isVisible={true}
+              />
+            )}
+
+            {streamingState?.isStreaming && !stratixStreamingState?.isStreaming && !alegeonStreamingState?.isStreaming && (
+              <StreamingProgress
+                currentPhase={streamingState.currentPhase}
+                progress={streamingState.progress}
+                searchQueries={streamingState.searchQueries}
+                discoveredSources={streamingState.discoveredSources}
+                activeAgents={streamingState.activeAgents?.map(name => ({ name, status: 'active' as const, progress: 50 })) || []}
+                collaborationMode={streamingState.collaborationMode as 'sequential' | 'parallel' | 'hierarchical' | null}
+                isVisible={true}
+              />
+            )}
+
+            {messages.map((msg) => {
+              return (
+                <ChatMessage 
+                  key={msg.id} 
+                  message={{ ...msg, timestamp: formatTimestamp(msg.timestamp) }}
+                  onOpenCanvas={onOpenCanvas}
+                  onCanvasDownload={onCanvasDownload}
+                  onCanvasPrint={onCanvasPrint}
+                  onToggleCanvasPreview={handleToggleCanvasPreview}
+                  isCanvasPreview={canvasPreviewMessages.has(msg.id)}
+                  isStreaming={false}
+                  streamingUpdates={[]}
+                  streamingSources={[]}
+                  streamingProgress={{ phase: '', progress: 0 }}
+                  stratixStreamingState={stratixStreamingState}
+                  alegeonStreamingState={alegeonStreamingState}
+                  onAlegeonFastForward={onAlegeonFastForward}
+                />
+              );
+            })}
+            {isTyping && <TypingIndicator />}
+          </div>
+          {/* Add bottom padding to account for sticky input bar */}
+          <div className="h-20 md:h-24" />
+        </ScrollArea>
+      </div>
     </div>
   );
+};
+
+const formatTimestamp = (timestamp: Date): string => {
+  return timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
 
 export default ChatArea;

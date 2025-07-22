@@ -21,7 +21,7 @@ export interface ChatMessageData {
   id: string;
   text: string;
   sender: 'ai' | 'user';
-  timestamp: string | { iso?: string; value?: { iso?: string } };
+  timestamp: string;
   metadata?: {
     isCompleted?: boolean;
     messageType?: 'progress_update' | 'completed_report' | 'standard' | 'stratix_conversation';
@@ -266,14 +266,7 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
             "text-xs mt-1 opacity-70 px-1",
             isAi ? "text-muted-foreground" : "text-muted-foreground"
           )}>
-            {typeof message.timestamp === 'string' 
-              ? message.timestamp 
-              : (message.timestamp as any)?.iso 
-                ? new Date((message.timestamp as any).iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                : (message.timestamp as any)?.value?.iso
-                  ? new Date((message.timestamp as any).value.iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                  : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            }
+            {message.timestamp}
           </p>
         </div>
         {!isAi && (

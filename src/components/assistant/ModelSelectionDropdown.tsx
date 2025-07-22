@@ -28,11 +28,6 @@ const AI_MODELS: AIModel[] = [
     id: 'algeon',
     name: 'Algeon',
     description: 'Excels at math & strategy with research capabilities'
-  },
-  {
-    id: 'deer',
-    name: 'Deer',
-    description: 'Advanced research agent with step-by-step analysis'
   }
 ];
 

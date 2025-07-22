@@ -11,7 +11,7 @@ interface FullscreenChatLayoutProps {
   viewportRef: React.RefObject<HTMLDivElement>;
   isConfigured: boolean;
   currentSessionId?: string | null;
-  onSendMessage: (message: string, attachments?: any[], modelOverride?: string, researchType?: string) => Promise<void>;
+  onSendMessage: (message: string) => void;
   onDownloadChat: () => void;
   onClearConversation: () => void;
   onSessionSelect: (sessionId: string) => void;
@@ -22,7 +22,7 @@ interface FullscreenChatLayoutProps {
     messageId: string | null;
     content: string;
   };
-  onOpenCanvas?: () => void;
+  onOpenCanvas?: (messageId: string, content: string) => void;
   onCloseCanvas?: () => void;
   onCanvasDownload?: () => void;
   onCanvasPrint?: () => void;
@@ -81,6 +81,7 @@ const FullscreenChatLayout: React.FC<FullscreenChatLayoutProps> = ({
           viewportRef={viewportRef}
           onSendMessage={onSendMessage}
           selectedModel={selectedModel}
+          canvasState={canvasState}
           onOpenCanvas={onOpenCanvas}
           onCloseCanvas={onCloseCanvas}
           onCanvasDownload={onCanvasDownload}

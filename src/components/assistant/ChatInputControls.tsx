@@ -54,7 +54,7 @@ const ChatInputControls: React.FC<ChatInputControlsProps> = ({
         </Button>
       </AttachmentOptionsDropdown>
       
-      {onResearchTypeChange && selectedModel === 'algeon' && (
+      {onResearchTypeChange && (
         <ResearchTypeSelector
           selectedType={researchType}
           onTypeChange={onResearchTypeChange}

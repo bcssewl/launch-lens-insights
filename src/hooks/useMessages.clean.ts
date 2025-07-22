@@ -212,10 +212,6 @@ export const useMessages = (currentSessionId: string | null) => {
       if (selectedModel === 'stratix') {
         console.log('🎯 Using Stratix model with Perplexity-style streaming');
         aiResponseText = await handleStratixRequest(finalMessageText, currentSessionId);
-      } else if (selectedModel === 'deer') {
-        console.log('🦌 Using Deer model - streaming handled separately');
-        // For Deer model, return a placeholder as streaming is handled separately
-        aiResponseText = '';
       } else {
         // Use existing N8N webhook for all other models
         let contextMessage = finalMessageText;
