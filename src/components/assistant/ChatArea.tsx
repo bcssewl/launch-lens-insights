@@ -14,8 +14,9 @@ interface ChatAreaProps {
   messages: Message[];
   isTyping: boolean;
   viewportRef: React.RefObject<HTMLDivElement>;
-  onSendMessage: (message: string, attachments?: any[], selectedModel?: string) => void;
+  onSendMessage: (message: string, attachments?: any[], selectedModel?: string, researchType?: string) => void;
   selectedModel: string;
+  onModelSelect?: (model: any) => void;
   canvasState?: {
     isOpen: boolean;
     messageId: string | null;
@@ -53,6 +54,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   viewportRef,
   onSendMessage,
   selectedModel,
+  onModelSelect,
   onOpenCanvas,
   onCanvasDownload,
   onCanvasPrint,
@@ -99,6 +101,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           <PerplexityEmptyState 
             onSendMessage={onSendMessage}
             selectedModel={selectedModel}
+            onModelSelect={onModelSelect}
           />
         </div>
       </div>

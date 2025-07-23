@@ -7,7 +7,6 @@ import CanvasView from '@/components/assistant/CanvasView';
 import ChatSubheader from '@/components/assistant/ChatSubheader';
 import EnhancedChatInput from '@/components/assistant/EnhancedChatInput';
 import { ReasoningProvider } from '@/contexts/ReasoningContext';
-import { AIModel } from '@/components/assistant/ModelSelectionDropdown';
 import { useChatSessions } from '@/hooks/useChatSessions';
 import { useChatHistory } from '@/hooks/useChatHistory';
 import { useMessages } from '@/hooks/useMessages';
@@ -100,7 +99,7 @@ const AIAssistantPage: React.FC = () => {
     setEditedCanvasContent(newContent);
   };
 
-  const handleModelSelect = (model: AIModel) => {
+  const handleModelSelect = (model: any) => {
     setSelectedModel(model.id);
     if (model.id === 'algeon') {
       setSelectedResearchType('quick_facts');
@@ -145,7 +144,7 @@ const AIAssistantPage: React.FC = () => {
                   onClearConversation={handleClearConversationWithHistory} 
                   onSessionSelect={handleSessionSelect}
                   selectedModel={selectedModel}
-                  onModelSelect={handleModelSelect}
+                  onModelSelect={(model: any) => handleModelSelect(model)}
                   selectedResearchType={selectedResearchType}
                   onResearchTypeChange={handleResearchTypeChange}
                 />
@@ -159,6 +158,7 @@ const AIAssistantPage: React.FC = () => {
                 viewportRef={viewportRef} 
                 onSendMessage={handleSendMessageWithSession}
                 selectedModel={selectedModel}
+                onModelSelect={handleModelSelect}
                 onOpenCanvas={handleOpenCanvas} 
                 onCloseCanvas={handleCloseCanvas} 
                 onCanvasDownload={handleCanvasDownload} 

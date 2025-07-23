@@ -12,16 +12,19 @@ import ProjectSelectionModal from './ProjectSelectionModal';
 import LocalFileUploader from './LocalFileUploader';
 import AttachmentsList from './AttachmentsList';
 import ResearchTypeSelector from './ResearchTypeSelector';
+import ModelSelectionDropdown, { AIModel } from './ModelSelectionDropdown';
 import { getConsultingPlaceholder } from '@/lib/geolocation';
 
 interface PerplexityEmptyStateProps {
   onSendMessage: (message: string, attachments?: any[], selectedModel?: string) => void;
   selectedModel: string;
+  onModelSelect?: (model: AIModel) => void;
 }
 
 const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
   onSendMessage,
-  selectedModel: parentSelectedModel
+  selectedModel: parentSelectedModel,
+  onModelSelect
 }) => {
   const { primaryGreeting, assistanceMessage, isLoading: greetingLoading, userCountry } = useGreeting();
   const {
@@ -170,9 +173,12 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
 
             {/* Right Side Button Group */}
             <div className="flex items-center space-x-2">
-              <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground">
-                <Globe className="h-5 w-5" />
-              </Button>
+              {onModelSelect && (
+                <ModelSelectionDropdown
+                  selectedModel={parentSelectedModel}
+                  onModelSelect={onModelSelect}
+                />
+              )}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <AttachmentOptionsDropdown onDatabaseSelect={() => setShowProjectModal(true)} onLocalFileSelect={() => setShowLocalUploader(true)}>
