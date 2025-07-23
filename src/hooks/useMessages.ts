@@ -6,6 +6,7 @@ import { useChatHistory } from '@/hooks/useChatHistory';
 import { usePerplexityStreaming } from '@/hooks/usePerplexityStreaming';
 import { useStratixStreaming } from '@/hooks/useStratixStreaming';
 import { useAlegeonStreamingV2 } from '@/hooks/useAlegeonStreamingV2';
+import { useIIResearchStreaming } from '@/hooks/useIIResearchStreaming';
 import { useAutoTitle } from '@/hooks/useAutoTitle';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -125,7 +126,7 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
   // Initialize auto-title system
   const { generateAndSetTitle, shouldGenerateTitle } = useAutoTitle();
   
-  // Initialize streaming systems - keeping references but only using Algeon
+  // Initialize streaming systems
   const { streamingState, startStreaming, stopStreaming } = usePerplexityStreaming();
   const { 
     streamingState: stratixStreamingState, 
@@ -138,6 +139,11 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     stopStreaming: stopAlegeonStreaming,
     fastForward: alegeonFastForward
   } = useAlegeonStreamingV2(currentSessionId);
+  const { 
+    streamingState: iiResearchStreamingState, 
+    startStreaming: startIIResearch, 
+    stopStreaming: stopIIResearch 
+  } = useIIResearchStreaming();
 
   // Consistent streaming message ID
   const STREAMING_MESSAGE_ID = 'algeon-streaming-message';
@@ -200,6 +206,65 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     alegeonStreamingState.hasContent,
     alegeonStreamingState.bufferedText,
     alegeonStreamingState.citations
+  ]);
+
+  // Handle II-Research streaming state changes
+  useEffect(() => {
+    if (iiResearchStreamingState.isStreaming) {
+      console.log('📝 Managing II-Research streaming message display');
+      
+      let progressText = 'Starting research...';
+      
+      // Update progress text based on current phase
+      switch (iiResearchStreamingState.currentPhase) {
+        case 'connecting':
+          progressText = 'Connecting to research system...';
+          break;
+        case 'connected':
+          progressText = 'Connected. Initializing research...';
+          break;
+        case 'using_tools':
+          progressText = 'Gathering information from various sources...';
+          break;
+        case 'reasoning':
+          progressText = `Analyzing data...\n\n${iiResearchStreamingState.currentReasoning}`;
+          break;
+        case 'gathering_sources':
+          progressText = `Visiting and analyzing web sources (${iiResearchStreamingState.sources.length} sources found)...\n\n${iiResearchStreamingState.currentReasoning}`;
+          break;
+        case 'writing_report':
+          progressText = 'Compiling final research report...';
+          break;
+        default:
+          progressText = iiResearchStreamingState.currentReasoning || 'Researching...';
+      }
+      
+      // Add thought steps summary if available
+      if (iiResearchStreamingState.thoughtSteps.length > 0) {
+        const recentSteps = iiResearchStreamingState.thoughtSteps.slice(-3);
+        progressText += '\n\n**Recent Activity:**\n' + recentSteps.map(step => `• ${step.content}`).join('\n');
+      }
+      
+      const streamingMessage: ExtendedMessage = {
+        id: STREAMING_MESSAGE_ID,
+        text: progressText,
+        sender: 'ai',
+        timestamp: new Date(),
+        isStreaming: true,
+        metadata: {
+          messageType: 'progress_update',
+          isCompleted: false
+        }
+      };
+      
+      dispatch({ type: 'ADD_STREAMING_MESSAGE', payload: streamingMessage });
+    }
+  }, [
+    iiResearchStreamingState.isStreaming,
+    iiResearchStreamingState.currentPhase,
+    iiResearchStreamingState.currentReasoning,
+    iiResearchStreamingState.thoughtSteps,
+    iiResearchStreamingState.sources
   ]);
 
   // Effect 2: Handle completion (final message creation) - ONCE per session
@@ -434,11 +499,49 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     }
   }, [startAlegeonStreaming]);
 
+  // Handle II-Research requests using Server-Sent Events
+  const handleIIResearchRequest = useCallback(async (message: string): Promise<string> => {
+    try {
+      console.log('🔬 Starting II-Research SSE streaming for message:', message.substring(0, 100));
+      
+      // Create a streaming message to show progress
+      const streamingMessage: ExtendedMessage = {
+        id: STREAMING_MESSAGE_ID,
+        text: 'Starting research...',
+        sender: 'ai',
+        timestamp: new Date(),
+        isStreaming: true,
+        metadata: {
+          messageType: 'progress_update',
+          isCompleted: false
+        }
+      };
+      
+      dispatch({ type: 'ADD_STREAMING_MESSAGE', payload: streamingMessage });
+      
+      // Use the II-Research streaming implementation
+      const result = await startIIResearch(message);
+      
+      console.log('✅ II-Research request completed:', {
+        finalAnswer: result.finalAnswer?.substring(0, 100),
+        sourcesCount: result.sources?.length || 0,
+        thoughtStepsCount: result.thoughtSteps?.length || 0
+      });
+      
+      return result.finalAnswer || 'Research completed successfully.';
+      
+    } catch (error) {
+      console.error('❌ II-Research streaming failed:', error);
+      dispatch({ type: 'REMOVE_STREAMING_MESSAGE', payload: STREAMING_MESSAGE_ID });
+      return 'I apologize, but I encountered an issue with the II-Research system. Please try again or check your connection.';
+    }
+  }, [startIIResearch]);
+
   const handleSendMessage = useCallback(async (text?: string, messageText?: string, selectedModel?: string, researchType?: string, sessionIdOverride?: string) => {
     const finalMessageText = text || messageText;
     if (!finalMessageText || finalMessageText.trim() === '') return;
 
-    console.log('🚀 useMessages: Routing ALL requests through Algeon WebSocket');
+    console.log('🚀 useMessages: Routing request based on selected model:', selectedModel);
 
     isAddingMessageRef.current = true;
 
@@ -483,6 +586,7 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     stopStreaming();
     stopStratixStreaming();
     stopAlegeonStreaming();
+    stopIIResearch();
     
     // Remove any existing streaming messages
     dispatch({ type: 'REMOVE_STREAMING_MESSAGE', payload: STREAMING_MESSAGE_ID });
@@ -493,10 +597,43 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     try {
       let aiResponseText: string;
 
-      // ALWAYS route through Algeon WebSocket regardless of selected model
-      console.log('🔬 Using Algeon WebSocket for ALL requests');
-      aiResponseText = await handleAlegeonRequest(finalMessageText, researchType, currentSessionId, clientMessageId);
-      // Note: Final message handling is done in the useEffect above
+      // Route based on selected model
+      if (selectedModel === 'ii-research') {
+        console.log('🔬 Using II-Research SSE for request');
+        aiResponseText = await handleIIResearchRequest(finalMessageText);
+        
+        // For ii-research, create final message immediately since it's not handled by useEffect
+        const finalMessage: ExtendedMessage = {
+          id: uuidv4(),
+          text: aiResponseText,
+          sender: 'ai',
+          timestamp: new Date(),
+          metadata: {
+            messageType: 'completed_report',
+            isCompleted: true
+          }
+        };
+        
+        dispatch({ 
+          type: 'REPLACE_STREAMING_WITH_FINAL', 
+          payload: { finalMessage, streamingId: STREAMING_MESSAGE_ID }
+        });
+        
+        // Save to history
+        if (sessionIdToUse) {
+          const messageWithSources = `AI: ${aiResponseText}${
+            iiResearchStreamingState.sources.length > 0 
+              ? `\n\nSources: ${JSON.stringify(iiResearchStreamingState.sources.map(s => ({ url: s.url, title: s.title })))}`
+              : ''
+          }`;
+          addMessage(messageWithSources);
+        }
+      } else {
+        // Default to Algeon WebSocket
+        console.log('🔬 Using Algeon WebSocket for request');
+        aiResponseText = await handleAlegeonRequest(finalMessageText, researchType, currentSessionId, clientMessageId);
+        // Note: Final message handling is done in the useEffect above
+      }
 
       // Reset flag after successful completion
       setTimeout(() => {
@@ -522,7 +659,7 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     } finally {
       setIsTyping(false);
     }
-  }, [currentSessionId, addMessage, isConfigured, canvasState, handleAlegeonRequest, stopStreaming, stopStratixStreaming, stopAlegeonStreaming]);
+  }, [currentSessionId, addMessage, isConfigured, canvasState, handleAlegeonRequest, handleIIResearchRequest, stopStreaming, stopStratixStreaming, stopAlegeonStreaming, stopIIResearch, iiResearchStreamingState.sources]);
 
   const handleClearConversation = useCallback(() => {
     console.log('useMessages: Clearing conversation');
@@ -679,11 +816,13 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     streamingState,
     stratixStreamingState,
     alegeonStreamingState,
+    iiResearchStreamingState,
     // Provide streaming state for components that need it
-    isStreamingForMessage: () => streamingState.isStreaming || stratixStreamingState.isStreaming || alegeonStreamingState.isStreaming,
+    isStreamingForMessage: () => streamingState.isStreaming || stratixStreamingState.isStreaming || alegeonStreamingState.isStreaming || iiResearchStreamingState.isStreaming,
     getStreamingState: () => streamingState,
     getStratixStreamingState: () => stratixStreamingState,
     getAlegeonStreamingState: () => alegeonStreamingState,
+    getIIResearchStreamingState: () => iiResearchStreamingState,
     alegeonFastForward
   };
 };
