@@ -18,7 +18,7 @@ import { Loader2 } from 'lucide-react';
 
 const AIAssistantPage: React.FC = () => {
   const isMobile = useIsMobile();
-  const [selectedModel, setSelectedModel] = useState<string>('algeon');
+  const [selectedModel, setSelectedModel] = useState<string>('ii-research');
   const [selectedResearchType, setSelectedResearchType] = useState<string>('quick_facts');
   const { theme } = useTheme();
 
