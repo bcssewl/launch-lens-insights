@@ -165,10 +165,12 @@ const PerplexityEmptyState: React.FC<PerplexityEmptyStateProps> = ({
               <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground">
                 <Target className="h-5 w-5" />
               </Button>
-              <ResearchTypeSelector 
-                selectedType={selectedResearchType} 
-                onTypeChange={handleResearchTypeChange} 
-              />
+              {parentSelectedModel === 'algeon' && (
+                <ResearchTypeSelector 
+                  selectedType={selectedResearchType} 
+                  onTypeChange={handleResearchTypeChange} 
+                />
+              )}
             </div>
 
             {/* Right Side Button Group */}
