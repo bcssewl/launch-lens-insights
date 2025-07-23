@@ -7,6 +7,7 @@ import CanvasView from '@/components/assistant/CanvasView';
 import ChatSubheader from '@/components/assistant/ChatSubheader';
 import EnhancedChatInput from '@/components/assistant/EnhancedChatInput';
 import { ReasoningProvider } from '@/contexts/ReasoningContext';
+import { AIModel } from '@/components/assistant/ModelSelectionDropdown';
 import { useChatSessions } from '@/hooks/useChatSessions';
 import { useChatHistory } from '@/hooks/useChatHistory';
 import { useMessages } from '@/hooks/useMessages';
@@ -17,7 +18,7 @@ import { Loader2 } from 'lucide-react';
 
 const AIAssistantPage: React.FC = () => {
   const isMobile = useIsMobile();
-  const [selectedModel, setSelectedModel] = useState<string>('best');
+  const [selectedModel, setSelectedModel] = useState<string>('algeon');
   const [selectedResearchType, setSelectedResearchType] = useState<string>('quick_facts');
   const { theme } = useTheme();
 
@@ -99,9 +100,9 @@ const AIAssistantPage: React.FC = () => {
     setEditedCanvasContent(newContent);
   };
 
-  const handleModelSelect = (modelId: string) => {
-    setSelectedModel(modelId);
-    if (modelId === 'algeon') {
+  const handleModelSelect = (model: AIModel) => {
+    setSelectedModel(model.id);
+    if (model.id === 'algeon') {
       setSelectedResearchType('quick_facts');
     }
   };

@@ -19,15 +19,20 @@ export interface AIModel {
 
 const AI_MODELS: AIModel[] = [
   {
-    id: 'best',
-    name: 'Best',
-    description: 'Selects the best model for each query',
+    id: 'algeon',
+    name: 'Algeon',
+    description: 'Excels at math & strategy with research capabilities',
     isDefault: true
   },
   {
-    id: 'algeon',
-    name: 'Algeon',
-    description: 'Excels at math & strategy with research capabilities'
+    id: 'ii-research',
+    name: 'ii-Research',
+    description: 'Advanced research and analysis model'
+  },
+  {
+    id: 'deer',
+    name: 'Deer',
+    description: 'Creative and conversational AI model'
   }
 ];
 
@@ -37,13 +42,12 @@ interface ModelSelectionDropdownProps {
 }
 
 const ModelSelectionDropdown: React.FC<ModelSelectionDropdownProps> = ({
-  selectedModel = 'best',
+  selectedModel = 'algeon',
   onModelSelect
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   
   const currentModel = AI_MODELS.find(model => model.id === selectedModel) || AI_MODELS[0];
-  const isModelSelected = selectedModel !== 'best';
 
   const handleModelSelect = (model: AIModel) => {
     onModelSelect(model);
@@ -57,9 +61,9 @@ const ModelSelectionDropdown: React.FC<ModelSelectionDropdownProps> = ({
           variant="ghost" 
           className="h-10 px-3 rounded-full hover:bg-muted/50 text-muted-foreground hover:text-foreground flex items-center gap-2"
         >
-          <Lightbulb className={`h-4 w-4 ${isModelSelected ? 'text-yellow-500' : ''}`} />
+          <Lightbulb className="h-4 w-4" />
           <span className="text-sm font-medium">
-            {isModelSelected ? currentModel.name : 'Model'}
+            {currentModel.name}
           </span>
           <ChevronDown className="h-3 w-3" />
         </Button>
