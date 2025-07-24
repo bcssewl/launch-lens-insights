@@ -60,6 +60,7 @@ interface ChatMessageProps {
   };
   stratixStreamingState?: StratixStreamingState;
   alegeonStreamingState?: AlegeonStreamingStateV2;
+  iiResearchStreamingState?: any; // IIResearchStreamingState will be imported later
   onToggleCanvasPreview?: (messageId: string) => void;
   isCanvasPreview?: boolean;
   onAlegeonFastForward?: () => void;
@@ -76,6 +77,7 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
   streamingProgress = { phase: '', progress: 0 },
   stratixStreamingState,
   alegeonStreamingState,
+  iiResearchStreamingState,
   onToggleCanvasPreview,
   isCanvasPreview = false,
   onAlegeonFastForward

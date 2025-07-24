@@ -168,6 +168,7 @@ const AIAssistantPage: React.FC = () => {
                 streamingState={streamingState}
                 stratixStreamingState={stratixStreamingState}
                 alegeonStreamingState={alegeonStreamingStateV2}
+                iiResearchStreamingState={iiResearchStreamingState}
                 onAlegeonFastForward={fastForward}
               />
             </div>
