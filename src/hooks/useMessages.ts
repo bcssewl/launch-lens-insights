@@ -528,7 +528,22 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
         thoughtStepsCount: result.thoughtSteps?.length || 0
       });
       
-      return result.finalAnswer || 'Research completed successfully.';
+      // Enhanced validation and content extraction
+      let finalContent = result.finalAnswer || '';
+      
+      if (!finalContent || finalContent.trim().length === 0) {
+        console.warn('useMessages: Final answer is empty, trying reasoning content');
+        finalContent = result.reasoning || '';
+      }
+      
+      if (!finalContent || finalContent.trim().length === 0) {
+        console.warn('useMessages: No meaningful content found, using fallback');
+        finalContent = 'Research completed but no detailed report was generated. Please check the thought process and sources for more information.';
+      }
+      
+      console.log('useMessages: Using final content length:', finalContent.length);
+      
+      return finalContent;
       
     } catch (error) {
       console.error('❌ II-Research streaming failed:', error);

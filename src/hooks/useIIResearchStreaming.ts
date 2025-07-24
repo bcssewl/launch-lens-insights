@@ -166,22 +166,45 @@ export const useIIResearchStreaming = () => {
 
               case 'complete':
                 console.log('✅ II-Research streaming completed');
-                setStreamingState(prev => ({
-                  ...prev,
-                  isStreaming: false,
-                  currentPhase: 'completed'
-                }));
-                
-                // Close connection and resolve promise
-                cleanup();
-                if (promiseResolveRef.current) {
-                  promiseResolveRef.current({
-                    thoughtSteps: streamingState.thoughtSteps,
-                    reasoning: streamingState.currentReasoning,
-                    finalAnswer: streamingState.finalAnswer,
-                    sources: streamingState.sources
+                setStreamingState(prev => {
+                  const updatedState = {
+                    ...prev,
+                    isStreaming: false,
+                    currentPhase: 'completed'
+                  };
+                  
+                  // Log the final state for debugging
+                  console.log('📊 Final II-Research state:', {
+                    thoughtSteps: updatedState.thoughtSteps.length,
+                    reasoning: updatedState.currentReasoning?.length || 0,
+                    finalAnswer: updatedState.finalAnswer?.length || 0,
+                    sources: updatedState.sources.length,
+                    finalAnswerContent: updatedState.finalAnswer
                   });
-                }
+                  
+                  // Close connection and resolve promise with current state
+                  cleanup();
+                  if (promiseResolveRef.current) {
+                    const result = {
+                      thoughtSteps: updatedState.thoughtSteps,
+                      reasoning: updatedState.currentReasoning,
+                      finalAnswer: updatedState.finalAnswer,
+                      sources: updatedState.sources
+                    };
+                    
+                    console.log('🎯 Resolving II-Research promise with:', result);
+                    
+                    // Validate that we have meaningful content
+                    if (!result.finalAnswer || result.finalAnswer.trim().length === 0) {
+                      console.warn('⚠️ Final answer is empty, using reasoning or fallback');
+                      result.finalAnswer = result.reasoning || 'Research completed but no detailed report was generated.';
+                    }
+                    
+                    promiseResolveRef.current(result);
+                  }
+                  
+                  return updatedState;
+                });
                 break;
 
               default:
