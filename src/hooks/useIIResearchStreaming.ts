@@ -59,14 +59,20 @@ export const useIIResearchStreaming = () => {
 
   const startStreaming = useCallback((question: string): Promise<any> => {
     console.log('🚀 Starting II-Research streaming for question:', question);
+    console.log('🚀 Current streaming state before start:', streamingState);
     
     return new Promise((resolve, reject) => {
       // Store promise handlers
       promiseResolveRef.current = resolve;
       promiseRejectRef.current = reject;
 
-      // Reset state
-      setStreamingState(INITIAL_STATE);
+      // Reset state with immediate update
+      console.log('🔄 Resetting II-Research state to initial');
+      setStreamingState({
+        ...INITIAL_STATE,
+        isStreaming: true,
+        currentPhase: 'connecting'
+      });
 
       try {
         // Encode the question for URL
@@ -74,6 +80,7 @@ export const useIIResearchStreaming = () => {
         const url = `https://ii-researcher-3-deer-agent.up.railway.app/search?question=${encodedQuestion}&is_reasoning=true`;
         
         console.log('🔗 Connecting to II-Research SSE endpoint:', url);
+        console.log('🔗 About to create EventSource connection...');
         
         // Create EventSource connection
         const eventSource = new EventSource(url);

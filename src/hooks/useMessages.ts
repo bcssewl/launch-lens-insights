@@ -333,6 +333,74 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     history
   ]);
 
+  // Effect 3: Handle II-Research completion - ONCE per session
+  useEffect(() => {
+    if (!iiResearchStreamingState.isStreaming && 
+        iiResearchStreamingState.finalAnswer && 
+        iiResearchStreamingState.finalAnswer.trim() !== '') {
+        
+      console.log('✅ Processing II-Research completion');
+      
+      // Create final message with sources preserved
+      const finalMessage: ExtendedMessage = {
+        id: uuidv4(),
+        text: iiResearchStreamingState.finalAnswer,
+        sender: 'ai',
+        timestamp: new Date(),
+        metadata: {
+          messageType: 'completed_report',
+          isCompleted: true
+        }
+      };
+      
+      dispatch({ 
+        type: 'REPLACE_STREAMING_WITH_FINAL', 
+        payload: { finalMessage, streamingId: STREAMING_MESSAGE_ID }
+      });
+      
+      // Save final message to history with sources metadata
+      if (currentSessionId) {
+        const messageWithSources = `AI: ${iiResearchStreamingState.finalAnswer}${
+          iiResearchStreamingState.sources.length > 0 
+            ? `\n\nSources: ${JSON.stringify(iiResearchStreamingState.sources.map(s => ({ url: s.url, title: s.title })))}`
+            : ''
+        }`;
+        
+        console.log('💾 Saving II-Research completion to history');
+        addMessage(messageWithSources);
+
+        // Auto-title generation
+        if (updateSessionTitle && sessionTitle && shouldGenerateTitle(history.length + 1, sessionTitle)) {
+          const userMessages = history.filter(h => h.message.startsWith('USER:'));
+          if (userMessages.length > 0) {
+            const firstUserMessage = userMessages[0].message.substring(5).trim();
+            console.log('🏷️ Triggering auto-title generation for II-Research');
+            generateAndSetTitle(currentSessionId, firstUserMessage, iiResearchStreamingState.finalAnswer, updateSessionTitle);
+          }
+        }
+      }
+      
+      // Reset typing state
+      setIsTyping(false);
+      
+      // Reset flag
+      setTimeout(() => {
+        isAddingMessageRef.current = false;
+      }, 1000);
+    }
+  }, [
+    iiResearchStreamingState.isStreaming,
+    iiResearchStreamingState.finalAnswer,
+    iiResearchStreamingState.sources,
+    currentSessionId,
+    addMessage,
+    updateSessionTitle,
+    sessionTitle,
+    shouldGenerateTitle,
+    generateAndSetTitle,
+    history
+  ]);
+
   // Reset completion flag when new streaming starts
   useEffect(() => {
     if (alegeonStreamingState.isStreaming && !alegeonCompletionProcessedRef.current) {
@@ -615,34 +683,18 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
       // Route based on selected model
       if (selectedModel === 'ii-research') {
         console.log('🔬 Using II-Research SSE for request');
-        aiResponseText = await handleIIResearchRequest(finalMessageText);
         
-        // For ii-research, create final message immediately since it's not handled by useEffect
-        const finalMessage: ExtendedMessage = {
-          id: uuidv4(),
-          text: aiResponseText,
-          sender: 'ai',
-          timestamp: new Date(),
-          metadata: {
-            messageType: 'completed_report',
-            isCompleted: true
-          }
-        };
-        
-        dispatch({ 
-          type: 'REPLACE_STREAMING_WITH_FINAL', 
-          payload: { finalMessage, streamingId: STREAMING_MESSAGE_ID }
+        // Start II-Research streaming - let it run asynchronously
+        // The streaming progress will be shown via the streaming state effects
+        // The completion will be handled by the II-Research streaming state effects
+        handleIIResearchRequest(finalMessageText).catch(error => {
+          console.error('❌ II-Research request failed:', error);
+          setIsTyping(false);
+          isAddingMessageRef.current = false;
         });
         
-        // Save to history
-        if (sessionIdToUse) {
-          const messageWithSources = `AI: ${aiResponseText}${
-            iiResearchStreamingState.sources.length > 0 
-              ? `\n\nSources: ${JSON.stringify(iiResearchStreamingState.sources.map(s => ({ url: s.url, title: s.title })))}`
-              : ''
-          }`;
-          addMessage(messageWithSources);
-        }
+        // Don't create final message here - let the streaming complete naturally
+        return; // Exit early to let streaming handle the rest
       } else {
         // Default to Algeon WebSocket
         console.log('🔬 Using Algeon WebSocket for request');
