@@ -12,6 +12,7 @@ import CanvasCompact from './CanvasCompact';
 import StreamingOverlay from './StreamingOverlay';
 import StratixStreamingOverlay from './StratixStreamingOverlay';
 import EnhancedStreamingOverlay from './EnhancedStreamingOverlay';
+import IIResearchStreamingOverlay from './IIResearchStreamingOverlay';
 import ThinkingPanel from './ThinkingPanel';
 import { isReportMessage } from '@/utils/reportDetection';
 import type { StratixStreamingState } from '@/types/stratixStreaming';
@@ -193,6 +194,14 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
                 streamingState={alegeonStreamingState!}
                 className="absolute inset-0 z-20 rounded-2xl"
                 onFastForward={onAlegeonFastForward}
+              />
+            )}
+
+            {/* II-Research Streaming Overlay */}
+            {isAi && iiResearchStreamingState?.isStreaming && (
+              <IIResearchStreamingOverlay
+                streamingState={iiResearchStreamingState}
+                className="absolute inset-0 z-20 rounded-2xl"
               />
             )}
 

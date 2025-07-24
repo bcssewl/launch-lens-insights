@@ -333,13 +333,18 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     history
   ]);
 
+  // Ref to track if II-Research completion has been processed - ONE TIME ONLY per session
+  const iiResearchCompletionProcessedRef = useRef(false);
+
   // Effect 3: Handle II-Research completion - ONCE per session
   useEffect(() => {
     if (!iiResearchStreamingState.isStreaming && 
         iiResearchStreamingState.finalAnswer && 
-        iiResearchStreamingState.finalAnswer.trim() !== '') {
+        iiResearchStreamingState.finalAnswer.trim() !== '' &&
+        !iiResearchCompletionProcessedRef.current) {
         
-      console.log('✅ Processing II-Research completion');
+      console.log('✅ Processing II-Research completion - ONE TIME ONLY');
+      iiResearchCompletionProcessedRef.current = true; // Mark as processed immediately
       
       // Create final message with sources preserved
       const finalMessage: ExtendedMessage = {
@@ -358,7 +363,7 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
         payload: { finalMessage, streamingId: STREAMING_MESSAGE_ID }
       });
       
-      // Save final message to history with sources metadata
+      // Save final message to history with sources metadata - ONCE
       if (currentSessionId) {
         const messageWithSources = `AI: ${iiResearchStreamingState.finalAnswer}${
           iiResearchStreamingState.sources.length > 0 
@@ -366,7 +371,7 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
             : ''
         }`;
         
-        console.log('💾 Saving II-Research completion to history');
+        console.log('💾 Saving II-Research completion to history - ONE TIME');
         addMessage(messageWithSources);
 
         // Auto-title generation
@@ -412,6 +417,13 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
       }
     }
   }, [alegeonStreamingState.isStreaming]);
+
+  // Reset completion flags when switching sessions
+  useEffect(() => {
+    console.log('🔄 Session changed, resetting completion flags');
+    alegeonCompletionProcessedRef.current = false;
+    iiResearchCompletionProcessedRef.current = false;
+  }, [currentSessionId]);
 
   // Load messages from history when session changes
   useEffect(() => {
