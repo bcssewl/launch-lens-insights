@@ -71,7 +71,7 @@ export const useIIResearchStreaming = () => {
       try {
         // Encode the question for URL
         const encodedQuestion = encodeURIComponent(question);
-        const url = `https://ii-research-2-deer-agent.up.railway.app/search?question=${encodedQuestion}&is_reasoning=true`;
+        const url = `https://ii-researcher-3-deer-agent.up.railway.app/search?question=${encodedQuestion}&is_reasoning=true`;
         
         console.log('🔗 Connecting to II-Research SSE endpoint:', url);
         
