@@ -9,7 +9,6 @@ import StreamingError from '@/components/assistant/StreamingError';
 import { Message } from '@/constants/aiAssistant';
 import type { StratixStreamingState } from '@/types/stratixStreaming';
 import type { AlegeonStreamingStateV2 } from '@/hooks/useAlegeonStreamingV2';
-import type { IIResearchStreamingState } from '@/hooks/useIIResearchStreaming';
 
 interface ChatAreaProps {
   messages: Message[];
@@ -46,7 +45,6 @@ interface ChatAreaProps {
   };
   stratixStreamingState?: StratixStreamingState;
   alegeonStreamingState?: AlegeonStreamingStateV2;
-  iiResearchStreamingState?: IIResearchStreamingState;
   onAlegeonFastForward?: () => void;
 }
 
@@ -63,7 +61,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   streamingState,
   stratixStreamingState,
   alegeonStreamingState,
-  iiResearchStreamingState,
   onAlegeonFastForward
 }) => {
   const [canvasPreviewMessages, setCanvasPreviewMessages] = useState<Set<string>>(new Set());
@@ -125,7 +122,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
               />
             )}
 
-            {streamingState?.isStreaming && !stratixStreamingState?.isStreaming && !alegeonStreamingState?.isStreaming && !iiResearchStreamingState?.isStreaming && (
+            {streamingState?.isStreaming && !stratixStreamingState?.isStreaming && !alegeonStreamingState?.isStreaming && (
               <StreamingProgress
                 currentPhase={streamingState.currentPhase}
                 progress={streamingState.progress}
@@ -133,23 +130,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                 discoveredSources={streamingState.discoveredSources}
                 activeAgents={streamingState.activeAgents?.map(name => ({ name, status: 'active' as const, progress: 50 })) || []}
                 collaborationMode={streamingState.collaborationMode as 'sequential' | 'parallel' | 'hierarchical' | null}
-                isVisible={true}
-              />
-            )}
-
-            {iiResearchStreamingState?.isStreaming && (
-              <StreamingProgress
-                currentPhase={iiResearchStreamingState.currentPhase}
-                progress={75} // Default progress for II-Research
-                searchQueries={[]}
-                discoveredSources={iiResearchStreamingState.sources.map(source => ({
-                  name: source.title || 'Research Source',
-                  url: source.url,
-                  type: 'research',
-                  confidence: 85
-                }))}
-                activeAgents={[{ name: 'II-Research Agent', status: 'active' as const, progress: 75 }]}
-                collaborationMode={null}
                 isVisible={true}
               />
             )}
@@ -170,7 +150,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                   streamingProgress={{ phase: '', progress: 0 }}
                   stratixStreamingState={stratixStreamingState}
                   alegeonStreamingState={alegeonStreamingState}
-                  iiResearchStreamingState={iiResearchStreamingState}
                   onAlegeonFastForward={onAlegeonFastForward}
                 />
               );

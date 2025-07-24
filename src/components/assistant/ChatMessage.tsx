@@ -12,7 +12,6 @@ import CanvasCompact from './CanvasCompact';
 import StreamingOverlay from './StreamingOverlay';
 import StratixStreamingOverlay from './StratixStreamingOverlay';
 import EnhancedStreamingOverlay from './EnhancedStreamingOverlay';
-import IIResearchStreamingOverlay from './IIResearchStreamingOverlay';
 import ThinkingPanel from './ThinkingPanel';
 import { isReportMessage } from '@/utils/reportDetection';
 import type { StratixStreamingState } from '@/types/stratixStreaming';
@@ -61,7 +60,6 @@ interface ChatMessageProps {
   };
   stratixStreamingState?: StratixStreamingState;
   alegeonStreamingState?: AlegeonStreamingStateV2;
-  iiResearchStreamingState?: any; // IIResearchStreamingState will be imported later
   onToggleCanvasPreview?: (messageId: string) => void;
   isCanvasPreview?: boolean;
   onAlegeonFastForward?: () => void;
@@ -78,7 +76,6 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
   streamingProgress = { phase: '', progress: 0 },
   stratixStreamingState,
   alegeonStreamingState,
-  iiResearchStreamingState,
   onToggleCanvasPreview,
   isCanvasPreview = false,
   onAlegeonFastForward
@@ -194,14 +191,6 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
                 streamingState={alegeonStreamingState!}
                 className="absolute inset-0 z-20 rounded-2xl"
                 onFastForward={onAlegeonFastForward}
-              />
-            )}
-
-            {/* II-Research Streaming Overlay */}
-            {isAi && iiResearchStreamingState?.isStreaming && (
-              <IIResearchStreamingOverlay
-                streamingState={iiResearchStreamingState}
-                className="absolute inset-0 z-20 rounded-2xl"
               />
             )}
 
