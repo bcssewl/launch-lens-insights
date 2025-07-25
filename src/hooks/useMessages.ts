@@ -7,6 +7,7 @@ import { usePerplexityStreaming } from '@/hooks/usePerplexityStreaming';
 import { useStratixStreaming } from '@/hooks/useStratixStreaming';
 import { useAlegeonStreamingV2 } from '@/hooks/useAlegeonStreamingV2';
 import { useIIResearchStreaming } from '@/hooks/useIIResearchStreaming';
+import { useDeerStreaming } from '@/hooks/useDeerStreaming';
 import { useAutoTitle } from '@/hooks/useAutoTitle';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -144,6 +145,11 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     startStreaming: startIIResearch, 
     stopStreaming: stopIIResearch 
   } = useIIResearchStreaming();
+  const { 
+    streamingState: deerStreamingState, 
+    startStreaming: startDeerStreaming, 
+    stopStreaming: stopDeerStreaming 
+  } = useDeerStreaming();
 
   // Consistent streaming message ID
   const STREAMING_MESSAGE_ID = 'algeon-streaming-message';
@@ -552,6 +558,59 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     }
   }, [startIIResearch]);
 
+  // Handle Deer requests using Server-Sent Events
+  const handleDeerRequest = useCallback(async (message: string): Promise<string> => {
+    try {
+      console.log('🦌 Starting Deer SSE streaming for message:', message.substring(0, 100));
+      
+      // Create a streaming message to show progress
+      const streamingMessage: ExtendedMessage = {
+        id: STREAMING_MESSAGE_ID,
+        text: 'Starting Deer processing...',
+        sender: 'ai',
+        timestamp: new Date(),
+        isStreaming: true,
+        metadata: {
+          messageType: 'progress_update',
+          isCompleted: false
+        }
+      };
+      
+      dispatch({ type: 'ADD_STREAMING_MESSAGE', payload: streamingMessage });
+      
+      // Use the Deer streaming implementation
+      const result = await startDeerStreaming(message);
+      
+      console.log('✅ Deer request completed:', {
+        finalAnswer: result.finalAnswer?.substring(0, 100),
+        sourcesCount: result.sources?.length || 0,
+        thoughtStepsCount: result.thoughtSteps?.length || 0
+      });
+      
+      // Enhanced validation and content extraction
+      let finalContent = result.finalAnswer || '';
+      
+      if (!finalContent || finalContent.trim().length === 0) {
+        console.warn('useMessages: Deer final answer is empty, trying reasoning content');
+        finalContent = result.reasoning || '';
+      }
+      
+      if (!finalContent || finalContent.trim().length === 0) {
+        console.warn('useMessages: No meaningful content found, using fallback');
+        finalContent = 'Processing completed but no detailed response was generated. Please check the thought process and sources for more information.';
+      }
+      
+      console.log('useMessages: Using Deer final content length:', finalContent.length);
+      
+      return finalContent;
+      
+    } catch (error) {
+      console.error('❌ Deer streaming failed:', error);
+      dispatch({ type: 'REMOVE_STREAMING_MESSAGE', payload: STREAMING_MESSAGE_ID });
+      return 'I apologize, but I encountered an issue with the Deer system. Please try again or check your connection.';
+    }
+  }, [startDeerStreaming]);
+
   const handleSendMessage = useCallback(async (text?: string, messageText?: string, selectedModel?: string, researchType?: string, sessionIdOverride?: string) => {
     const finalMessageText = text || messageText;
     if (!finalMessageText || finalMessageText.trim() === '') return;
@@ -602,6 +661,7 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     stopStratixStreaming();
     stopAlegeonStreaming();
     stopIIResearch();
+    stopDeerStreaming();
     
     // Remove any existing streaming messages
     dispatch({ type: 'REMOVE_STREAMING_MESSAGE', payload: STREAMING_MESSAGE_ID });
@@ -616,6 +676,9 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
       if (selectedModel === 'ii-research') {
         console.log('🔬 Using II-Research SSE for request');
         aiResponseText = await handleIIResearchRequest(finalMessageText);
+      } else if (selectedModel === 'deer') {
+        console.log('🦌 Using Deer SSE for request');
+        aiResponseText = await handleDeerRequest(finalMessageText);
         
         // For ii-research, create final message immediately since it's not handled by useEffect
         const finalMessage: ExtendedMessage = {
@@ -637,8 +700,8 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
         // Save to history
         if (sessionIdToUse) {
           const messageWithSources = `AI: ${aiResponseText}${
-            iiResearchStreamingState.sources.length > 0 
-              ? `\n\nSources: ${JSON.stringify(iiResearchStreamingState.sources.map(s => ({ url: s.url, title: s.title })))}`
+            deerStreamingState.sources.length > 0 
+              ? `\n\nSources: ${JSON.stringify(deerStreamingState.sources.map(s => ({ url: s.url, title: s.title })))}`
               : ''
           }`;
           addMessage(messageWithSources);
@@ -674,7 +737,7 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     } finally {
       setIsTyping(false);
     }
-  }, [currentSessionId, addMessage, isConfigured, canvasState, handleAlegeonRequest, handleIIResearchRequest, stopStreaming, stopStratixStreaming, stopAlegeonStreaming, stopIIResearch, iiResearchStreamingState.sources]);
+  }, [currentSessionId, addMessage, isConfigured, canvasState, handleAlegeonRequest, handleIIResearchRequest, handleDeerRequest, stopStreaming, stopStratixStreaming, stopAlegeonStreaming, stopIIResearch, stopDeerStreaming, deerStreamingState.sources]);
 
   const handleClearConversation = useCallback(() => {
     console.log('useMessages: Clearing conversation');
@@ -832,8 +895,9 @@ export const useMessages = (currentSessionId: string | null, updateSessionTitle?
     stratixStreamingState,
     alegeonStreamingState,
     iiResearchStreamingState,
+    deerStreamingState,
     // Provide streaming state for components that need it
-    isStreamingForMessage: () => streamingState.isStreaming || stratixStreamingState.isStreaming || alegeonStreamingState.isStreaming || iiResearchStreamingState.isStreaming,
+    isStreamingForMessage: () => streamingState.isStreaming || stratixStreamingState.isStreaming || alegeonStreamingState.isStreaming || iiResearchStreamingState.isStreaming || deerStreamingState.isStreaming,
     getStreamingState: () => streamingState,
     getStratixStreamingState: () => stratixStreamingState,
     getAlegeonStreamingState: () => alegeonStreamingState,

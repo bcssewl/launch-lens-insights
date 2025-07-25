@@ -12,6 +12,7 @@ import { useChatHistory } from '@/hooks/useChatHistory';
 import { useMessages } from '@/hooks/useMessages';
 import { useAlegeonStreamingV2 } from '@/hooks/useAlegeonStreamingV2';
 import { useIIResearchStreaming } from '@/hooks/useIIResearchStreaming';
+import { useDeerStreaming } from '@/hooks/useDeerStreaming';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTheme } from 'next-themes';
 import { Loader2 } from 'lucide-react';
@@ -57,6 +58,7 @@ const AIAssistantPage: React.FC = () => {
   
   const { streamingState: alegeonStreamingStateV2, startStreaming: startAlegeonV2, fastForward } = useAlegeonStreamingV2(null);
   const { streamingState: iiResearchStreamingState, startStreaming: startIIResearch, stopStreaming: stopIIResearch } = useIIResearchStreaming();
+  const { streamingState: deerStreamingState } = useDeerStreaming();
   const [editedCanvasContent, setEditedCanvasContent] = useState(canvasState.content);
 
   useEffect(() => {
@@ -168,6 +170,7 @@ const AIAssistantPage: React.FC = () => {
                 streamingState={streamingState}
                 stratixStreamingState={stratixStreamingState}
                 alegeonStreamingState={alegeonStreamingStateV2}
+                deerStreamingState={deerStreamingState}
                 onAlegeonFastForward={fastForward}
               />
             </div>

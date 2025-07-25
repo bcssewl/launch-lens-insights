@@ -45,6 +45,7 @@ interface ChatAreaProps {
   };
   stratixStreamingState?: StratixStreamingState;
   alegeonStreamingState?: AlegeonStreamingStateV2;
+  deerStreamingState?: any;
   onAlegeonFastForward?: () => void;
 }
 
@@ -61,6 +62,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   streamingState,
   stratixStreamingState,
   alegeonStreamingState,
+  deerStreamingState,
   onAlegeonFastForward
 }) => {
   const [canvasPreviewMessages, setCanvasPreviewMessages] = useState<Set<string>>(new Set());
@@ -150,6 +152,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                   streamingProgress={{ phase: '', progress: 0 }}
                   stratixStreamingState={stratixStreamingState}
                   alegeonStreamingState={alegeonStreamingState}
+                  deerStreamingState={deerStreamingState}
                   onAlegeonFastForward={onAlegeonFastForward}
                 />
               );
