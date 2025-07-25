@@ -70,7 +70,7 @@ export const useDeerStreaming = () => {
       }));
 
       try {
-        const url = 'https://deer-flow-wrappers.up.railway.app/api/chat/stream';
+        const url = 'https://deer-flow1-wrappers.up.railway.app/api/chat/stream';
         
         console.log('🔗 Connecting to Deer API endpoint:', url);
         
