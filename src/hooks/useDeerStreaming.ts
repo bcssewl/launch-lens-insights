@@ -24,6 +24,7 @@ export interface DeerStreamingState {
   sources: DeerSource[];
   error: string | null;
   currentPhase: string;
+  isWaitingForFeedback: boolean;
 }
 
 const INITIAL_STATE: DeerStreamingState = {
@@ -33,7 +34,8 @@ const INITIAL_STATE: DeerStreamingState = {
   finalAnswer: '',
   sources: [],
   error: null,
-  currentPhase: 'idle'
+  currentPhase: 'idle',
+  isWaitingForFeedback: false,
 };
 
 export const useDeerStreaming = () => {
@@ -41,6 +43,7 @@ export const useDeerStreaming = () => {
   const eventSourceRef = useRef<EventSource | null>(null);
   const promiseResolveRef = useRef<((result: any) => void) | null>(null);
   const promiseRejectRef = useRef<((error: any) => void) | null>(null);
+  const feedbackResolver = useRef<((feedback: string) => void) | null>(null);
 
   const cleanup = useCallback(() => {
     // No EventSource to clean up in new implementation
@@ -119,9 +122,37 @@ export const useDeerStreaming = () => {
         };
 
         for await (const { event, data } of fetchStream(url, requestInit)) {
+          if (!streamingState.isStreaming) break; // Stop processing if streaming is stopped
+
           try {
             const parsedData = JSON.parse(data);
             console.log(`📨 Received Deer event: ${event}`, parsedData);
+
+            if (parsedData.type === 'plan_generation' || parsedData.type === 'thought') {
+              setStreamingState(prev => ({
+                ...prev,
+                isWaitingForFeedback: true,
+                thoughtSteps: [...prev.thoughtSteps, {
+                  id: Date.now().toString(),
+                  type: 'reasoning',
+                  content: parsedData.content || JSON.stringify(parsedData.plan),
+                  timestamp: new Date(),
+                  metadata: parsedData,
+                }],
+              }));
+
+              const userFeedback = await new Promise<string>((resolve) => {
+                feedbackResolver.current = resolve;
+              });
+
+              setStreamingState(prev => ({ ...prev, isWaitingForFeedback: false }));
+              
+              // Here you would send the feedback back to the server
+              // This part needs a way to send data back through the stream, which fetchStream doesn't support
+              // For now, we'll just log it and continue
+              console.log("User feedback received:", userFeedback);
+
+            }
             
             // Handle different event types based on mock frontend expectations
             switch (event || parsedData.type) {
@@ -249,7 +280,7 @@ export const useDeerStreaming = () => {
           return prev;
         });
 
-      } catch (error) {
+      } catch (error: any) {
         console.error('❌ Failed to start Deer streaming:', error);
         setStreamingState(prev => ({
           ...prev,
@@ -275,6 +306,13 @@ export const useDeerStreaming = () => {
     cleanup();
   }, [cleanup]);
 
+  const sendFeedback = useCallback((feedback: string) => {
+    if (feedbackResolver.current) {
+      feedbackResolver.current(feedback);
+      feedbackResolver.current = null;
+    }
+  }, []);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -287,6 +325,7 @@ export const useDeerStreaming = () => {
     streamingState,
     startStreaming,
     stopStreaming,
-    resetState
+    resetState,
+    sendFeedback,
   };
 };

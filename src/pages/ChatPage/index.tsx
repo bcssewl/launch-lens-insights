@@ -10,7 +10,7 @@ const ChatPage = () => {
   const [openResearchId, setOpenResearchId] = useState<string | null>(null);
   const [selectedModel, setSelectedModel] = useState<AIModel | null>(null);
 
-  const { streamingState, startStreaming } = useUnifiedStreaming(selectedModel?.id, openResearchId);
+  const { streamingState, startStreaming, sendFeedback } = useUnifiedStreaming(selectedModel?.id, openResearchId);
 
   const doubleColumnMode = useMemo(
     () => openResearchId !== null,
@@ -55,6 +55,7 @@ const ChatPage = () => {
           )}
           researchId={openResearchId}
           streamingState={streamingState}
+          sendFeedback={sendFeedback}
         />
       </div>
     </div>
