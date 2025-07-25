@@ -148,90 +148,128 @@ export const useDeerStreaming = () => {
             const lines = buffer.split('\n');
             buffer = lines.pop() || ''; // Keep incomplete line in buffer
             
+            // Track event type for SSE parsing
+            let currentEventType = '';
+            
             for (const line of lines) {
               if (line.trim() === '') continue;
               
               try {
-                // Handle Server-Sent Events format
+                // Parse SSE format with both event: and data: lines
+                if (line.startsWith('event: ')) {
+                  currentEventType = line.slice(7).trim();
+                  continue; // Read next line for data
+                }
+                
                 if (line.startsWith('data: ')) {
-                  const jsonStr = line.slice(6); // Remove 'data: ' prefix
-                  if (jsonStr === '[DONE]') {
-                    console.log('🏁 Deer streaming completed with [DONE]');
-                    // Handle completion
-                    setStreamingState(prev => {
-                      const finalState = {
-                        ...prev,
-                        isStreaming: false,
-                        currentPhase: 'completed'
-                      };
-                      
-                      // Resolve with final result
-                      if (promiseResolveRef.current) {
-                        const result = {
-                          thoughtSteps: finalState.thoughtSteps,
-                          reasoning: finalState.currentReasoning,
-                          finalAnswer: finalState.finalAnswer || finalState.currentReasoning || 'Processing completed.',
-                          sources: finalState.sources
-                        };
-                        console.log('🎯 Resolving Deer promise with:', result);
-                        promiseResolveRef.current(result);
-                      }
-                      
-                      return finalState;
-                    });
-                    return;
+                  const eventData = line.slice(6).trim();
+                  
+                  try {
+                    const data = JSON.parse(eventData);
+                    console.log(`📨 Received Deer event: ${currentEventType || 'unknown'}`, data);
+                    
+                    // Handle different event types based on mock frontend expectations
+                    switch (currentEventType || data.type) {
+                      case 'message_chunk':
+                        // Handle streaming text chunks
+                        const content = data.content || data.text || '';
+                        setStreamingState(prev => ({
+                          ...prev,
+                          currentReasoning: prev.currentReasoning + content,
+                          finalAnswer: prev.finalAnswer + content,
+                          currentPhase: 'generating'
+                        }));
+                        break;
+                        
+                      case 'tool_call':
+                        // Handle tool calls
+                        setStreamingState(prev => ({
+                          ...prev,
+                          thoughtSteps: [...prev.thoughtSteps, {
+                            id: data.id || Date.now().toString(),
+                            type: 'tool',
+                            content: `Using tool: ${data.function?.name || data.name || 'unknown'}`,
+                            timestamp: new Date(),
+                            metadata: data
+                          }],
+                          currentPhase: 'using_tools'
+                        }));
+                        break;
+                        
+                      case 'tool_call_result':
+                        // Handle tool execution results
+                        setStreamingState(prev => ({
+                          ...prev,
+                          thoughtSteps: [...prev.thoughtSteps, {
+                            id: data.tool_call_id || Date.now().toString(),
+                            type: 'reasoning',
+                            content: `Tool result: ${data.result || 'completed'}`,
+                            timestamp: new Date(),
+                            metadata: data
+                          }],
+                          sources: data.sources ? [...prev.sources, ...data.sources] : prev.sources,
+                          currentPhase: 'gathering_sources'
+                        }));
+                        break;
+                        
+                      case 'thinking':
+                      case 'reasoning':
+                        // Handle reasoning/thinking steps
+                        const reasoning = data.content || data.text || '';
+                        setStreamingState(prev => ({
+                          ...prev,
+                          currentReasoning: prev.currentReasoning + reasoning,
+                          thoughtSteps: [...prev.thoughtSteps, {
+                            id: Date.now().toString(),
+                            type: 'reasoning',
+                            content: reasoning,
+                            timestamp: new Date(),
+                            metadata: data
+                          }],
+                          currentPhase: 'thinking'
+                        }));
+                        break;
+                        
+                      case 'search':
+                      case 'visit':
+                        // Handle search/visit events
+                        setStreamingState(prev => ({
+                          ...prev,
+                          thoughtSteps: [...prev.thoughtSteps, {
+                            id: Date.now().toString(),
+                            type: 'visit',
+                            content: `Searching: ${data.query || data.url || 'information'}`,
+                            timestamp: new Date(),
+                            metadata: data
+                          }],
+                          currentPhase: 'gathering_sources'
+                        }));
+                        break;
+                        
+                      default:
+                        // Fallback handling for unknown event types
+                        console.log('📝 Unknown event type, treating as content:', currentEventType, data);
+                        const fallbackContent = data.content || data.text || JSON.stringify(data);
+                        setStreamingState(prev => ({
+                          ...prev,
+                          finalAnswer: prev.finalAnswer + fallbackContent,
+                          currentPhase: 'processing'
+                        }));
+                        break;
+                    }
+                  } catch (parseError) {
+                    console.warn('⚠️ Failed to parse Deer event data:', eventData, parseError);
+                    // Add unparsed content to final answer
+                    setStreamingState(prev => ({
+                      ...prev,
+                      finalAnswer: prev.finalAnswer + eventData + '\n'
+                    }));
                   }
                   
-                  const data = JSON.parse(jsonStr);
-                  console.log('📨 Received Deer data:', data);
-                  
-                  // Handle different response types based on the data structure
-                  if (data.type === 'chunk' || data.delta) {
-                    // Handle streaming text chunks
-                    const content = data.delta?.content || data.content || '';
-                    setStreamingState(prev => ({
-                      ...prev,
-                      currentReasoning: prev.currentReasoning + content,
-                      finalAnswer: prev.finalAnswer + content,
-                      currentPhase: 'generating'
-                    }));
-                  } else if (data.type === 'tool_use' || data.tool) {
-                    // Handle tool usage
-                    setStreamingState(prev => ({
-                      ...prev,
-                      thoughtSteps: [...prev.thoughtSteps, {
-                        id: Date.now().toString(),
-                        type: 'tool',
-                        content: `Using tool: ${data.tool?.name || 'unknown'}`,
-                        timestamp: new Date(),
-                        metadata: data
-                      }],
-                      currentPhase: 'using_tools'
-                    }));
-                  } else if (data.type === 'search' || data.search) {
-                    // Handle search/sources
-                    setStreamingState(prev => ({
-                      ...prev,
-                      thoughtSteps: [...prev.thoughtSteps, {
-                        id: Date.now().toString(),
-                        type: 'visit',
-                        content: `Searching: ${data.query || 'information'}`,
-                        timestamp: new Date(),
-                        metadata: data
-                      }],
-                      currentPhase: 'gathering_sources'
-                    }));
-                  } else {
-                    // Generic data handling
-                    const content = JSON.stringify(data);
-                    setStreamingState(prev => ({
-                      ...prev,
-                      currentReasoning: prev.currentReasoning + ' ' + content,
-                      currentPhase: 'processing'
-                    }));
-                  }
+                  // Reset event type after processing
+                  currentEventType = '';
                 } else {
-                  // Handle plain text response
+                  // Handle plain text response (non-SSE format)
                   console.log('📝 Deer plain text:', line);
                   setStreamingState(prev => ({
                     ...prev,
