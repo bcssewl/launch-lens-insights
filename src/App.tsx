@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -25,6 +24,7 @@ import ProfilePage from "./pages/ProfilePage";
 import SharedReportPage from "./pages/SharedReportPage";
 import ProjectsPage from "./pages/ProjectsPage";
 import ClientWorkspacePage from "./pages/ClientWorkspacePage";
+import ChatPage from "./pages/ChatPage";
 
 // Placeholder pages for now
 const ForgotPasswordPage = () => <div className="h-screen flex items-center justify-center">Forgot Password Page Placeholder - Coming Soon!</div>;
@@ -47,6 +47,7 @@ const App = () => (
               <Sonner />
               <Routes>
                 <Route path="/" element={<LandingPage />} />
+                <Route path="/chat" element={<ChatPage />} />
                 <Route path="/waitlist" element={<WaitlistPage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/signup" element={<SignUpPage />} />
