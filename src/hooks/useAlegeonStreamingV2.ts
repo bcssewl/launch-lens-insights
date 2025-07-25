@@ -20,14 +20,6 @@ const VALID_RESEARCH_TYPES: AlgeonResearchType[] = [
   'industry_reports'
 ];
 
-export interface DeerThoughtStep {
-  id: string;
-  type: 'tool' | 'reasoning' | 'visit' | 'writing_report';
-  content: string;
-  timestamp: Date;
-  metadata?: any;
-}
-
 interface StreamingEvent {
   type: 'thinking_started' | 'thinking_chunk' | 'thinking_complete' | 'content_chunk' | 'completion' | 'error';
   content?: string;
@@ -77,8 +69,6 @@ export interface AlegeonStreamingStateV2 {
   hasContent: boolean;
   isTyping: boolean;
   typewriterProgress: number;
-  isWaitingForFeedback?: boolean;
-  thoughtSteps?: DeerThoughtStep[];
   metadata?: {
     duration?: number;
     reasoning_duration?: number;
@@ -106,8 +96,6 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
     hasContent: false,
     isTyping: false,
     typewriterProgress: 0,
-    isWaitingForFeedback: false,
-    thoughtSteps: [],
   });
 
   const { setThinkingStateForMessage, clearThinkingStateForMessage } = useReasoning();
@@ -250,14 +238,17 @@ export const useAlegeonStreamingV2 = (messageId: string | null) => {
           }, HEARTBEAT_INTERVAL);
           
           const payload = {
-            message: query,
-            research_type: researchType,
-            client_message_id: clientMessageId,
+            query,
+            research_type: validatedResearchType,
+            scope: "global",
+            depth: "comprehensive",
+            urgency: "medium",
+            stream: true,
+            client_message_id: clientMessageId
           };
-
-          if (wsRef.current) {
-            wsRef.current.send(JSON.stringify(payload));
-          }
+          
+          console.log('📤 Sending WebSocket V2 payload for message:', messageId, payload);
+          wsRef.current.send(JSON.stringify(payload));
         };
 
         wsRef.current.onmessage = (event) => {
