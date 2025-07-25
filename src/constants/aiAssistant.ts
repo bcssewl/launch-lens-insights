@@ -1,12 +1,19 @@
 
 import { v4 as uuidv4 } from 'uuid';
 
+export interface FeedbackOption {
+  title: string;
+  value: string;
+}
+
 export interface Message {
   id: string;
   text: string;
   sender: 'ai' | 'user';
   timestamp: Date;
   clientMessageId?: string; // Frontend-generated UUID for request-response correlation
+  finishReason?: 'interrupt';
+  options?: FeedbackOption[];
   metadata?: {
     isCompleted?: boolean;
     messageType?: 'progress_update' | 'completed_report' | 'standard' | 'stratix_conversation';
