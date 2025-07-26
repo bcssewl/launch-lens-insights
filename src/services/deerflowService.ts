@@ -42,16 +42,41 @@ class DeerFlowService {
     try {
       console.log('🦌 Starting DeerFlow research with config:', request);
 
+      // Ensure the request matches the exact API format
+      const payload = {
+        messages: request.messages || [],
+        resources: request.resources || [],
+        debug: request.debug || false,
+        thread_id: request.thread_id || "__default__",
+        max_plan_iterations: request.max_plan_iterations || 1,
+        max_step_num: request.max_step_num || 3,
+        max_search_results: request.max_search_results || 3,
+        auto_accepted_plan: request.auto_accepted_plan || false,
+        interrupt_feedback: request.interrupt_feedback || "string",
+        mcp_settings: request.mcp_settings || {},
+        enable_background_investigation: request.enable_background_investigation ?? true,
+        report_style: request.report_style || "academic", 
+        enable_deep_thinking: request.enable_deep_thinking || false
+      };
+
+      console.log('📤 Sending to DeerFlow API:', JSON.stringify(payload, null, 2));
+
       const response = await fetch(`${this.baseUrl}/api/chat/stream`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(request)
+        body: JSON.stringify(payload)
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        console.error('❌ DeerFlow API Error:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText
+        });
+        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
       }
 
       if (!response.body) {
