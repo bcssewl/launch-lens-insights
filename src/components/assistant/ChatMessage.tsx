@@ -14,7 +14,6 @@ import StratixStreamingOverlay from './StratixStreamingOverlay';
 import EnhancedStreamingOverlay from './EnhancedStreamingOverlay';
 import DeerStreamingOverlay from './DeerStreamingOverlay';
 import ThinkingPanel from './ThinkingPanel';
-import { Button } from '@/components/ui/button';
 import { isReportMessage } from '@/utils/reportDetection';
 import type { StratixStreamingState } from '@/types/stratixStreaming';
 import type { AlegeonStreamingStateV2 } from '@/hooks/useAlegeonStreamingV2';
@@ -24,11 +23,6 @@ export interface ChatMessageData {
   text: string;
   sender: 'ai' | 'user';
   timestamp: string;
-  finishReason?: 'interrupt';
-  options?: Array<{
-    title: string;
-    value: string;
-  }>;
   metadata?: {
     isCompleted?: boolean;
     messageType?: 'progress_update' | 'completed_report' | 'standard' | 'stratix_conversation';
@@ -53,7 +47,6 @@ interface ChatMessageProps {
   onOpenCanvas?: (messageId: string, content: string) => void;
   onCanvasDownload?: () => void;
   onCanvasPrint?: () => void;
-  onFeedback?: (value: string) => void;
   isStreaming?: boolean;
   streamingUpdates?: StreamingUpdate[];
   streamingSources?: Array<{
@@ -79,7 +72,6 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
   onOpenCanvas,
   onCanvasDownload,
   onCanvasPrint,
-  onFeedback,
   isStreaming = false,
   streamingUpdates = [],
   streamingSources = [],
@@ -278,26 +270,6 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
                 ) : (
                   <p className="whitespace-pre-wrap">{message.text}</p>
                 )}
-              </div>
-            )}
-
-            {/* Feedback Buttons */}
-            {isAi && message.finishReason === 'interrupt' && message.options && message.options.length > 0 && !showAlegeonStreaming && !stratixStreamingState?.isStreaming && (
-              <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-border/20">
-                <div className="w-full mb-2">
-                  <p className="text-sm text-muted-foreground">Choose how to proceed:</p>
-                </div>
-                {message.options.map((option, index) => (
-                  <Button
-                    key={index}
-                    variant={option.value === 'accepted' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => onFeedback?.(option.value)}
-                    className="transition-all duration-200 hover:bg-primary/10 hover:border-primary/30"
-                  >
-                    {option.title}
-                  </Button>
-                ))}
               </div>
             )}
           </div>

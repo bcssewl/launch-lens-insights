@@ -15,7 +15,6 @@ interface ChatAreaProps {
   isTyping: boolean;
   viewportRef: React.RefObject<HTMLDivElement>;
   onSendMessage: (message: string, attachments?: any[], selectedModel?: string, researchType?: string) => void;
-  onFeedback?: (value: string) => void;
   selectedModel: string;
   onModelSelect?: (model: any) => void;
   canvasState?: {
@@ -55,7 +54,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   isTyping,
   viewportRef,
   onSendMessage,
-  onFeedback,
   selectedModel,
   onModelSelect,
   onOpenCanvas,
@@ -146,7 +144,6 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                   onOpenCanvas={onOpenCanvas}
                   onCanvasDownload={onCanvasDownload}
                   onCanvasPrint={onCanvasPrint}
-                  onFeedback={onFeedback}
                   onToggleCanvasPreview={handleToggleCanvasPreview}
                   isCanvasPreview={canvasPreviewMessages.has(msg.id)}
                   isStreaming={false}

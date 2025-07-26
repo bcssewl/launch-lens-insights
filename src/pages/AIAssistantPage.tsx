@@ -16,7 +16,6 @@ import { useDeerStreaming } from '@/hooks/useDeerStreaming';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTheme } from 'next-themes';
 import { Loader2 } from 'lucide-react';
-import { sendMessage } from '@/services/chatService';
 
 const AIAssistantPage: React.FC = () => {
   const isMobile = useIsMobile();
@@ -70,45 +69,18 @@ const AIAssistantPage: React.FC = () => {
     const modelToUse = modelOverride || selectedModel;
     const researchTypeToUse = researchType || selectedResearchType;
 
-    console.log('🚀 Sending message with model:', modelToUse, 'research type:', researchTypeToUse);
-
-    try {
-      // For DeerFlow, we need to ensure we have a session first, then use the regular message system
-      if (modelToUse === 'deer') {
-        console.log('🦌 Using DeerFlow through regular message system');
-        
-        // Ensure we have a session
-        let sessionToUse = currentSessionId;
-        if (!sessionToUse) {
-          const newSession = await createSession();
-          if (!newSession) {
-            console.error('AIAssistantPage: Failed to create new session');
-            return;
-          }
-          sessionToUse = newSession.id;
-          await new Promise(resolve => setTimeout(resolve, 200));
-        }
-        
-        // Use the regular handleSendMessage but specify deer model
-        handleSendMessage(text, undefined, modelToUse, researchTypeToUse, sessionToUse);
-      } else {
-        console.log('🔄 Using regular chat service for model:', modelToUse);
-        if (!currentSessionId) {
-          const newSession = await createSession();
-          if (!newSession) {
-            console.error('AIAssistantPage: Failed to create new session');
-            return;
-          }
-          
-          await new Promise(resolve => setTimeout(resolve, 200));
-          
-          handleSendMessage(text, undefined, modelToUse, researchTypeToUse, newSession.id);
-        } else {
-          handleSendMessage(text, undefined, modelToUse, researchTypeToUse);
-        }
+    if (!currentSessionId) {
+      const newSession = await createSession();
+      if (!newSession) {
+        console.error('AIAssistantPage: Failed to create new session');
+        return;
       }
-    } catch (error) {
-      console.error('Failed to send message:', error);
+      
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      handleSendMessage(text, undefined, modelToUse, researchTypeToUse, newSession.id);
+    } else {
+      handleSendMessage(text, undefined, modelToUse, researchTypeToUse);
     }
   };
 
@@ -140,23 +112,6 @@ const AIAssistantPage: React.FC = () => {
 
   const handleResearchTypeChange = (type: string) => {
     setSelectedResearchType(type);
-  };
-
-  const handleFeedback = async (value: string) => {
-    try {
-      const { useChatStore } = await import('@/stores/chatStore');
-      const { currentThreadId } = useChatStore.getState();
-      
-      if (selectedModel === 'deer' && currentThreadId) {
-        const { sendDeerFlowFeedback } = await import('@/services/deerflowService');
-        await sendDeerFlowFeedback(value, currentThreadId);
-      } else {
-        // Handle feedback for other models
-        await sendMessage('', value);
-      }
-    } catch (error) {
-      console.error('Failed to send feedback:', error);
-    }
   };
 
   if (isLoadingHistory) {
@@ -206,7 +161,6 @@ const AIAssistantPage: React.FC = () => {
                 isTyping={isTyping} 
                 viewportRef={viewportRef} 
                 onSendMessage={handleSendMessageWithSession}
-                onFeedback={handleFeedback}
                 selectedModel={selectedModel}
                 onModelSelect={handleModelSelect}
                 onOpenCanvas={handleOpenCanvas} 
