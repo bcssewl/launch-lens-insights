@@ -110,13 +110,16 @@ export async function sendDeerFlowMessage(
       for await (const { event, data: eventData } of fetchStream(DEERFLOW_API_URL, requestInit)) {
         console.log(`📨 Received DeerFlow event: ${event}`, eventData);
         
-        // Parse event data
+        // Parse event data - DeerFlow may send different formats
         let parsedData;
         try {
           parsedData = JSON.parse(eventData);
         } catch {
+          // If not JSON, treat as raw content (markdown report)
           parsedData = { content: eventData };
         }
+        
+        console.log('📊 Parsed DeerFlow data:', parsedData);
 
         // Capture thread_id from first event
         if (!capturedThreadId && parsedData.thread_id) {
@@ -127,15 +130,22 @@ export async function sendDeerFlowMessage(
 
         // Handle different event types
         switch (event) {
-          case 'message_chunk': {
-            const { content, role, agent } = parsedData;
-            const currentMessage = useChatStore.getState().messages.find(m => m.id === currentMessageId);
-            updateMessage(currentMessageId, {
-              content: (currentMessage?.content || '') + (content || ''),
-              ...(role && { role }),
-              ...(agent && { agent }),
-              threadId: capturedThreadId || undefined
-            });
+          case 'message_chunk':
+          case 'data': // DeerFlow might use 'data' event type
+          case '': // Some APIs send events without explicit type
+          default: {
+            // Handle any content from DeerFlow
+            const content = parsedData.content || parsedData.text || parsedData.message || eventData;
+            
+            if (content && content.trim()) {
+              const currentMessage = useChatStore.getState().messages.find(m => m.id === currentMessageId);
+              updateMessage(currentMessageId, {
+                content: (currentMessage?.content || '') + content,
+                threadId: capturedThreadId || undefined
+              });
+              
+              console.log('📝 Updated message content, length:', ((currentMessage?.content || '') + content).length);
+            }
             break;
           }
 
@@ -190,7 +200,9 @@ export async function sendDeerFlowMessage(
             break;
           }
 
-          case 'done': {
+          case 'done':
+          case 'end':
+          case 'complete': {
             updateMessage(currentMessageId, {
               metadata: {
                 isCompleted: true,
@@ -213,18 +225,6 @@ export async function sendDeerFlowMessage(
             });
             setResponding(false);
             throw new Error(parsedData.error || 'Stream error');
-          }
-
-          default: {
-            console.warn('⚠️ Unknown DeerFlow event:', event, parsedData);
-            const fallbackContent = parsedData.content || parsedData.text || '';
-            if (fallbackContent) {
-              const currentMessage = useChatStore.getState().messages.find(m => m.id === currentMessageId);
-              updateMessage(currentMessageId, {
-                content: (currentMessage?.content || '') + fallbackContent
-              });
-            }
-            break;
           }
         }
       }
