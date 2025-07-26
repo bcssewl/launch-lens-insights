@@ -42,7 +42,7 @@ class DeerFlowService {
     try {
       console.log('🦌 Starting DeerFlow research with config:', request);
 
-      const response = await fetch(`${this.baseUrl}/chat`, {
+      const response = await fetch(`${this.baseUrl}/api/chat/stream`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
