@@ -16,6 +16,7 @@ import { useDeerStreaming } from '@/hooks/useDeerStreaming';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTheme } from 'next-themes';
 import { Loader2 } from 'lucide-react';
+import { sendMessage } from '@/services/chatService';
 
 const AIAssistantPage: React.FC = () => {
   const isMobile = useIsMobile();
@@ -114,6 +115,11 @@ const AIAssistantPage: React.FC = () => {
     setSelectedResearchType(type);
   };
 
+  const handleFeedback = (value: string) => {
+    console.log('Feedback received:', value);
+    sendMessage('', value);
+  };
+
   if (isLoadingHistory) {
     return (
       <DashboardLayout>
@@ -161,6 +167,7 @@ const AIAssistantPage: React.FC = () => {
                 isTyping={isTyping} 
                 viewportRef={viewportRef} 
                 onSendMessage={handleSendMessageWithSession}
+                onFeedback={handleFeedback}
                 selectedModel={selectedModel}
                 onModelSelect={handleModelSelect}
                 onOpenCanvas={handleOpenCanvas} 

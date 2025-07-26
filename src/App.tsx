@@ -25,7 +25,6 @@ import ProfilePage from "./pages/ProfilePage";
 import SharedReportPage from "./pages/SharedReportPage";
 import ProjectsPage from "./pages/ProjectsPage";
 import ClientWorkspacePage from "./pages/ClientWorkspacePage";
-import DeerAgentPage from "./pages/DeerAgentPage";
 
 // Placeholder pages for now
 const ForgotPasswordPage = () => <div className="h-screen flex items-center justify-center">Forgot Password Page Placeholder - Coming Soon!</div>;
@@ -65,7 +64,6 @@ const App = () => (
                 <Route path="/dashboard/reports" element={<MyReportsPage />} />
                 <Route path="/dashboard/business-idea/:ideaId" element={<BusinessDashboardPage />} />
                 <Route path="/dashboard/assistant" element={<AIAssistantPage />} />
-                <Route path="/dashboard/deer" element={<DeerAgentPage />} />
                 <Route path="/dashboard/experiments" element={<ExperimentsPage />} />
                 <Route path="/dashboard/settings" element={<SettingsPage />} />
                 <Route path="/dashboard/profile" element={<ProfilePage />} />

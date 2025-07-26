@@ -4,7 +4,7 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, Sid
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Home, Lightbulb, FolderOpen, Bot, Settings as SettingsIcon, UserCircle, LogOut, ChevronDown, Search, Folder, Zap } from 'lucide-react';
+import { Home, Lightbulb, FolderOpen, Bot, Settings as SettingsIcon, UserCircle, LogOut, ChevronDown, Search, Folder } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { ChatSearchModal } from '@/components/search/ChatSearchModal';
@@ -15,10 +15,6 @@ const mainNavItems = [{
   href: "/dashboard/assistant",
   label: "AI Advisor",
   icon: Bot
-}, {
-  href: "/dashboard/deer",
-  label: "Deer Agent",
-  icon: Zap
 }, {
   href: "/dashboard/validate",
   label: "Analyze Idea",

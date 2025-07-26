@@ -1,23 +1,18 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { deerflowService, DeerFlowStreamEvent, DeerFlowChatRequest } from '@/services/deerflowService';
+import { fetchStream } from '../utils/fetchStream';
 
 export interface DeerThoughtStep {
   id: string;
-  type: 'tool_call' | 'reasoning' | 'search' | 'analysis';
+  type: 'tool' | 'reasoning' | 'visit' | 'writing_report';
   content: string;
   timestamp: Date;
   metadata?: any;
 }
 
 export interface DeerSource {
-  id: string;
   url: string;
-  title: string;
-  type: string;
-  confidence: number;
-  content?: string;
-  snippet?: string;
-  domain?: string;
+  title?: string;
+  content: string;
   timestamp: Date;
 }
 
@@ -26,25 +21,9 @@ export interface DeerStreamingState {
   thoughtSteps: DeerThoughtStep[];
   currentReasoning: string;
   finalAnswer: string;
-  finalReport: string;
   sources: DeerSource[];
-  currentPlan: DeerPlan | null;
-  searchQueries: string[];
   error: string | null;
-  currentPhase: 'planning' | 'searching' | 'analyzing' | 'synthesizing' | 'complete' | 'idle' | 'thinking';
-  overallProgress: number;
-  researchMode: 'academic' | 'popular_science' | 'news' | 'social_media';
-}
-
-export interface DeerPlan {
-  id: string;
-  steps: Array<{
-    id: string;
-    description: string;
-    status: 'pending' | 'active' | 'completed';
-  }>;
-  isActive: boolean;
-  needsApproval: boolean;
+  currentPhase: string;
 }
 
 const INITIAL_STATE: DeerStreamingState = {
@@ -52,14 +31,9 @@ const INITIAL_STATE: DeerStreamingState = {
   thoughtSteps: [],
   currentReasoning: '',
   finalAnswer: '',
-  finalReport: '',
   sources: [],
-  currentPlan: null,
-  searchQueries: [],
   error: null,
-  currentPhase: 'idle',
-  overallProgress: 0,
-  researchMode: 'academic'
+  currentPhase: 'idle'
 };
 
 export const useDeerStreaming = () => {
@@ -81,8 +55,8 @@ export const useDeerStreaming = () => {
     promiseRejectRef.current = null;
   }, [cleanup]);
 
-  const startStreaming = useCallback((question: string, config?: Partial<DeerFlowChatRequest>): Promise<any> => {
-    console.log('🦌 Starting DeerFlow streaming for question:', question);
+  const startStreaming = useCallback((question: string): Promise<any> => {
+    console.log('🦌 Starting Deer streaming for question:', question);
     
     return new Promise(async (resolve, reject) => {
       // Store promise handlers
@@ -90,41 +64,198 @@ export const useDeerStreaming = () => {
       promiseRejectRef.current = reject;
 
       // Reset state
-      setStreamingState({
+      setStreamingState(prev => ({
         ...INITIAL_STATE,
         isStreaming: true,
-        currentPhase: 'planning'
-      });
+        currentPhase: 'connecting'
+      }));
 
       try {
-        // Build DeerFlow request with dynamic configuration
-        const request: DeerFlowChatRequest = {
-          messages: [{ role: 'user', content: question }],
-          resources: config?.resources || [],
-          debug: config?.debug ?? false,
-          thread_id: config?.thread_id || `deer_${Date.now()}`,
-          max_plan_iterations: config?.max_plan_iterations || 1,
-          max_step_num: config?.max_step_num || 3,
-          max_search_results: config?.max_search_results || 3,
-          auto_accepted_plan: config?.auto_accepted_plan ?? false,
-          mcp_settings: config?.mcp_settings || {},
-          enable_background_investigation: config?.enable_background_investigation ?? true,
-          report_style: config?.report_style || 'academic',
-          enable_deep_thinking: config?.enable_deep_thinking ?? false,
-          ...config
+        const url = 'https://deer-flow-wrappers.up.railway.app/api/chat/stream';
+        
+        console.log('🔗 Connecting to Deer API endpoint:', url);
+        
+        // Prepare the ChatRequest payload
+        const requestBody = {
+          messages: [
+            {
+              role: "user",
+              content: question
+            }
+          ],
+          debug: true, // Enable debug for better insight
+          thread_id: `deer-${Date.now()}`, // Unique thread ID
+          max_plan_iterations: 1,
+          max_step_num: 3,
+          max_search_results: 3,
+          auto_accepted_plan: false,
+          enable_background_investigation: true,
+          report_style: "academic",
+          enable_deep_thinking: false
         };
 
-        // Use DeerFlow service with correct endpoint
-        await deerflowService.startResearch(request, handleDeerFlowEvent);
+        console.log('📤 Sending Deer request:', requestBody);
 
-        // Success - let event handler finish the process
+        // Update state to connecting
+        setStreamingState(prev => ({
+          ...prev,
+          currentPhase: 'sending_request'
+        }));
+
+        console.log('✅ Deer API connection established');
+        
+        setStreamingState(prev => ({
+          ...prev,
+          currentPhase: 'connected'
+        }));
+
+        // Use the fetchStream utility to handle SSE
+        const requestInit: RequestInit = {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestBody)
+        };
+
+        for await (const { event, data } of fetchStream(url, requestInit)) {
+          try {
+            const parsedData = JSON.parse(data);
+            console.log(`📨 Received Deer event: ${event}`, parsedData);
+            
+            // Handle different event types based on mock frontend expectations
+            switch (event || parsedData.type) {
+              case 'message_chunk':
+                // Handle streaming text chunks
+                const content = parsedData.content || parsedData.text || '';
+                setStreamingState(prev => ({
+                  ...prev,
+                  currentReasoning: prev.currentReasoning + content,
+                  finalAnswer: prev.finalAnswer + content,
+                  currentPhase: 'generating'
+                }));
+                break;
+                
+              case 'tool_call':
+                // Handle tool calls
+                setStreamingState(prev => ({
+                  ...prev,
+                  thoughtSteps: [...prev.thoughtSteps, {
+                    id: parsedData.id || Date.now().toString(),
+                    type: 'tool',
+                    content: `Using tool: ${parsedData.function?.name || parsedData.name || 'unknown'}`,
+                    timestamp: new Date(),
+                    metadata: parsedData
+                  }],
+                  currentPhase: 'using_tools'
+                }));
+                break;
+                
+              case 'tool_call_result':
+                // Handle tool execution results
+                setStreamingState(prev => ({
+                  ...prev,
+                  thoughtSteps: [...prev.thoughtSteps, {
+                    id: parsedData.tool_call_id || Date.now().toString(),
+                    type: 'reasoning',
+                    content: `Tool result: ${parsedData.result || 'completed'}`,
+                    timestamp: new Date(),
+                    metadata: parsedData
+                  }],
+                  sources: parsedData.sources ? [...prev.sources, ...parsedData.sources] : prev.sources,
+                  currentPhase: 'gathering_sources'
+                }));
+                break;
+                
+              case 'thinking':
+              case 'reasoning':
+                // Handle reasoning/thinking steps
+                const reasoning = parsedData.content || parsedData.text || '';
+                setStreamingState(prev => ({
+                  ...prev,
+                  currentReasoning: prev.currentReasoning + reasoning,
+                  thoughtSteps: [...prev.thoughtSteps, {
+                    id: Date.now().toString(),
+                    type: 'reasoning',
+                    content: reasoning,
+                    timestamp: new Date(),
+                    metadata: parsedData
+                  }],
+                  currentPhase: 'thinking'
+                }));
+                break;
+                
+              case 'search':
+              case 'visit':
+                // Handle search/visit events
+                setStreamingState(prev => ({
+                  ...prev,
+                  thoughtSteps: [...prev.thoughtSteps, {
+                    id: Date.now().toString(),
+                    type: 'visit',
+                    content: `Searching: ${parsedData.query || parsedData.url || 'information'}`,
+                    timestamp: new Date(),
+                    metadata: parsedData
+                  }],
+                  currentPhase: 'gathering_sources'
+                }));
+                break;
+                
+              default:
+                // Fallback handling for unknown event types
+                console.log('📝 Unknown event type, treating as content:', event, parsedData);
+                const fallbackContent = parsedData.content || parsedData.text || JSON.stringify(parsedData);
+                setStreamingState(prev => ({
+                  ...prev,
+                  finalAnswer: prev.finalAnswer + fallbackContent,
+                  currentPhase: 'processing'
+                }));
+                break;
+            }
+          } catch (parseError) {
+            console.warn('⚠️ Failed to parse Deer event data:', data, parseError);
+            // Add unparsed content to final answer
+            setStreamingState(prev => ({
+              ...prev,
+              finalAnswer: prev.finalAnswer + data + '\n'
+            }));
+          }
+        }
+
+        console.log('🏁 Deer stream ended');
+
+        // Final completion if not already handled
+        setStreamingState(prev => {
+          if (prev.isStreaming) {
+            const finalState = {
+              ...prev,
+              isStreaming: false,
+              currentPhase: 'completed'
+            };
+            
+            if (promiseResolveRef.current) {
+              const result = {
+                thoughtSteps: finalState.thoughtSteps,
+                reasoning: finalState.currentReasoning,
+                finalAnswer: finalState.finalAnswer || finalState.currentReasoning || 'Processing completed.',
+                sources: finalState.sources
+              };
+              console.log('🎯 Final Deer completion with:', result);
+              promiseResolveRef.current(result);
+            }
+            
+            return finalState;
+          }
+          return prev;
+        });
+
       } catch (error) {
-        console.error('❌ Failed to start DeerFlow streaming:', error);
+        console.error('❌ Failed to start Deer streaming:', error);
         setStreamingState(prev => ({
           ...prev,
           isStreaming: false,
-          error: error instanceof Error ? error.message : 'Unknown error',
-          currentPhase: 'idle'
+          error: error.message,
+          currentPhase: 'error'
         }));
         
         if (promiseRejectRef.current) {
@@ -134,105 +265,12 @@ export const useDeerStreaming = () => {
     });
   }, []);
 
-  const handleDeerFlowEvent = useCallback((event: DeerFlowStreamEvent) => {
-    console.log('🦌 REAL DeerFlow Event Received:');
-    console.log('  Type:', event.type);
-    console.log('  Full Event:', JSON.stringify(event, null, 2));
-    console.log('  Available Keys:', Object.keys(event));
-
-    switch (event.type) {
-      case 'message':
-        setStreamingState(prev => ({
-          ...prev,
-          finalAnswer: prev.finalAnswer + (event.content || ''),
-          finalReport: prev.finalReport + (event.content || ''),
-          currentPhase: 'analyzing'
-        }));
-        break;
-
-      case 'thinking':
-        setStreamingState(prev => ({
-          ...prev,
-          currentReasoning: prev.currentReasoning + (event.content || ''),
-          thoughtSteps: [...prev.thoughtSteps, {
-            id: Date.now().toString(),
-            type: 'reasoning',
-            content: event.content || '',
-            timestamp: new Date()
-          }],
-          currentPhase: 'thinking'
-        }));
-        break;
-
-      case 'planning':
-        setStreamingState(prev => ({
-          ...prev,
-          currentPhase: 'planning'
-        }));
-        break;
-
-      case 'searching':
-        setStreamingState(prev => ({
-          ...prev,
-          currentPhase: 'searching'
-        }));
-        break;
-
-      case 'analyzing':
-        setStreamingState(prev => ({
-          ...prev,
-          currentPhase: 'analyzing'
-        }));
-        break;
-
-      case 'complete':
-        setStreamingState(prev => {
-          const finalState = {
-            ...prev,
-            isStreaming: false,
-            currentPhase: 'complete' as const
-          };
-          
-          if (promiseResolveRef.current) {
-            const result = {
-              thoughtSteps: finalState.thoughtSteps,
-              reasoning: finalState.currentReasoning,
-              finalAnswer: finalState.finalAnswer || 'Research completed.',
-              sources: finalState.sources,
-              plan: finalState.currentPlan
-            };
-            promiseResolveRef.current(result);
-          }
-          
-          return finalState;
-        });
-        break;
-
-      case 'error':
-        setStreamingState(prev => ({
-          ...prev,
-          isStreaming: false,
-          error: event.error || 'Unknown error occurred',
-          currentPhase: 'idle'
-        }));
-        
-        if (promiseRejectRef.current) {
-          promiseRejectRef.current(new Error(event.error || 'Unknown error'));
-        }
-        break;
-
-      default:
-        console.log('🔄 Unhandled DeerFlow event:', event.type);
-        break;
-    }
-  }, []);
-
   const stopStreaming = useCallback(() => {
     console.log('⏹️ Manually stopping Deer streaming');
     setStreamingState(prev => ({
       ...prev,
       isStreaming: false,
-      currentPhase: 'idle'
+      currentPhase: 'stopped'
     }));
     cleanup();
   }, [cleanup]);
@@ -245,16 +283,10 @@ export const useDeerStreaming = () => {
     };
   }, [cleanup]);
 
-  const sendPlanFeedback = useCallback((accepted: boolean, feedback?: string) => {
-    console.log(`📝 Plan feedback: ${accepted ? 'accepted' : 'rejected'}`, feedback);
-    // Implementation would send feedback to the backend
-  }, []);
-
   return {
     streamingState,
     startStreaming,
     stopStreaming,
-    resetState,
-    sendPlanFeedback
+    resetState
   };
 };
