@@ -31,7 +31,7 @@ export interface DeerStreamingState {
   currentPlan: DeerPlan | null;
   searchQueries: string[];
   error: string | null;
-  currentPhase: 'planning' | 'searching' | 'analyzing' | 'synthesizing' | 'complete' | 'idle';
+  currentPhase: 'planning' | 'searching' | 'analyzing' | 'synthesizing' | 'complete' | 'idle' | 'thinking';
   overallProgress: number;
   researchMode: 'academic' | 'business' | 'technical' | 'general';
 }
@@ -97,20 +97,25 @@ export const useDeerStreaming = () => {
       });
 
       try {
-        // Use DeerFlow service with WebSocket
-        await deerflowService.startResearch({
-          query: question,
-          research_mode: config?.research_mode || 'general',
-          max_plan_iterations: config?.max_plan_iterations || 3,
-          max_step_num: config?.max_step_num || 10,
-          auto_accept_plan: config?.auto_accept_plan ?? true,
-          thinking_on: config?.thinking_on ?? true,
-          research_only: config?.research_only ?? false,
-          context: {
-            sessionId: `deer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            ...config?.context
-          }
-        }, handleDeerFlowEvent);
+        // Build DeerFlow request with dynamic configuration
+        const request: DeerFlowChatRequest = {
+          messages: [{ role: 'user', content: question }],
+          resources: config?.resources || [],
+          debug: config?.debug ?? false,
+          thread_id: config?.thread_id || `deer_${Date.now()}`,
+          max_plan_iterations: config?.max_plan_iterations || 1,
+          max_step_num: config?.max_step_num || 3,
+          max_search_results: config?.max_search_results || 3,
+          auto_accepted_plan: config?.auto_accepted_plan ?? false,
+          mcp_settings: config?.mcp_settings || {},
+          enable_background_investigation: config?.enable_background_investigation ?? true,
+          report_style: config?.report_style || 'general',
+          enable_deep_thinking: config?.enable_deep_thinking ?? false,
+          ...config
+        };
+
+        // Use DeerFlow service with correct endpoint
+        await deerflowService.startResearch(request, handleDeerFlowEvent);
 
         // Success - let event handler finish the process
       } catch (error) {
@@ -136,104 +141,47 @@ export const useDeerStreaming = () => {
     console.log('  Available Keys:', Object.keys(event));
 
     switch (event.type) {
-      case 'connection_confirmed':
+      case 'message':
+        setStreamingState(prev => ({
+          ...prev,
+          finalAnswer: prev.finalAnswer + (event.content || ''),
+          finalReport: prev.finalReport + (event.content || ''),
+          currentPhase: 'analyzing'
+        }));
+        break;
+
+      case 'thinking':
+        setStreamingState(prev => ({
+          ...prev,
+          currentReasoning: prev.currentReasoning + (event.content || ''),
+          thoughtSteps: [...prev.thoughtSteps, {
+            id: Date.now().toString(),
+            type: 'reasoning',
+            content: event.content || '',
+            timestamp: new Date()
+          }],
+          currentPhase: 'thinking'
+        }));
+        break;
+
+      case 'planning':
         setStreamingState(prev => ({
           ...prev,
           currentPhase: 'planning'
         }));
         break;
 
-      case 'plan_created':
-        if (event.plan) {
-          setStreamingState(prev => ({
-            ...prev,
-            currentPlan: {
-              id: Date.now().toString(),
-              steps: event.plan || [],
-              isActive: true,
-              needsApproval: !prev.currentPlan?.isActive
-            },
-            currentPhase: 'planning'
-          }));
-        }
-        break;
-
-      case 'plan_accepted':
+      case 'searching':
         setStreamingState(prev => ({
           ...prev,
           currentPhase: 'searching'
         }));
         break;
 
-      case 'search':
-        if (event.query) {
-          setStreamingState(prev => ({
-            ...prev,
-            searchQueries: [...prev.searchQueries, event.query!],
-            currentPhase: 'searching'
-          }));
-        }
-        break;
-
-      case 'source':
-        if (event.source) {
-          setStreamingState(prev => ({
-            ...prev,
-            sources: [...prev.sources, {
-              ...event.source!,
-              timestamp: new Date()
-            }]
-          }));
-        }
-        break;
-
-      case 'reasoning_content':
+      case 'analyzing':
         setStreamingState(prev => ({
           ...prev,
-          currentReasoning: prev.currentReasoning + (event.reasoning || ''),
-          thoughtSteps: [...prev.thoughtSteps, {
-            id: Date.now().toString(),
-            type: 'reasoning',
-            content: event.reasoning || '',
-            timestamp: new Date()
-          }],
           currentPhase: 'analyzing'
-        }));
-        break;
-
-      case 'tool_call':
-        setStreamingState(prev => ({
-          ...prev,
-          thoughtSteps: [...prev.thoughtSteps, {
-            id: event.data?.id || Date.now().toString(),
-            type: 'tool_call',
-            content: `Using tool: ${event.data?.function?.name || 'unknown'}`,
-            timestamp: new Date(),
-            metadata: event.data
-          }],
-          currentPhase: 'analyzing'
-        }));
-        break;
-
-      case 'tool_call_result':
-        setStreamingState(prev => ({
-          ...prev,
-          thoughtSteps: [...prev.thoughtSteps, {
-            id: event.data?.tool_call_id || Date.now().toString(),
-            type: 'analysis',
-            content: `Tool result: ${event.data?.result || 'completed'}`,
-            timestamp: new Date(),
-            metadata: event.data
-          }]
-        }));
-        break;
-
-      case 'message_chunk':
-        setStreamingState(prev => ({
-          ...prev,
-          finalAnswer: prev.finalAnswer + (event.content || ''),
-          finalReport: prev.finalReport + (event.content || ''),
-          currentPhase: 'synthesizing'
         }));
         break;
 
@@ -286,7 +234,6 @@ export const useDeerStreaming = () => {
       isStreaming: false,
       currentPhase: 'idle'
     }));
-    deerflowService.disconnect();
     cleanup();
   }, [cleanup]);
 

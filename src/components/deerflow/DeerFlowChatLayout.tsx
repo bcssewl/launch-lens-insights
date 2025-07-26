@@ -35,16 +35,22 @@ export const DeerFlowChatLayout: React.FC<DeerFlowChatLayoutProps> = ({
   
   // Use passed streaming state if provided, otherwise use internal
   const streamingState = passedStreamingState || internalStreamingState;
-  const [showSettings, setShowSettings] = useState(false);
+
+  // Research configuration state with DeerFlow settings
   const [researchConfig, setResearchConfig] = useState<Partial<DeerFlowChatRequest>>({
-    research_mode: 'general',
-    max_plan_iterations: 3,
-    max_step_num: 10,
-    auto_accept_plan: true,
-    thinking_on: true,
-    research_only: false
+    max_plan_iterations: 1,
+    max_step_num: 3,
+    max_search_results: 3,
+    auto_accepted_plan: false,
+    enable_background_investigation: true,
+    report_style: 'general',
+    enable_deep_thinking: false,
+    debug: false
   });
-  
+
+  const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
+  const [downloadFormat, setDownloadFormat] = useState<'pdf' | 'markdown' | 'html'>('pdf');
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
 
   const handleSendMessage = async (message: string) => {
@@ -66,64 +72,53 @@ export const DeerFlowChatLayout: React.FC<DeerFlowChatLayoutProps> = ({
     setResearchConfig(prev => ({ ...prev, [key]: value }));
   };
 
-  const handlePlanAccept = (feedback?: string) => {
-    sendPlanFeedback(true, feedback);
-  };
-
-  const handlePlanReject = (feedback: string) => {
-    sendPlanFeedback(false, feedback);
-  };
-
-  const handleDownloadReport = (format: 'pdf' | 'markdown' | 'word') => {
-    console.log(`Downloading report as ${format}`);
-    // Implementation for download functionality
-  };
-
-  const isStreaming = streamingState.isStreaming || isTyping;
+  // Auto-scroll to bottom when new content arrives
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, streamingState.finalAnswer, streamingState.thoughtSteps]);
 
   return (
     <div className={cn("flex flex-col h-full bg-background", className)}>
-      {/* Header */}
-      <div className="flex-shrink-0 border-b border-border bg-background/80 backdrop-blur-sm">
-        <div className="flex items-center justify-between p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
-              <Zap className="w-5 h-5 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-lg font-semibold">DeerFlow Deep Research</h1>
-              <p className="text-sm text-muted-foreground">
-                Advanced AI research with multi-agent collaboration
-              </p>
-            </div>
+      {/* Header with Configuration */}
+      <div className="border-b border-border p-4 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Zap className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold">DeerFlow Deep Research</h2>
           </div>
-
+          
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setShowSettings(!showSettings)}
-              className="flex items-center gap-2"
+              onClick={() => setShowAdvancedSettings(!showAdvancedSettings)}
             >
-              <Settings className="w-4 h-4" />
+              <Settings className="h-4 w-4 mr-1" />
               Settings
             </Button>
+            
+            {streamingState.finalAnswer && (
+              <Button variant="outline" size="sm">
+                <Download className="h-4 w-4 mr-1" />
+                Export
+              </Button>
+            )}
           </div>
         </div>
 
-        {/* Research Configuration Panel */}
-        {showSettings && (
-          <Card className="m-4 border-primary/20">
-            <CardHeader>
-              <CardTitle className="text-base">Research Configuration</CardTitle>
+        {/* Advanced Settings Panel */}
+        {showAdvancedSettings && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm">Research Configuration</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label>Research Mode</Label>
-                  <Select
-                    value={researchConfig.research_mode}
-                    onValueChange={(value) => handleConfigChange('research_mode', value)}
+                  <Label htmlFor="report-style">Report Style</Label>
+                  <Select 
+                    value={researchConfig.report_style || 'general'}
+                    onValueChange={(value) => handleConfigChange('report_style', value)}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -165,10 +160,28 @@ export const DeerFlowChatLayout: React.FC<DeerFlowChatLayoutProps> = ({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="3">3</SelectItem>
                       <SelectItem value="5">5</SelectItem>
                       <SelectItem value="10">10</SelectItem>
                       <SelectItem value="15">15</SelectItem>
-                      <SelectItem value="20">20</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Max Search Results</Label>
+                  <Select
+                    value={researchConfig.max_search_results?.toString()}
+                    onValueChange={(value) => handleConfigChange('max_search_results', parseInt(value))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="3">3</SelectItem>
+                      <SelectItem value="5">5</SelectItem>
+                      <SelectItem value="10">10</SelectItem>
+                      <SelectItem value="15">15</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -178,28 +191,37 @@ export const DeerFlowChatLayout: React.FC<DeerFlowChatLayoutProps> = ({
                 <div className="flex items-center space-x-2">
                   <Switch
                     id="auto-accept"
-                    checked={researchConfig.auto_accept_plan}
-                    onCheckedChange={(value) => handleConfigChange('auto_accept_plan', value)}
+                    checked={researchConfig.auto_accepted_plan}
+                    onCheckedChange={(value) => handleConfigChange('auto_accepted_plan', value)}
                   />
                   <Label htmlFor="auto-accept">Auto-accept plans</Label>
                 </div>
 
                 <div className="flex items-center space-x-2">
                   <Switch
-                    id="thinking-on"
-                    checked={researchConfig.thinking_on}
-                    onCheckedChange={(value) => handleConfigChange('thinking_on', value)}
+                    id="deep-thinking"
+                    checked={researchConfig.enable_deep_thinking}
+                    onCheckedChange={(value) => handleConfigChange('enable_deep_thinking', value)}
                   />
-                  <Label htmlFor="thinking-on">Show thinking process</Label>
+                  <Label htmlFor="deep-thinking">Enable deep thinking</Label>
                 </div>
 
                 <div className="flex items-center space-x-2">
                   <Switch
-                    id="research-only"
-                    checked={researchConfig.research_only}
-                    onCheckedChange={(value) => handleConfigChange('research_only', value)}
+                    id="background-investigation"
+                    checked={researchConfig.enable_background_investigation}
+                    onCheckedChange={(value) => handleConfigChange('enable_background_investigation', value)}
                   />
-                  <Label htmlFor="research-only">Research only mode</Label>
+                  <Label htmlFor="background-investigation">Background investigation</Label>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="debug-mode"
+                    checked={researchConfig.debug}
+                    onCheckedChange={(value) => handleConfigChange('debug', value)}
+                  />
+                  <Label htmlFor="debug-mode">Debug mode</Label>
                 </div>
               </div>
             </CardContent>
@@ -210,83 +232,93 @@ export const DeerFlowChatLayout: React.FC<DeerFlowChatLayoutProps> = ({
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Panel - Chat */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex-1 overflow-hidden" ref={viewportRef}>
-            <ChatArea
-              messages={messages}
-              isTyping={isStreaming}
+        <div className="flex-1 flex flex-col">
+          <div className="flex-1 overflow-y-auto p-4">
+            <ChatArea 
+              messages={messages} 
+              isTyping={isTyping} 
               viewportRef={viewportRef}
               onSendMessage={handleSendMessage}
               selectedModel="deer"
             />
-          </div>
+            
+            {/* Research Progress */}
+            {streamingState.isStreaming && (
+              <div className="mt-4">
+                <ResearchProgress
+                  currentPhase={streamingState.currentPhase}
+                  overallProgress={streamingState.overallProgress}
+                  searchQueries={streamingState.searchQueries}
+                  sourcesFound={streamingState.sources.length}
+                />
+              </div>
+            )}
 
-          <div className="flex-shrink-0 border-t border-border bg-background p-4">
+            {/* Thinking Process */}
+            {streamingState.thoughtSteps.length > 0 && researchConfig.enable_deep_thinking && (
+              <div className="mt-4">
+                <ThoughtBlock
+                  reasoning={streamingState.currentReasoning}
+                  isStreaming={streamingState.isStreaming}
+                  isVisible={streamingState.currentPhase === 'thinking'}
+                />
+              </div>
+            )}
+
+            {/* Plan Review */}
+            {streamingState.currentPlan && streamingState.currentPlan.needsApproval && (
+              <div className="mt-4">
+                <PlanCard
+                  plan={streamingState.currentPlan.steps}
+                  isActive={true}
+                  onAccept={(feedback) => sendPlanFeedback(true, feedback)}
+                  onReject={(feedback) => sendPlanFeedback(false, feedback)}
+                />
+              </div>
+            )}
+
+            {/* Final Report */}
+            {streamingState.finalAnswer && (
+              <div className="mt-4">
+                <ReportRenderer
+                  content={streamingState.finalAnswer}
+                  title="Research Report"
+                  isComplete={streamingState.currentPhase === 'complete'}
+                  isStreaming={streamingState.isStreaming}
+                  onDownload={(format) => console.log('Download:', format)}
+                  onShare={() => console.log('Share report')}
+                  onEdit={() => console.log('Edit report')}
+                />
+              </div>
+            )}
+
+            <div ref={messagesEndRef} />
+          </div>
+          
+          <div className="border-t border-border p-4">
             <EnhancedChatInput
               onSendMessage={handleSendMessage}
-              isTyping={isStreaming}
+              isTyping={streamingState.isStreaming}
               selectedModel="deer"
             />
           </div>
         </div>
 
-        {/* Right Panel - Research Components */}
-        <div className="w-96 border-l border-border bg-background/50 overflow-y-auto">
-          <div className="p-4 space-y-4">
-            {/* Research Progress */}
-            {streamingState.isStreaming && (
-              <ResearchProgress
-                currentPhase={streamingState.currentPhase}
-                overallProgress={streamingState.overallProgress}
-                searchQueries={streamingState.searchQueries}
-                sourcesFound={streamingState.sources.length}
+        {/* Right Panel - Sources & Details */}
+        {streamingState.sources.length > 0 && (
+          <div className="w-80 border-l border-border overflow-y-auto">
+            <div className="p-4">
+              <SourcesPanel
+                sources={streamingState.sources.map(source => ({
+                  ...source,
+                  type: source.type as 'academic' | 'pdf' | 'web' | 'video' | 'image' | 'news'
+                }))}
+                isCollapsible={true}
+                maxVisible={5}
               />
-            )}
-
-            {/* Thinking Process */}
-            {researchConfig.thinking_on && streamingState.currentReasoning && (
-              <ThoughtBlock
-                reasoning={streamingState.currentReasoning}
-                isStreaming={streamingState.isStreaming}
-                isVisible={true}
-              />
-            )}
-
-            {/* Research Plan */}
-            {streamingState.currentPlan && (
-              <PlanCard
-                plan={streamingState.currentPlan.steps}
-                isActive={streamingState.currentPlan.isActive}
-                onAccept={handlePlanAccept}
-                onReject={handlePlanReject}
-                autoAccept={researchConfig.auto_accept_plan}
-              />
-            )}
-
-            {/* Sources */}
-            {streamingState.sources.length > 0 && (
-            <SourcesPanel 
-              sources={streamingState.sources.map(source => ({
-                ...source,
-                type: source.type as 'academic' | 'video' | 'image' | 'web' | 'pdf' | 'news'
-              }))} 
-              isCollapsible={true}
-              maxVisible={5}
-            />
-            )}
-
-            {/* Final Report */}
-            {(streamingState.finalReport || streamingState.finalAnswer) && (
-              <ReportRenderer
-                content={streamingState.finalReport || streamingState.finalAnswer}
-                title="Research Report"
-                isComplete={streamingState.currentPhase === 'complete'}
-                isStreaming={streamingState.isStreaming && streamingState.currentPhase === 'synthesizing'}
-                onDownload={handleDownloadReport}
-              />
-            )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

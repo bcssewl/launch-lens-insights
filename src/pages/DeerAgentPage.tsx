@@ -38,9 +38,11 @@ const DeerAgentPage: React.FC = () => {
       
       // Use DeerFlow streaming instead of regular messages
       await deerStreaming.startStreaming(message, {
-        research_mode: 'general',
-        auto_accept_plan: true,
-        thinking_on: true
+        max_plan_iterations: 1,
+        max_step_num: 3,
+        auto_accepted_plan: false,
+        enable_deep_thinking: true,
+        report_style: 'general'
       });
       
     } catch (error) {
