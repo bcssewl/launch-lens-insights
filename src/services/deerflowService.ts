@@ -20,6 +20,22 @@ interface DeerFlowStreamEvent {
   data?: any;
   message?: string;
   error?: string;
+  query?: string;
+  source?: {
+    id: string;
+    title: string;
+    url: string;
+    type: string;
+    confidence: number;
+    snippet?: string;
+  };
+  plan?: Array<{
+    id: string;
+    description: string;
+    status: 'pending' | 'active' | 'completed';
+  }>;
+  reasoning?: string;
+  content?: string;
 }
 
 class DeerFlowService {

@@ -44,7 +44,9 @@ export const DeerFlowChatLayout: React.FC<DeerFlowChatLayoutProps> = ({
 
   const handleSendMessage = async (message: string) => {
     try {
-      await startStreaming(message);
+      // Start DeerFlow streaming with current configuration
+      await startStreaming(message, researchConfig);
+      // Notify parent component
       onSendMessage(message);
     } catch (error) {
       console.error('Error sending DeerFlow message:', error);
@@ -254,11 +256,14 @@ export const DeerFlowChatLayout: React.FC<DeerFlowChatLayoutProps> = ({
 
             {/* Sources */}
             {streamingState.sources.length > 0 && (
-              <SourcesPanel
-                sources={streamingState.sources}
-                isCollapsible={true}
-                maxVisible={5}
-              />
+            <SourcesPanel 
+              sources={streamingState.sources.map(source => ({
+                ...source,
+                type: source.type as 'academic' | 'video' | 'image' | 'web' | 'pdf' | 'news'
+              }))} 
+              isCollapsible={true}
+              maxVisible={5}
+            />
             )}
 
             {/* Final Report */}

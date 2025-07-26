@@ -12,7 +12,7 @@ import CanvasCompact from './CanvasCompact';
 import StreamingOverlay from './StreamingOverlay';
 import StratixStreamingOverlay from './StratixStreamingOverlay';
 import EnhancedStreamingOverlay from './EnhancedStreamingOverlay';
-import DeerStreamingOverlay from './DeerStreamingOverlay';
+
 import ThinkingPanel from './ThinkingPanel';
 import { isReportMessage } from '@/utils/reportDetection';
 import type { StratixStreamingState } from '@/types/stratixStreaming';
@@ -206,13 +206,7 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
               />
             )}
 
-            {/* Deer Streaming Overlay */}
-            {isAi && deerStreamingState?.isStreaming && (
-              <DeerStreamingOverlay
-                streamingState={deerStreamingState}
-                className="z-10"
-              />
-            )}
+            {/* Deer Streaming handled by DeerFlowChatLayout */}
 
             {/* Fallback streaming overlay */}
             {isAi && !stratixStreamingState?.isStreaming && !showAlegeonStreaming && (isStreaming || streamingUpdates.length > 0) && (
