@@ -70,18 +70,31 @@ const AIAssistantPage: React.FC = () => {
     const modelToUse = modelOverride || selectedModel;
     const researchTypeToUse = researchType || selectedResearchType;
 
-    if (!currentSessionId) {
-      const newSession = await createSession();
-      if (!newSession) {
-        console.error('AIAssistantPage: Failed to create new session');
-        return;
+    try {
+      // Use DeerFlow service for deer model, regular chat service for others
+      if (modelToUse === 'deer') {
+        const { sendDeerFlowMessage } = await import('@/services/deerflowService');
+        await sendDeerFlowMessage(text, {
+          threadId: '__default__',
+          autoAcceptedPlan: false
+        });
+      } else {
+        if (!currentSessionId) {
+          const newSession = await createSession();
+          if (!newSession) {
+            console.error('AIAssistantPage: Failed to create new session');
+            return;
+          }
+          
+          await new Promise(resolve => setTimeout(resolve, 200));
+          
+          handleSendMessage(text, undefined, modelToUse, researchTypeToUse, newSession.id);
+        } else {
+          handleSendMessage(text, undefined, modelToUse, researchTypeToUse);
+        }
       }
-      
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
-      handleSendMessage(text, undefined, modelToUse, researchTypeToUse, newSession.id);
-    } else {
-      handleSendMessage(text, undefined, modelToUse, researchTypeToUse);
+    } catch (error) {
+      console.error('Failed to send message:', error);
     }
   };
 
@@ -115,9 +128,21 @@ const AIAssistantPage: React.FC = () => {
     setSelectedResearchType(type);
   };
 
-  const handleFeedback = (value: string) => {
-    console.log('Feedback received:', value);
-    sendMessage('', value);
+  const handleFeedback = async (value: string) => {
+    try {
+      const { useChatStore } = await import('@/stores/chatStore');
+      const { currentThreadId } = useChatStore.getState();
+      
+      if (selectedModel === 'deer' && currentThreadId) {
+        const { sendDeerFlowFeedback } = await import('@/services/deerflowService');
+        await sendDeerFlowFeedback(value, currentThreadId);
+      } else {
+        // Handle feedback for other models
+        await sendMessage('', value);
+      }
+    } catch (error) {
+      console.error('Failed to send feedback:', error);
+    }
   };
 
   if (isLoadingHistory) {

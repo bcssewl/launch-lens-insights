@@ -23,9 +23,11 @@ export interface Message {
   options?: FeedbackOption[];
   toolCalls?: ToolCall[];
   timestamp?: Date;
+  threadId?: string;
   metadata?: {
     isCompleted?: boolean;
     messageType?: 'progress_update' | 'completed_report' | 'standard' | 'stratix_conversation';
+    isInterrupted?: boolean;
   };
 }
 
@@ -62,6 +64,12 @@ export interface ReasoningData {
   content: string;
 }
 
+export interface InterruptData {
+  content: string;
+  options: FeedbackOption[];
+  thread_id: string;
+}
+
 export type ChatEvent = 
   | { event: 'message_chunk'; data: MessageChunkData }
   | { event: 'tool_call'; data: ToolCallData }
@@ -69,6 +77,7 @@ export type ChatEvent =
   | { event: 'thinking'; data: ThinkingData }
   | { event: 'search'; data: SearchData }
   | { event: 'reasoning'; data: ReasoningData }
+  | { event: 'interrupt'; data: InterruptData }
   | { event: 'done'; data: {} }
   | { event: 'error'; data: { error: string } };
 

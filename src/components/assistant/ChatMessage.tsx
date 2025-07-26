@@ -283,11 +283,14 @@ const ChatMessage: React.FC<ChatMessageProps> = React.memo(({
 
             {/* Feedback Buttons */}
             {isAi && message.finishReason === 'interrupt' && message.options && message.options.length > 0 && !showAlegeonStreaming && !stratixStreamingState?.isStreaming && (
-              <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-border/20">
+              <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-border/20">
+                <div className="w-full mb-2">
+                  <p className="text-sm text-muted-foreground">Choose how to proceed:</p>
+                </div>
                 {message.options.map((option, index) => (
                   <Button
                     key={index}
-                    variant="outline"
+                    variant={option.value === 'accepted' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => onFeedback?.(option.value)}
                     className="transition-all duration-200 hover:bg-primary/10 hover:border-primary/30"

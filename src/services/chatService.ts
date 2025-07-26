@@ -158,6 +158,24 @@ export async function sendMessage(
           break;
         }
 
+        case 'interrupt': {
+          // Handle interrupt events for workflow continuation
+          const { content, options } = parsedData;
+          const currentMessage = useChatStore.getState().messages.find(m => m.id === assistantMessageId);
+          updateMessage(assistantMessageId, {
+            content: content || currentMessage?.content || '',
+            finishReason: 'interrupt',
+            options: options || [],
+            metadata: {
+              ...assistantMsg.metadata,
+              isInterrupted: true,
+              isCompleted: false
+            }
+          });
+          setResponding(false);
+          break;
+        }
+
         case 'done': {
           updateMessage(assistantMessageId, {
             metadata: {
