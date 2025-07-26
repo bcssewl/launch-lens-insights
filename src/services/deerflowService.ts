@@ -130,14 +130,11 @@ export async function sendDeerFlowMessage(
 
         // Handle different event types
         switch (event) {
-          case 'message_chunk':
-          case 'data': // DeerFlow might use 'data' event type
-          case '': // Some APIs send events without explicit type
-          default: {
-            // Handle any content from DeerFlow
-            const content = parsedData.content || parsedData.text || parsedData.message || eventData;
+          case 'message_chunk': {
+            // Only handle actual content, not metadata
+            const content = parsedData.content || parsedData.text || parsedData.message;
             
-            if (content && content.trim()) {
+            if (content && content.trim() && typeof content === 'string') {
               const currentMessage = useChatStore.getState().messages.find(m => m.id === currentMessageId);
               updateMessage(currentMessageId, {
                 content: (currentMessage?.content || '') + content,
@@ -145,6 +142,33 @@ export async function sendDeerFlowMessage(
               });
               
               console.log('📝 Updated message content, length:', ((currentMessage?.content || '') + content).length);
+            }
+            break;
+          }
+
+          case 'tool_call_chunks':
+          case 'tool_calls': {
+            // Don't display tool calls as content - they're internal operations
+            console.log('🔧 Tool operation:', event, parsedData);
+            break;
+          }
+
+          case 'data': // DeerFlow might use 'data' event type
+          case '': // Some APIs send events without explicit type
+          default: {
+            // Only treat as content if it contains readable content and isn't a tool operation
+            if (!event.includes('tool') && !parsedData.tool_calls && !parsedData.tool_call_chunks) {
+              const content = parsedData.content || parsedData.text || parsedData.message;
+              
+              if (content && content.trim() && typeof content === 'string') {
+                const currentMessage = useChatStore.getState().messages.find(m => m.id === currentMessageId);
+                updateMessage(currentMessageId, {
+                  content: (currentMessage?.content || '') + content,
+                  threadId: capturedThreadId || undefined
+                });
+                
+                console.log('📝 Updated message content, length:', ((currentMessage?.content || '') + content).length);
+              }
             }
             break;
           }
