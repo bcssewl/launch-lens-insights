@@ -9,9 +9,14 @@ export interface DeerThoughtStep {
 }
 
 export interface DeerSource {
+  id: string;
   url: string;
-  title?: string;
-  content: string;
+  title: string;
+  type: 'web' | 'academic' | 'pdf' | 'news' | 'video' | 'image';
+  confidence: number;
+  content?: string;
+  snippet?: string;
+  domain?: string;
   timestamp: Date;
 }
 
@@ -20,9 +25,25 @@ export interface DeerStreamingState {
   thoughtSteps: DeerThoughtStep[];
   currentReasoning: string;
   finalAnswer: string;
+  finalReport: string;
   sources: DeerSource[];
+  currentPlan: DeerPlan | null;
+  searchQueries: string[];
   error: string | null;
   currentPhase: string;
+  overallProgress: number;
+  researchMode: 'academic' | 'business' | 'technical' | 'general';
+}
+
+export interface DeerPlan {
+  id: string;
+  steps: Array<{
+    id: string;
+    description: string;
+    status: 'pending' | 'active' | 'completed' | 'error';
+  }>;
+  isActive: boolean;
+  needsApproval: boolean;
 }
 
 const INITIAL_STATE: DeerStreamingState = {
@@ -30,9 +51,14 @@ const INITIAL_STATE: DeerStreamingState = {
   thoughtSteps: [],
   currentReasoning: '',
   finalAnswer: '',
+  finalReport: '',
   sources: [],
+  currentPlan: null,
+  searchQueries: [],
   error: null,
-  currentPhase: 'idle'
+  currentPhase: 'idle',
+  overallProgress: 0,
+  researchMode: 'general'
 };
 
 export const useDeerStreaming = () => {
@@ -350,10 +376,16 @@ export const useDeerStreaming = () => {
     };
   }, [cleanup]);
 
+  const sendPlanFeedback = useCallback((accepted: boolean, feedback?: string) => {
+    console.log(`📝 Plan feedback: ${accepted ? 'accepted' : 'rejected'}`, feedback);
+    // Implementation would send feedback to the backend
+  }, []);
+
   return {
     streamingState,
     startStreaming,
     stopStreaming,
-    resetState
+    resetState,
+    sendPlanFeedback
   };
 };
