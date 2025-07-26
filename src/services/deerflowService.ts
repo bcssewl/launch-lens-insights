@@ -13,7 +13,7 @@ interface DeerFlowChatRequest {
   interrupt_feedback?: string;
   mcp_settings?: Record<string, any>;
   enable_background_investigation?: boolean;
-  report_style?: 'academic' | 'business' | 'technical' | 'general';
+  report_style?: 'academic' | 'popular_science' | 'news' | 'social_media';
   enable_deep_thinking?: boolean;
 }
 
@@ -55,7 +55,7 @@ class DeerFlowService {
         interrupt_feedback: request.interrupt_feedback || "string",
         mcp_settings: request.mcp_settings || {},
         enable_background_investigation: request.enable_background_investigation ?? true,
-        report_style: request.report_style || "academic", 
+        report_style: request.report_style || "academic",
         enable_deep_thinking: request.enable_deep_thinking || false
       };
 

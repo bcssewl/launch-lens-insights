@@ -43,7 +43,7 @@ export const DeerFlowChatLayout: React.FC<DeerFlowChatLayoutProps> = ({
     max_search_results: 3,
     auto_accepted_plan: false,
     enable_background_investigation: true,
-    report_style: 'general',
+    report_style: 'academic',
     enable_deep_thinking: false,
     debug: false
   });
@@ -117,17 +117,17 @@ export const DeerFlowChatLayout: React.FC<DeerFlowChatLayoutProps> = ({
                 <div className="space-y-2">
                   <Label htmlFor="report-style">Report Style</Label>
                   <Select 
-                    value={researchConfig.report_style || 'general'}
-                    onValueChange={(value) => handleConfigChange('report_style', value)}
+                    value={researchConfig.report_style || 'academic'}
+                    onValueChange={(value) => handleConfigChange('report_style', value as 'academic' | 'popular_science' | 'news' | 'social_media')}
                   >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="general">General</SelectItem>
                       <SelectItem value="academic">Academic</SelectItem>
-                      <SelectItem value="business">Business</SelectItem>
-                      <SelectItem value="technical">Technical</SelectItem>
+                      <SelectItem value="popular_science">Popular Science</SelectItem>
+                      <SelectItem value="news">News</SelectItem>
+                      <SelectItem value="social_media">Social Media</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

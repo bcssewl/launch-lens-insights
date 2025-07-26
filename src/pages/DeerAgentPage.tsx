@@ -42,7 +42,7 @@ const DeerAgentPage: React.FC = () => {
         max_step_num: 3,
         auto_accepted_plan: false,
         enable_deep_thinking: true,
-        report_style: 'general'
+        report_style: 'academic'
       });
       
     } catch (error) {

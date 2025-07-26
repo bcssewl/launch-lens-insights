@@ -33,7 +33,7 @@ export interface DeerStreamingState {
   error: string | null;
   currentPhase: 'planning' | 'searching' | 'analyzing' | 'synthesizing' | 'complete' | 'idle' | 'thinking';
   overallProgress: number;
-  researchMode: 'academic' | 'business' | 'technical' | 'general';
+  researchMode: 'academic' | 'popular_science' | 'news' | 'social_media';
 }
 
 export interface DeerPlan {
@@ -59,7 +59,7 @@ const INITIAL_STATE: DeerStreamingState = {
   error: null,
   currentPhase: 'idle',
   overallProgress: 0,
-  researchMode: 'general'
+  researchMode: 'academic'
 };
 
 export const useDeerStreaming = () => {
@@ -109,7 +109,7 @@ export const useDeerStreaming = () => {
           auto_accepted_plan: config?.auto_accepted_plan ?? false,
           mcp_settings: config?.mcp_settings || {},
           enable_background_investigation: config?.enable_background_investigation ?? true,
-          report_style: config?.report_style || 'general',
+          report_style: config?.report_style || 'academic',
           enable_deep_thinking: config?.enable_deep_thinking ?? false,
           ...config
         };
