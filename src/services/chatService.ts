@@ -32,6 +32,28 @@ export async function sendMessage(
 ): Promise<SendMessageResult> {
   const { appendMessage, updateMessage, setResponding } = useChatStore.getState();
   
+  console.log('📨 sendMessage called with:', { userMessage, feedback, options });
+  
+  // Handle DeerFlow model routing
+  if (options.model === 'deer') {
+    console.log('🦌 Routing to DeerFlow service');
+    const { sendDeerFlowMessage, sendDeerFlowFeedback } = await import('./deerflowService');
+    
+    if (feedback) {
+      // This is feedback for an existing DeerFlow conversation
+      const { currentThreadId } = useChatStore.getState();
+      if (currentThreadId) {
+        return await sendDeerFlowFeedback(feedback, currentThreadId);
+      }
+    } else {
+      // This is a new DeerFlow message
+      return await sendDeerFlowMessage(userMessage, {
+        threadId: '__default__',
+        autoAcceptedPlan: false
+      });
+    }
+  }
+  
   try {
     // Get current user
     const { data: { user } } = await supabase.auth.getUser();

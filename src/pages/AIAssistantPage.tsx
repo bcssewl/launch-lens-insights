@@ -73,22 +73,24 @@ const AIAssistantPage: React.FC = () => {
     console.log('🚀 Sending message with model:', modelToUse, 'research type:', researchTypeToUse);
 
     try {
-      // Use DeerFlow service for deer model, regular chat service for others
+      // For DeerFlow, we need to ensure we have a session first, then use the regular message system
       if (modelToUse === 'deer') {
-        console.log('🦌 Using DeerFlow service for deer model');
-        const { sendDeerFlowMessage } = await import('@/services/deerflowService');
-        const result = await sendDeerFlowMessage(text, {
-          threadId: '__default__',
-          autoAcceptedPlan: false
-        });
+        console.log('🦌 Using DeerFlow through regular message system');
         
-        console.log('🦌 DeerFlow result:', result);
-        
-        if (!result.success) {
-          console.error('❌ DeerFlow failed:', result.error);
-          // Fallback to showing error message
-          throw new Error(result.error || 'DeerFlow request failed');
+        // Ensure we have a session
+        let sessionToUse = currentSessionId;
+        if (!sessionToUse) {
+          const newSession = await createSession();
+          if (!newSession) {
+            console.error('AIAssistantPage: Failed to create new session');
+            return;
+          }
+          sessionToUse = newSession.id;
+          await new Promise(resolve => setTimeout(resolve, 200));
         }
+        
+        // Use the regular handleSendMessage but specify deer model
+        handleSendMessage(text, undefined, modelToUse, researchTypeToUse, sessionToUse);
       } else {
         console.log('🔄 Using regular chat service for model:', modelToUse);
         if (!currentSessionId) {
