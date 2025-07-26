@@ -103,124 +103,157 @@ export async function sendDeerFlowMessage(
       body: JSON.stringify(requestBody)
     };
 
-    for await (const { event, data: eventData } of fetchStream(DEERFLOW_API_URL, requestInit)) {
-      // Parse event data
-      let parsedData;
-      try {
-        parsedData = JSON.parse(eventData);
-      } catch {
-        parsedData = { content: eventData };
-      }
-
-      // Capture thread_id from first event
-      if (!capturedThreadId && parsedData.thread_id) {
-        capturedThreadId = parsedData.thread_id;
-        setCurrentThreadId(capturedThreadId);
-        console.log('🆔 Captured thread_id:', capturedThreadId);
-      }
-
-      // Handle different event types
-      switch (event) {
-        case 'message_chunk': {
-          const { content, role, agent } = parsedData;
-          const currentMessage = useChatStore.getState().messages.find(m => m.id === currentMessageId);
-          updateMessage(currentMessageId, {
-            content: (currentMessage?.content || '') + (content || ''),
-            ...(role && { role }),
-            ...(agent && { agent }),
-            threadId: capturedThreadId || undefined
-          });
-          break;
+    // Add better error handling and logging
+    console.log('🔗 Starting DeerFlow stream request...');
+    
+    try {
+      for await (const { event, data: eventData } of fetchStream(DEERFLOW_API_URL, requestInit)) {
+        console.log(`📨 Received DeerFlow event: ${event}`, eventData);
+        
+        // Parse event data
+        let parsedData;
+        try {
+          parsedData = JSON.parse(eventData);
+        } catch {
+          parsedData = { content: eventData };
         }
 
-        case 'interrupt': {
-          // This is the key event for DeerFlow workflow
-          const { content, options: interruptOptions } = parsedData;
-          
-          updateMessage(currentMessageId, {
-            content: content || 'Research plan generated. Please review and choose an option.',
-            finishReason: 'interrupt',
-            options: interruptOptions || [
-              { title: 'Edit plan', value: 'edit_plan' },
-              { title: 'Start research', value: 'accepted' }
-            ],
-            threadId: capturedThreadId || undefined,
-            metadata: { 
-              isCompleted: false,
-              isInterrupted: true 
-            }
-          });
-          
-          console.log('🛑 Interrupt received with options:', interruptOptions);
-          setResponding(false);
-          break;
+        // Capture thread_id from first event
+        if (!capturedThreadId && parsedData.thread_id) {
+          capturedThreadId = parsedData.thread_id;
+          setCurrentThreadId(capturedThreadId);
+          console.log('🆔 Captured thread_id:', capturedThreadId);
         }
 
-        case 'tool_call': {
-          const { id, name, args } = parsedData;
-          const currentMessage = useChatStore.getState().messages.find(m => m.id === currentMessageId);
-          updateMessage(currentMessageId, {
-            toolCalls: [
-              ...(currentMessage?.toolCalls || []),
-              { id, name, args }
-            ]
-          });
-          break;
-        }
-
-        case 'tool_call_result': {
-          console.log('🔧 Tool call result:', parsedData);
-          break;
-        }
-
-        case 'thinking':
-        case 'reasoning': {
-          console.log('🤔 Agent thinking:', parsedData);
-          break;
-        }
-
-        case 'search': {
-          console.log('🔍 Agent searching:', parsedData);
-          break;
-        }
-
-        case 'done': {
-          updateMessage(currentMessageId, {
-            metadata: {
-              isCompleted: true,
-              isInterrupted: false
-            },
-            threadId: capturedThreadId || undefined
-          });
-          setResponding(false);
-          console.log('✅ DeerFlow stream completed');
-          break;
-        }
-
-        case 'error': {
-          updateMessage(currentMessageId, {
-            content: `Error: ${parsedData.error || 'Unknown error occurred'}`,
-            metadata: {
-              isCompleted: true,
-              isInterrupted: false
-            }
-          });
-          setResponding(false);
-          throw new Error(parsedData.error || 'Stream error');
-        }
-
-        default: {
-          console.warn('⚠️ Unknown DeerFlow event:', event, parsedData);
-          const fallbackContent = parsedData.content || parsedData.text || '';
-          if (fallbackContent) {
+        // Handle different event types
+        switch (event) {
+          case 'message_chunk': {
+            const { content, role, agent } = parsedData;
             const currentMessage = useChatStore.getState().messages.find(m => m.id === currentMessageId);
             updateMessage(currentMessageId, {
-              content: (currentMessage?.content || '') + fallbackContent
+              content: (currentMessage?.content || '') + (content || ''),
+              ...(role && { role }),
+              ...(agent && { agent }),
+              threadId: capturedThreadId || undefined
             });
+            break;
           }
-          break;
+
+          case 'interrupt': {
+            // This is the key event for DeerFlow workflow
+            const { content, options: interruptOptions } = parsedData;
+            
+            updateMessage(currentMessageId, {
+              content: content || 'Research plan generated. Please review and choose an option.',
+              finishReason: 'interrupt',
+              options: interruptOptions || [
+                { title: 'Edit plan', value: 'edit_plan' },
+                { title: 'Start research', value: 'accepted' }
+              ],
+              threadId: capturedThreadId || undefined,
+              metadata: { 
+                isCompleted: false,
+                isInterrupted: true 
+              }
+            });
+            
+            console.log('🛑 Interrupt received with options:', interruptOptions);
+            setResponding(false);
+            break;
+          }
+
+          case 'tool_call': {
+            const { id, name, args } = parsedData;
+            const currentMessage = useChatStore.getState().messages.find(m => m.id === currentMessageId);
+            updateMessage(currentMessageId, {
+              toolCalls: [
+                ...(currentMessage?.toolCalls || []),
+                { id, name, args }
+              ]
+            });
+            break;
+          }
+
+          case 'tool_call_result': {
+            console.log('🔧 Tool call result:', parsedData);
+            break;
+          }
+
+          case 'thinking':
+          case 'reasoning': {
+            console.log('🤔 Agent thinking:', parsedData);
+            break;
+          }
+
+          case 'search': {
+            console.log('🔍 Agent searching:', parsedData);
+            break;
+          }
+
+          case 'done': {
+            updateMessage(currentMessageId, {
+              metadata: {
+                isCompleted: true,
+                isInterrupted: false
+              },
+              threadId: capturedThreadId || undefined
+            });
+            setResponding(false);
+            console.log('✅ DeerFlow stream completed');
+            break;
+          }
+
+          case 'error': {
+            updateMessage(currentMessageId, {
+              content: `Error: ${parsedData.error || 'Unknown error occurred'}`,
+              metadata: {
+                isCompleted: true,
+                isInterrupted: false
+              }
+            });
+            setResponding(false);
+            throw new Error(parsedData.error || 'Stream error');
+          }
+
+          default: {
+            console.warn('⚠️ Unknown DeerFlow event:', event, parsedData);
+            const fallbackContent = parsedData.content || parsedData.text || '';
+            if (fallbackContent) {
+              const currentMessage = useChatStore.getState().messages.find(m => m.id === currentMessageId);
+              updateMessage(currentMessageId, {
+                content: (currentMessage?.content || '') + fallbackContent
+              });
+            }
+            break;
+          }
         }
       }
+      
+      console.log('✅ DeerFlow stream completed successfully');
+    } catch (streamError) {
+      console.error('❌ DeerFlow stream error:', streamError);
+      
+      // Create more descriptive error message
+      let errorMessage = 'Unable to connect to DeerFlow service';
+      if (streamError instanceof Error) {
+        if (streamError.message.includes('CORS')) {
+          errorMessage = 'DeerFlow API has CORS restrictions. Please try a different model.';
+        } else if (streamError.message.includes('timeout')) {
+          errorMessage = 'DeerFlow API is taking too long to respond. Please try again.';
+        } else if (streamError.message.includes('404')) {
+          errorMessage = 'DeerFlow API endpoint not found. The service may be unavailable.';
+        } else {
+          errorMessage = `DeerFlow API error: ${streamError.message}`;
+        }
+      }
+      
+      // Update the message with error info
+      updateMessage(currentMessageId, {
+        content: `⚠️ **DeerFlow Service Error**\n\n${errorMessage}\n\nPlease try:\n1. Selecting a different AI model (Algeon or ii-Research)\n2. Refreshing the page and trying again\n3. Checking your internet connection`,
+        metadata: { isCompleted: true }
+      });
+      
+      throw streamError;
     }
 
     return {

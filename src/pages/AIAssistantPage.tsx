@@ -70,15 +70,27 @@ const AIAssistantPage: React.FC = () => {
     const modelToUse = modelOverride || selectedModel;
     const researchTypeToUse = researchType || selectedResearchType;
 
+    console.log('🚀 Sending message with model:', modelToUse, 'research type:', researchTypeToUse);
+
     try {
       // Use DeerFlow service for deer model, regular chat service for others
       if (modelToUse === 'deer') {
+        console.log('🦌 Using DeerFlow service for deer model');
         const { sendDeerFlowMessage } = await import('@/services/deerflowService');
-        await sendDeerFlowMessage(text, {
+        const result = await sendDeerFlowMessage(text, {
           threadId: '__default__',
           autoAcceptedPlan: false
         });
+        
+        console.log('🦌 DeerFlow result:', result);
+        
+        if (!result.success) {
+          console.error('❌ DeerFlow failed:', result.error);
+          // Fallback to showing error message
+          throw new Error(result.error || 'DeerFlow request failed');
+        }
       } else {
+        console.log('🔄 Using regular chat service for model:', modelToUse);
         if (!currentSessionId) {
           const newSession = await createSession();
           if (!newSession) {
