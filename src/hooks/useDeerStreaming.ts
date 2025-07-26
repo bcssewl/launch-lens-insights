@@ -130,7 +130,10 @@ export const useDeerStreaming = () => {
   }, []);
 
   const handleDeerFlowEvent = useCallback((event: DeerFlowStreamEvent) => {
-    console.log('📨 DeerFlow event:', event.type, event);
+    console.log('🦌 REAL DeerFlow Event Received:');
+    console.log('  Type:', event.type);
+    console.log('  Full Event:', JSON.stringify(event, null, 2));
+    console.log('  Available Keys:', Object.keys(event));
 
     switch (event.type) {
       case 'connection_confirmed':

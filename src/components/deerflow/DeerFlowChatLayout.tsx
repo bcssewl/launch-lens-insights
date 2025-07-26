@@ -13,13 +13,14 @@ import { PlanCard } from './PlanCard';
 import { ResearchProgress } from './ResearchProgress';
 import { SourcesPanel } from './SourcesPanel';
 import { ReportRenderer } from './ReportRenderer';
-import { useDeerStreaming } from '@/hooks/useDeerStreaming';
+import { useDeerStreaming, type DeerStreamingState } from '@/hooks/useDeerStreaming';
 import type { DeerFlowChatRequest } from '@/services/deerflowService';
 
 interface DeerFlowChatLayoutProps {
   messages: any[];
   isTyping?: boolean;
   onSendMessage: (message: string) => void;
+  streamingState?: DeerStreamingState;
   className?: string;
 }
 
@@ -27,9 +28,13 @@ export const DeerFlowChatLayout: React.FC<DeerFlowChatLayoutProps> = ({
   messages,
   isTyping = false,
   onSendMessage,
+  streamingState: passedStreamingState,
   className
 }) => {
-  const { streamingState, startStreaming, stopStreaming, sendPlanFeedback } = useDeerStreaming();
+  const { streamingState: internalStreamingState, startStreaming, stopStreaming, sendPlanFeedback } = useDeerStreaming();
+  
+  // Use passed streaming state if provided, otherwise use internal
+  const streamingState = passedStreamingState || internalStreamingState;
   const [showSettings, setShowSettings] = useState(false);
   const [researchConfig, setResearchConfig] = useState<Partial<DeerFlowChatRequest>>({
     research_mode: 'general',
@@ -44,12 +49,16 @@ export const DeerFlowChatLayout: React.FC<DeerFlowChatLayoutProps> = ({
 
   const handleSendMessage = async (message: string) => {
     try {
+      console.log('🦌 DeerFlowChatLayout: Sending message via DeerFlow:', message);
+      console.log('🦌 DeerFlowChatLayout: Config:', researchConfig);
+      
       // Start DeerFlow streaming with current configuration
       await startStreaming(message, researchConfig);
+      
       // Notify parent component
       onSendMessage(message);
     } catch (error) {
-      console.error('Error sending DeerFlow message:', error);
+      console.error('❌ DeerFlow message error:', error);
     }
   };
 

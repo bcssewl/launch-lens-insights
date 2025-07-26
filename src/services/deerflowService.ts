@@ -71,23 +71,17 @@ class DeerFlowService {
         }
 
         this.ws.onopen = () => {
-          console.log('DeerFlow WebSocket connected');
+          console.log('🦌 DeerFlow WebSocket connected');
           
-          // Send the chat request with DeerFlow-specific parameters
+          // Use EXACT format from backend integration guide
           const payload = {
             query: request.query,
-            research_mode: request.research_mode || 'general',
-            max_plan_iterations: request.max_plan_iterations || 3,
-            max_step_num: request.max_step_num || 10,
-            auto_accept_plan: request.auto_accept_plan ?? true,
-            thinking_on: request.thinking_on ?? true,
-            research_only: request.research_only ?? false,
             context: {
-              sessionId: this.currentSessionId,
-              ...request.context
+              sessionId: this.currentSessionId
             }
           };
 
+          console.log('📤 Sending to DeerFlow:', JSON.stringify(payload, null, 2));
           this.ws?.send(JSON.stringify(payload));
         };
 

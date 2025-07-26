@@ -34,10 +34,17 @@ const DeerAgentPage: React.FC = () => {
     if (!message.trim()) return;
 
     try {
-      // Add the message to the conversation immediately for UI feedback
-      await handleSendMessage(message, message, 'deer');
+      console.log('🦌 Starting DeerFlow research for:', message);
+      
+      // Use DeerFlow streaming instead of regular messages
+      await deerStreaming.startStreaming(message, {
+        research_mode: 'general',
+        auto_accept_plan: true,
+        thinking_on: true
+      });
+      
     } catch (error) {
-      console.error('Error sending message to Deer:', error);
+      console.error('❌ DeerFlow error:', error);
     }
   };
 
@@ -47,6 +54,7 @@ const DeerAgentPage: React.FC = () => {
         messages={messages}
         isTyping={isTyping || deerStreaming.streamingState.isStreaming}
         onSendMessage={handleDeerMessage}
+        streamingState={deerStreaming.streamingState}
       />
     );
   }
@@ -58,6 +66,7 @@ const DeerAgentPage: React.FC = () => {
           messages={messages}
           isTyping={isTyping || deerStreaming.streamingState.isStreaming}
           onSendMessage={handleDeerMessage}
+          streamingState={deerStreaming.streamingState}
         />
       </div>
     </DashboardLayout>
