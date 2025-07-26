@@ -1,11 +1,12 @@
 
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Bot, Lightbulb, FolderOpen, Settings as SettingsIcon, Folder } from 'lucide-react';
+import { Bot, Lightbulb, FolderOpen, Settings as SettingsIcon, Folder, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navigationItems = [
   { href: "/dashboard/assistant", label: "AI Advisor", icon: Bot },
+  { href: "/dashboard/deer", label: "Deer Agent", icon: Zap },
   { href: "/dashboard/validate", label: "Analyze Idea", icon: Lightbulb },
   { href: "/dashboard/ideas", label: "Projects", icon: FolderOpen },
   { href: "/dashboard/projects", label: "Mock Projects", icon: Folder },
