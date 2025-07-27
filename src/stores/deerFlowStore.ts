@@ -6,11 +6,27 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+export interface ToolCall {
+  id: string;
+  name: string;
+  args: Record<string, any>;
+  argsChunks?: string[];
+  result?: any;
+}
+
+export interface FeedbackOption {
+  text: string;
+  value: string;
+}
+
 export interface DeerMessage {
   id: string;
-  role: 'user' | 'assistant' | 'planner' | 'podcast' | 'research';
+  role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  isStreaming?: boolean;
+  options?: FeedbackOption[];
+  toolCalls?: ToolCall[];
   metadata?: {
     agent?: string; // Store the agent type (planner, coordinator, etc.)
     title?: string;
@@ -19,10 +35,6 @@ export interface DeerMessage {
     audioUrl?: string;
     reasoningContent?: string;
     researchState?: 'researching' | 'generating_report' | 'report_generated';
-    options?: Array<{
-      title: string;
-      value: string;
-    }>;
   };
 }
 
@@ -66,6 +78,8 @@ interface DeerFlowState {
 interface DeerFlowActions {
   // Message actions
   addMessage: (message: Omit<DeerMessage, 'id' | 'timestamp'>) => void;
+  addMessageWithId: (message: DeerMessage) => void;
+  existsMessage: (messageId: string) => boolean;
   updateMessage: (messageId: string, updates: Partial<DeerMessage>) => void;
   clearMessages: () => void;
   
@@ -122,6 +136,16 @@ export const useDeerFlowStore = create<DeerFlowStore>()(
             },
           ],
         })),
+
+      addMessageWithId: (message) =>
+        set((state) => ({
+          messages: [...state.messages, message],
+        })),
+
+      existsMessage: (messageId) => {
+        const state = get();
+        return state.messages.some(msg => msg.id === messageId);
+      },
 
       updateMessage: (messageId, updates) =>
         set((state) => ({

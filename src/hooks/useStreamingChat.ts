@@ -1,58 +1,225 @@
 import { useCallback, useRef } from 'react';
-import { useDeerFlowStore } from '@/stores/deerFlowStore';
+import { useDeerFlowStore, DeerMessage, ToolCall, FeedbackOption } from '@/stores/deerFlowStore';
 import { fetchStream } from '@/utils/fetchStream';
 import { toast } from '@/hooks/use-toast';
-
-const DEERFLOW_BASE_URL = 'https://deer-flow-wrappers.up.railway.app';
 
 interface ChatStreamRequest {
   messages: Array<{
     role: 'user' | 'assistant';
     content: string;
   }>;
-  resources: any[];
+  resources: string[];
   thread_id: string;
   max_plan_iterations: number;
-  max_step_num: number;
+  max_step_number: number;
   max_search_results: number;
-  auto_accepted_plan: boolean;
-  interrupt_feedback: any;
-  enable_deep_thinking: boolean;
-  enable_background_investigation: boolean;
+  deep_thinking: boolean;
+  background_investigation: boolean;
   report_style: string;
-  mcp_settings: any;
+  interrupt_feedback?: string;
 }
 
 export const useStreamingChat = () => {
   const { 
     messages, 
     settings, 
+    isResponding,
+    setIsResponding, 
     addMessage, 
-    updateMessage, 
-    setIsResponding,
-    addResearchActivity,
-    setReportContent,
+    addMessageWithId,
+    existsMessage,
+    updateMessage,
     setResearchPanelOpen 
   } = useDeerFlowStore();
   
   const abortControllerRef = useRef<AbortController | null>(null);
-  const currentAssistantMessageRef = useRef<string | null>(null);
-  const currentResearchIdRef = useRef<string | null>(null);
+
+  const mergeMessage = useCallback((messageId: string, eventData: any) => {
+    const { content, reasoning_content, finish_reason } = eventData;
+    
+    if (!existsMessage(messageId)) {
+      return; // Message doesn't exist, shouldn't happen
+    }
+
+    // Get current message to build update
+    const currentMessage = messages.find(msg => msg.id === messageId);
+    if (!currentMessage) return;
+
+    updateMessage(messageId, {
+      content: (currentMessage.content || '') + (content || ''),
+      metadata: {
+        ...currentMessage.metadata,
+        reasoningContent: (currentMessage.metadata?.reasoningContent || '') + (reasoning_content || ''),
+      },
+      isStreaming: !finish_reason,
+    });
+  }, [existsMessage, updateMessage, messages]);
+
+  const mergeToolCall = useCallback((messageId: string, toolCall: any) => {
+    if (!existsMessage(messageId)) {
+      return;
+    }
+
+    const currentMessage = messages.find(msg => msg.id === messageId);
+    if (!currentMessage) return;
+
+    const existing = currentMessage.toolCalls || [];
+    const existingIndex = existing.findIndex(tc => tc.id === toolCall.id);
+    
+    if (existingIndex >= 0) {
+      // Update existing tool call
+      const updated = [...existing];
+      updated[existingIndex] = { ...updated[existingIndex], ...toolCall };
+      updateMessage(messageId, { toolCalls: updated });
+    } else {
+      // Add new tool call
+      updateMessage(messageId, { toolCalls: [...existing, toolCall] });
+    }
+  }, [existsMessage, updateMessage, messages]);
+
+  const mergeToolCallChunk = useCallback((messageId: string, chunkData: any) => {
+    const { id, index, chunk } = chunkData;
+    
+    if (!existsMessage(messageId)) {
+      return;
+    }
+
+    const currentMessage = messages.find(msg => msg.id === messageId);
+    if (!currentMessage) return;
+
+    const existing = currentMessage.toolCalls || [];
+    const toolCallIndex = existing.findIndex(tc => tc.id === id);
+    
+    if (toolCallIndex >= 0) {
+      const updated = [...existing];
+      const toolCall = updated[toolCallIndex];
+      const argsChunks = toolCall.argsChunks || [];
+      argsChunks[index] = chunk;
+      updated[toolCallIndex] = { ...toolCall, argsChunks };
+      updateMessage(messageId, { toolCalls: updated });
+    }
+  }, [existsMessage, updateMessage, messages]);
+
+  const finalizeToolCalls = useCallback((messageId: string) => {
+    if (!existsMessage(messageId)) {
+      return;
+    }
+
+    const currentMessage = messages.find(msg => msg.id === messageId);
+    if (!currentMessage) return;
+
+    const finalizedToolCalls = (currentMessage.toolCalls || []).map(toolCall => {
+      if (toolCall.argsChunks) {
+        try {
+          const argsString = toolCall.argsChunks.join('');
+          const args = JSON.parse(argsString);
+          return { ...toolCall, args, argsChunks: undefined };
+        } catch (error) {
+          console.error('Failed to parse tool call args:', error);
+          return toolCall;
+        }
+      }
+      return toolCall;
+    });
+
+    updateMessage(messageId, { toolCalls: finalizedToolCalls });
+  }, [existsMessage, updateMessage, messages]);
+
+  const handleMessageChunk = useCallback((eventData: any) => {
+    const { id, agent, role, content, reasoning_content, finish_reason } = eventData;
+
+    if (!existsMessage(id)) {
+      // Create new message
+      const newMessage: DeerMessage = {
+        id,
+        role: 'assistant', // All backend messages are 'assistant', agent determines type
+        content: content || '',
+        timestamp: new Date(),
+        isStreaming: true,
+        metadata: {
+          agent,
+          reasoningContent: reasoning_content || '',
+        },
+      };
+      addMessageWithId(newMessage);
+
+      // Open research panel for research agents
+      if (agent === 'coder' || agent === 'researcher' || agent === 'reporter') {
+        setResearchPanelOpen(true);
+      }
+    } else {
+      // Merge into existing message
+      mergeMessage(id, eventData);
+    }
+  }, [existsMessage, addMessageWithId, mergeMessage, setResearchPanelOpen]);
+
+  const handleToolCall = useCallback((eventData: any) => {
+    const { id: messageId, tool_calls } = eventData;
+    
+    if (tool_calls && Array.isArray(tool_calls)) {
+      tool_calls.forEach((toolCall: any) => {
+        mergeToolCall(messageId, {
+          id: toolCall.id,
+          name: toolCall.name,
+          args: toolCall.args || {},
+        });
+      });
+    }
+  }, [mergeToolCall]);
+
+  const handleToolCallChunk = useCallback((eventData: any) => {
+    const { id: messageId, tool_call_id, index, chunk } = eventData;
+    mergeToolCallChunk(messageId, { id: tool_call_id, index, chunk });
+  }, [mergeToolCallChunk]);
+
+  const handleToolCallResult = useCallback((eventData: any) => {
+    const { id: messageId, tool_call_id, result } = eventData;
+    
+    if (!existsMessage(messageId)) {
+      return;
+    }
+
+    const currentMessage = messages.find(msg => msg.id === messageId);
+    if (!currentMessage) return;
+
+    const updatedToolCalls = (currentMessage.toolCalls || []).map(toolCall => 
+      toolCall.id === tool_call_id 
+        ? { ...toolCall, result }
+        : toolCall
+    );
+
+    updateMessage(messageId, { toolCalls: updatedToolCalls });
+  }, [existsMessage, updateMessage, messages]);
+
+  const handleInterrupt = useCallback((eventData: any) => {
+    const { options } = eventData;
+    
+    if (options) {
+      // Find the last assistant message with planner agent and add options to it
+      const lastPlannerMessage = [...messages].reverse().find(msg => 
+        msg.role === 'assistant' && msg.metadata?.agent === 'planner'
+      );
+      
+      if (lastPlannerMessage) {
+        updateMessage(lastPlannerMessage.id, {
+          isStreaming: false,
+          options: options as FeedbackOption[],
+        });
+      }
+    }
+  }, [messages, updateMessage]);
 
   const sendMessage = useCallback(async (userMessage: string) => {
-    // Add user message to store
+    // Add user message
     addMessage({
       role: 'user',
       content: userMessage,
     });
 
     setIsResponding(true);
-    
-    // Create abort controller for this request
     abortControllerRef.current = new AbortController();
 
     try {
-      // Prepare request body
       const requestBody: ChatStreamRequest = {
         messages: [
           ...messages.map(msg => ({
@@ -67,37 +234,43 @@ export const useStreamingChat = () => {
         resources: [],
         thread_id: '__default__',
         max_plan_iterations: settings.maxPlanIterations,
-        max_step_num: settings.maxStepNumber,
+        max_step_number: settings.maxStepNumber,
         max_search_results: settings.maxSearchResults,
-        auto_accepted_plan: false,
-        interrupt_feedback: null,
-        enable_deep_thinking: settings.deepThinking,
-        enable_background_investigation: settings.backgroundInvestigation,
+        deep_thinking: settings.deepThinking,
+        background_investigation: settings.backgroundInvestigation,
         report_style: settings.reportStyle,
-        mcp_settings: {}
       };
 
-      // Start streaming
-      const streamGenerator = fetchStream(`${DEERFLOW_BASE_URL}/api/chat/stream`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-        signal: abortControllerRef.current.signal,
-      });
+      const stream = fetchStream(
+        'https://deer-flow-wrappers.up.railway.app/api/chat/stream',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestBody),
+          signal: abortControllerRef.current.signal,
+        }
+      );
 
-      for await (const { event, data } of streamGenerator) {
+      for await (const { event, data: dataStr } of stream) {
+        if (abortControllerRef.current?.signal.aborted) break;
+
         try {
-          const eventData = JSON.parse(data);
-          
+          const eventData = JSON.parse(dataStr);
+
           switch (event) {
             case 'message_chunk':
               handleMessageChunk(eventData);
+              if (eventData.finish_reason === 'tool_calls') {
+                finalizeToolCalls(eventData.id);
+              }
               break;
             case 'tool_calls':
-            case 'tool_call_chunks':
               handleToolCall(eventData);
+              break;
+            case 'tool_call_chunks':
+              handleToolCallChunk(eventData);
               break;
             case 'tool_call_result':
               handleToolCallResult(eventData);
@@ -105,123 +278,52 @@ export const useStreamingChat = () => {
             case 'interrupt':
               handleInterrupt(eventData);
               break;
+            case 'done':
+              console.log('Stream completed');
+              break;
+            case 'error':
+              console.error('Stream error:', eventData);
+              toast({
+                title: "Error",
+                description: eventData.error || "An error occurred during streaming",
+                variant: "destructive",
+              });
+              break;
             default:
-              console.log('Unknown event type:', event, eventData);
+              console.log('Unknown event:', event, eventData);
           }
-        } catch (parseError) {
-          console.error('Error parsing event data:', parseError);
+        } catch (error) {
+          console.error('Error parsing event data:', error);
         }
       }
     } catch (error: any) {
       if (error.name !== 'AbortError') {
-        console.error('Streaming error:', error);
+        console.error('Error in sendMessage:', error);
         toast({
-          title: "Error",
-          description: "Failed to get response from AI assistant",
+          title: "Connection Error",
+          description: "Failed to connect to the AI assistant",
           variant: "destructive",
         });
       }
     } finally {
       setIsResponding(false);
-      currentAssistantMessageRef.current = null;
-      currentResearchIdRef.current = null;
       abortControllerRef.current = null;
     }
-  }, [messages, settings, addMessage, updateMessage, setIsResponding, addResearchActivity, setReportContent, setResearchPanelOpen]);
-
-  const handleMessageChunk = useCallback((eventData: any) => {
-    const { id, agent, role, content, reasoning_content } = eventData;
-
-    // All messages from backend have role: 'assistant' or 'user', agent determines the specific type
-    if (agent === 'coordinator' || agent === 'planner') {
-      // Assistant or planner message
-      if (currentAssistantMessageRef.current !== id) {
-        // New message
-        currentAssistantMessageRef.current = id;
-        addMessage({
-          role: 'assistant', // Use 'assistant' role as per backend schema
-          content: content || '',
-          metadata: {
-            agent, // Store agent type in metadata
-            reasoningContent: reasoning_content || '',
-          }
-        });
-      } else {
-        // Update existing message
-        updateMessage(id, {
-          content: content || '',
-          metadata: {
-            agent,
-            reasoningContent: reasoning_content || '',
-          }
-        });
-      }
-    } else if (agent === 'coder' || agent === 'researcher' || agent === 'reporter') {
-      // Research activity
-      if (!currentResearchIdRef.current) {
-        currentResearchIdRef.current = id;
-        setResearchPanelOpen(true);
-      }
-
-      if (agent === 'reporter' && content) {
-        // Final research report
-        setReportContent(content);
-        addMessage({
-          role: 'research',
-          content,
-          metadata: {
-            researchState: 'report_generated'
-          }
-        });
-      } else {
-        // Research activity
-        addResearchActivity({
-          toolType: agent === 'coder' ? 'python' : 'web-search',
-          title: `${agent} activity`,
-          content: content || reasoning_content || '',
-          status: content ? 'completed' : 'running',
-        });
-      }
-    }
-  }, [addMessage, updateMessage, addResearchActivity, setReportContent, setResearchPanelOpen]);
-
-  const handleToolCall = useCallback((eventData: any) => {
-    console.log('Tool call:', eventData);
-    // Add tool call visualization if needed
-  }, []);
-
-  const handleToolCallResult = useCallback((eventData: any) => {
-    console.log('Tool call result:', eventData);
-    // Handle tool call results if needed
-  }, []);
-
-  const handleInterrupt = useCallback((eventData: any) => {
-    console.log('Interrupt received:', eventData);
-    // Handle plan acceptance/rejection UI
-    const { options } = eventData;
-    if (options) {
-      // Find the last assistant message with planner agent and add options to it
-      const { messages, updateMessage } = useDeerFlowStore.getState();
-      const lastPlannerMessage = [...messages].reverse().find(msg => 
-        msg.role === 'assistant' && msg.metadata?.agent === 'planner'
-      );
-      
-      if (lastPlannerMessage) {
-        updateMessage(lastPlannerMessage.id, {
-          metadata: {
-            ...lastPlannerMessage.metadata,
-            options: options.map((opt: any) => ({
-              title: opt.text || opt.label || opt.title,
-              value: opt.value || opt.action,
-            }))
-          }
-        });
-      }
-    }
-  }, []);
+  }, [
+    messages, 
+    settings, 
+    addMessage, 
+    setIsResponding, 
+    handleMessageChunk, 
+    handleToolCall, 
+    handleToolCallChunk,
+    handleToolCallResult, 
+    handleInterrupt,
+    finalizeToolCalls
+  ]);
 
   const sendFeedback = useCallback(async (feedback: string) => {
-    // Add acknowledgment message first
+    // Add acknowledgment message
     const acknowledgmentMessage = feedback === 'accepted' 
       ? "Great, let's start the research!"
       : "Let me revise the plan.";
@@ -231,14 +333,10 @@ export const useStreamingChat = () => {
       content: acknowledgmentMessage,
     });
 
-    // Send feedback message to continue the conversation
     setIsResponding(true);
-    
-    // Create abort controller for this request
     abortControllerRef.current = new AbortController();
 
     try {
-      // Prepare request body with feedback
       const requestBody: ChatStreamRequest = {
         messages: [
           ...messages.map(msg => ({
@@ -253,37 +351,44 @@ export const useStreamingChat = () => {
         resources: [],
         thread_id: '__default__',
         max_plan_iterations: settings.maxPlanIterations,
-        max_step_num: settings.maxStepNumber,
+        max_step_number: settings.maxStepNumber,
         max_search_results: settings.maxSearchResults,
-        auto_accepted_plan: false,
-        interrupt_feedback: feedback,
-        enable_deep_thinking: settings.deepThinking,
-        enable_background_investigation: settings.backgroundInvestigation,
+        deep_thinking: settings.deepThinking,
+        background_investigation: settings.backgroundInvestigation,
         report_style: settings.reportStyle,
-        mcp_settings: {}
+        interrupt_feedback: feedback,
       };
 
-      // Start streaming
-      const streamGenerator = fetchStream(`${DEERFLOW_BASE_URL}/api/chat/stream`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-        signal: abortControllerRef.current.signal,
-      });
+      const stream = fetchStream(
+        'https://deer-flow-wrappers.up.railway.app/api/chat/stream',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestBody),
+          signal: abortControllerRef.current.signal,
+        }
+      );
 
-      for await (const { event, data } of streamGenerator) {
+      for await (const { event, data: dataStr } of stream) {
+        if (abortControllerRef.current?.signal.aborted) break;
+
         try {
-          const eventData = JSON.parse(data);
-          
+          const eventData = JSON.parse(dataStr);
+
           switch (event) {
             case 'message_chunk':
               handleMessageChunk(eventData);
+              if (eventData.finish_reason === 'tool_calls') {
+                finalizeToolCalls(eventData.id);
+              }
               break;
             case 'tool_calls':
-            case 'tool_call_chunks':
               handleToolCall(eventData);
+              break;
+            case 'tool_call_chunks':
+              handleToolCallChunk(eventData);
               break;
             case 'tool_call_result':
               handleToolCallResult(eventData);
@@ -291,39 +396,61 @@ export const useStreamingChat = () => {
             case 'interrupt':
               handleInterrupt(eventData);
               break;
+            case 'done':
+              console.log('Stream completed');
+              break;
+            case 'error':
+              console.error('Stream error:', eventData);
+              toast({
+                title: "Error",
+                description: eventData.error || "An error occurred during streaming",
+                variant: "destructive",
+              });
+              break;
             default:
-              console.log('Unknown event type:', event, eventData);
+              console.log('Unknown event:', event, eventData);
           }
-        } catch (parseError) {
-          console.error('Error parsing event data:', parseError);
+        } catch (error) {
+          console.error('Error parsing event data:', error);
         }
       }
     } catch (error: any) {
       if (error.name !== 'AbortError') {
-        console.error('Feedback streaming error:', error);
+        console.error('Error in sendFeedback:', error);
         toast({
-          title: "Error",
-          description: "Failed to send feedback to AI assistant",
+          title: "Connection Error",
+          description: "Failed to connect to the AI assistant",
           variant: "destructive",
         });
       }
     } finally {
       setIsResponding(false);
-      currentAssistantMessageRef.current = null;
-      currentResearchIdRef.current = null;
       abortControllerRef.current = null;
     }
-  }, [messages, settings, addMessage, handleMessageChunk, handleToolCall, handleToolCallResult, handleInterrupt, setIsResponding]);
+  }, [
+    messages, 
+    settings, 
+    addMessage, 
+    setIsResponding, 
+    handleMessageChunk, 
+    handleToolCall, 
+    handleToolCallChunk,
+    handleToolCallResult, 
+    handleInterrupt,
+    finalizeToolCalls
+  ]);
 
   const stopStreaming = useCallback(() => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
+      abortControllerRef.current = null;
     }
-  }, []);
+    setIsResponding(false);
+  }, [setIsResponding]);
 
   const enhancePrompt = useCallback(async (prompt: string): Promise<string> => {
     try {
-      const response = await fetch(`${DEERFLOW_BASE_URL}/api/prompt/enhance`, {
+      const response = await fetch('https://deer-flow-wrappers.up.railway.app/api/enhance-prompt', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -350,38 +477,37 @@ export const useStreamingChat = () => {
 
   const generatePodcast = useCallback(async (content: string): Promise<void> => {
     try {
-      const response = await fetch(`${DEERFLOW_BASE_URL}/api/podcast/generate`, {
+      const response = await fetch('https://deer-flow-wrappers.up.railway.app/api/generate-podcast', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
-          content,
-          voice: 'female_english'
-        }),
+        body: JSON.stringify({ content }),
       });
 
       if (!response.ok) {
         throw new Error('Failed to generate podcast');
       }
 
-      // Get the MP3 blob
-      const audioBlob = await response.blob();
-      const audioUrl = URL.createObjectURL(audioBlob);
-
-      // Add podcast message to chat
+      const data = await response.json();
+      
+      // Add podcast message
       addMessage({
-        role: 'podcast',
-        content: 'Podcast generated from research report',
+        role: 'assistant',
+        content: JSON.stringify({
+          title: data.title || 'Generated Podcast',
+          audioUrl: data.audioUrl,
+        }),
         metadata: {
-          audioUrl,
-          title: 'Research Report Podcast'
-        }
+          agent: 'podcast',
+          title: data.title || 'Generated Podcast',
+          audioUrl: data.audioUrl,
+        },
       });
 
       toast({
         title: "Podcast Generated",
-        description: "Your research report has been converted to audio",
+        description: "Your podcast has been generated successfully!",
       });
     } catch (error) {
       console.error('Error generating podcast:', error);
@@ -399,6 +525,6 @@ export const useStreamingChat = () => {
     stopStreaming,
     enhancePrompt,
     generatePodcast,
-    isStreaming: abortControllerRef.current !== null,
+    isStreaming: isResponding,
   };
 };

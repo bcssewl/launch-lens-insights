@@ -28,25 +28,22 @@ export const MessageItem = ({ message }: MessageItemProps) => {
   };
 
   const renderMessageContent = () => {
+    const agent = message.metadata?.agent;
+    
     switch (message.role) {
       case 'user':
         return <UserMessage content={message.content} />;
       
       case 'assistant':
-        // Check if this is a planner message via agent metadata
-        if (message.metadata?.agent === 'planner') {
+        // Determine message type based on agent
+        if (agent === 'planner') {
           return <PlannerMessage message={message} onFeedback={handleFeedback} />;
+        } else if (agent === 'reporter') {
+          return <ResearchMessage message={message} />;
+        } else if (message.metadata?.audioUrl) {
+          return <PodcastMessage message={message} />;
         }
         return <AssistantMessage content={message.content} />;
-      
-      case 'planner':
-        return <PlannerMessage message={message} onFeedback={handleFeedback} />;
-      
-      case 'podcast':
-        return <PodcastMessage message={message} />;
-      
-      case 'research':
-        return <ResearchMessage message={message} />;
       
       default:
         return <div className="text-muted-foreground">Unknown message type</div>;
@@ -89,7 +86,8 @@ const AssistantMessage = ({ content }: { content: string }) => (
 
 const PlannerMessage = ({ message, onFeedback }: PlannerMessageProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const { title, thought, steps, reasoningContent, options } = message.metadata || {};
+  const { title, thought, steps, reasoningContent } = message.metadata || {};
+  const options = message.options;
 
   const parsedContent = (() => {
     try {
@@ -167,7 +165,7 @@ const PlannerMessage = ({ message, onFeedback }: PlannerMessageProps) => {
                       ) : (
                         <X className="h-4 w-4 mr-1" />
                       )}
-                      {option.title}
+                      {option.text}
                     </Button>
                   ))}
                 </div>
