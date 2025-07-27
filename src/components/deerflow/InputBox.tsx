@@ -111,19 +111,24 @@ export const InputBox = ({ onSendMessage }: InputBoxProps) => {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem
-                onClick={() => updateSettings({ reportStyle: "detailed" })}
+                onClick={() => updateSettings({ reportStyle: "academic" })}
               >
-                Detailed Report
+                Academic
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => updateSettings({ reportStyle: "summary" })}
+                onClick={() => updateSettings({ reportStyle: "popular_science" })}
               >
-                Summary Report
+                Popular Science
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => updateSettings({ reportStyle: "technical" })}
+                onClick={() => updateSettings({ reportStyle: "news" })}
               >
-                Technical Report
+                News
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => updateSettings({ reportStyle: "social_media" })}
+              >
+                Social Media
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

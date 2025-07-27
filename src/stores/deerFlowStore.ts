@@ -37,7 +37,7 @@ export interface ResearchActivity {
 export interface DeerSettings {
   deepThinking: boolean;
   backgroundInvestigation: boolean;
-  reportStyle: 'detailed' | 'summary' | 'technical';
+  reportStyle: 'academic' | 'popular_science' | 'news' | 'social_media';
   maxPlanIterations: number;
   maxStepNumber: number;
   maxSearchResults: number;
@@ -89,7 +89,7 @@ type DeerFlowStore = DeerFlowState & DeerFlowActions;
 const defaultSettings: DeerSettings = {
   deepThinking: false,
   backgroundInvestigation: false,
-  reportStyle: 'detailed',
+  reportStyle: 'academic',
   maxPlanIterations: 3,
   maxStepNumber: 10,
   maxSearchResults: 5,

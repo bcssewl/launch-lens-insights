@@ -80,7 +80,7 @@ export const DeerFlowSettings = () => {
                 <Label>Default Report Style</Label>
                 <Select
                   value={settings.reportStyle}
-                  onValueChange={(value: "detailed" | "summary" | "technical") =>
+                  onValueChange={(value: "academic" | "popular_science" | "news" | "social_media") =>
                     updateSettings({ reportStyle: value })
                   }
                 >
@@ -88,9 +88,10 @@ export const DeerFlowSettings = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="detailed">Detailed Report</SelectItem>
-                    <SelectItem value="summary">Summary Report</SelectItem>
-                    <SelectItem value="technical">Technical Report</SelectItem>
+                    <SelectItem value="academic">Academic</SelectItem>
+                    <SelectItem value="popular_science">Popular Science</SelectItem>
+                    <SelectItem value="news">News</SelectItem>
+                    <SelectItem value="social_media">Social Media</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
