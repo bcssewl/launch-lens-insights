@@ -37,6 +37,7 @@ export function mergeMessage(
   currentMessage: Partial<DeerMessage> | null,
   event: StreamEvent
 ): Partial<DeerMessage> {
+  console.log('🔄 DeerFlow Event:', event.event, event.data);
   // Initialize message if it doesn't exist
   if (!currentMessage) {
     currentMessage = {

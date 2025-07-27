@@ -120,6 +120,7 @@ export const useEnhancedStreaming = () => {
 
           try {
             const event: StreamEvent = JSON.parse(dataStr);
+            console.log('📡 Raw SSE Event:', event);
             currentMessage = mergeMessage(currentMessage, event);
 
             // Update the streaming state
