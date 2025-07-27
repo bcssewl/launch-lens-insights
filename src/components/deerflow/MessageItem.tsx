@@ -33,6 +33,10 @@ export const MessageItem = ({ message }: MessageItemProps) => {
         return <UserMessage content={message.content} />;
       
       case 'assistant':
+        // Check if this is a planner message via agent metadata
+        if (message.metadata?.agent === 'planner') {
+          return <PlannerMessage message={message} onFeedback={handleFeedback} />;
+        }
         return <AssistantMessage content={message.content} />;
       
       case 'planner':

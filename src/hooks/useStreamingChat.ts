@@ -132,16 +132,17 @@ export const useStreamingChat = () => {
   const handleMessageChunk = useCallback((eventData: any) => {
     const { id, agent, role, content, reasoning_content } = eventData;
 
-    // Determine message type based on agent
+    // All messages from backend have role: 'assistant' or 'user', agent determines the specific type
     if (agent === 'coordinator' || agent === 'planner') {
       // Assistant or planner message
       if (currentAssistantMessageRef.current !== id) {
         // New message
         currentAssistantMessageRef.current = id;
         addMessage({
-          role: agent === 'planner' ? 'planner' : 'assistant',
+          role: 'assistant', // Use 'assistant' role as per backend schema
           content: content || '',
           metadata: {
+            agent, // Store agent type in metadata
             reasoningContent: reasoning_content || '',
           }
         });
@@ -150,6 +151,7 @@ export const useStreamingChat = () => {
         updateMessage(id, {
           content: content || '',
           metadata: {
+            agent,
             reasoningContent: reasoning_content || '',
           }
         });
@@ -198,9 +200,11 @@ export const useStreamingChat = () => {
     // Handle plan acceptance/rejection UI
     const { options } = eventData;
     if (options) {
-      // Find the last planner message and add options to it
+      // Find the last assistant message with planner agent and add options to it
       const { messages, updateMessage } = useDeerFlowStore.getState();
-      const lastPlannerMessage = [...messages].reverse().find(msg => msg.role === 'planner');
+      const lastPlannerMessage = [...messages].reverse().find(msg => 
+        msg.role === 'assistant' && msg.metadata?.agent === 'planner'
+      );
       
       if (lastPlannerMessage) {
         updateMessage(lastPlannerMessage.id, {
@@ -217,6 +221,16 @@ export const useStreamingChat = () => {
   }, []);
 
   const sendFeedback = useCallback(async (feedback: string) => {
+    // Add acknowledgment message first
+    const acknowledgmentMessage = feedback === 'accepted' 
+      ? "Great, let's start the research!"
+      : "Let me revise the plan.";
+      
+    addMessage({
+      role: 'user',
+      content: acknowledgmentMessage,
+    });
+
     // Send feedback message to continue the conversation
     setIsResponding(true);
     
@@ -226,10 +240,16 @@ export const useStreamingChat = () => {
     try {
       // Prepare request body with feedback
       const requestBody: ChatStreamRequest = {
-        messages: messages.map(msg => ({
-          role: msg.role as 'user' | 'assistant',
-          content: msg.content,
-        })),
+        messages: [
+          ...messages.map(msg => ({
+            role: msg.role as 'user' | 'assistant',
+            content: msg.content,
+          })),
+          {
+            role: 'user',
+            content: acknowledgmentMessage,
+          }
+        ],
         resources: [],
         thread_id: '__default__',
         max_plan_iterations: settings.maxPlanIterations,
@@ -293,7 +313,7 @@ export const useStreamingChat = () => {
       currentResearchIdRef.current = null;
       abortControllerRef.current = null;
     }
-  }, [messages, settings, handleMessageChunk, handleToolCall, handleToolCallResult, handleInterrupt, setIsResponding]);
+  }, [messages, settings, addMessage, handleMessageChunk, handleToolCall, handleToolCallResult, handleInterrupt, setIsResponding]);
 
   const stopStreaming = useCallback(() => {
     if (abortControllerRef.current) {
@@ -316,7 +336,7 @@ export const useStreamingChat = () => {
       }
 
       const data = await response.json();
-      return data.result || prompt;
+      return data.enhanced_prompt || prompt;
     } catch (error) {
       console.error('Error enhancing prompt:', error);
       toast({

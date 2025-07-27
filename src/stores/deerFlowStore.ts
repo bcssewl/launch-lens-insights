@@ -12,6 +12,7 @@ export interface DeerMessage {
   content: string;
   timestamp: Date;
   metadata?: {
+    agent?: string; // Store the agent type (planner, coordinator, etc.)
     title?: string;
     thought?: string;
     steps?: string[];
