@@ -45,6 +45,7 @@
     "@tiptap/extension-placeholder": "^3.0.7",
     "@tiptap/react": "^3.0.7",
     "@tiptap/starter-kit": "^3.0.7",
+    "@tiptap/suggestion": "^3.0.7",
     "@types/react-syntax-highlighter": "^15.5.13",
     "@types/turndown": "^5.0.5",
     "@types/uuid": "^10.0.0",
