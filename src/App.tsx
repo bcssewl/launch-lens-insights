@@ -20,6 +20,7 @@ import MyBusinessIdeasPage from "./pages/MyBusinessIdeasPage";
 import MyReportsPage from "./pages/MyReportsPage";
 import BusinessDashboardPage from "./pages/BusinessDashboardPage";
 import AIAssistantPage from "./pages/AIAssistantPage";
+import DeerFlowPage from "./pages/DeerFlowPage";
 import SettingsPage from "./pages/SettingsPage";
 import ProfilePage from "./pages/ProfilePage";
 import SharedReportPage from "./pages/SharedReportPage";
@@ -64,6 +65,7 @@ const App = () => (
                 <Route path="/dashboard/reports" element={<MyReportsPage />} />
                 <Route path="/dashboard/business-idea/:ideaId" element={<BusinessDashboardPage />} />
                 <Route path="/dashboard/assistant" element={<AIAssistantPage />} />
+                <Route path="/dashboard/deerflow" element={<DeerFlowPage />} />
                 <Route path="/dashboard/experiments" element={<ExperimentsPage />} />
                 <Route path="/dashboard/settings" element={<SettingsPage />} />
                 <Route path="/dashboard/profile" element={<ProfilePage />} />
