@@ -20,6 +20,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useDeerFlowStore } from "@/stores/deerFlowStore";
+import { useStreamingChat } from "@/hooks/useStreamingChat";
 
 interface InputBoxProps {
   onSendMessage: (message: string) => void;
@@ -32,9 +33,9 @@ export const InputBox = ({ onSendMessage }: InputBoxProps) => {
     isResponding,
     settings,
     updateSettings,
-    enhancePrompt,
   } = useDeerFlowStore();
 
+  const { enhancePrompt } = useStreamingChat();
   const [isEnhancing, setIsEnhancing] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {

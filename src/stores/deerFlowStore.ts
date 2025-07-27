@@ -18,6 +18,10 @@ export interface DeerMessage {
     audioUrl?: string;
     reasoningContent?: string;
     researchState?: 'researching' | 'generating_report' | 'report_generated';
+    options?: Array<{
+      title: string;
+      value: string;
+    }>;
   };
 }
 
@@ -78,9 +82,6 @@ interface DeerFlowActions {
   
   // Settings actions
   updateSettings: (settings: Partial<DeerSettings>) => void;
-  
-  // Enhanced prompt action
-  enhancePrompt: (prompt: string) => Promise<string>;
 }
 
 type DeerFlowStore = DeerFlowState & DeerFlowActions;
@@ -169,18 +170,6 @@ export const useDeerFlowStore = create<DeerFlowStore>()(
         set((state) => ({
           settings: { ...state.settings, ...newSettings },
         })),
-
-      // Enhanced prompt action
-      enhancePrompt: async (prompt) => {
-        try {
-          // Mock implementation - replace with actual API call
-          console.log('Enhancing prompt:', prompt);
-          return `Enhanced: ${prompt}`;
-        } catch (error) {
-          console.error('Error enhancing prompt:', error);
-          return prompt;
-        }
-      },
     }),
     {
       name: 'deer-flow-storage',

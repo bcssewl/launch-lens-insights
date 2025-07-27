@@ -24,6 +24,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { useDeerFlowStore } from "@/stores/deerFlowStore";
+import { useStreamingChat } from "@/hooks/useStreamingChat";
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
@@ -39,6 +40,7 @@ export const ResearchPanel = () => {
     setReportContent,
   } = useDeerFlowStore();
 
+  const { generatePodcast } = useStreamingChat();
   const [isEditingReport, setIsEditingReport] = useState(false);
   const [editableContent, setEditableContent] = useState(reportContent);
 
@@ -75,9 +77,11 @@ export const ResearchPanel = () => {
             variant="ghost"
             size="sm"
             onClick={() => {
-              // Mock podcast generation
-              console.log("Generating podcast...");
+              if (reportContent) {
+                generatePodcast(reportContent);
+              }
             }}
+            disabled={!reportContent}
           >
             <Play className="h-4 w-4" />
           </Button>
