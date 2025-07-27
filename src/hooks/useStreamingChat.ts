@@ -230,7 +230,7 @@ export const useStreamingChat = () => {
       }
 
       const data = await response.json();
-      return data.enhanced_prompt || prompt;
+      return data.result || prompt;
     } catch (error) {
       console.error('Error enhancing prompt:', error);
       toast({
