@@ -201,13 +201,92 @@ export const useStreamingChat = () => {
       updateMessage(currentAssistantMessageRef.current, {
         metadata: {
           options: options.map((opt: any) => ({
-            title: opt.label || opt.title,
+            title: opt.text || opt.label || opt.title,
             value: opt.value || opt.action,
           }))
         }
       });
     }
   }, [updateMessage]);
+
+  const sendFeedback = useCallback(async (feedback: string) => {
+    // Send feedback message to continue the conversation
+    setIsResponding(true);
+    
+    // Create abort controller for this request
+    abortControllerRef.current = new AbortController();
+
+    try {
+      // Prepare request body with feedback
+      const requestBody: ChatStreamRequest = {
+        messages: messages.map(msg => ({
+          role: msg.role as 'user' | 'assistant',
+          content: msg.content,
+        })),
+        resources: [],
+        thread_id: '__default__',
+        max_plan_iterations: settings.maxPlanIterations,
+        max_step_num: settings.maxStepNumber,
+        max_search_results: settings.maxSearchResults,
+        auto_accepted_plan: false,
+        interrupt_feedback: feedback,
+        enable_deep_thinking: settings.deepThinking,
+        enable_background_investigation: settings.backgroundInvestigation,
+        report_style: settings.reportStyle,
+        mcp_settings: {}
+      };
+
+      // Start streaming
+      const streamGenerator = fetchStream(`${DEERFLOW_BASE_URL}/api/chat/stream`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+        signal: abortControllerRef.current.signal,
+      });
+
+      for await (const { event, data } of streamGenerator) {
+        try {
+          const eventData = JSON.parse(data);
+          
+          switch (event) {
+            case 'message_chunk':
+              handleMessageChunk(eventData);
+              break;
+            case 'tool_calls':
+            case 'tool_call_chunks':
+              handleToolCall(eventData);
+              break;
+            case 'tool_call_result':
+              handleToolCallResult(eventData);
+              break;
+            case 'interrupt':
+              handleInterrupt(eventData);
+              break;
+            default:
+              console.log('Unknown event type:', event, eventData);
+          }
+        } catch (parseError) {
+          console.error('Error parsing event data:', parseError);
+        }
+      }
+    } catch (error: any) {
+      if (error.name !== 'AbortError') {
+        console.error('Feedback streaming error:', error);
+        toast({
+          title: "Error",
+          description: "Failed to send feedback to AI assistant",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsResponding(false);
+      currentAssistantMessageRef.current = null;
+      currentResearchIdRef.current = null;
+      abortControllerRef.current = null;
+    }
+  }, [messages, settings, handleMessageChunk, handleToolCall, handleToolCallResult, handleInterrupt, setIsResponding]);
 
   const stopStreaming = useCallback(() => {
     if (abortControllerRef.current) {
@@ -289,6 +368,7 @@ export const useStreamingChat = () => {
 
   return {
     sendMessage,
+    sendFeedback,
     stopStreaming,
     enhancePrompt,
     generatePodcast,

@@ -8,13 +8,24 @@ import { useState } from "react";
 import { DeerMessage } from "@/stores/deerFlowStore";
 import UserAvatar from "@/components/assistant/UserAvatar";
 import AIAvatar from "@/components/assistant/AIAvatar";
+import { useStreamingChat } from "@/hooks/useStreamingChat";
 
 interface MessageItemProps {
   message: DeerMessage;
 }
 
+interface PlannerMessageProps {
+  message: DeerMessage;
+  onFeedback: (feedback: string) => void;
+}
+
 export const MessageItem = ({ message }: MessageItemProps) => {
+  const { sendFeedback } = useStreamingChat();
   const [isExpanded, setIsExpanded] = useState(false);
+
+  const handleFeedback = (feedback: string) => {
+    sendFeedback(feedback);
+  };
 
   const renderMessageContent = () => {
     switch (message.role) {
@@ -25,7 +36,7 @@ export const MessageItem = ({ message }: MessageItemProps) => {
         return <AssistantMessage content={message.content} />;
       
       case 'planner':
-        return <PlannerMessage message={message} />;
+        return <PlannerMessage message={message} onFeedback={handleFeedback} />;
       
       case 'podcast':
         return <PodcastMessage message={message} />;
@@ -72,9 +83,9 @@ const AssistantMessage = ({ content }: { content: string }) => (
   </div>
 );
 
-const PlannerMessage = ({ message }: { message: DeerMessage }) => {
+const PlannerMessage = ({ message, onFeedback }: PlannerMessageProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const { title, thought, steps, reasoningContent } = message.metadata || {};
+  const { title, thought, steps, reasoningContent, options } = message.metadata || {};
 
   const parsedContent = (() => {
     try {
@@ -137,16 +148,26 @@ const PlannerMessage = ({ message }: { message: DeerMessage }) => {
                 </div>
               )}
 
-              <div className="flex space-x-2 pt-2">
-                <Button size="sm" variant="default">
-                  <Check className="h-4 w-4 mr-1" />
-                  Accept
-                </Button>
-                <Button size="sm" variant="outline">
-                  <X className="h-4 w-4 mr-1" />
-                  Decline
-                </Button>
-              </div>
+              {/* Show interrupt options if available */}
+              {options && options.length > 0 && (
+                <div className="flex space-x-2 pt-2">
+                  {options.map((option, index) => (
+                    <Button
+                      key={index}
+                      size="sm"
+                      variant={option.value === 'accepted' ? 'default' : 'outline'}
+                      onClick={() => onFeedback(option.value)}
+                    >
+                      {option.value === 'accepted' ? (
+                        <Check className="h-4 w-4 mr-1" />
+                      ) : (
+                        <X className="h-4 w-4 mr-1" />
+                      )}
+                      {option.title}
+                    </Button>
+                  ))}
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
