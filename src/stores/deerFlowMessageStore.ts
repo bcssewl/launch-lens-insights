@@ -13,6 +13,7 @@ export interface ToolCall {
   args: Record<string, any>;
   argsChunks?: string[];
   result?: any;
+  error?: string;
 }
 
 export interface FeedbackOption {
