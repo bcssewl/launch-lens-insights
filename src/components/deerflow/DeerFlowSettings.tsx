@@ -129,10 +129,10 @@ export const DeerFlowSettings = () => {
                     type="number"
                     min="1"
                     max="50"
-                    value={settings.maxStepNumber}
+                    value={settings.maxStepNum}
                     onChange={(e) =>
                       updateSettings({
-                        maxStepNumber: parseInt(e.target.value) || 10,
+                        maxStepNum: parseInt(e.target.value) || 10,
                       })
                     }
                   />
