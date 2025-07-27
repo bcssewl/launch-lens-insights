@@ -197,17 +197,24 @@ export const useStreamingChat = () => {
     console.log('Interrupt received:', eventData);
     // Handle plan acceptance/rejection UI
     const { options } = eventData;
-    if (options && currentAssistantMessageRef.current) {
-      updateMessage(currentAssistantMessageRef.current, {
-        metadata: {
-          options: options.map((opt: any) => ({
-            title: opt.text || opt.label || opt.title,
-            value: opt.value || opt.action,
-          }))
-        }
-      });
+    if (options) {
+      // Find the last planner message and add options to it
+      const { messages, updateMessage } = useDeerFlowStore.getState();
+      const lastPlannerMessage = [...messages].reverse().find(msg => msg.role === 'planner');
+      
+      if (lastPlannerMessage) {
+        updateMessage(lastPlannerMessage.id, {
+          metadata: {
+            ...lastPlannerMessage.metadata,
+            options: options.map((opt: any) => ({
+              title: opt.text || opt.label || opt.title,
+              value: opt.value || opt.action,
+            }))
+          }
+        });
+      }
     }
-  }, [updateMessage]);
+  }, []);
 
   const sendFeedback = useCallback(async (feedback: string) => {
     // Send feedback message to continue the conversation
