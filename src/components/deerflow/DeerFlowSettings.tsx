@@ -18,9 +18,21 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useDeerFlowStore } from "@/stores/deerFlowStore";
+import { Badge } from "@/components/ui/badge";
+import { Trash2, Plus, Settings2 } from "lucide-react";
 
 export const DeerFlowSettings = () => {
-  const { isSettingsOpen, setSettingsOpen, settings, updateSettings } = useDeerFlowStore();
+  const { 
+    isSettingsOpen, 
+    setSettingsOpen, 
+    settings, 
+    updateSettings,
+    resetSettings,
+    addMCPServer,
+    updateMCPServer,
+    removeMCPServer,
+    toggleMCPServer
+  } = useDeerFlowStore();
 
   return (
     <Dialog open={isSettingsOpen} onOpenChange={setSettingsOpen}>
@@ -162,11 +174,103 @@ export const DeerFlowSettings = () => {
             </CardContent>
           </Card>
 
+          {/* Advanced Settings */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Advanced Settings</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>Auto Accept Plan</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Automatically accept research plans without confirmation
+                  </p>
+                </div>
+                <Switch
+                  checked={settings.autoAcceptedPlan}
+                  onCheckedChange={(checked) =>
+                    updateSettings({ autoAcceptedPlan: checked })
+                  }
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* MCP Servers */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Settings2 className="h-5 w-5" />
+                MCP Servers
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Configure Model Context Protocol servers for multi-agent capabilities
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {settings.mcpServers.length === 0 ? (
+                <div className="text-center py-6 text-muted-foreground">
+                  <Settings2 className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p>No MCP servers configured</p>
+                  <p className="text-xs">Add servers to enable multi-agent research</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {settings.mcpServers.map((server) => (
+                    <div
+                      key={server.id}
+                      className="flex items-center justify-between p-3 border rounded-lg"
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{server.name}</span>
+                          <Badge variant={server.enabled ? "default" : "secondary"}>
+                            {server.enabled ? "Enabled" : "Disabled"}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">{server.url}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={server.enabled}
+                          onCheckedChange={() => toggleMCPServer(server.id)}
+                        />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeMCPServer(server.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  const name = prompt("Server name:");
+                  const url = prompt("Server URL:");
+                  if (name && url) {
+                    addMCPServer({ name, url, enabled: true });
+                  }
+                }}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add MCP Server
+              </Button>
+            </CardContent>
+          </Card>
+
           {/* Actions */}
           <div className="flex justify-end space-x-2">
             <Button
               variant="outline"
-              onClick={() => updateSettings({})} // Reset to defaults
+              onClick={() => resetSettings()}
             >
               Reset to Defaults
             </Button>
