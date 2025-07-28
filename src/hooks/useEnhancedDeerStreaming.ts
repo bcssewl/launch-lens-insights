@@ -70,7 +70,12 @@ export const useEnhancedDeerStreaming = () => {
     }
   }, [existsMessage, updateMessage]);
 
-  const { processEvent, flush, cancel } = useDebounceEvents(processEventBatch, 100);
+  const { processEvent, flush, cancel } = useDebounceEvents(processEventBatch, {
+    baseDelay: 250,
+    maxDelay: 1000,
+    throttleThreshold: 100,
+    maxBatchSize: 25
+  });
 
   const startDeerFlowStreaming = useCallback(async (
     question: string,
@@ -145,10 +150,14 @@ export const useEnhancedDeerStreaming = () => {
           processedEventCount++;
           lastEventTime = Date.now();
 
-          // Prevent memory overflow from too many rapid events
-          if (processedEventCount > MAX_EVENTS_PER_BATCH * 10) {
-            console.warn('🚨 Too many events, throttling stream');
-            await new Promise(resolve => setTimeout(resolve, 100));
+          // Advanced throttling with progressive delays
+          if (processedEventCount > 100) { // Much lower threshold
+            const throttleDelay = Math.min(200 + (processedEventCount - 100) * 50, 2000);
+            console.warn(`🔥 High event volume (${processedEventCount}), applying ${throttleDelay}ms throttle`);
+            await new Promise(resolve => setTimeout(resolve, throttleDelay));
+            
+            // Reset counter but with memory of recent throttling
+            processedEventCount = Math.max(0, processedEventCount - 50);
           }
 
           // Parse the SSE data

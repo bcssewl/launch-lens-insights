@@ -53,7 +53,12 @@ export const useEnhancedStreaming = () => {
         activityTracker.processStreamingEvent(event);
       });
     },
-    50 // 50ms debounce delay
+    {
+      baseDelay: 50,
+      maxDelay: 500,
+      throttleThreshold: 100,
+      maxBatchSize: 25
+    }
   );
 
   const { toast } = useToast();
