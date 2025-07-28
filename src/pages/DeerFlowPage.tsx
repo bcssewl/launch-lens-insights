@@ -40,7 +40,14 @@ export default function DeerFlowPage() {
                 <>
                   <ResizableHandle withHandle />
                   <ResizablePanel defaultSize={40} minSize={30}>
-                    <ErrorBoundary>
+                    <ErrorBoundary 
+                      fallback={
+                        <div className="p-4 text-center text-muted-foreground">
+                          <p>Research panel temporarily unavailable</p>
+                          <p className="text-xs mt-2">Try refreshing the page</p>
+                        </div>
+                      }
+                    >
                       <ResearchPanel />
                     </ErrorBoundary>
                   </ResizablePanel>

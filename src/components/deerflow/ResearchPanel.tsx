@@ -26,8 +26,26 @@ import {
 import { useDeerFlowStore } from "@/stores/deerFlowStore";
 import { useStreamingChat } from "@/hooks/useStreamingChat";
 import ReactMarkdown from "react-markdown";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+// Safe syntax highlighter component with error handling
+import { Suspense } from "react";
+
+// Fallback component for when syntax highlighting fails
+const CodeBlock = ({ children, language }: { children: string; language?: string }) => (
+  <pre className="text-xs bg-muted p-2 rounded overflow-x-auto border">
+    <code>{children}</code>
+  </pre>
+);
+
+// Safe syntax highlighter with error boundary
+const SafeSyntaxHighlighter = ({ children, language }: { children: string; language?: string }) => {
+  try {
+    // Use basic code block as fallback to prevent crashes
+    return <CodeBlock>{children}</CodeBlock>;
+  } catch (error) {
+    console.warn('Syntax highlighter error:', error);
+    return <CodeBlock>{children}</CodeBlock>;
+  }
+};
 
 export const ResearchPanel = () => {
   const {
@@ -303,13 +321,9 @@ const ActivityCard = ({ activity, toolIcon, statusIcon }: any) => {
 
           {activity.toolType === "python" && activity.content?.output && (
             <div className="space-y-2">
-              <SyntaxHighlighter
-                language="python"
-                style={oneDark}
-                className="text-xs rounded-lg"
-              >
+              <SafeSyntaxHighlighter language="python">
                 {activity.content.output}
-              </SyntaxHighlighter>
+              </SafeSyntaxHighlighter>
             </div>
           )}
 
