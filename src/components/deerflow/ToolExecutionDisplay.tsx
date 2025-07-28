@@ -27,8 +27,7 @@ interface ToolExecutionDisplayProps {
   isStreaming?: boolean;
 }
 
-const getToolIcon = (toolName: string | undefined) => {
-  if (!toolName) return FileText;
+const getToolIcon = (toolName: string) => {
   const name = toolName.toLowerCase();
   if (name.includes('search') || name.includes('web')) return Search;
   if (name.includes('code') || name.includes('python')) return Code;
@@ -39,7 +38,7 @@ const getToolIcon = (toolName: string | undefined) => {
 const getToolStatus = (toolCall: ToolCall) => {
   if (toolCall.error) return 'error';
   if (toolCall.result) return 'completed';
-  if (toolCall.name && toolCall.args && Object.keys(toolCall.args).length > 0) return 'running';
+  if (toolCall.name && Object.keys(toolCall.args).length > 0) return 'running';
   return 'pending';
 };
 
@@ -78,7 +77,7 @@ export const ToolExecutionDisplay: React.FC<ToolExecutionDisplayProps> = ({
         const status = getToolStatus(toolCall);
         const IconComponent = getToolIcon(toolCall.name);
         const isExpanded = expandedTools.has(toolCall.id);
-        const hasDetails = toolCall.result || toolCall.error || (toolCall.args && Object.keys(toolCall.args).length > 0);
+        const hasDetails = toolCall.result || toolCall.error || Object.keys(toolCall.args).length > 0;
 
         return (
           <Card key={toolCall.id} className="p-3 bg-muted/30">
@@ -137,7 +136,7 @@ export const ToolExecutionDisplay: React.FC<ToolExecutionDisplayProps> = ({
               <Collapsible open={isExpanded}>
                 <CollapsibleContent className="mt-3 space-y-2">
                   {/* Tool arguments */}
-                  {toolCall.args && Object.keys(toolCall.args).length > 0 && (
+                  {Object.keys(toolCall.args).length > 0 && (
                     <div>
                       <div className="text-xs text-muted-foreground mb-1">Arguments:</div>
                       <div className="bg-background/50 rounded p-2 text-xs font-mono">

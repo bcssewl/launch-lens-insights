@@ -6,52 +6,45 @@ import { MessageList } from '@/components/deerflow/MessageList';
 import { InputBox } from '@/components/deerflow/InputBox';
 import { ResearchPanel } from '@/components/deerflow/ResearchPanel';
 import { DeerFlowSettings } from '@/components/deerflow/DeerFlowSettings';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 export default function DeerFlowPage() {
   const { isResearchPanelOpen } = useDeerFlowStore();
 
   return (
     <DashboardLayout>
-      <ErrorBoundary>
-        <div className="h-full flex flex-col bg-background">
-          <DeerFlowHeader />
+      <div className="h-full flex flex-col bg-background">
+        <DeerFlowHeader />
 
-          <div className="flex-1 overflow-hidden">
-            <ResizablePanelGroup direction="horizontal" className="h-full">
-              {/* Chat Panel */}
-              <ResizablePanel defaultSize={isResearchPanelOpen ? 60 : 100} minSize={40}>
-                <div className="h-full relative">
-                  {/* Messages area - constrained height to leave space for input */}
-                  <div className="absolute top-0 left-0 right-0 bottom-16 overflow-hidden">
-                    <ErrorBoundary>
-                      <MessageList />
-                    </ErrorBoundary>
-                  </div>
-                  
-                  {/* Input area - absolutely positioned at bottom */}
-                  <div className="absolute bottom-0 left-0 right-0 h-16 border-t bg-background/95 backdrop-blur-sm p-3 z-10">
-                    <InputBox />
-                  </div>
+        <div className="flex-1 overflow-hidden">
+          <ResizablePanelGroup direction="horizontal" className="h-full">
+            {/* Chat Panel */}
+            <ResizablePanel defaultSize={isResearchPanelOpen ? 60 : 100} minSize={40}>
+              <div className="h-full relative">
+                {/* Messages area - constrained height to leave space for input */}
+                <div className="absolute top-0 left-0 right-0 bottom-16 overflow-hidden">
+                  <MessageList />
                 </div>
-              </ResizablePanel>
+                
+                {/* Input area - absolutely positioned at bottom */}
+                <div className="absolute bottom-0 left-0 right-0 h-16 border-t bg-background/95 backdrop-blur-sm p-3 z-10">
+                  <InputBox />
+                </div>
+              </div>
+            </ResizablePanel>
 
-              {isResearchPanelOpen && (
-                <>
-                  <ResizableHandle withHandle />
-                  <ResizablePanel defaultSize={40} minSize={30}>
-                    <ErrorBoundary>
-                      <ResearchPanel />
-                    </ErrorBoundary>
-                  </ResizablePanel>
-                </>
-              )}
-            </ResizablePanelGroup>
-          </div>
-
-          <DeerFlowSettings />
+            {isResearchPanelOpen && (
+              <>
+                <ResizableHandle withHandle />
+                <ResizablePanel defaultSize={40} minSize={30}>
+                  <ResearchPanel />
+                </ResizablePanel>
+              </>
+            )}
+          </ResizablePanelGroup>
         </div>
-      </ErrorBoundary>
+
+        <DeerFlowSettings />
+      </div>
     </DashboardLayout>
   );
 }

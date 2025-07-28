@@ -15,6 +15,7 @@ import {
 import { Send, Sparkles, ChevronDown } from 'lucide-react';
 import { useDeerFlowStore } from '@/stores/deerFlowStore';
 import { useStreamingChat } from '@/hooks/useStreamingChat';
+import { ResourceSuggestion } from './ResourceSuggestion';
 
 interface EnhancedMessageInputProps {
   onSendMessage: (message: string) => void;
