@@ -26,6 +26,8 @@ import {
 import { useDeerFlowStore } from "@/stores/deerFlowStore";
 import { useStreamingChat } from "@/hooks/useStreamingChat";
 import ReactMarkdown from "react-markdown";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 
 export const ResearchPanel = () => {
   const {
@@ -301,9 +303,13 @@ const ActivityCard = ({ activity, toolIcon, statusIcon }: any) => {
 
           {activity.toolType === "python" && activity.content?.output && (
             <div className="space-y-2">
-              <p className="text-sm bg-muted p-2 rounded overflow-x-auto">
+              <SyntaxHighlighter
+                language="python"
+                style={oneDark}
+                className="text-xs rounded-lg"
+              >
                 {activity.content.output}
-              </p>
+              </SyntaxHighlighter>
             </div>
           )}
 

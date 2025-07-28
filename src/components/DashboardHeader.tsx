@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 import { MessageCircle, Settings, LogOut, UserCircle, Search } from 'lucide-react';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { Button } from '@/components/ui/button';
-import { ClientOnlyThemeToggle } from '@/components/ClientOnlyThemeToggle';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -121,7 +121,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ children }) => {
             <Search className="h-5 w-5" />
             <span className="sr-only">Search chats</span>
           </Button>
-          <ClientOnlyThemeToggle />
+          <ThemeToggle />
           <Button variant="ghost" size="icon" aria-label="Notifications" className="text-text-secondary hover:text-text-primary">
             <MessageCircle className="h-5 w-5" />
             <span className="sr-only">Notifications</span>

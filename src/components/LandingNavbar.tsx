@@ -1,7 +1,7 @@
 
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ClientOnlyThemeToggle } from "./ClientOnlyThemeToggle";
+import { ThemeToggle } from "./ThemeToggle";
 import { Logo } from "./icons";
 import { useAuth } from "@/contexts/AuthContext";
 import { useScrollPosition } from "@/hooks/useScrollPosition";
@@ -62,12 +62,12 @@ export function LandingNavbar() {
                 </Button>
               </>
             )}
-            <ClientOnlyThemeToggle />
+            <ThemeToggle />
           </div>
 
           {/* Mobile Menu Button */}
           <div className="md:hidden flex items-center space-x-2">
-            <ClientOnlyThemeToggle />
+            <ThemeToggle />
             <Button
               variant="ghost"
               size="icon"

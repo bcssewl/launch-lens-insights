@@ -3,13 +3,15 @@
  * @description Enhanced message item component with full DeerFlow event support
  */
 
-import React from 'react';
+import React, { memo } from 'react';
 import { motion } from "motion/react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Play, Download, Check, X } from "lucide-react";
+import { Play, Download, Check, X, Bot } from "lucide-react";
+import MarkdownRenderer from "@/components/assistant/MarkdownRenderer";
 import { DeerMessage } from "@/stores/deerFlowStore";
+import { useDeerFlowMessageStore } from "@/stores/deerFlowMessageStore";
 import UserAvatar from "@/components/assistant/UserAvatar";
 import AIAvatar from "@/components/assistant/AIAvatar";
 import { useStreamingChat } from "@/hooks/useStreamingChat";
@@ -17,9 +19,7 @@ import { DeepThinkingSection } from './DeepThinkingSection';
 import { ToolExecutionDisplay } from './ToolExecutionDisplay';
 import { ResearchActivitiesDisplay } from './ResearchActivitiesDisplay';
 import { ReportGenerationProgress } from './ReportGenerationProgress';
-import { AgentTransitionIndicator } from './AgentTransitionIndicator';
-import { EnhancedToolExecutionDisplay } from './EnhancedToolExecutionDisplay';
-import { LiveResearchTracker } from './LiveResearchTracker';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 interface MessageItemProps {
   message: DeerMessage;
@@ -33,7 +33,7 @@ interface PlannerMessageProps {
   onFeedback: (feedback: string) => void;
 }
 
-export const MessageItem = ({ message, 'aria-posinset': ariaPosinset, 'aria-setsize': ariaSetsize, className = '' }: MessageItemProps) => {
+export const MessageItem = memo(({ message, 'aria-posinset': ariaPosinset, 'aria-setsize': ariaSetsize, className = '' }: MessageItemProps) => {
   const { sendFeedback } = useStreamingChat();
 
   const handleFeedback = (feedback: string) => {
@@ -52,11 +52,23 @@ export const MessageItem = ({ message, 'aria-posinset': ariaPosinset, 'aria-sets
         if (agent === 'planner') {
           return <PlannerMessage message={message} onFeedback={handleFeedback} />;
         } else if (agent === 'reporter') {
-          return <ResearchMessage message={message} />;
+          // Check if this is a direct answer based on thread context
+          const { getThreadContext } = useDeerFlowMessageStore();
+          const threadContext = getThreadContext(message.metadata?.threadId || '');
+          
+          if (threadContext.expectingReporterDirectAnswer) {
+            // This is a direct answer - show in main chat
+            return <CoordinatorMessage message={message} />;
+          } else {
+            // This is research content - show in research panel
+            return <ResearchMessage message={message} />;
+          }
         } else if (message.metadata?.audioUrl) {
           return <PodcastMessage message={message} />;
+        } else {
+          // Coordinator/assistant messages - show the main answer prominently
+          return <CoordinatorMessage message={message} />;
         }
-        return <AssistantMessage content={message.content} />;
       
       default:
         return <div className="text-muted-foreground">Unknown message type</div>;
@@ -78,34 +90,45 @@ export const MessageItem = ({ message, 'aria-posinset': ariaPosinset, 'aria-sets
   const timestamp = message.timestamp.toLocaleString();
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      className={`w-full focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-lg ${className}`}
-      role="article"
-      aria-label={`${messageTypeDescription} from ${timestamp}`}
-      aria-posinset={ariaPosinset}
-      aria-setsize={ariaSetsize}
-      tabIndex={0}
-    >
-      {/* Live region for streaming updates */}
-      {message.isStreaming && (
-        <div 
-          aria-live="polite" 
-          aria-atomic="false"
-          className="sr-only"
-        >
-          {message.metadata?.agent === 'planner' ? 'Planning in progress' : 
-           message.metadata?.agent === 'reporter' ? 'Generating report' : 
-           'Response in progress'}
-        </div>
-      )}
-      
-      {renderMessageContent()}
-    </motion.div>
+    <ErrorBoundary>
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className={`w-full focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-lg ${className}`}
+        role="article"
+        aria-label={`${messageTypeDescription} from ${timestamp}`}
+        aria-posinset={ariaPosinset}
+        aria-setsize={ariaSetsize}
+        tabIndex={0}
+      >
+        {/* Live region for streaming updates */}
+        {message.isStreaming && (
+          <div 
+            aria-live="polite" 
+            aria-atomic="false"
+            className="sr-only"
+          >
+            {message.metadata?.agent === 'planner' ? 'Planning in progress' : 
+             message.metadata?.agent === 'reporter' ? 'Generating report' : 
+             'Response in progress'}
+          </div>
+        )}
+        
+        {renderMessageContent()}
+      </motion.div>
+    </ErrorBoundary>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison for memo optimization
+  return (
+    prevProps.message.id === nextProps.message.id &&
+    prevProps.message.content === nextProps.message.content &&
+    prevProps.message.isStreaming === nextProps.message.isStreaming &&
+    prevProps.message.finishReason === nextProps.message.finishReason &&
+    JSON.stringify(prevProps.message.metadata) === JSON.stringify(nextProps.message.metadata)
+  );
+});
 
 const UserMessage = ({ content }: { content: string }) => (
   <div className="flex justify-end mb-4">
@@ -123,7 +146,9 @@ const AssistantMessage = ({ content }: { content: string }) => (
     <div className="flex items-start space-x-3 max-w-[80%]">
       <AIAvatar className="w-8 h-8" />
       <div className="bg-muted rounded-2xl px-4 py-3 shadow-sm">
-        <p className="text-sm leading-relaxed">{content}</p>
+        <div className="text-sm leading-relaxed whitespace-pre-wrap">
+          {content || 'No content available yet...'}
+        </div>
       </div>
     </div>
   </div>
@@ -138,9 +163,7 @@ const PlannerMessage = ({ message, onFeedback }: PlannerMessageProps) => {
     thinkingPhases = [],
     reasoningSteps = [],
     searchActivities = [],
-    visitedUrls = [],
-    agentTransitions = [],
-    agent
+    visitedUrls = []
   } = message.metadata || {};
   const options = message.options;
   const toolCalls = message.toolCalls || [];
@@ -159,32 +182,28 @@ const PlannerMessage = ({ message, onFeedback }: PlannerMessageProps) => {
         <AIAvatar className="w-8 h-8" />
         <Card className="w-full border-blue-200 bg-blue-50/50 dark:bg-blue-950/20 dark:border-blue-800">
           <CardContent className="p-4">
-            {/* Agent Transition Indicator */}
-            {agentTransitions.length > 0 && (
-              <AgentTransitionIndicator
-                transitions={agentTransitions}
-                currentAgent={agent}
-                isStreaming={message.isStreaming}
-              />
-            )}
-
             {/* Agent indicator */}
             <Badge variant="outline" className="mb-2 text-xs">
-              {agent || 'planner'}
+              planner
             </Badge>
 
-            {/* Live Research Tracker - Enhanced tracking for all DeerFlow events */}
-            <LiveResearchTracker
+            {/* Deep Thinking Section for planner messages */}
+            <DeepThinkingSection
               thinkingPhases={thinkingPhases}
               reasoningSteps={reasoningSteps}
-              searchActivities={searchActivities}
-              visitedUrls={visitedUrls}
               isStreaming={message.isStreaming}
             />
 
-            {/* Enhanced Tool Execution Display */}
-            <EnhancedToolExecutionDisplay
+            {/* Tool Execution Display */}
+            <ToolExecutionDisplay
               toolCalls={toolCalls}
+              isStreaming={message.isStreaming}
+            />
+
+            {/* Research Activities Display */}
+            <ResearchActivitiesDisplay
+              searchActivities={searchActivities}
+              visitedUrls={visitedUrls}
               isStreaming={message.isStreaming}
             />
 
@@ -291,18 +310,65 @@ const PodcastMessage = ({ message }: { message: DeerMessage }) => {
   );
 };
 
+const CoordinatorMessage = ({ message }: { message: DeerMessage }) => {
+  const agent = message.metadata?.agent || 'assistant';
+  const isCoordinator = agent === 'coordinator' || agent === 'assistant';
+  
+  return (
+    <div className="flex justify-start mb-4">
+      <div className="flex items-start space-x-3 max-w-[90%]">
+        <AIAvatar className="w-8 h-8" />
+        <Card className={`w-full ${isCoordinator ? 'border-primary/20 bg-primary/5' : 'bg-muted/50'}`}>
+          <CardContent className="p-4">
+            {/* Agent indicator for non-standard agents */}
+            {agent !== 'assistant' && (
+              <Badge variant="outline" className="mb-3 text-xs">
+                <Bot className="h-3 w-3 mr-1" />
+                {agent}
+              </Badge>
+            )}
+            
+            {/* Main content with markdown rendering */}
+            <div className="space-y-3">
+              {message.content ? (
+                <MarkdownRenderer content={message.content} />
+              ) : (
+                <div className="text-muted-foreground text-sm italic">
+                  {message.isStreaming ? 'Thinking...' : 'No response content available'}
+                </div>
+              )}
+              
+              {/* Show streaming indicator */}
+              {message.isStreaming && (
+                <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+                  <div className="flex space-x-1">
+                    <div className="w-1 h-1 bg-primary rounded-full animate-pulse" />
+                    <div className="w-1 h-1 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
+                    <div className="w-1 h-1 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
+                  </div>
+                  <span>Responding...</span>
+                </div>
+              )}
+              
+              {/* Tool calls if any */}
+              {message.toolCalls && message.toolCalls.length > 0 && (
+                <div className="mt-4">
+                  <ToolExecutionDisplay
+                    toolCalls={message.toolCalls}
+                    isStreaming={message.isStreaming}
+                  />
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
 const ResearchMessage = ({ message }: { message: DeerMessage }) => {
-  const { 
-    researchState, 
-    reportContent, 
-    citations,
-    agentTransitions = [],
-    agent,
-    thinkingPhases = [],
-    reasoningSteps = [],
-    searchActivities = [],
-    visitedUrls = []
-  } = message.metadata || {};
+  const { researchState, reportContent, citations } = message.metadata || {};
 
   const handleExport = (type: 'pdf' | 'copy') => {
     if (type === 'copy' && reportContent) {
@@ -317,42 +383,16 @@ const ResearchMessage = ({ message }: { message: DeerMessage }) => {
     <div className="flex justify-start mb-4">
       <div className="flex items-start space-x-3 max-w-[90%]">
         <AIAvatar className="w-8 h-8" />
-        <Card className="w-full border-green-200 bg-green-50/50 dark:bg-green-950/20 dark:border-green-800">
-          <CardContent className="p-4">
-            {/* Agent Transition Indicator */}
-            {agentTransitions.length > 0 && (
-              <AgentTransitionIndicator
-                transitions={agentTransitions}
-                currentAgent={agent}
-                isStreaming={message.isStreaming}
-              />
-            )}
-
-            {/* Agent indicator */}
-            <Badge variant="outline" className="mb-2 text-xs">
-              {agent || 'reporter'}
-            </Badge>
-
-            {/* Live Research Tracker for reporter phase */}
-            <LiveResearchTracker
-              thinkingPhases={thinkingPhases}
-              reasoningSteps={reasoningSteps}
-              searchActivities={searchActivities}
-              visitedUrls={visitedUrls}
-              researchState={researchState}
-              isStreaming={message.isStreaming}
-            />
-
-            {/* Report Generation Progress */}
-            <ReportGenerationProgress
-              researchState={researchState}
-              reportContent={reportContent}
-              citations={citations}
-              isStreaming={message.isStreaming}
-              onExport={handleExport}
-            />
-          </CardContent>
-        </Card>
+        <div className="w-full space-y-3">
+          {/* Report Generation Progress */}
+          <ReportGenerationProgress
+            researchState={researchState}
+            reportContent={reportContent}
+            citations={citations}
+            isStreaming={message.isStreaming}
+            onExport={handleExport}
+          />
+        </div>
       </div>
     </div>
   );

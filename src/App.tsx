@@ -38,7 +38,7 @@ const BillingPage = () => <div className="h-screen flex items-center justify-cen
 const queryClient = new QueryClient();
 
 const App = () => (
-  <ThemeProvider attribute="class" defaultTheme="dark" enableSystem suppressHydrationWarning>
+  <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AuthProvider>

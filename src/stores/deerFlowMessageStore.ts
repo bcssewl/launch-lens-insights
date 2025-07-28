@@ -40,25 +40,16 @@ export interface DeerMessage {
     researchState?: 'researching' | 'generating_report' | 'report_generated';
     threadId?: string;
     
-    // Enhanced DeerFlow event fields
-    thinkingPhases?: Array<{ phase: string; content: string; progress?: number }>;
-    reasoningSteps?: Array<{ step: string; content: string; reasoning_type?: 'planning' | 'analysis' | 'synthesis' }>;
-    searchActivities?: Array<{ query: string; results?: any[]; search_type?: 'web' | 'github' | 'academic' }>;
-    visitedUrls?: Array<{ url: string; title?: string; content?: string; status?: 'success' | 'failed' }>;
+    // New DeerFlow event fields
+    thinkingPhases?: Array<{ phase: string; content: string }>;
+    reasoningSteps?: Array<{ step: string; content: string }>;
+    searchActivities?: Array<{ query: string; results?: any[] }>;
+    visitedUrls?: Array<{ url: string; title?: string; content?: string }>;
     reportContent?: string;
     citations?: any[];
     planSteps?: any[]; // Parsed plan steps for research activities
-    
-    // New enhanced metadata fields
-    reportFormat?: 'markdown' | 'html';
-    agentTransitions?: Array<{
-      from: string;
-      to: string;
-      context?: any;
-      timestamp: Date;
-    }>;
-    planData?: any;
-    requiresApproval?: boolean;
+    hasEnoughContext?: boolean; // Whether planner indicated it has enough context
+    isPlannerDirectAnswer?: boolean; // Whether this indicates next reporter message is direct answer
   };
 }
 
@@ -97,6 +88,12 @@ interface DeerFlowMessageState {
   reportContent: string;
   isResearchPanelOpen: boolean;
   activeResearchTab: 'activities' | 'report';
+  
+  // Thread context tracking
+  threadContexts: Record<string, {
+    plannerIndicatedDirectAnswer: boolean;
+    expectingReporterDirectAnswer: boolean;
+  }>;
 }
 
 interface DeerFlowMessageActions {
@@ -124,6 +121,10 @@ interface DeerFlowMessageActions {
   setIsResponding: (responding: boolean) => void;
   setResearchPanelOpen: (open: boolean) => void;
   setActiveResearchTab: (tab: 'activities' | 'report') => void;
+  
+  // Thread context actions
+  setThreadContext: (threadId: string, context: { plannerIndicatedDirectAnswer: boolean; expectingReporterDirectAnswer: boolean; }) => void;
+  getThreadContext: (threadId: string) => { plannerIndicatedDirectAnswer: boolean; expectingReporterDirectAnswer: boolean; };
 }
 
 type DeerFlowMessageStore = DeerFlowMessageState & DeerFlowMessageActions;
@@ -141,6 +142,7 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()(
       reportContent: '',
       isResearchPanelOpen: false,
       activeResearchTab: 'activities',
+      threadContexts: {},
 
       // Thread management
       createNewThread: () => {
@@ -294,6 +296,19 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()(
       setIsResponding: (responding) => set({ isResponding: responding }),
       setResearchPanelOpen: (open) => set({ isResearchPanelOpen: open }),
       setActiveResearchTab: (tab) => set({ activeResearchTab: tab }),
+      
+      // Thread context actions
+      setThreadContext: (threadId, context) => 
+        set((state) => ({
+          threadContexts: { ...state.threadContexts, [threadId]: context }
+        })),
+      getThreadContext: (threadId) => {
+        const state = get();
+        return state.threadContexts[threadId] || { 
+          plannerIndicatedDirectAnswer: false, 
+          expectingReporterDirectAnswer: false 
+        };
+      },
     }),
     {
       name: 'deer-flow-messages',
