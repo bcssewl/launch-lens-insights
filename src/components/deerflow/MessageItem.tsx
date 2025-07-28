@@ -1,14 +1,21 @@
+/**
+ * @file MessageItem.tsx
+ * @description Enhanced message item component with full DeerFlow event support
+ */
+
+import React from 'react';
 import { motion } from "motion/react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronUp, Play, Download, Check, X, Brain, Search, Link, Cog, CheckCircle, Clock } from "lucide-react";
-import { useState } from "react";
+import { Play, Download, Check, X } from "lucide-react";
 import { DeerMessage } from "@/stores/deerFlowStore";
 import UserAvatar from "@/components/assistant/UserAvatar";
 import AIAvatar from "@/components/assistant/AIAvatar";
 import { useStreamingChat } from "@/hooks/useStreamingChat";
+import { DeepThinkingSection } from './DeepThinkingSection';
+import { ToolExecutionDisplay } from './ToolExecutionDisplay';
+import { ResearchActivitiesDisplay } from './ResearchActivitiesDisplay';
 
 interface MessageItemProps {
   message: DeerMessage;
@@ -84,8 +91,6 @@ const AssistantMessage = ({ content }: { content: string }) => (
 );
 
 const PlannerMessage = ({ message, onFeedback }: PlannerMessageProps) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [isToolCallsExpanded, setIsToolCallsExpanded] = useState(false);
   const { 
     title, 
     thought, 
@@ -107,182 +112,36 @@ const PlannerMessage = ({ message, onFeedback }: PlannerMessageProps) => {
     }
   })();
 
-  const hasThinkingData = thinkingPhases.length > 0 || reasoningSteps.length > 0 || reasoningContent;
-  const hasToolCalls = toolCalls.length > 0;
-  const hasActivities = searchActivities.length > 0 || visitedUrls.length > 0;
-
   return (
     <div className="flex justify-start mb-4">
       <div className="flex items-start space-x-3 max-w-[90%]">
         <AIAvatar className="w-8 h-8" />
         <Card className="w-full border-blue-200 bg-blue-50/50 dark:bg-blue-950/20 dark:border-blue-800">
           <CardContent className="p-4">
-            {/* Deep Thinking Section */}
-            {hasThinkingData && (
-              <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
-                <CollapsibleTrigger className="flex items-center justify-between w-full mb-3 p-2 rounded-lg hover:bg-blue-100/50 dark:hover:bg-blue-900/30">
-                  <div className="flex items-center space-x-2">
-                    <Brain className="h-4 w-4 text-blue-600" />
-                    <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
-                      Deep Thinking
-                    </span>
-                    <Badge variant="secondary" className="text-xs">
-                      {(thinkingPhases.length + reasoningSteps.length) || 1}
-                    </Badge>
-                  </div>
-                  {isExpanded ? (
-                    <ChevronUp className="h-4 w-4 text-blue-600" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4 text-blue-600" />
-                  )}
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <div className="bg-blue-100/50 dark:bg-blue-900/20 rounded-lg p-3 mb-4 space-y-3">
-                    {/* Thinking Phases */}
-                    {thinkingPhases.map((phase, index) => (
-                      <div key={index} className="border-l-2 border-blue-300 pl-3">
-                        <div className="text-xs font-medium text-blue-600 uppercase tracking-wide mb-1">
-                          {phase.phase}
-                        </div>
-                        <div className="text-sm text-muted-foreground">{phase.content}</div>
-                      </div>
-                    ))}
+            {/* Agent indicator */}
+            <Badge variant="outline" className="mb-2 text-xs">
+              planner
+            </Badge>
 
-                    {/* Reasoning Steps */}
-                    {reasoningSteps.length > 0 && (
-                      <div className="space-y-2">
-                        <h4 className="text-sm font-medium text-blue-700 dark:text-blue-300">Reasoning Steps:</h4>
-                        <ol className="space-y-2">
-                          {reasoningSteps.map((step, index) => (
-                            <li key={index} className="flex items-start space-x-2">
-                              <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                              <div>
-                                <div className="text-xs font-medium text-blue-600">{step.step}</div>
-                                <div className="text-sm text-muted-foreground">{step.content}</div>
-                              </div>
-                            </li>
-                          ))}
-                        </ol>
-                      </div>
-                    )}
+            {/* Deep Thinking Section for planner messages */}
+            <DeepThinkingSection
+              thinkingPhases={thinkingPhases}
+              reasoningSteps={reasoningSteps}
+              isStreaming={message.isStreaming}
+            />
 
-                    {/* Legacy reasoning content */}
-                    {reasoningContent && !reasoningSteps.length && (
-                      <div className="text-sm text-muted-foreground">{reasoningContent}</div>
-                    )}
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
-            )}
+            {/* Tool Execution Display */}
+            <ToolExecutionDisplay
+              toolCalls={toolCalls}
+              isStreaming={message.isStreaming}
+            />
 
-            {/* Tool Calls Section */}
-            {hasToolCalls && (
-              <Collapsible open={isToolCallsExpanded} onOpenChange={setIsToolCallsExpanded}>
-                <CollapsibleTrigger className="flex items-center justify-between w-full mb-3 p-2 rounded-lg hover:bg-purple-100/50 dark:hover:bg-purple-900/30">
-                  <div className="flex items-center space-x-2">
-                    <Cog className="h-4 w-4 text-purple-600" />
-                    <span className="text-sm font-medium text-purple-700 dark:text-purple-300">
-                      Tool Executions
-                    </span>
-                    <Badge variant="secondary" className="text-xs">
-                      {toolCalls.length}
-                    </Badge>
-                  </div>
-                  {isToolCallsExpanded ? (
-                    <ChevronUp className="h-4 w-4 text-purple-600" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4 text-purple-600" />
-                  )}
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <div className="bg-purple-100/50 dark:bg-purple-900/20 rounded-lg p-3 mb-4 space-y-3">
-                    {toolCalls.map((toolCall, index) => (
-                      <div key={toolCall.id || index} className="border border-purple-200 dark:border-purple-700 rounded-lg p-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center space-x-2">
-                            <span className="text-sm font-medium text-purple-700 dark:text-purple-300">
-                              {toolCall.name || 'Unknown Tool'}
-                            </span>
-                            {toolCall.result && (
-                              <CheckCircle className="h-4 w-4 text-green-500" />
-                            )}
-                            {toolCall.error && (
-                              <X className="h-4 w-4 text-red-500" />
-                            )}
-                            {!toolCall.result && !toolCall.error && (
-                              <Clock className="h-4 w-4 text-yellow-500" />
-                            )}
-                          </div>
-                        </div>
-                        
-                        {/* Tool Arguments */}
-                        {toolCall.args && Object.keys(toolCall.args).length > 0 && (
-                          <div className="mb-2">
-                            <div className="text-xs font-medium text-muted-foreground mb-1">Arguments:</div>
-                            <pre className="text-xs bg-muted rounded p-2 overflow-x-auto">
-                              {JSON.stringify(toolCall.args, null, 2)}
-                            </pre>
-                          </div>
-                        )}
-
-                        {/* Tool Result */}
-                        {toolCall.result && (
-                          <div>
-                            <div className="text-xs font-medium text-green-700 dark:text-green-300 mb-1">Result:</div>
-                            <div className="text-sm text-muted-foreground bg-green-50 dark:bg-green-900/20 rounded p-2">
-                              {typeof toolCall.result === 'string' 
-                                ? toolCall.result 
-                                : JSON.stringify(toolCall.result, null, 2)}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Tool Error */}
-                        {toolCall.error && (
-                          <div>
-                            <div className="text-xs font-medium text-red-700 dark:text-red-300 mb-1">Error:</div>
-                            <div className="text-sm text-red-600 bg-red-50 dark:bg-red-900/20 rounded p-2">
-                              {toolCall.error}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
-            )}
-
-            {/* Research Activities */}
-            {hasActivities && (
-              <div className="mb-4 p-3 bg-emerald-100/50 dark:bg-emerald-900/20 rounded-lg">
-                <h4 className="text-sm font-medium text-emerald-700 dark:text-emerald-300 mb-2 flex items-center">
-                  <Search className="h-4 w-4 mr-1" />
-                  Research Activities
-                </h4>
-                <div className="space-y-2">
-                  {searchActivities.map((search, index) => (
-                    <div key={index} className="flex items-center space-x-2 text-sm">
-                      <Search className="h-3 w-3 text-emerald-600" />
-                      <span className="text-muted-foreground">Searched:</span>
-                      <span className="font-medium">{search.query}</span>
-                      {search.results && (
-                        <Badge variant="outline" className="text-xs">
-                          {search.results.length} results
-                        </Badge>
-                      )}
-                    </div>
-                  ))}
-                  {visitedUrls.map((visit, index) => (
-                    <div key={index} className="flex items-center space-x-2 text-sm">
-                      <Link className="h-3 w-3 text-emerald-600" />
-                      <span className="text-muted-foreground">Visited:</span>
-                      <span className="font-medium truncate">{visit.title || visit.url}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            {/* Research Activities Display */}
+            <ResearchActivitiesDisplay
+              searchActivities={searchActivities}
+              visitedUrls={visitedUrls}
+              isStreaming={message.isStreaming}
+            />
 
             {/* Plan Content */}
             <div className="space-y-3">
@@ -306,6 +165,13 @@ const PlannerMessage = ({ message, onFeedback }: PlannerMessageProps) => {
                       </li>
                     ))}
                   </ol>
+                </div>
+              )}
+
+              {/* Legacy reasoning content fallback */}
+              {reasoningContent && !reasoningSteps.length && !thinkingPhases.length && (
+                <div className="text-sm text-muted-foreground bg-muted/50 rounded p-3">
+                  {reasoningContent}
                 </div>
               )}
 
@@ -387,7 +253,7 @@ const PodcastMessage = ({ message }: { message: DeerMessage }) => {
 };
 
 const ResearchMessage = ({ message }: { message: DeerMessage }) => {
-  const { researchState } = message.metadata || {};
+  const { researchState, reportContent, citations } = message.metadata || {};
   
   const getStateInfo = (state: string) => {
     switch (state) {
@@ -406,7 +272,7 @@ const ResearchMessage = ({ message }: { message: DeerMessage }) => {
 
   return (
     <div className="flex justify-start mb-4">
-      <div className="flex items-start space-x-3 max-w-[80%]">
+      <div className="flex items-start space-x-3 max-w-[90%]">
         <AIAvatar className="w-8 h-8" />
         <Card className="w-full border-purple-200 bg-purple-50/50 dark:bg-purple-950/20 dark:border-purple-800">
           <CardContent className="p-4">
@@ -418,15 +284,30 @@ const ResearchMessage = ({ message }: { message: DeerMessage }) => {
                 </Badge>
               </div>
               
-              <p className="text-sm text-muted-foreground">
-                {message.content}
-              </p>
-              
-              <div className="flex space-x-2">
-                <Button size="sm" variant="outline">
-                  Open Research Panel
-                </Button>
-              </div>
+              {/* Report content if available */}
+              {reportContent ? (
+                <div className="prose prose-sm max-w-none">
+                  <div dangerouslySetInnerHTML={{ __html: reportContent }} />
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  {message.content}
+                </p>
+              )}
+
+              {/* Citations if available */}
+              {citations && citations.length > 0 && (
+                <div className="mt-4 pt-3 border-t border-border">
+                  <h4 className="text-sm font-medium mb-2">Sources:</h4>
+                  <div className="space-y-1">
+                    {citations.map((citation: any, index: number) => (
+                      <div key={index} className="text-xs text-muted-foreground">
+                        [{index + 1}] {citation.title || citation.url}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
