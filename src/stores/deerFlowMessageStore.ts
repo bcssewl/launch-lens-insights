@@ -39,6 +39,14 @@ export interface DeerMessage {
     reasoningContent?: string;
     researchState?: 'researching' | 'generating_report' | 'report_generated';
     threadId?: string;
+    
+    // New DeerFlow event fields
+    thinkingPhases?: Array<{ phase: string; content: string }>;
+    reasoningSteps?: Array<{ step: string; content: string }>;
+    searchActivities?: Array<{ query: string; results?: any[] }>;
+    visitedUrls?: Array<{ url: string; title?: string; content?: string }>;
+    reportContent?: string;
+    citations?: any[];
   };
 }
 

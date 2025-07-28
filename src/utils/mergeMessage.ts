@@ -25,7 +25,7 @@ export interface ToolCallResult {
 }
 
 export interface StreamEvent {
-  event?: 'message_chunk' | 'tool_call' | 'tool_call_chunk' | 'tool_call_result' | 'interrupt' | 'done' | 'error';
+  event?: 'message_chunk' | 'tool_call' | 'tool_call_chunk' | 'tool_call_result' | 'interrupt' | 'done' | 'error' | 'thinking' | 'reasoning' | 'search' | 'visit' | 'writing_report' | 'report_generated';
   data?: MessageChunk | ToolCallChunk | ToolCallResult | { error: string } | {};
   // DeerFlow API format
   thread_id?: string;
@@ -36,6 +36,14 @@ export interface StreamEvent {
   tool_calls?: any[];
   tool_call_chunks?: any[];
   finish_reason?: string;
+  
+  // New DeerFlow event types
+  thinking?: { phase: string; content: string };
+  reasoning?: { step: string; content: string };
+  search?: { query: string; results?: any[] };
+  visit?: { url: string; title?: string; content?: string };
+  writing_report?: boolean;
+  report_generated?: { content: string; citations?: any[] };
 }
 
 /**
@@ -46,7 +54,7 @@ export function mergeMessage(
   currentMessage: Partial<DeerMessage> | null,
   event: StreamEvent
 ): Partial<DeerMessage> {
-  console.log('🔄 DeerFlow Event:', event);
+  // console.log('🔄 DeerFlow Event:', event); // Debug logging
 
   // Initialize message if it doesn't exist
   if (!currentMessage) {
@@ -69,6 +77,43 @@ export function mergeMessage(
 
   if (event.content) {
     currentMessage.content = (currentMessage.content || '') + event.content;
+  }
+
+  // Handle new DeerFlow event types
+  if (event.thinking) {
+    if (!currentMessage.metadata) currentMessage.metadata = {};
+    if (!currentMessage.metadata.thinkingPhases) currentMessage.metadata.thinkingPhases = [];
+    currentMessage.metadata.thinkingPhases.push(event.thinking);
+  }
+
+  if (event.reasoning) {
+    if (!currentMessage.metadata) currentMessage.metadata = {};
+    if (!currentMessage.metadata.reasoningSteps) currentMessage.metadata.reasoningSteps = [];
+    currentMessage.metadata.reasoningSteps.push(event.reasoning);
+  }
+
+  if (event.search) {
+    if (!currentMessage.metadata) currentMessage.metadata = {};
+    if (!currentMessage.metadata.searchActivities) currentMessage.metadata.searchActivities = [];
+    currentMessage.metadata.searchActivities.push(event.search);
+  }
+
+  if (event.visit) {
+    if (!currentMessage.metadata) currentMessage.metadata = {};
+    if (!currentMessage.metadata.visitedUrls) currentMessage.metadata.visitedUrls = [];
+    currentMessage.metadata.visitedUrls.push(event.visit);
+  }
+
+  if (event.writing_report) {
+    if (!currentMessage.metadata) currentMessage.metadata = {};
+    currentMessage.metadata.researchState = 'generating_report';
+  }
+
+  if (event.report_generated) {
+    if (!currentMessage.metadata) currentMessage.metadata = {};
+    currentMessage.metadata.researchState = 'report_generated';
+    currentMessage.metadata.reportContent = event.report_generated.content;
+    currentMessage.metadata.citations = event.report_generated.citations;
   }
 
   if (event.tool_call_chunks && event.tool_call_chunks.length > 0) {
@@ -151,7 +196,7 @@ export function mergeMessage(
     currentMessage.isStreaming = false;
   }
 
-  // Fallback to original event format if available
+  // Handle standard SSE event format if available
   if (event.event) {
     switch (event.event) {
       case 'message_chunk': {
@@ -166,6 +211,53 @@ export function mergeMessage(
           },
           isStreaming: true
         };
+      }
+
+      case 'thinking': {
+        const thinkingData = event.data as { phase: string; content: string };
+        if (!currentMessage.metadata) currentMessage.metadata = {};
+        if (!currentMessage.metadata.thinkingPhases) currentMessage.metadata.thinkingPhases = [];
+        currentMessage.metadata.thinkingPhases.push(thinkingData);
+        return { ...currentMessage, isStreaming: true };
+      }
+
+      case 'reasoning': {
+        const reasoningData = event.data as { step: string; content: string };
+        if (!currentMessage.metadata) currentMessage.metadata = {};
+        if (!currentMessage.metadata.reasoningSteps) currentMessage.metadata.reasoningSteps = [];
+        currentMessage.metadata.reasoningSteps.push(reasoningData);
+        return { ...currentMessage, isStreaming: true };
+      }
+
+      case 'search': {
+        const searchData = event.data as { query: string; results?: any[] };
+        if (!currentMessage.metadata) currentMessage.metadata = {};
+        if (!currentMessage.metadata.searchActivities) currentMessage.metadata.searchActivities = [];
+        currentMessage.metadata.searchActivities.push(searchData);
+        return { ...currentMessage, isStreaming: true };
+      }
+
+      case 'visit': {
+        const visitData = event.data as { url: string; title?: string; content?: string };
+        if (!currentMessage.metadata) currentMessage.metadata = {};
+        if (!currentMessage.metadata.visitedUrls) currentMessage.metadata.visitedUrls = [];
+        currentMessage.metadata.visitedUrls.push(visitData);
+        return { ...currentMessage, isStreaming: true };
+      }
+
+      case 'writing_report': {
+        if (!currentMessage.metadata) currentMessage.metadata = {};
+        currentMessage.metadata.researchState = 'generating_report';
+        return { ...currentMessage, isStreaming: true };
+      }
+
+      case 'report_generated': {
+        const reportData = event.data as { content: string; citations?: any[] };
+        if (!currentMessage.metadata) currentMessage.metadata = {};
+        currentMessage.metadata.researchState = 'report_generated';
+        currentMessage.metadata.reportContent = reportData.content;
+        currentMessage.metadata.citations = reportData.citations;
+        return { ...currentMessage, isStreaming: false, finishReason: 'completed' };
       }
 
       case 'tool_call': {
@@ -196,10 +288,38 @@ export function mergeMessage(
         };
       }
 
+      case 'tool_call_result': {
+        const resultData = event.data as { id: string; result: any; error?: string };
+        const existingToolCalls = [...(currentMessage.toolCalls || [])];
+        const toolCallIndex = existingToolCalls.findIndex(tc => tc.id === resultData.id);
+
+        if (toolCallIndex >= 0) {
+          existingToolCalls[toolCallIndex] = {
+            ...existingToolCalls[toolCallIndex],
+            result: resultData.result,
+            error: resultData.error
+          };
+        }
+
+        return {
+          ...currentMessage,
+          toolCalls: existingToolCalls,
+          isStreaming: true
+        };
+      }
+
       case 'done': {
         return {
           ...currentMessage,
           finishReason: 'completed',
+          isStreaming: false
+        };
+      }
+
+      case 'interrupt': {
+        return {
+          ...currentMessage,
+          finishReason: 'interrupt',
           isStreaming: false
         };
       }
@@ -211,6 +331,19 @@ export function mergeMessage(
           content: (currentMessage.content || '') + `\n\n**Error:** ${errorData.error}`,
           isStreaming: false,
           finishReason: 'interrupt'
+        };
+      }
+
+      default: {
+        // Fallback for unknown events
+        console.warn('Unknown DeerFlow event:', event.event, event.data);
+        const unknownContent = typeof event.data === 'string' 
+          ? event.data 
+          : JSON.stringify(event.data || '');
+        return {
+          ...currentMessage,
+          content: (currentMessage.content || '') + (unknownContent ? `\n${unknownContent}` : ''),
+          isStreaming: true
         };
       }
     }
