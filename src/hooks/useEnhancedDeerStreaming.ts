@@ -5,6 +5,7 @@
 
 import { useState, useRef, useCallback } from 'react';
 import { useDeerFlowStore } from '@/stores/deerFlowStore';
+import { useDeerFlowMessageStore } from '@/stores/deerFlowMessageStore';
 import { mergeMessage, finalizeMessage, StreamEvent } from '@/utils/mergeMessage';
 import { DeerMessage } from '@/stores/deerFlowMessageStore';
 import { fetchStream } from '@/utils/fetchStream';
@@ -24,6 +25,7 @@ export const useEnhancedDeerStreaming = () => {
   const [currentMessageId, setCurrentMessageId] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   
+  const storeActions = useDeerFlowStore();
   const {
     addMessage,
     updateMessage,
@@ -37,8 +39,11 @@ export const useEnhancedDeerStreaming = () => {
     setReportContent,
     currentThreadId,
     researchActivities,
-    settings
-  } = useDeerFlowStore();
+    setThreadContext,
+    getThreadContext
+  } = useDeerFlowMessageStore();
+  
+  const { settings } = storeActions;
 
   const startDeerFlowStreaming = useCallback(async (
     question: string,
@@ -140,10 +145,18 @@ export const useEnhancedDeerStreaming = () => {
             const agent = streamEvent.data.agent;
             console.log(`🤖 Message chunk from agent: ${agent}, content: "${streamEvent.data.content?.substring(0, 50)}..."`);
             
-            if (agent === 'planner' || agent === 'reporter') {
+            // Context-aware panel management
+            if (agent === 'planner') {
               setResearchPanelOpen(true);
-              if (agent === 'reporter') {
+            } else if (agent === 'reporter') {
+              // Check if this is a direct answer based on thread context
+              const threadContext = getThreadContext(currentThreadId);
+              if (!threadContext.expectingReporterDirectAnswer) {
+                // Only open research panel if this is not a direct answer
+                setResearchPanelOpen(true);
                 setActiveResearchTab('report');
+              } else {
+                console.log('🔄 Reporter providing direct answer - not opening research panel');
               }
             } else if (agent === 'coordinator' || agent === 'assistant') {
               // Close research panel for final answers
@@ -153,9 +166,14 @@ export const useEnhancedDeerStreaming = () => {
             const agent = streamEvent.agent;
             console.log(`🤖 Legacy format - agent: ${agent}`);
             
-            if (agent === 'planner' || agent === 'reporter') {
+            // Context-aware panel management for legacy format
+            if (agent === 'planner') {
               setResearchPanelOpen(true);
-              if (agent === 'reporter') {
+            } else if (agent === 'reporter') {
+              // Check if this is a direct answer based on thread context
+              const threadContext = getThreadContext(currentThreadId);
+              if (!threadContext.expectingReporterDirectAnswer) {
+                setResearchPanelOpen(true);
                 setActiveResearchTab('report');
               }
             }
@@ -296,27 +314,55 @@ export const useEnhancedDeerStreaming = () => {
             }
           }
 
-          // Handle planner message plan steps -> research activities
+          // Handle planner message plan steps -> research activities + context tracking
           if (currentPartialMessage?.metadata?.agent === 'planner' && 
               currentPartialMessage?.finishReason === 'interrupt' && 
               currentPartialMessage?.metadata?.planSteps) {
             const planSteps = currentPartialMessage.metadata.planSteps;
+            const hasEnoughContext = currentPartialMessage.metadata.hasEnoughContext || false;
+            const isPlannerDirectAnswer = currentPartialMessage.metadata.isPlannerDirectAnswer || false;
             
-            // Add each plan step as a pending research activity
-            planSteps.forEach((step: any, index: number) => {
-              const stepTitle = typeof step === 'string' ? step : (step.title || step.description || `Step ${index + 1}`);
-              const stepDescription = typeof step === 'string' ? '' : (step.description || '');
-              
-              addResearchActivity({
-                toolType: 'web-search', // Default type for plan steps
-                title: stepTitle,
-                content: stepDescription,
-                status: 'pending'
-              });
+            console.log('🎯 Planner finished with', planSteps.length, 'steps, hasEnoughContext:', hasEnoughContext);
+            
+            // Set thread context based on planner decision
+            setThreadContext(currentThreadId, {
+              plannerIndicatedDirectAnswer: isPlannerDirectAnswer,
+              expectingReporterDirectAnswer: isPlannerDirectAnswer
             });
+            
+            if (planSteps.length > 0) {
+              // Add each plan step as a pending research activity
+              planSteps.forEach((step: any, index: number) => {
+                const stepTitle = typeof step === 'string' ? step : (step.title || step.description || `Step ${index + 1}`);
+                const stepDescription = typeof step === 'string' ? '' : (step.description || '');
+                
+                addResearchActivity({
+                  toolType: 'web-search', // Default type for plan steps
+                  title: stepTitle,
+                  content: stepDescription,
+                  status: 'pending'
+                });
+              });
 
-            setResearchPanelOpen(true);
-            setActiveResearchTab('activities');
+              setResearchPanelOpen(true);
+              setActiveResearchTab('activities');
+            } else if (isPlannerDirectAnswer) {
+              // For direct answers, don't open research panel
+              console.log('🔄 Expecting reporter direct answer, not opening research panel');
+            }
+          }
+
+          // Reset thread context when reporter finishes providing direct answer
+          if (currentPartialMessage?.metadata?.agent === 'reporter' && 
+              currentPartialMessage?.finishReason === 'interrupt') {
+            const threadContext = getThreadContext(currentThreadId);
+            if (threadContext.expectingReporterDirectAnswer) {
+              console.log('✅ Reporter direct answer completed, resetting thread context');
+              setThreadContext(currentThreadId, {
+                plannerIndicatedDirectAnswer: false,
+                expectingReporterDirectAnswer: false
+              });
+            }
           }
 
         } catch (parseError) {

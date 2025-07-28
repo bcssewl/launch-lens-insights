@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Play, Download, Check, X, Bot } from "lucide-react";
 import MarkdownRenderer from "@/components/assistant/MarkdownRenderer";
 import { DeerMessage } from "@/stores/deerFlowStore";
+import { useDeerFlowMessageStore } from "@/stores/deerFlowMessageStore";
 import UserAvatar from "@/components/assistant/UserAvatar";
 import AIAvatar from "@/components/assistant/AIAvatar";
 import { useStreamingChat } from "@/hooks/useStreamingChat";
@@ -50,7 +51,17 @@ export const MessageItem = ({ message, 'aria-posinset': ariaPosinset, 'aria-sets
         if (agent === 'planner') {
           return <PlannerMessage message={message} onFeedback={handleFeedback} />;
         } else if (agent === 'reporter') {
-          return <ResearchMessage message={message} />;
+          // Check if this is a direct answer based on thread context
+          const { getThreadContext } = useDeerFlowMessageStore();
+          const threadContext = getThreadContext(message.metadata?.threadId || '');
+          
+          if (threadContext.expectingReporterDirectAnswer) {
+            // This is a direct answer - show in main chat
+            return <CoordinatorMessage message={message} />;
+          } else {
+            // This is research content - show in research panel
+            return <ResearchMessage message={message} />;
+          }
         } else if (message.metadata?.audioUrl) {
           return <PodcastMessage message={message} />;
         } else {

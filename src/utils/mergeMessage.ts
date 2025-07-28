@@ -384,12 +384,18 @@ export function mergeMessage(
         const options = event.data.options || 
           (currentMessage.metadata?.agent === 'planner' ? defaultOptions : undefined);
         
-        // Parse plan steps for planner messages
+        // Parse plan data for planner messages
         let planSteps: any[] = [];
+        let hasEnoughContext = false;
+        let isPlannerDirectAnswer = false;
+        
         if (currentMessage.metadata?.agent === 'planner' && currentMessage.content) {
           try {
             const parsed = JSON.parse(currentMessage.content);
             planSteps = parsed.steps || [];
+            hasEnoughContext = parsed.has_enough_context || false;
+            // If planner says has enough context and no steps, it's indicating direct answer
+            isPlannerDirectAnswer = hasEnoughContext && planSteps.length === 0;
           } catch (e) {
             // JSON parsing failed, try regex fallback for plain text
             console.log('🔍 JSON parsing failed for planner content, using regex fallback');
@@ -407,7 +413,9 @@ export function mergeMessage(
           options: options,
           metadata: {
             ...currentMessage.metadata,
-            planSteps: planSteps
+            planSteps: planSteps,
+            hasEnoughContext: hasEnoughContext,
+            isPlannerDirectAnswer: isPlannerDirectAnswer
           }
         };
       }
