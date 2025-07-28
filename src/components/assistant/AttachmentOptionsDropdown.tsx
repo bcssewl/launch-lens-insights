@@ -10,11 +10,10 @@ interface AttachmentOptionsDropdownProps {
   onLocalFileSelect: () => void;
 }
 
-const AttachmentOptionsDropdown: React.FC<AttachmentOptionsDropdownProps> = ({
-  children,
-  onDatabaseSelect,
-  onLocalFileSelect,
-}) => {
+const AttachmentOptionsDropdown = React.forwardRef<
+  HTMLElement,
+  AttachmentOptionsDropdownProps
+>(({ children, onDatabaseSelect, onLocalFileSelect }, ref) => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -32,6 +31,8 @@ const AttachmentOptionsDropdown: React.FC<AttachmentOptionsDropdownProps> = ({
       </DropdownMenuContent>
     </DropdownMenu>
   );
-};
+});
+
+AttachmentOptionsDropdown.displayName = "AttachmentOptionsDropdown";
 
 export default AttachmentOptionsDropdown;
