@@ -21,12 +21,12 @@ export default function DeerFlowPage() {
             <ResizablePanel defaultSize={isResearchPanelOpen ? 60 : 100} minSize={40}>
               <div className="h-full relative">
                 {/* Messages area - constrained height to leave space for input */}
-                <div className="absolute top-0 left-0 right-0 bottom-20 overflow-hidden">
+                <div className="absolute top-0 left-0 right-0 bottom-16 overflow-hidden">
                   <MessageList />
                 </div>
                 
                 {/* Input area - absolutely positioned at bottom */}
-                <div className="absolute bottom-0 left-0 right-0 h-20 border-t bg-background/95 backdrop-blur-sm p-4 z-10">
+                <div className="absolute bottom-0 left-0 right-0 h-16 border-t bg-background/95 backdrop-blur-sm p-3 z-10">
                   <InputBox />
                 </div>
               </div>
