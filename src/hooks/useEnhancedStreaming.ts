@@ -1,6 +1,6 @@
 /**
  * @file enhancedStreamingHook.ts
- * @description Enhanced streaming hook with robust message handling
+ * @description Enhanced streaming hook with Phase 3 live activity tracking
  */
 
 import { useState, useCallback, useRef } from 'react';
@@ -8,6 +8,7 @@ import { useDeerFlowStore } from '@/stores/deerFlowStore';
 import { DeerMessage } from '@/stores/deerFlowMessageStore';
 import { mergeMessage, finalizeMessage, StreamEvent } from '@/utils/mergeMessage';
 import { useToast } from '@/hooks/use-toast';
+import { useLiveActivityTracker } from '@/hooks/useLiveActivityTracker';
 
 interface StreamingState {
   isStreaming: boolean;
@@ -23,6 +24,9 @@ export const useEnhancedStreaming = () => {
     error: null,
     canAbort: false
   });
+
+  // Phase 3: Live activity tracking
+  const activityTracker = useLiveActivityTracker();
 
   const {
     addMessage,
@@ -59,6 +63,8 @@ export const useEnhancedStreaming = () => {
       canAbort: true
     });
 
+    // Phase 3: Start activity tracking
+    activityTracker.startStreaming();
     setIsResponding(true);
 
     try {
@@ -120,7 +126,10 @@ export const useEnhancedStreaming = () => {
 
           try {
             const event: StreamEvent = JSON.parse(dataStr);
-            // console.log('📡 Raw SSE Event:', event); // Debug logging
+            
+            // Phase 3: Track streaming events
+            activityTracker.processStreamingEvent(event);
+            
             currentMessage = mergeMessage(currentMessage, event);
 
             // Update the streaming state
@@ -169,6 +178,7 @@ export const useEnhancedStreaming = () => {
     } catch (error: any) {
       if (error.name === 'AbortError') {
         // Stream was aborted - this is expected
+        activityTracker.stopStreaming();
         setStreamingState(prev => ({
           ...prev,
           isStreaming: false,
@@ -177,6 +187,16 @@ export const useEnhancedStreaming = () => {
       } else {
         // Actual error occurred
         const errorMessage = error.message || 'An unexpected error occurred';
+        
+        // Phase 3: Add error to activity tracker
+        activityTracker.addError(
+          error.name === 'TypeError' ? 'network' : 'server',
+          errorMessage,
+          true,
+          { operation: 'streaming' }
+        );
+        
+        activityTracker.stopStreaming();
         
         setStreamingState(prev => ({
           ...prev,
@@ -213,6 +233,8 @@ export const useEnhancedStreaming = () => {
         }
       }
     } finally {
+      // Phase 3: Stop activity tracking
+      activityTracker.stopStreaming();
       setIsResponding(false);
       setStreamingState(prev => ({
         ...prev,
@@ -253,6 +275,8 @@ export const useEnhancedStreaming = () => {
     streamingState,
     startStreaming,
     stopStreaming,
-    resetState
+    resetState,
+    // Phase 3: Activity tracking
+    activityTracker
   };
 };

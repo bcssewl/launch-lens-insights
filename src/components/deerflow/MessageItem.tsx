@@ -16,6 +16,7 @@ import { useStreamingChat } from "@/hooks/useStreamingChat";
 import { DeepThinkingSection } from './DeepThinkingSection';
 import { ToolExecutionDisplay } from './ToolExecutionDisplay';
 import { ResearchActivitiesDisplay } from './ResearchActivitiesDisplay';
+import { ReportGenerationProgress } from './ReportGenerationProgress';
 
 interface MessageItemProps {
   message: DeerMessage;
@@ -254,63 +255,30 @@ const PodcastMessage = ({ message }: { message: DeerMessage }) => {
 
 const ResearchMessage = ({ message }: { message: DeerMessage }) => {
   const { researchState, reportContent, citations } = message.metadata || {};
-  
-  const getStateInfo = (state: string) => {
-    switch (state) {
-      case 'researching':
-        return { label: 'Researching', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300' };
-      case 'generating_report':
-        return { label: 'Generating Report', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300' };
-      case 'report_generated':
-        return { label: 'Report Generated', color: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300' };
-      default:
-        return { label: 'Processing', color: 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-300' };
+
+  const handleExport = (type: 'pdf' | 'copy') => {
+    if (type === 'copy' && reportContent) {
+      navigator.clipboard.writeText(reportContent);
+    } else if (type === 'pdf') {
+      // PDF export functionality would be implemented here
+      console.log('PDF export requested');
     }
   };
-
-  const stateInfo = getStateInfo(researchState || 'processing');
 
   return (
     <div className="flex justify-start mb-4">
       <div className="flex items-start space-x-3 max-w-[90%]">
         <AIAvatar className="w-8 h-8" />
-        <Card className="w-full border-purple-200 bg-purple-50/50 dark:bg-purple-950/20 dark:border-purple-800">
-          <CardContent className="p-4">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold">Research Summary</h3>
-                <Badge className={stateInfo.color}>
-                  {stateInfo.label}
-                </Badge>
-              </div>
-              
-              {/* Report content if available */}
-              {reportContent ? (
-                <div className="prose prose-sm max-w-none">
-                  <div dangerouslySetInnerHTML={{ __html: reportContent }} />
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  {message.content}
-                </p>
-              )}
-
-              {/* Citations if available */}
-              {citations && citations.length > 0 && (
-                <div className="mt-4 pt-3 border-t border-border">
-                  <h4 className="text-sm font-medium mb-2">Sources:</h4>
-                  <div className="space-y-1">
-                    {citations.map((citation: any, index: number) => (
-                      <div key={index} className="text-xs text-muted-foreground">
-                        [{index + 1}] {citation.title || citation.url}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        <div className="w-full space-y-3">
+          {/* Report Generation Progress */}
+          <ReportGenerationProgress
+            researchState={researchState}
+            reportContent={reportContent}
+            citations={citations}
+            isStreaming={message.isStreaming}
+            onExport={handleExport}
+          />
+        </div>
       </div>
     </div>
   );
