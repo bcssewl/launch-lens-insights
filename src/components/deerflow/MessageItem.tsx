@@ -20,6 +20,9 @@ import { ReportGenerationProgress } from './ReportGenerationProgress';
 
 interface MessageItemProps {
   message: DeerMessage;
+  'aria-posinset'?: number;
+  'aria-setsize'?: number;
+  className?: string;
 }
 
 interface PlannerMessageProps {
@@ -27,7 +30,7 @@ interface PlannerMessageProps {
   onFeedback: (feedback: string) => void;
 }
 
-export const MessageItem = ({ message }: MessageItemProps) => {
+export const MessageItem = ({ message, 'aria-posinset': ariaPosinset, 'aria-setsize': ariaSetsize, className = '' }: MessageItemProps) => {
   const { sendFeedback } = useStreamingChat();
 
   const handleFeedback = (feedback: string) => {
@@ -57,13 +60,45 @@ export const MessageItem = ({ message }: MessageItemProps) => {
     }
   };
 
+  const getMessageTypeDescription = (): string => {
+    const agent = message.metadata?.agent;
+    
+    if (message.role === 'user') return 'User message';
+    if (agent === 'planner') return 'AI Planner response with research plan';
+    if (agent === 'reporter') return 'AI Reporter response with research findings';
+    if (message.metadata?.audioUrl) return 'AI generated podcast audio';
+    
+    return 'AI Assistant response';
+  };
+
+  const messageTypeDescription = getMessageTypeDescription();
+  const timestamp = message.timestamp.toLocaleString();
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="w-full"
+      className={`w-full focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-lg ${className}`}
+      role="article"
+      aria-label={`${messageTypeDescription} from ${timestamp}`}
+      aria-posinset={ariaPosinset}
+      aria-setsize={ariaSetsize}
+      tabIndex={0}
     >
+      {/* Live region for streaming updates */}
+      {message.isStreaming && (
+        <div 
+          aria-live="polite" 
+          aria-atomic="false"
+          className="sr-only"
+        >
+          {message.metadata?.agent === 'planner' ? 'Planning in progress' : 
+           message.metadata?.agent === 'reporter' ? 'Generating report' : 
+           'Response in progress'}
+        </div>
+      )}
+      
       {renderMessageContent()}
     </motion.div>
   );
