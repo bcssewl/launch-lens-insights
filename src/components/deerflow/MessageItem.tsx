@@ -3,7 +3,7 @@
  * @description Enhanced message item component with full DeerFlow event support
  */
 
-import React, { memo, useMemo } from 'react';
+import React, { memo } from 'react';
 import { motion } from "motion/react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -40,7 +40,7 @@ export const MessageItem = memo(({ message, 'aria-posinset': ariaPosinset, 'aria
     sendFeedback(feedback);
   };
 
-  const renderMessageContent = useMemo(() => {
+  const renderMessageContent = () => {
     const agent = message.metadata?.agent;
     
     switch (message.role) {
@@ -73,7 +73,7 @@ export const MessageItem = memo(({ message, 'aria-posinset': ariaPosinset, 'aria
       default:
         return <div className="text-muted-foreground">Unknown message type</div>;
     }
-  }, [message, handleFeedback]);
+  };
 
   const getMessageTypeDescription = (): string => {
     const agent = message.metadata?.agent;
@@ -115,7 +115,7 @@ export const MessageItem = memo(({ message, 'aria-posinset': ariaPosinset, 'aria
           </div>
         )}
         
-        {renderMessageContent}
+        {renderMessageContent()}
       </motion.div>
     </ErrorBoundary>
   );
