@@ -40,14 +40,25 @@ export interface DeerMessage {
     researchState?: 'researching' | 'generating_report' | 'report_generated';
     threadId?: string;
     
-    // New DeerFlow event fields
-    thinkingPhases?: Array<{ phase: string; content: string }>;
-    reasoningSteps?: Array<{ step: string; content: string }>;
-    searchActivities?: Array<{ query: string; results?: any[] }>;
-    visitedUrls?: Array<{ url: string; title?: string; content?: string }>;
+    // Enhanced DeerFlow event fields
+    thinkingPhases?: Array<{ phase: string; content: string; progress?: number }>;
+    reasoningSteps?: Array<{ step: string; content: string; reasoning_type?: 'planning' | 'analysis' | 'synthesis' }>;
+    searchActivities?: Array<{ query: string; results?: any[]; search_type?: 'web' | 'github' | 'academic' }>;
+    visitedUrls?: Array<{ url: string; title?: string; content?: string; status?: 'success' | 'failed' }>;
     reportContent?: string;
     citations?: any[];
     planSteps?: any[]; // Parsed plan steps for research activities
+    
+    // New enhanced metadata fields
+    reportFormat?: 'markdown' | 'html';
+    agentTransitions?: Array<{
+      from: string;
+      to: string;
+      context?: any;
+      timestamp: Date;
+    }>;
+    planData?: any;
+    requiresApproval?: boolean;
   };
 }
 

@@ -17,6 +17,9 @@ import { DeepThinkingSection } from './DeepThinkingSection';
 import { ToolExecutionDisplay } from './ToolExecutionDisplay';
 import { ResearchActivitiesDisplay } from './ResearchActivitiesDisplay';
 import { ReportGenerationProgress } from './ReportGenerationProgress';
+import { AgentTransitionIndicator } from './AgentTransitionIndicator';
+import { EnhancedToolExecutionDisplay } from './EnhancedToolExecutionDisplay';
+import { LiveResearchTracker } from './LiveResearchTracker';
 
 interface MessageItemProps {
   message: DeerMessage;
@@ -135,7 +138,9 @@ const PlannerMessage = ({ message, onFeedback }: PlannerMessageProps) => {
     thinkingPhases = [],
     reasoningSteps = [],
     searchActivities = [],
-    visitedUrls = []
+    visitedUrls = [],
+    agentTransitions = [],
+    agent
   } = message.metadata || {};
   const options = message.options;
   const toolCalls = message.toolCalls || [];
@@ -154,28 +159,32 @@ const PlannerMessage = ({ message, onFeedback }: PlannerMessageProps) => {
         <AIAvatar className="w-8 h-8" />
         <Card className="w-full border-blue-200 bg-blue-50/50 dark:bg-blue-950/20 dark:border-blue-800">
           <CardContent className="p-4">
+            {/* Agent Transition Indicator */}
+            {agentTransitions.length > 0 && (
+              <AgentTransitionIndicator
+                transitions={agentTransitions}
+                currentAgent={agent}
+                isStreaming={message.isStreaming}
+              />
+            )}
+
             {/* Agent indicator */}
             <Badge variant="outline" className="mb-2 text-xs">
-              planner
+              {agent || 'planner'}
             </Badge>
 
-            {/* Deep Thinking Section for planner messages */}
-            <DeepThinkingSection
+            {/* Live Research Tracker - Enhanced tracking for all DeerFlow events */}
+            <LiveResearchTracker
               thinkingPhases={thinkingPhases}
               reasoningSteps={reasoningSteps}
-              isStreaming={message.isStreaming}
-            />
-
-            {/* Tool Execution Display */}
-            <ToolExecutionDisplay
-              toolCalls={toolCalls}
-              isStreaming={message.isStreaming}
-            />
-
-            {/* Research Activities Display */}
-            <ResearchActivitiesDisplay
               searchActivities={searchActivities}
               visitedUrls={visitedUrls}
+              isStreaming={message.isStreaming}
+            />
+
+            {/* Enhanced Tool Execution Display */}
+            <EnhancedToolExecutionDisplay
+              toolCalls={toolCalls}
               isStreaming={message.isStreaming}
             />
 
@@ -283,7 +292,17 @@ const PodcastMessage = ({ message }: { message: DeerMessage }) => {
 };
 
 const ResearchMessage = ({ message }: { message: DeerMessage }) => {
-  const { researchState, reportContent, citations } = message.metadata || {};
+  const { 
+    researchState, 
+    reportContent, 
+    citations,
+    agentTransitions = [],
+    agent,
+    thinkingPhases = [],
+    reasoningSteps = [],
+    searchActivities = [],
+    visitedUrls = []
+  } = message.metadata || {};
 
   const handleExport = (type: 'pdf' | 'copy') => {
     if (type === 'copy' && reportContent) {
@@ -298,16 +317,42 @@ const ResearchMessage = ({ message }: { message: DeerMessage }) => {
     <div className="flex justify-start mb-4">
       <div className="flex items-start space-x-3 max-w-[90%]">
         <AIAvatar className="w-8 h-8" />
-        <div className="w-full space-y-3">
-          {/* Report Generation Progress */}
-          <ReportGenerationProgress
-            researchState={researchState}
-            reportContent={reportContent}
-            citations={citations}
-            isStreaming={message.isStreaming}
-            onExport={handleExport}
-          />
-        </div>
+        <Card className="w-full border-green-200 bg-green-50/50 dark:bg-green-950/20 dark:border-green-800">
+          <CardContent className="p-4">
+            {/* Agent Transition Indicator */}
+            {agentTransitions.length > 0 && (
+              <AgentTransitionIndicator
+                transitions={agentTransitions}
+                currentAgent={agent}
+                isStreaming={message.isStreaming}
+              />
+            )}
+
+            {/* Agent indicator */}
+            <Badge variant="outline" className="mb-2 text-xs">
+              {agent || 'reporter'}
+            </Badge>
+
+            {/* Live Research Tracker for reporter phase */}
+            <LiveResearchTracker
+              thinkingPhases={thinkingPhases}
+              reasoningSteps={reasoningSteps}
+              searchActivities={searchActivities}
+              visitedUrls={visitedUrls}
+              researchState={researchState}
+              isStreaming={message.isStreaming}
+            />
+
+            {/* Report Generation Progress */}
+            <ReportGenerationProgress
+              researchState={researchState}
+              reportContent={reportContent}
+              citations={citations}
+              isStreaming={message.isStreaming}
+              onExport={handleExport}
+            />
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

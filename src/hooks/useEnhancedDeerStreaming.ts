@@ -132,21 +132,68 @@ export const useEnhancedDeerStreaming = () => {
             { event: event as any, data: parsedData } : 
             parsedData; // Legacy format
 
-          // Handle agent-specific logic
-          if ('event' in streamEvent && streamEvent.event === 'message_chunk') {
-            const agent = streamEvent.data.agent;
-            if (agent === 'planner' || agent === 'reporter') {
-              setResearchPanelOpen(true);
-              if (agent === 'reporter') {
+          // Enhanced agent-specific logic with better event handling
+          if ('event' in streamEvent) {
+            switch (streamEvent.event) {
+              case 'message_chunk': {
+                const agent = streamEvent.data.agent;
+                if (agent === 'planner' || agent === 'reporter') {
+                  setResearchPanelOpen(true);
+                  if (agent === 'reporter') {
+                    setActiveResearchTab('report');
+                  } else if (agent === 'planner') {
+                    setActiveResearchTab('activities');
+                  }
+                }
+                break;
+              }
+              case 'agent_handoff': {
+                // Handle agent transitions and update research panel accordingly
+                setResearchPanelOpen(true);
+                if (streamEvent.data.to_agent === 'reporter') {
+                  setActiveResearchTab('report');
+                } else if (streamEvent.data.to_agent === 'planner') {
+                  setActiveResearchTab('activities');
+                }
+                break;
+              }
+              case 'thinking':
+              case 'reasoning': {
+                // Open research panel for thinking/reasoning phases
+                setResearchPanelOpen(true);
+                setActiveResearchTab('activities');
+                break;
+              }
+              case 'search':
+              case 'visit': {
+                // Research activities - keep activities tab active
+                setResearchPanelOpen(true);
+                setActiveResearchTab('activities');
+                break;
+              }
+              case 'writing_report':
+              case 'report_generated': {
+                // Switch to report tab when report is being generated
+                setResearchPanelOpen(true);
                 setActiveResearchTab('report');
+                break;
+              }
+              case 'plan_created': {
+                // Show plan in activities tab
+                setResearchPanelOpen(true);
+                setActiveResearchTab('activities');
+                break;
               }
             }
           } else if ('agent' in streamEvent && streamEvent.agent) {
+            // Legacy agent handling
             const agent = streamEvent.agent;
             if (agent === 'planner' || agent === 'reporter') {
               setResearchPanelOpen(true);
               if (agent === 'reporter') {
                 setActiveResearchTab('report');
+              } else if (agent === 'planner') {
+                setActiveResearchTab('activities');
               }
             }
           }
@@ -254,12 +301,49 @@ export const useEnhancedDeerStreaming = () => {
             }
           }
 
-          // Handle report generation
-          if ('event' in streamEvent && streamEvent.event === 'report_generated') {
-            console.log('📄 Report generated!', streamEvent.data);
-            setReportContent(streamEvent.data.content);
-            setActiveResearchTab('report');
-            setResearchPanelOpen(true);
+          // Enhanced event-specific processing
+          if ('event' in streamEvent) {
+            switch (streamEvent.event) {
+              case 'search': {
+                // Add search activity for real-time tracking
+                addResearchActivity({
+                  toolType: streamEvent.data.search_type === 'github' ? 'web-search' : 
+                           streamEvent.data.search_type === 'academic' ? 'retriever' : 'web-search',
+                  title: `Search: ${streamEvent.data.query}`,
+                  content: { query: streamEvent.data.query, results: streamEvent.data.results },
+                  status: streamEvent.data.results ? 'completed' : 'running'
+                });
+                break;
+              }
+              case 'visit': {
+                // Add website visit activity
+                addResearchActivity({
+                  toolType: 'crawl',
+                  title: `Visit: ${streamEvent.data.title || 'Website'}`,
+                  content: {
+                    url: streamEvent.data.url,
+                    title: streamEvent.data.title,
+                    content: streamEvent.data.content
+                  },
+                  status: streamEvent.data.status === 'success' ? 'completed' : 
+                          streamEvent.data.status === 'failed' ? 'failed' : 'running'
+                });
+                break;
+              }
+              case 'report_generated': {
+                console.log('📄 Report generated!', streamEvent.data);
+                setReportContent(streamEvent.data.content);
+                setActiveResearchTab('report');
+                setResearchPanelOpen(true);
+                break;
+              }
+              case 'writing_report': {
+                // Update research panel to show report generation progress
+                setActiveResearchTab('report');
+                setResearchPanelOpen(true);
+                break;
+              }
+            }
           }
 
           // Merge the event into the current message

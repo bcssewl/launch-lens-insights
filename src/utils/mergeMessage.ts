@@ -1,6 +1,6 @@
 /**
  * @file mergeMessage.ts
- * @description Robust message merging logic for DeerFlow API
+ * @description Enhanced message merging logic for DeerFlow API with robust event handling
  */
 
 import { DeerMessage, ToolCall } from '@/stores/deerFlowMessageStore';
@@ -24,7 +24,7 @@ export interface ToolCallResult {
   error?: string;
 }
 
-// Enhanced discriminated union for DeerFlow API events
+// Enhanced discriminated union for DeerFlow API events with comprehensive type safety
 export type StreamEvent = 
   | { event: 'message_chunk'; data: MessageChunk }
   | { event: 'tool_call'; data: { id: string; name: string; args: Record<string, any> } }
@@ -47,17 +47,23 @@ export type StreamEvent =
           image_url?: string;
           source?: string;
         }>;
+        content?: string;
+        output?: string;
+        screenshot?: string;
+        websites?: Array<{ url: string; title?: string; content?: string }>;
       }
     } }
-  | { event: 'thinking'; data: { phase: string; content: string } }
-  | { event: 'reasoning'; data: { step: string; content: string } }
-  | { event: 'search'; data: { query: string; results?: any[] } }
-  | { event: 'visit'; data: { url: string; title?: string; content?: string } }
-  | { event: 'writing_report'; data: { progress?: number } }
-  | { event: 'report_generated'; data: { content: string; citations?: any[] } }
+  | { event: 'thinking'; data: { phase: string; content: string; progress?: number } }
+  | { event: 'reasoning'; data: { step: string; content: string; reasoning_type?: 'planning' | 'analysis' | 'synthesis' } }
+  | { event: 'search'; data: { query: string; results?: any[]; search_type?: 'web' | 'github' | 'academic' } }
+  | { event: 'visit'; data: { url: string; title?: string; content?: string; status?: 'success' | 'failed' } }
+  | { event: 'writing_report'; data: { progress?: number; section?: string; total_sections?: number } }
+  | { event: 'report_generated'; data: { content: string; citations?: any[]; format?: 'markdown' | 'html' } }
+  | { event: 'agent_handoff'; data: { from_agent: string; to_agent: string; context?: any } }
+  | { event: 'plan_created'; data: { plan: any; steps: any[]; approval_required?: boolean } }
   | { event: 'done'; data: {} }
   | { event: 'interrupt'; data: { options?: Array<{ text: string; value: string }> } }
-  | { event: 'error'; data: { error: string } }
+  | { event: 'error'; data: { error: string; error_type?: string; recoverable?: boolean } }
   | {
       // Legacy DeerFlow API format for backward compatibility
       thread_id?: string;
@@ -267,11 +273,16 @@ export function mergeMessage(
             }
             existingToolCalls[targetIndex].argsChunks!.push(event.data.args);
             
+            // Enhanced JSON reconstruction with validation
             const completeArgsString = existingToolCalls[targetIndex].argsChunks!.join('');
             try {
-              existingToolCalls[targetIndex].args = JSON.parse(completeArgsString);
+              // Validate JSON completeness before parsing
+              if (isValidJSON(completeArgsString)) {
+                existingToolCalls[targetIndex].args = JSON.parse(completeArgsString);
+              }
             } catch (e) {
-              // Args not complete yet
+              // Args not complete yet - keep accumulating chunks
+              console.debug('Tool call args incomplete, continuing to accumulate chunks');
             }
           }
         }
@@ -384,7 +395,29 @@ export function mergeMessage(
         currentMessage.metadata.researchState = 'report_generated';
         currentMessage.metadata.reportContent = event.data.content;
         currentMessage.metadata.citations = event.data.citations;
+        currentMessage.metadata.reportFormat = event.data.format || 'markdown';
         return { ...currentMessage, isStreaming: false, finishReason: 'completed' };
+      }
+
+      case 'agent_handoff': {
+        if (!currentMessage.metadata) currentMessage.metadata = {};
+        if (!currentMessage.metadata.agentTransitions) currentMessage.metadata.agentTransitions = [];
+        currentMessage.metadata.agentTransitions.push({
+          from: event.data.from_agent,
+          to: event.data.to_agent,
+          context: event.data.context,
+          timestamp: new Date()
+        });
+        currentMessage.metadata.agent = event.data.to_agent;
+        return { ...currentMessage, isStreaming: true };
+      }
+
+      case 'plan_created': {
+        if (!currentMessage.metadata) currentMessage.metadata = {};
+        currentMessage.metadata.planData = event.data.plan;
+        currentMessage.metadata.planSteps = event.data.steps;
+        currentMessage.metadata.requiresApproval = event.data.approval_required;
+        return { ...currentMessage, isStreaming: true };
       }
 
       case 'done': {
@@ -493,4 +526,29 @@ export function isToolCallComplete(toolCall: ToolCall): boolean {
  */
 export function getIncompleteToolCalls(message: Partial<DeerMessage>): ToolCall[] {
   return (message.toolCalls || []).filter(tc => !isToolCallComplete(tc));
+}
+
+/**
+ * Validates if a string is valid JSON
+ */
+function isValidJSON(str: string): boolean {
+  try {
+    JSON.parse(str);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Enhanced tool call validation with chunk completion check
+ */
+export function isToolCallReadyForExecution(toolCall: ToolCall): boolean {
+  return !!(
+    toolCall.name && 
+    toolCall.args && 
+    typeof toolCall.args === 'object' &&
+    Object.keys(toolCall.args).length > 0 &&
+    (!toolCall.argsChunks || toolCall.argsChunks.length === 0 || isValidJSON(toolCall.argsChunks.join('')))
+  );
 }
