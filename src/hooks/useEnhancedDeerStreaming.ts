@@ -95,22 +95,37 @@ export const useEnhancedDeerStreaming = () => {
 
       console.log('🔗 Connecting to DeerFlow API:', url);
 
+      let eventCount = 0;
+      let lastEventTime = Date.now();
+      const STREAM_TIMEOUT = 30000; // 30 seconds
+
       for await (const { event, data } of fetchStream(url, requestInit)) {
         if (abortControllerRef.current?.signal.aborted) {
+          console.log('🛑 Stream aborted by user');
           break;
         }
 
         try {
+          // Update event tracking
+          eventCount++;
+          lastEventTime = Date.now();
+
           // Parse the SSE data
           let parsedData: any;
           try {
             parsedData = JSON.parse(data);
           } catch (e) {
-            console.warn('Failed to parse SSE data:', data);
+            console.warn('⚠️ Failed to parse SSE data:', data);
             continue;
           }
 
-          console.log(`📨 DeerFlow event: ${event}`, parsedData);
+          console.log(`📨 Event ${eventCount}: ${event || 'unknown'}`, parsedData);
+
+          // Check for stream timeout
+          if (Date.now() - lastEventTime > STREAM_TIMEOUT) {
+            console.warn('⏰ Stream timeout detected - no events for 30 seconds');
+            break;
+          }
 
           // Create the stream event object
           const streamEvent: StreamEvent = event ? 
@@ -241,8 +256,10 @@ export const useEnhancedDeerStreaming = () => {
 
           // Handle report generation
           if ('event' in streamEvent && streamEvent.event === 'report_generated') {
+            console.log('📄 Report generated!', streamEvent.data);
             setReportContent(streamEvent.data.content);
             setActiveResearchTab('report');
+            setResearchPanelOpen(true);
           }
 
           // Merge the event into the current message
@@ -306,22 +323,40 @@ export const useEnhancedDeerStreaming = () => {
         });
       }
 
-      console.log('✅ DeerFlow streaming completed');
+      console.log(`✅ DeerFlow streaming completed successfully - processed ${eventCount} events`);
 
     } catch (error) {
       console.error('❌ DeerFlow streaming error:', error);
       
+      // Enhanced error handling with recovery
+      const isAbortError = error instanceof Error && error.name === 'AbortError';
+      const isNetworkError = error instanceof Error && (
+        error.message.includes('fetch') || 
+        error.message.includes('network') ||
+        error.message.includes('connection')
+      );
+      
       if (messageId) {
+        let errorMessage = currentPartialMessage?.content || '';
+        
+        if (isAbortError) {
+          errorMessage += '\n\n⏹️ Stream was stopped by user.';
+        } else if (isNetworkError) {
+          errorMessage += '\n\n🌐 Network connection issue. Please check your connection and try again.';
+        } else {
+          errorMessage += `\n\n❌ An error occurred: ${error instanceof Error ? error.message : 'Unknown error'}`;
+        }
+        
         updateMessage(messageId, {
-          content: currentPartialMessage?.content || '',
+          content: errorMessage || 'Sorry, there was an error processing your request.',
           isStreaming: false,
-          finishReason: 'error'
+          finishReason: isAbortError ? 'interrupt' : 'error'
         });
-      } else {
-        // Add error message
+      } else if (!isAbortError) {
+        // Only add error message if it wasn't user-initiated abort
         addMessage({
           role: 'assistant',
-          content: `Error: ${error instanceof Error ? error.message : 'Unknown error occurred'}`,
+          content: `❌ Error: ${error instanceof Error ? error.message : 'Unknown error occurred'}`,
           finishReason: 'error'
         });
       }
