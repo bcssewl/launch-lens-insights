@@ -161,10 +161,10 @@ export const useEnhancedDeerStreaming = () => {
             }
           }
 
-          // Handle tool calls - update pending research activities or add new ones
-          if ('event' in streamEvent && streamEvent.event === 'tool_calls') {
+          // Handle legacy tool calls - update pending research activities or add new ones
+          if ('tool_calls' in streamEvent && streamEvent.tool_calls) {
             // Handle array of tool calls
-            const toolCalls = Array.isArray(streamEvent.data) ? streamEvent.data : [streamEvent.data];
+            const toolCalls = Array.isArray(streamEvent.tool_calls) ? streamEvent.tool_calls : [streamEvent.tool_calls];
             
             for (const toolCall of toolCalls) {
               // Try to find a pending research activity that matches this tool call

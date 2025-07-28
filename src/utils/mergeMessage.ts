@@ -28,7 +28,6 @@ export interface ToolCallResult {
 export type StreamEvent = 
   | { event: 'message_chunk'; data: MessageChunk }
   | { event: 'tool_call'; data: { id: string; name: string; args: Record<string, any> } }
-  | { event: 'tool_calls'; data: Array<{ id: string; name: string; args: Record<string, any> }> | { id: string; name: string; args: Record<string, any> } }
   | { event: 'tool_call_chunk'; data: ToolCallChunk }
   | { event: 'tool_call_chunks'; data: ToolCallChunk[] | ToolCallChunk }
   | { event: 'tool_call_result'; data: ToolCallResult & { 
@@ -222,35 +221,6 @@ export function mergeMessage(
         };
       }
 
-      case 'tool_calls': {
-        const toolCallsData = Array.isArray(event.data) ? event.data : [event.data];
-        const existingToolCalls = [...(currentMessage.toolCalls || [])];
-
-        for (const toolCall of toolCallsData) {
-          const existingIndex = existingToolCalls.findIndex(tc => tc.id === toolCall.id);
-          
-          if (existingIndex >= 0) {
-            existingToolCalls[existingIndex] = {
-              ...existingToolCalls[existingIndex],
-              name: toolCall.name,
-              args: toolCall.args
-            };
-          } else {
-            existingToolCalls.push({
-              id: toolCall.id,
-              name: toolCall.name,
-              args: toolCall.args,
-              argsChunks: []
-            });
-          }
-        }
-
-        return {
-          ...currentMessage,
-          toolCalls: existingToolCalls,
-          isStreaming: true
-        };
-      }
 
       case 'tool_call_chunk': {
         const existingToolCalls = [...(currentMessage.toolCalls || [])];
@@ -421,7 +391,8 @@ export function mergeMessage(
             const parsed = JSON.parse(currentMessage.content);
             planSteps = parsed.steps || [];
           } catch (e) {
-            // If parsing fails, try to extract steps from the content
+            // JSON parsing failed, try regex fallback for plain text
+            console.log('🔍 JSON parsing failed for planner content, using regex fallback');
             const stepMatches = currentMessage.content.match(/\d+\.\s+(.+)/g);
             if (stepMatches) {
               planSteps = stepMatches.map(match => match.replace(/^\d+\.\s+/, ''));
@@ -484,7 +455,11 @@ export function finalizeMessage(
     options: partialMessage.options || [],
     metadata: {
       ...partialMessage.metadata,
-      threadId: partialMessage.metadata?.threadId
+      threadId: partialMessage.metadata?.threadId,
+      // Ensure optional fields are properly typed
+      planSteps: partialMessage.metadata?.planSteps,
+      thinkingPhases: partialMessage.metadata?.thinkingPhases,
+      researchState: partialMessage.metadata?.researchState
     }
   };
 }
