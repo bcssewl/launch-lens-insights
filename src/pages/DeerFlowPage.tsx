@@ -1,7 +1,6 @@
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { useDeerFlowStore } from '@/stores/deerFlowStore';
-import { useStreamingChat } from '@/hooks/useStreamingChat';
 import { DeerFlowHeader } from '@/components/deerflow/DeerFlowHeader';
 import { MessageList } from '@/components/deerflow/MessageList';
 import { InputBox } from '@/components/deerflow/InputBox';
@@ -10,7 +9,6 @@ import { DeerFlowSettings } from '@/components/deerflow/DeerFlowSettings';
 
 export default function DeerFlowPage() {
   const { isResearchPanelOpen } = useDeerFlowStore();
-  const { sendMessage } = useStreamingChat();
 
   return (
     <DashboardLayout>
@@ -23,10 +21,10 @@ export default function DeerFlowPage() {
             <ResizablePanel defaultSize={isResearchPanelOpen ? 60 : 100} minSize={40}>
               <div className="h-full flex flex-col">
                 <div className="flex-1 overflow-hidden">
-                  <MessageList onSendMessage={sendMessage} />
+                  <MessageList />
                 </div>
                 <div className="border-t bg-background p-4 flex-shrink-0">
-                  <InputBox onSendMessage={sendMessage} />
+                  <InputBox />
                 </div>
               </div>
             </ResizablePanel>

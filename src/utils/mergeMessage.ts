@@ -24,17 +24,34 @@ export interface ToolCallResult {
   error?: string;
 }
 
-// Discriminated union for type-safe event handling
+// Enhanced discriminated union for DeerFlow API events
 export type StreamEvent = 
   | { event: 'message_chunk'; data: MessageChunk }
   | { event: 'tool_call'; data: { id: string; name: string; args: Record<string, any> } }
   | { event: 'tool_call_chunk'; data: ToolCallChunk }
-  | { event: 'tool_call_result'; data: ToolCallResult }
+  | { event: 'tool_call_result'; data: ToolCallResult & { 
+      result?: {
+        repositories?: Array<{
+          name: string;
+          description: string;
+          url: string;
+          stars: number;
+          image_url?: string;
+        }>;
+        results?: Array<{
+          title: string;
+          snippet: string;
+          url: string;
+          image_url?: string;
+          source?: string;
+        }>;
+      }
+    } }
   | { event: 'thinking'; data: { phase: string; content: string } }
   | { event: 'reasoning'; data: { step: string; content: string } }
   | { event: 'search'; data: { query: string; results?: any[] } }
   | { event: 'visit'; data: { url: string; title?: string; content?: string } }
-  | { event: 'writing_report'; data: {} }
+  | { event: 'writing_report'; data: { progress?: number } }
   | { event: 'report_generated'; data: { content: string; citations?: any[] } }
   | { event: 'done'; data: {} }
   | { event: 'interrupt'; data: {} }

@@ -1,0 +1,281 @@
+/**
+ * @file useEnhancedDeerStreaming.ts
+ * @description Enhanced DeerFlow streaming with proper event handling and store integration
+ */
+
+import { useState, useRef, useCallback } from 'react';
+import { useDeerFlowStore } from '@/stores/deerFlowStore';
+import { mergeMessage, finalizeMessage, StreamEvent } from '@/utils/mergeMessage';
+import { DeerMessage } from '@/stores/deerFlowMessageStore';
+import { fetchStream } from '@/utils/fetchStream';
+
+interface DeerStreamingOptions {
+  maxPlanIterations?: number;
+  maxStepNum?: number;
+  maxSearchResults?: number;
+  autoAcceptedPlan?: boolean;
+  enableBackgroundInvestigation?: boolean;
+  reportStyle?: 'academic' | 'casual' | 'detailed';
+  enableDeepThinking?: boolean;
+}
+
+export const useEnhancedDeerStreaming = () => {
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [currentMessageId, setCurrentMessageId] = useState<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  
+  const {
+    addMessage,
+    updateMessage,
+    existsMessage,
+    addMessageWithId,
+    setIsResponding,
+    setResearchPanelOpen,
+    setActiveResearchTab,
+    addResearchActivity,
+    setReportContent,
+    currentThreadId
+  } = useDeerFlowStore();
+
+  const startDeerFlowStreaming = useCallback(async (
+    question: string,
+    options: DeerStreamingOptions = {}
+  ) => {
+    if (isStreaming) {
+      console.warn('🦌 DeerFlow is already streaming');
+      return;
+    }
+
+    // Create abort controller for cancellation
+    abortControllerRef.current = new AbortController();
+    
+    setIsStreaming(true);
+    setIsResponding(true);
+    
+    console.log('🦌 Starting DeerFlow streaming for:', question);
+
+    // Add user message first
+    addMessage({
+      role: 'user',
+      content: question
+    });
+
+    // Prepare request
+    const requestBody = {
+      messages: [
+        { role: "user", content: question }
+      ],
+      debug: true,
+      thread_id: currentThreadId,
+      max_plan_iterations: options.maxPlanIterations || 1,
+      max_step_num: options.maxStepNum || 5,
+      max_search_results: options.maxSearchResults || 5,
+      auto_accepted_plan: options.autoAcceptedPlan || false,
+      enable_background_investigation: options.enableBackgroundInvestigation || true,
+      report_style: options.reportStyle || "academic",
+      enable_deep_thinking: options.enableDeepThinking || true
+    };
+
+    let currentPartialMessage: Partial<DeerMessage> | null = null;
+    let messageId: string | null = null;
+
+    try {
+      const url = 'https://deer-flow-wrappers.up.railway.app/api/chat/stream';
+      const requestInit: RequestInit = {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+        signal: abortControllerRef.current.signal
+      };
+
+      console.log('🔗 Connecting to DeerFlow API:', url);
+
+      for await (const { event, data } of fetchStream(url, requestInit)) {
+        if (abortControllerRef.current?.signal.aborted) {
+          break;
+        }
+
+        try {
+          // Parse the SSE data
+          let parsedData: any;
+          try {
+            parsedData = JSON.parse(data);
+          } catch (e) {
+            console.warn('Failed to parse SSE data:', data);
+            continue;
+          }
+
+          console.log(`📨 DeerFlow event: ${event}`, parsedData);
+
+          // Create the stream event object
+          const streamEvent: StreamEvent = event ? 
+            { event: event as any, data: parsedData } : 
+            parsedData; // Legacy format
+
+          // Handle agent-specific logic
+          if ('event' in streamEvent && streamEvent.event === 'message_chunk') {
+            const agent = streamEvent.data.agent;
+            if (agent === 'planner' || agent === 'reporter') {
+              setResearchPanelOpen(true);
+              if (agent === 'reporter') {
+                setActiveResearchTab('report');
+              }
+            }
+          } else if ('agent' in streamEvent && streamEvent.agent) {
+            const agent = streamEvent.agent;
+            if (agent === 'planner' || agent === 'reporter') {
+              setResearchPanelOpen(true);
+              if (agent === 'reporter') {
+                setActiveResearchTab('report');
+              }
+            }
+          }
+
+          // Handle tool calls - add to research activities
+          if ('event' in streamEvent && streamEvent.event === 'tool_call') {
+            addResearchActivity({
+              toolType: getToolType(streamEvent.data.name),
+              title: `Using tool: ${streamEvent.data.name}`,
+              content: streamEvent.data.args,
+              status: 'running'
+            });
+          }
+
+          // Handle tool results - update research activities
+          if ('event' in streamEvent && streamEvent.event === 'tool_call_result') {
+            const result = streamEvent.data.result;
+            
+            // Handle GitHub repositories
+            if (result?.repositories) {
+              addResearchActivity({
+                toolType: 'web-search',
+                title: 'GitHub Trending Repositories',
+                content: result.repositories,
+                status: 'completed'
+              });
+            }
+
+            // Handle search results
+            if (result?.results) {
+              addResearchActivity({
+                toolType: 'web-search', 
+                title: 'Search Results',
+                content: result.results,
+                status: 'completed'
+              });
+            }
+          }
+
+          // Handle report generation
+          if ('event' in streamEvent && streamEvent.event === 'report_generated') {
+            setReportContent(streamEvent.data.content);
+            setActiveResearchTab('report');
+          }
+
+          // Merge the event into the current message
+          currentPartialMessage = mergeMessage(currentPartialMessage, streamEvent);
+
+          // Create or update message in store
+          if (!messageId) {
+            messageId = crypto.randomUUID();
+            setCurrentMessageId(messageId);
+            
+            const initialMessage = finalizeMessage(currentPartialMessage, messageId);
+            addMessageWithId({
+              ...initialMessage,
+              isStreaming: true,
+              metadata: {
+                ...initialMessage.metadata,
+                threadId: currentThreadId
+              }
+            });
+          } else {
+            // Update existing message
+            if (existsMessage(messageId)) {
+              updateMessage(messageId, currentPartialMessage);
+            }
+          }
+
+        } catch (parseError) {
+          console.warn('Failed to process DeerFlow event:', parseError);
+        }
+      }
+
+      // Finalize the message when streaming ends
+      if (messageId && currentPartialMessage) {
+        const finalMessage = finalizeMessage(currentPartialMessage, messageId);
+        updateMessage(messageId, {
+          ...finalMessage,
+          isStreaming: false
+        });
+      }
+
+      console.log('✅ DeerFlow streaming completed');
+
+    } catch (error) {
+      console.error('❌ DeerFlow streaming error:', error);
+      
+      if (messageId) {
+        updateMessage(messageId, {
+          content: currentPartialMessage?.content || '',
+          isStreaming: false,
+          finishReason: 'error'
+        });
+      } else {
+        // Add error message
+        addMessage({
+          role: 'assistant',
+          content: `Error: ${error instanceof Error ? error.message : 'Unknown error occurred'}`,
+          finishReason: 'error'
+        });
+      }
+    } finally {
+      setIsStreaming(false);
+      setIsResponding(false);
+      setCurrentMessageId(null);
+      abortControllerRef.current = null;
+    }
+  }, [
+    isStreaming,
+    addMessage,
+    updateMessage,
+    existsMessage,
+    addMessageWithId,
+    setIsResponding,
+    setResearchPanelOpen,
+    setActiveResearchTab,
+    addResearchActivity,
+    setReportContent,
+    currentThreadId
+  ]);
+
+  const stopStreaming = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      console.log('⏹️ DeerFlow streaming stopped by user');
+    }
+  }, []);
+
+  return {
+    startDeerFlowStreaming,
+    stopStreaming,
+    isStreaming,
+    currentMessageId
+  };
+};
+
+// Helper function to determine tool type from tool name
+function getToolType(toolName: string): 'web-search' | 'crawl' | 'python' | 'retriever' {
+  if (toolName.includes('search') || toolName.includes('github')) {
+    return 'web-search';
+  }
+  if (toolName.includes('crawl') || toolName.includes('visit')) {
+    return 'crawl';
+  }
+  if (toolName.includes('python') || toolName.includes('code')) {
+    return 'python';
+  }
+  return 'retriever';
+}

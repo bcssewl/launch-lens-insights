@@ -5,7 +5,7 @@ import { MessageItem } from "./MessageItem";
 import { ConversationStarter } from "./ConversationStarter";
 
 interface MessageListProps {
-  onSendMessage: (message: string) => void;
+  onSendMessage?: (message: string) => void;
 }
 
 export const MessageList = ({ onSendMessage }: MessageListProps) => {

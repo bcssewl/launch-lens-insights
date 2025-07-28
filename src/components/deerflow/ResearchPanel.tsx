@@ -188,6 +188,78 @@ const ActivitiesTab = ({ activities }: { activities: any[] }) => {
 };
 
 const ActivityCard = ({ activity, toolIcon, statusIcon }: any) => {
+  const renderGitHubRepositories = (repositories: any[]) => (
+    <div className="space-y-2">
+      {repositories.map((repo: any, index: number) => (
+        <div key={index} className="p-3 bg-muted/30 rounded-lg">
+          <div className="flex gap-3">
+            {repo.image_url && (
+              <img 
+                src={repo.image_url} 
+                alt={repo.name}
+                className="w-12 h-12 rounded-md object-cover flex-shrink-0"
+              />
+            )}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between gap-2">
+                <h5 className="font-medium text-sm truncate">{repo.name}</h5>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <Badge variant="secondary" className="text-xs">
+                    ⭐ {repo.stars}
+                  </Badge>
+                  <Button variant="ghost" size="sm" asChild>
+                    <a href={repo.url} target="_blank" rel="noopener noreferrer">
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </Button>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                {repo.description}
+              </p>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
+  const renderSearchResults = (results: any[]) => (
+    <div className="space-y-2">
+      {results.map((result: any, index: number) => (
+        <div key={index} className="p-3 bg-muted/30 rounded-lg">
+          <div className="flex gap-3">
+            {result.image_url && (
+              <img 
+                src={result.image_url} 
+                alt={result.title}
+                className="w-12 h-12 rounded-md object-cover flex-shrink-0"
+              />
+            )}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between gap-2">
+                <h5 className="font-medium text-sm line-clamp-2">{result.title}</h5>
+                <Button variant="ghost" size="sm" asChild>
+                  <a href={result.url} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                {result.snippet}
+              </p>
+              {result.source && (
+                <Badge variant="outline" className="text-xs mt-2">
+                  {result.source}
+                </Badge>
+              )}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
   return (
     <Card className="border-muted/50">
       <CardContent className="p-4">
@@ -200,21 +272,19 @@ const ActivityCard = ({ activity, toolIcon, statusIcon }: any) => {
         </div>
 
         <div className="space-y-3">
+          {/* Handle GitHub repositories */}
+          {Array.isArray(activity.content) && activity.content[0]?.name && activity.content[0]?.stars !== undefined && (
+            renderGitHubRepositories(activity.content)
+          )}
+          
+          {/* Handle search results */}
+          {Array.isArray(activity.content) && activity.content[0]?.title && activity.content[0]?.snippet && (
+            renderSearchResults(activity.content)
+          )}
+
+          {/* Legacy web-search results */}
           {activity.toolType === "web-search" && activity.content?.results && (
-            <div className="space-y-2">
-              {activity.content.results.map((result: any, index: number) => (
-                <div key={index} className="p-3 bg-muted/30 rounded-lg">
-                  <h5 className="font-medium text-sm mb-1">{result.title}</h5>
-                  <p className="text-xs text-muted-foreground mb-2">{result.snippet}</p>
-                  <Button variant="ghost" size="sm" asChild>
-                    <a href={result.url} target="_blank" rel="noopener noreferrer">
-                      <ExternalLink className="h-3 w-3 mr-1" />
-                      Open
-                    </a>
-                  </Button>
-                </div>
-              ))}
-            </div>
+            renderSearchResults(activity.content.results)
           )}
 
           {activity.toolType === "crawl" && activity.content?.screenshot && (
@@ -254,6 +324,18 @@ const ActivityCard = ({ activity, toolIcon, statusIcon }: any) => {
                 </div>
               ))}
             </div>
+          )}
+
+          {/* Generic content fallback */}
+          {activity.content && 
+            !Array.isArray(activity.content) && 
+            !activity.content.results && 
+            !activity.content.screenshot && 
+            !activity.content.output && 
+            typeof activity.content === 'object' && (
+            <pre className="text-xs bg-muted p-2 rounded overflow-x-auto">
+              {JSON.stringify(activity.content, null, 2)}
+            </pre>
           )}
         </div>
 
