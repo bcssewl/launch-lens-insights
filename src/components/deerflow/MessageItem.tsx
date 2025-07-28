@@ -195,9 +195,16 @@ const PlannerMessage = ({ message, onFeedback }: PlannerMessageProps) => {
                 <div className="space-y-2">
                   <h4 className="text-sm font-medium">Steps:</h4>
                   <ol className="list-decimal list-inside space-y-1">
-                    {(parsedContent.steps || steps).map((step: string, index: number) => (
+                    {(parsedContent.steps || steps).map((step: any, index: number) => (
                       <li key={index} className="text-sm text-muted-foreground">
-                        {step}
+                        {typeof step === 'string' ? step : (
+                          <div>
+                            <strong>{step.title || step.description || 'Step'}</strong>
+                            {step.description && step.title && (
+                              <div className="text-xs mt-1">{step.description}</div>
+                            )}
+                          </div>
+                        )}
                       </li>
                     ))}
                   </ol>
