@@ -29,9 +29,9 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
   };
 
   return (
-    <div className="h-full flex flex-col">
-      <ScrollArea ref={scrollAreaRef} className="flex-1 px-4">
-        <div className="py-4">
+    <div className="h-full">
+      <ScrollArea ref={scrollAreaRef} className="h-full px-4">
+        <div className="py-4 pb-8">
           {messages.length === 0 ? (
             <ConversationStarter onSendMessage={handleSendMessage} />
           ) : (
