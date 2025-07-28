@@ -19,14 +19,14 @@ export default function DeerFlowPage() {
           <ResizablePanelGroup direction="horizontal" className="h-full">
             {/* Chat Panel */}
             <ResizablePanel defaultSize={isResearchPanelOpen ? 60 : 100} minSize={40}>
-              <div className="h-full flex flex-col relative">
-                {/* Messages area - scrollable */}
-                <div className="flex-1 overflow-hidden">
+              <div className="h-full relative">
+                {/* Messages area - with bottom padding for input */}
+                <div className="h-full pb-20 overflow-hidden">
                   <MessageList />
                 </div>
                 
-                {/* Input area - fixed at bottom */}
-                <div className="border-t bg-background p-4 flex-shrink-0 sticky bottom-0 z-10">
+                {/* Input area - absolutely positioned at bottom */}
+                <div className="absolute bottom-0 left-0 right-0 border-t bg-background p-4 z-10">
                   <InputBox />
                 </div>
               </div>
