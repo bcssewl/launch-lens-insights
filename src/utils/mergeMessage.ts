@@ -54,7 +54,7 @@ export type StreamEvent =
   | { event: 'writing_report'; data: { progress?: number } }
   | { event: 'report_generated'; data: { content: string; citations?: any[] } }
   | { event: 'done'; data: {} }
-  | { event: 'interrupt'; data: {} }
+  | { event: 'interrupt'; data: { options?: Array<{ text: string; value: string }> } }
   | { event: 'error'; data: { error: string } }
   | {
       // Legacy DeerFlow API format for backward compatibility
@@ -321,10 +321,21 @@ export function mergeMessage(
       }
 
       case 'interrupt': {
+        // Default options for planner messages that are interrupted
+        const defaultOptions = [
+          { text: 'Accept', value: 'accepted' },
+          { text: 'Edit', value: 'edit' }
+        ];
+        
+        // Use provided options or defaults for planner messages
+        const options = event.data.options || 
+          (currentMessage.metadata?.agent === 'planner' ? defaultOptions : undefined);
+        
         return {
           ...currentMessage,
           finishReason: 'interrupt',
-          isStreaming: false
+          isStreaming: false,
+          options: options
         };
       }
 
