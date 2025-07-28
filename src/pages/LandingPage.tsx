@@ -1,4 +1,5 @@
 
+import React from "react";
 import { LandingNavbar } from "@/components/LandingNavbar";
 import { TestimonialsSectionDemo } from "@/components/ui/testimonials-with-marquee";
 import { HeroSection } from "@/components/landing/HeroSection";

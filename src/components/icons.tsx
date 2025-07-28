@@ -1,4 +1,5 @@
 
+import React from "react";
 import { Lightbulb } from "lucide-react"; // Or Brain
 import { useSidebar } from "@/components/ui/sidebar";
 
