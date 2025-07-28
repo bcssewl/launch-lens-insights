@@ -50,6 +50,7 @@ export type StreamEvent =
       }
     } }
   | { event: 'thinking'; data: { phase: string; content: string } }
+  | { event: 'reasoning_content'; data: { content: string; agent?: string; id?: string; role?: string; thread_id?: string } }
   | { event: 'reasoning'; data: { step: string; content: string } }
   | { event: 'search'; data: { query: string; results?: any[] } }
   | { event: 'visit'; data: { url: string; title?: string; content?: string } }
@@ -338,6 +339,32 @@ export function mergeMessage(
         return {
           ...currentMessage,
           toolCalls: existingToolCalls,
+          isStreaming: true
+        };
+      }
+
+      case 'reasoning_content': {
+        if (!currentMessage.metadata) currentMessage.metadata = {};
+        if (!currentMessage.metadata.reasoningContentChunks) currentMessage.metadata.reasoningContentChunks = [];
+        
+        const newContent = event.data.content || '';
+        const agent = event.data.agent || currentMessage.metadata?.agent;
+        
+        console.log(`🧠 Merging reasoning content from ${agent}: "${newContent.substring(0, 50)}..."`);
+        
+        // Add to chunks for streaming
+        currentMessage.metadata.reasoningContentChunks.push(newContent);
+        
+        // Update the full reasoning content
+        const fullReasoningContent = currentMessage.metadata.reasoningContentChunks.join('');
+        currentMessage.metadata.reasoningContent = fullReasoningContent;
+        
+        return {
+          ...currentMessage,
+          metadata: {
+            ...currentMessage.metadata,
+            agent: agent
+          },
           isStreaming: true
         };
       }

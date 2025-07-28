@@ -370,6 +370,12 @@ export const useEnhancedDeerStreaming = () => {
             setResearchPanelOpen(true);
           }
 
+          // Handle reasoning content streaming
+          if ('event' in streamEvent && streamEvent.event === 'reasoning_content') {
+            console.log('🧠 Reasoning content chunk received:', streamEvent.data);
+            // This will be handled by mergeMessage function to update the message metadata
+          }
+
           // Create or update message in store
           if (!messageIdRef.current) {
             messageIdRef.current = crypto.randomUUID();

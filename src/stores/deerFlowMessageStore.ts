@@ -37,6 +37,7 @@ export interface DeerMessage {
     steps?: string[];
     audioUrl?: string;
     reasoningContent?: string;
+    reasoningContentChunks?: string[]; // For streaming reasoning content
     researchState?: 'researching' | 'generating_report' | 'report_generated';
     threadId?: string;
     
