@@ -207,6 +207,30 @@ export const useEnhancedDeerStreaming = () => {
               } else {
                 console.log('🔄 Reporter providing direct answer - not opening research panel');
               }
+              
+              // Check if accumulated content looks like a report and extract it
+              // We do this during streaming to provide real-time updates
+              if (currentPartialMessageRef.current?.content) {
+                const accumulatedContent = currentPartialMessageRef.current.content;
+                if (accumulatedContent.length > 200 && (
+                  accumulatedContent.includes('# ') || // Has headers
+                  accumulatedContent.includes('## ') ||
+                  accumulatedContent.includes('**') || // Has bold text
+                  accumulatedContent.includes('Analysis') ||
+                  accumulatedContent.includes('Report') ||
+                  accumulatedContent.includes('Summary') ||
+                  accumulatedContent.includes('Executive Summary') ||
+                  accumulatedContent.includes('Introduction') ||
+                  accumulatedContent.includes('Background') ||
+                  accumulatedContent.includes('Findings') ||
+                  accumulatedContent.includes('Conclusion')
+                )) {
+                  console.log('📄 Live report content detected - updating research panel');
+                  setReportContent(accumulatedContent);
+                  setActiveResearchTab('report');
+                  setResearchPanelOpen(true);
+                }
+              }
             } else if (agent === 'coordinator' || agent === 'assistant') {
               // Close research panel for final answers
               console.log(`📝 Final answer from ${agent}`);
