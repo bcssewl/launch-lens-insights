@@ -85,6 +85,12 @@ export const EnhancedToolExecutionDisplay = ({
   };
 
   const getToolConfig = (toolName: string) => {
+    if (!toolName) return { 
+      icon: Database, 
+      color: 'text-gray-600', 
+      bg: 'bg-gray-50 border-gray-200 dark:bg-gray-950/20 dark:border-gray-800',
+      label: 'Unknown Tool' 
+    };
     const name = toolName.toLowerCase();
     if (name.includes('search')) {
       return name.includes('github') ? TOOL_CONFIG['github-search'] : TOOL_CONFIG['web-search'];
