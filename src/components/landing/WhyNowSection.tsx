@@ -1,3 +1,4 @@
+import React from "react";
 import { TrendingUp, Clock, DollarSign, Users } from "lucide-react";
 
 export const WhyNowSection = () => {
