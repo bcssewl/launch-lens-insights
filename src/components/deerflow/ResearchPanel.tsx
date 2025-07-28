@@ -27,7 +27,7 @@ import { useDeerFlowStore } from "@/stores/deerFlowStore";
 import { useStreamingChat } from "@/hooks/useStreamingChat";
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { oneDark } from "react-syntax-highlighter/dist/cjs/styles/prism";
+import { tomorrow } from "react-syntax-highlighter/dist/esm/styles/prism";
 
 export const ResearchPanel = () => {
   const {
@@ -305,7 +305,7 @@ const ActivityCard = ({ activity, toolIcon, statusIcon }: any) => {
             <div className="space-y-2">
               <SyntaxHighlighter
                 language="python"
-                style={oneDark}
+                style={tomorrow}
                 className="text-xs rounded-lg"
               >
                 {activity.content.output}
