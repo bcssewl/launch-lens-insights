@@ -36,7 +36,8 @@ export const useEnhancedDeerStreaming = () => {
     updateResearchActivity,
     setReportContent,
     currentThreadId,
-    researchActivities
+    researchActivities,
+    settings
   } = useDeerFlowStore();
 
   const startDeerFlowStreaming = useCallback(async (
@@ -62,20 +63,20 @@ export const useEnhancedDeerStreaming = () => {
       content: question
     });
 
-    // Prepare request
+    // Prepare request using settings from store with options override
     const requestBody = {
       messages: [
         { role: "user", content: question }
       ],
       debug: true,
       thread_id: currentThreadId,
-      max_plan_iterations: options.maxPlanIterations || 1,
-      max_step_num: options.maxStepNum || 5,
-      max_search_results: options.maxSearchResults || 5,
-      auto_accepted_plan: options.autoAcceptedPlan || false,
-      enable_background_investigation: options.enableBackgroundInvestigation || true,
-      report_style: options.reportStyle || "academic",
-      enable_deep_thinking: options.enableDeepThinking || true
+      max_plan_iterations: options.maxPlanIterations ?? settings.maxPlanIterations,
+      max_step_num: options.maxStepNum ?? settings.maxStepNum,
+      max_search_results: options.maxSearchResults ?? settings.maxSearchResults,
+      auto_accepted_plan: options.autoAcceptedPlan ?? settings.autoAcceptedPlan,
+      enable_background_investigation: options.enableBackgroundInvestigation ?? settings.backgroundInvestigation,
+      report_style: options.reportStyle ?? settings.reportStyle,
+      enable_deep_thinking: options.enableDeepThinking ?? settings.deepThinking
     };
 
     let currentPartialMessage: Partial<DeerMessage> | null = null;
