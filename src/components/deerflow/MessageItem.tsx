@@ -8,7 +8,8 @@ import { motion } from "motion/react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Play, Download, Check, X } from "lucide-react";
+import { Play, Download, Check, X, Bot } from "lucide-react";
+import MarkdownRenderer from "@/components/assistant/MarkdownRenderer";
 import { DeerMessage } from "@/stores/deerFlowStore";
 import UserAvatar from "@/components/assistant/UserAvatar";
 import AIAvatar from "@/components/assistant/AIAvatar";
@@ -52,8 +53,10 @@ export const MessageItem = ({ message, 'aria-posinset': ariaPosinset, 'aria-sets
           return <ResearchMessage message={message} />;
         } else if (message.metadata?.audioUrl) {
           return <PodcastMessage message={message} />;
+        } else {
+          // Coordinator/assistant messages - show the main answer prominently
+          return <CoordinatorMessage message={message} />;
         }
-        return <AssistantMessage content={message.content} />;
       
       default:
         return <div className="text-muted-foreground">Unknown message type</div>;
@@ -120,7 +123,9 @@ const AssistantMessage = ({ content }: { content: string }) => (
     <div className="flex items-start space-x-3 max-w-[80%]">
       <AIAvatar className="w-8 h-8" />
       <div className="bg-muted rounded-2xl px-4 py-3 shadow-sm">
-        <p className="text-sm leading-relaxed">{content}</p>
+        <div className="text-sm leading-relaxed whitespace-pre-wrap">
+          {content || 'No content available yet...'}
+        </div>
       </div>
     </div>
   </div>
@@ -274,6 +279,63 @@ const PodcastMessage = ({ message }: { message: DeerMessage }) => {
                   Download
                 </Button>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+const CoordinatorMessage = ({ message }: { message: DeerMessage }) => {
+  const agent = message.metadata?.agent || 'assistant';
+  const isCoordinator = agent === 'coordinator' || agent === 'assistant';
+  
+  return (
+    <div className="flex justify-start mb-4">
+      <div className="flex items-start space-x-3 max-w-[90%]">
+        <AIAvatar className="w-8 h-8" />
+        <Card className={`w-full ${isCoordinator ? 'border-primary/20 bg-primary/5' : 'bg-muted/50'}`}>
+          <CardContent className="p-4">
+            {/* Agent indicator for non-standard agents */}
+            {agent !== 'assistant' && (
+              <Badge variant="outline" className="mb-3 text-xs">
+                <Bot className="h-3 w-3 mr-1" />
+                {agent}
+              </Badge>
+            )}
+            
+            {/* Main content with markdown rendering */}
+            <div className="space-y-3">
+              {message.content ? (
+                <MarkdownRenderer content={message.content} />
+              ) : (
+                <div className="text-muted-foreground text-sm italic">
+                  {message.isStreaming ? 'Thinking...' : 'No response content available'}
+                </div>
+              )}
+              
+              {/* Show streaming indicator */}
+              {message.isStreaming && (
+                <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+                  <div className="flex space-x-1">
+                    <div className="w-1 h-1 bg-primary rounded-full animate-pulse" />
+                    <div className="w-1 h-1 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
+                    <div className="w-1 h-1 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
+                  </div>
+                  <span>Responding...</span>
+                </div>
+              )}
+              
+              {/* Tool calls if any */}
+              {message.toolCalls && message.toolCalls.length > 0 && (
+                <div className="mt-4">
+                  <ToolExecutionDisplay
+                    toolCalls={message.toolCalls}
+                    isStreaming={message.isStreaming}
+                  />
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
