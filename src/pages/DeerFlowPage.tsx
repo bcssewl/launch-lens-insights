@@ -14,16 +14,20 @@ export default function DeerFlowPage() {
 
   return (
     <DashboardLayout>
-      <div className="h-screen flex flex-col bg-background">
+      <div className="h-full flex flex-col bg-background">
         <DeerFlowHeader />
 
-        <div className="flex-1">
+        <div className="flex-1 overflow-hidden">
           <ResizablePanelGroup direction="horizontal" className="h-full">
             {/* Chat Panel */}
             <ResizablePanel defaultSize={isResearchPanelOpen ? 60 : 100} minSize={40}>
               <div className="h-full flex flex-col">
-                <MessageList onSendMessage={sendMessage} />
-                <InputBox onSendMessage={sendMessage} />
+                <div className="flex-1 overflow-hidden">
+                  <MessageList onSendMessage={sendMessage} />
+                </div>
+                <div className="border-t bg-background p-4 flex-shrink-0">
+                  <InputBox onSendMessage={sendMessage} />
+                </div>
               </div>
             </ResizablePanel>
 

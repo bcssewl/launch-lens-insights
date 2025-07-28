@@ -23,16 +23,18 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
   }, [messages]);
 
   return (
-    <ScrollArea ref={scrollAreaRef} className="flex-1 p-4">
-      {messages.length === 0 ? (
-        <ConversationStarter onSendMessage={onSendMessage} />
-      ) : (
-        <div className="space-y-4 max-w-4xl mx-auto">
-          {messages.map((message) => (
-            <MessageItem key={message.id} message={message} />
-          ))}
-        </div>
-      )}
+    <ScrollArea ref={scrollAreaRef} className="h-full w-full">
+      <div className="p-4">
+        {messages.length === 0 ? (
+          <ConversationStarter onSendMessage={onSendMessage} />
+        ) : (
+          <div className="space-y-4 max-w-4xl mx-auto">
+            {messages.map((message) => (
+              <MessageItem key={message.id} message={message} />
+            ))}
+          </div>
+        )}
+      </div>
     </ScrollArea>
   );
 };
