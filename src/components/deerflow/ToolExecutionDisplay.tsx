@@ -78,7 +78,7 @@ export const ToolExecutionDisplay: React.FC<ToolExecutionDisplayProps> = ({
         const status = getToolStatus(toolCall);
         const IconComponent = getToolIcon(toolCall.name);
         const isExpanded = expandedTools.has(toolCall.id);
-        const hasDetails = toolCall.result || toolCall.error || Object.keys(toolCall.args).length > 0;
+        const hasDetails = toolCall.result || toolCall.error || Object.keys(toolCall.args ?? {}).length > 0;
 
         return (
           <Card key={toolCall.id} className="p-3 bg-muted/30">
