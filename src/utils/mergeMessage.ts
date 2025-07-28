@@ -28,6 +28,7 @@ export interface ToolCallResult {
 export type StreamEvent = 
   | { event: 'message_chunk'; data: MessageChunk }
   | { event: 'tool_call'; data: { id: string; name: string; args: Record<string, any> } }
+  | { event: 'tool_calls'; data: { tool_calls: Array<{ id: string; name: string; args: Record<string, any> }> } }
   | { event: 'tool_call_chunk'; data: ToolCallChunk }
   | { event: 'tool_call_chunks'; data: ToolCallChunk[] | ToolCallChunk }
   | { event: 'tool_call_result'; data: ToolCallResult & { 
@@ -221,6 +222,24 @@ export function mergeMessage(
         };
       }
 
+      case 'tool_calls': {
+        console.log('🔧 Processing tool_calls (plural) event:', event.data);
+        const newToolCalls = event.data.tool_calls?.map((call: any) => ({
+          id: call.id || `tool_${Date.now()}`,
+          name: call.name || 'unknown',
+          args: call.args || {},
+          argsChunks: []
+        })) || [];
+        
+        return {
+          ...currentMessage,
+          toolCalls: [
+            ...(currentMessage.toolCalls || []),
+            ...newToolCalls
+          ],
+          isStreaming: true
+        };
+      }
 
       case 'tool_call_chunk': {
         const existingToolCalls = [...(currentMessage.toolCalls || [])];

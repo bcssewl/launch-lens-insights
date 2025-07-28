@@ -182,7 +182,8 @@ export const useEnhancedDeerStreaming = () => {
           // Handle agent-specific logic and UI management
           if ('event' in streamEvent && streamEvent.event === 'message_chunk') {
             const agent = streamEvent.data.agent;
-            console.log(`🤖 Message chunk from agent: ${agent}, content: "${streamEvent.data.content?.substring(0, 50)}..."`);
+            const content = streamEvent.data.content || '';
+            console.log(`🤖 Message chunk from agent: ${agent}, content: "${content.substring(0, 50)}..."`);
             
             // Context-aware panel management
             if (agent === 'planner') {
@@ -203,7 +204,8 @@ export const useEnhancedDeerStreaming = () => {
             }
           } else if ('agent' in streamEvent && streamEvent.agent) {
             const agent = streamEvent.agent;
-            console.log(`🤖 Legacy format - agent: ${agent}`);
+            const content = streamEvent.content || '';
+            console.log(`🤖 Legacy format - agent: ${agent}, content: "${content.substring(0, 50)}..."`);
             
             // Context-aware panel management for legacy format
             if (agent === 'planner') {
@@ -216,6 +218,12 @@ export const useEnhancedDeerStreaming = () => {
                 setActiveResearchTab('report');
               }
             }
+          }
+
+          // Handle tool_calls event specifically
+          if ('event' in streamEvent && streamEvent.event === 'tool_calls') {
+            console.log('🔧 Processing tool_calls (plural) event:', streamEvent.data);
+            // This will be handled by mergeMessage function now
           }
 
           // Handle legacy tool calls - update pending research activities or add new ones
