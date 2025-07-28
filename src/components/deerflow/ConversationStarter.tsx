@@ -1,3 +1,4 @@
+import React from "react";
 import { motion } from "motion/react";
 import { Card, CardContent } from "@/components/ui/card";
 import { MessageSquare, Search, BarChart3, Lightbulb } from "lucide-react";
