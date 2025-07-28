@@ -30,7 +30,7 @@ export const ThoughtBlock: React.FC<ThoughtBlockProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [hasAutoCollapsed, setHasAutoCollapsed] = useState(false);
 
-  // Determine if we're in thinking phase
+  // Determine if we're in thinking phase - simplified logic
   const isThinking = reasoningContent && !hasMainContent;
   
   // Smart auto-expand/collapse logic
