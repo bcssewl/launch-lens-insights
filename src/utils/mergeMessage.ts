@@ -1,6 +1,6 @@
 /**
  * @file mergeMessage.ts
- * @description Robust message merging logic from original DeerFlow
+ * @description Robust message merging logic for DeerFlow API
  */
 
 import { DeerMessage, ToolCall } from '@/stores/deerFlowMessageStore';
@@ -25,19 +25,29 @@ export interface ToolCallResult {
 }
 
 export interface StreamEvent {
-  event: 'message_chunk' | 'tool_call' | 'tool_call_chunk' | 'tool_call_result' | 'interrupt' | 'done' | 'error';
-  data: MessageChunk | ToolCallChunk | ToolCallResult | { error: string } | {};
+  event?: 'message_chunk' | 'tool_call' | 'tool_call_chunk' | 'tool_call_result' | 'interrupt' | 'done' | 'error';
+  data?: MessageChunk | ToolCallChunk | ToolCallResult | { error: string } | {};
+  // DeerFlow API format
+  thread_id?: string;
+  agent?: string;
+  id?: string;
+  role?: string;
+  content?: string;
+  tool_calls?: any[];
+  tool_call_chunks?: any[];
+  finish_reason?: string;
 }
 
 /**
  * Merges streaming events into a message object
- * Based on the original DeerFlow mergeMessage function
+ * Handles DeerFlow API format
  */
 export function mergeMessage(
   currentMessage: Partial<DeerMessage> | null,
   event: StreamEvent
 ): Partial<DeerMessage> {
-  console.log('🔄 DeerFlow Event:', event.event, event.data);
+  console.log('🔄 DeerFlow Event:', event);
+
   // Initialize message if it doesn't exist
   if (!currentMessage) {
     currentMessage = {
@@ -49,150 +59,164 @@ export function mergeMessage(
     };
   }
 
-  switch (event.event) {
-    case 'message_chunk': {
-      const chunk = event.data as MessageChunk;
-      return {
-        ...currentMessage,
-        content: (currentMessage.content || '') + (chunk.content || ''),
-        role: chunk.role || currentMessage.role,
-        metadata: {
-          ...currentMessage.metadata,
-          agent: chunk.agent || currentMessage.metadata?.agent
-        },
-        isStreaming: true
-      };
-    }
-
-    case 'tool_call': {
-      const toolCall = event.data as ToolCallChunk & { name: string; args: Record<string, any> };
-      const newToolCall: ToolCall = {
-        id: toolCall.id,
-        name: toolCall.name,
-        args: toolCall.args,
-        argsChunks: []
-      };
-
-      const existingToolCalls = currentMessage.toolCalls || [];
-      const existingIndex = existingToolCalls.findIndex(tc => tc.id === toolCall.id);
-
-      if (existingIndex >= 0) {
-        // Update existing tool call
-        existingToolCalls[existingIndex] = {
-          ...existingToolCalls[existingIndex],
-          ...newToolCall
-        };
-      } else {
-        // Add new tool call
-        existingToolCalls.push(newToolCall);
-      }
-
-      return {
-        ...currentMessage,
-        toolCalls: existingToolCalls,
-        isStreaming: true
-      };
-    }
-
-    case 'tool_call_chunk': {
-      const chunk = event.data as ToolCallChunk;
-      const existingToolCalls = [...(currentMessage.toolCalls || [])];
-      const toolCallIndex = existingToolCalls.findIndex(tc => tc.id === chunk.id);
-
-      if (toolCallIndex >= 0) {
-        const existingToolCall = existingToolCalls[toolCallIndex];
-        
-        // Initialize argsChunks if not present
-        if (!existingToolCall.argsChunks) {
-          existingToolCall.argsChunks = [];
-        }
-
-        // Add chunk to argsChunks array
-        if (chunk.args) {
-          existingToolCall.argsChunks.push(chunk.args);
-          
-          // Try to reconstruct complete args from chunks
-          const completeArgsString = existingToolCall.argsChunks.join('');
-          try {
-            existingToolCall.args = JSON.parse(completeArgsString);
-          } catch (e) {
-            // Args not complete yet, keep accumulating
-          }
-        }
-
-        // Update name if provided
-        if (chunk.name) {
-          existingToolCall.name = chunk.name;
-        }
-
-        existingToolCalls[toolCallIndex] = existingToolCall;
-      } else {
-        // Create new tool call for chunk
-        const newToolCall: ToolCall = {
-          id: chunk.id,
-          name: chunk.name || '',
-          args: {},
-          argsChunks: chunk.args ? [chunk.args] : []
-        };
-        existingToolCalls.push(newToolCall);
-      }
-
-      return {
-        ...currentMessage,
-        toolCalls: existingToolCalls,
-        isStreaming: true
-      };
-    }
-
-    case 'tool_call_result': {
-      const result = event.data as ToolCallResult;
-      const existingToolCalls = [...(currentMessage.toolCalls || [])];
-      const toolCallIndex = existingToolCalls.findIndex(tc => tc.id === result.id);
-
-      if (toolCallIndex >= 0) {
-        existingToolCalls[toolCallIndex] = {
-          ...existingToolCalls[toolCallIndex],
-          result: result.result,
-          error: result.error
-        };
-      }
-
-      return {
-        ...currentMessage,
-        toolCalls: existingToolCalls,
-        isStreaming: true
-      };
-    }
-
-    case 'interrupt': {
-      return {
-        ...currentMessage,
-        finishReason: 'interrupt',
-        isStreaming: false
-      };
-    }
-
-    case 'done': {
-      return {
-        ...currentMessage,
-        finishReason: 'completed',
-        isStreaming: false
-      };
-    }
-
-    case 'error': {
-      const errorData = event.data as { error: string };
-      return {
-        ...currentMessage,
-        content: (currentMessage.content || '') + `\n\n**Error:** ${errorData.error}`,
-        isStreaming: false,
-        finishReason: 'interrupt'
-      };
-    }
-
-    default:
-      return currentMessage;
+  // Handle DeerFlow API format directly
+  if (event.agent) {
+    currentMessage.metadata = {
+      ...currentMessage.metadata,
+      agent: event.agent
+    };
   }
+
+  if (event.content) {
+    currentMessage.content = (currentMessage.content || '') + event.content;
+  }
+
+  if (event.tool_call_chunks && event.tool_call_chunks.length > 0) {
+    const existingToolCalls = [...(currentMessage.toolCalls || [])];
+    
+    for (const chunk of event.tool_call_chunks) {
+      if (chunk.name && chunk.id) {
+        // This is a new tool call
+        const existingIndex = existingToolCalls.findIndex(tc => tc.id === chunk.id);
+        if (existingIndex >= 0) {
+          existingToolCalls[existingIndex].name = chunk.name;
+        } else {
+          existingToolCalls.push({
+            id: chunk.id,
+            name: chunk.name,
+            args: {},
+            argsChunks: []
+          });
+        }
+      } else if (chunk.args && chunk.id) {
+        // This is argument data for existing tool call
+        const existingIndex = existingToolCalls.findIndex(tc => tc.id === chunk.id);
+        if (existingIndex >= 0) {
+          if (!existingToolCalls[existingIndex].argsChunks) {
+            existingToolCalls[existingIndex].argsChunks = [];
+          }
+          existingToolCalls[existingIndex].argsChunks!.push(chunk.args);
+          
+          // Try to reconstruct complete args
+          const completeArgsString = existingToolCalls[existingIndex].argsChunks!.join('');
+          try {
+            existingToolCalls[existingIndex].args = JSON.parse(completeArgsString);
+          } catch (e) {
+            // Args not complete yet
+          }
+        } else {
+          // Create new tool call for the chunk args (with null id - handle gracefully)
+          const newId = `temp_${Date.now()}`;
+          existingToolCalls.push({
+            id: newId,
+            name: '',
+            args: {},
+            argsChunks: [chunk.args]
+          });
+        }
+      }
+    }
+    
+    currentMessage.toolCalls = existingToolCalls;
+  }
+
+  if (event.tool_calls && event.tool_calls.length > 0) {
+    const existingToolCalls = [...(currentMessage.toolCalls || [])];
+    
+    for (const toolCall of event.tool_calls) {
+      if (toolCall.id && toolCall.name) {
+        const existingIndex = existingToolCalls.findIndex(tc => tc.id === toolCall.id);
+        if (existingIndex >= 0) {
+          existingToolCalls[existingIndex] = {
+            ...existingToolCalls[existingIndex],
+            name: toolCall.name,
+            args: toolCall.args || {}
+          };
+        } else {
+          existingToolCalls.push({
+            id: toolCall.id,
+            name: toolCall.name,
+            args: toolCall.args || {},
+            argsChunks: []
+          });
+        }
+      }
+    }
+    
+    currentMessage.toolCalls = existingToolCalls;
+  }
+
+  if (event.finish_reason) {
+    currentMessage.finishReason = event.finish_reason === 'tool_calls' ? 'completed' : 'interrupt';
+    currentMessage.isStreaming = false;
+  }
+
+  // Fallback to original event format if available
+  if (event.event) {
+    switch (event.event) {
+      case 'message_chunk': {
+        const chunk = event.data as MessageChunk;
+        return {
+          ...currentMessage,
+          content: (currentMessage.content || '') + (chunk.content || ''),
+          role: chunk.role || currentMessage.role,
+          metadata: {
+            ...currentMessage.metadata,
+            agent: chunk.agent || currentMessage.metadata?.agent
+          },
+          isStreaming: true
+        };
+      }
+
+      case 'tool_call': {
+        const toolCall = event.data as ToolCallChunk & { name: string; args: Record<string, any> };
+        const newToolCall: ToolCall = {
+          id: toolCall.id,
+          name: toolCall.name,
+          args: toolCall.args,
+          argsChunks: []
+        };
+
+        const existingToolCalls = currentMessage.toolCalls || [];
+        const existingIndex = existingToolCalls.findIndex(tc => tc.id === toolCall.id);
+
+        if (existingIndex >= 0) {
+          existingToolCalls[existingIndex] = {
+            ...existingToolCalls[existingIndex],
+            ...newToolCall
+          };
+        } else {
+          existingToolCalls.push(newToolCall);
+        }
+
+        return {
+          ...currentMessage,
+          toolCalls: existingToolCalls,
+          isStreaming: true
+        };
+      }
+
+      case 'done': {
+        return {
+          ...currentMessage,
+          finishReason: 'completed',
+          isStreaming: false
+        };
+      }
+
+      case 'error': {
+        const errorData = event.data as { error: string };
+        return {
+          ...currentMessage,
+          content: (currentMessage.content || '') + `\n\n**Error:** ${errorData.error}`,
+          isStreaming: false,
+          finishReason: 'interrupt'
+        };
+      }
+    }
+  }
+  
+  return currentMessage;
 }
 
 /**
