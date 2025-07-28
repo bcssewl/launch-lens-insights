@@ -2,8 +2,6 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { tomorrow } from 'react-syntax-highlighter/dist/cjs/styles/prism';
 import { cn } from '@/lib/utils';
 
 interface Citation {
@@ -138,21 +136,15 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
               );
             }
             
+            // Code block with syntax highlighting styling
             return (
-              <SyntaxHighlighter
-                style={tomorrow}
-                language={match[1]}
-                PreTag="div"
-                className="text-xs rounded-md"
-                customStyle={{
-                  margin: '8px 0',
-                  borderRadius: '0.375rem',
-                  fontSize: '0.75rem',
-                  lineHeight: '1rem'
-                }}
-              >
-                {String(children).replace(/\n$/, '')}
-              </SyntaxHighlighter>
+              <div className="my-2 overflow-x-auto rounded-md border bg-muted/50 dark:bg-muted">
+                <pre className="p-4 text-xs font-mono leading-relaxed">
+                  <code className="text-foreground">
+                    {String(children).replace(/\n$/, '')}
+                  </code>
+                </pre>
+              </div>
             );
           },
           
