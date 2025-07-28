@@ -27,7 +27,7 @@ import { useDeerFlowStore } from "@/stores/deerFlowStore";
 import { useStreamingChat } from "@/hooks/useStreamingChat";
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { tomorrow } from "react-syntax-highlighter/dist/esm/styles/prism";
+import tomorrow from "react-syntax-highlighter/src/styles/tomorrow";
 
 export const ResearchPanel = () => {
   const {
