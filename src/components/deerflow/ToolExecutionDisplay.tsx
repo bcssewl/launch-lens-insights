@@ -27,7 +27,8 @@ interface ToolExecutionDisplayProps {
   isStreaming?: boolean;
 }
 
-const getToolIcon = (toolName: string) => {
+const getToolIcon = (toolName: string | undefined) => {
+  if (!toolName) return FileText;
   const name = toolName.toLowerCase();
   if (name.includes('search') || name.includes('web')) return Search;
   if (name.includes('code') || name.includes('python')) return Code;
