@@ -105,7 +105,7 @@ export const useStreamingChat = () => {
     };
 
     try {
-      await startStreaming('/api/deer-feedback-stream', requestData);
+      await startStreaming('https://deer-flow-wrappers.up.railway.app/api/chat/stream', requestData);
     } catch (error: any) {
       console.error('Failed to send feedback:', error);
       toast({
