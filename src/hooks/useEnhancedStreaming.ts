@@ -150,13 +150,14 @@ export const useEnhancedStreaming = () => {
             }
 
             // Handle special events
-            if (event.event === 'error') {
-              const errorData = event.data as { error: string };
-              throw new Error(errorData.error);
-            }
+            if ('event' in event) {
+              if (event.event === 'error') {
+                throw new Error(event.data.error);
+              }
 
-            if (event.event === 'done' || event.event === 'interrupt') {
-              break;
+              if (event.event === 'done' || event.event === 'interrupt') {
+                break;
+              }
             }
 
           } catch (parseError) {

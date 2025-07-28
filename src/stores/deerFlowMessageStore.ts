@@ -27,7 +27,7 @@ export interface DeerMessage {
   content: string;
   timestamp: Date;
   isStreaming?: boolean;
-  finishReason?: 'interrupt' | 'completed';
+  finishReason?: 'interrupt' | 'completed' | 'error';
   options?: FeedbackOption[];
   toolCalls?: ToolCall[];
   metadata?: {
