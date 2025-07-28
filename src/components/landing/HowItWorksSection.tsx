@@ -1,5 +1,4 @@
 
-import React from "react";
 import { FileText, Brain, BarChart3, Rocket, ArrowDown } from "lucide-react";
 import { HowItWorksStep } from "./HowItWorksStep";
 export const HowItWorksSection = () => <section className="apple-section">

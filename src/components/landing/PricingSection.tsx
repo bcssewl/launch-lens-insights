@@ -1,5 +1,4 @@
 
-import React from "react";
 import { PricingCard } from "@/components/PricingCard";
 import { CheckCircle, Star } from "lucide-react";
 

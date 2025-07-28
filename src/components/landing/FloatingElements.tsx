@@ -1,6 +1,4 @@
 
-import React from "react";
-
 export const FloatingElements = () => (
   <div className="absolute inset-0 overflow-hidden pointer-events-none">
     <div className="floating-element absolute top-20 left-10 w-6 h-6 bg-primary/20 rounded-2xl blur-sm"></div>

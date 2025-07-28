@@ -1,4 +1,3 @@
-import React from "react";
 import { TrendingUp, BarChart3, Award, Brain, Users, DollarSign } from "lucide-react";
 export const DashboardPreview = () => <div className="max-w-5xl mx-auto">
     {/* Preview Label */}

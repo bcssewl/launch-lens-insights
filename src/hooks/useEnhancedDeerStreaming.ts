@@ -119,10 +119,7 @@ export const useEnhancedDeerStreaming = () => {
             continue;
           }
 
-          console.log(`📨 Event ${eventCount}: ${event || 'unknown'}`, {
-            ...parsedData,
-            content: parsedData.content ? `${parsedData.content.substring(0, 100)}${parsedData.content.length > 100 ? '...' : ''}` : undefined
-          });
+          console.log(`📨 Event ${eventCount}: ${event || 'unknown'}`, parsedData);
 
           // Check for stream timeout
           if (Date.now() - lastEventTime > STREAM_TIMEOUT) {
@@ -135,24 +132,17 @@ export const useEnhancedDeerStreaming = () => {
             { event: event as any, data: parsedData } : 
             parsedData; // Legacy format
 
-          // Handle agent-specific logic and UI management
+          // Handle agent-specific logic
           if ('event' in streamEvent && streamEvent.event === 'message_chunk') {
             const agent = streamEvent.data.agent;
-            console.log(`🤖 Message chunk from agent: ${agent}, content: "${streamEvent.data.content?.substring(0, 50)}..."`);
-            
             if (agent === 'planner' || agent === 'reporter') {
               setResearchPanelOpen(true);
               if (agent === 'reporter') {
                 setActiveResearchTab('report');
               }
-            } else if (agent === 'coordinator' || agent === 'assistant') {
-              // Close research panel for final answers
-              console.log(`📝 Final answer from ${agent}`);
             }
           } else if ('agent' in streamEvent && streamEvent.agent) {
             const agent = streamEvent.agent;
-            console.log(`🤖 Legacy format - agent: ${agent}`);
-            
             if (agent === 'planner' || agent === 'reporter') {
               setResearchPanelOpen(true);
               if (agent === 'reporter') {

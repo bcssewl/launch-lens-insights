@@ -100,8 +100,6 @@ export function mergeMessage(
   if ('content' in event && event.content) {
     // Ensure content is always a string
     const content = typeof event.content === 'string' ? event.content : JSON.stringify(event.content);
-    const agent = 'agent' in event ? event.agent : 'unknown';
-    console.log(`🔤 Legacy content merge from ${agent}: "${content.substring(0, 50)}..."`);
     currentMessage.content = (currentMessage.content || '') + content;
   }
 
@@ -177,19 +175,13 @@ export function mergeMessage(
   if ('event' in event && event.event) {
     switch (event.event) {
       case 'message_chunk': {
-        const newContent = event.data.content || '';
-        const currentContent = currentMessage.content || '';
-        const agent = event.data.agent || currentMessage.metadata?.agent;
-        
-        console.log(`🔤 Merging message chunk from ${agent}: "${newContent.substring(0, 50)}..."`);
-        
         return {
           ...currentMessage,
-          content: currentContent + newContent,
+          content: (currentMessage.content || '') + (event.data.content || ''),
           role: event.data.role || currentMessage.role,
           metadata: {
             ...currentMessage.metadata,
-            agent: agent
+            agent: event.data.agent || currentMessage.metadata?.agent
           },
           isStreaming: true
         };
