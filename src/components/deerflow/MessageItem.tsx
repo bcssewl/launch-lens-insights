@@ -179,7 +179,7 @@ const PlannerMessage = ({ message, onFeedback }: PlannerMessageProps) => {
               isStreaming={message.isStreaming}
             />
 
-            {/* Plan Content */}
+            {/* Plan Content - Simplified for planner messages */}
             <div className="space-y-3">
               <h3 className="font-semibold text-foreground">
                 {parsedContent.title || title || "Research Plan"}
@@ -191,23 +191,10 @@ const PlannerMessage = ({ message, onFeedback }: PlannerMessageProps) => {
                 </p>
               )}
 
+              {/* Show only a summary for plan steps, detailed steps go to research panel */}
               {(parsedContent.steps || steps) && (
-                <div className="space-y-2">
-                  <h4 className="text-sm font-medium">Steps:</h4>
-                  <ol className="list-decimal list-inside space-y-1">
-                    {(parsedContent.steps || steps).map((step: any, index: number) => (
-                      <li key={index} className="text-sm text-muted-foreground">
-                        {typeof step === 'string' ? step : (
-                          <div>
-                            <strong>{step.title || step.description || 'Step'}</strong>
-                            {step.description && step.title && (
-                              <div className="text-xs mt-1">{step.description}</div>
-                            )}
-                          </div>
-                        )}
-                      </li>
-                    ))}
-                  </ol>
+                <div className="text-sm text-muted-foreground">
+                  <p>📋 Plan created with {(parsedContent.steps || steps).length} steps. View details in the Research Panel →</p>
                 </div>
               )}
 

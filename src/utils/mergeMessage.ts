@@ -331,11 +331,30 @@ export function mergeMessage(
         const options = event.data.options || 
           (currentMessage.metadata?.agent === 'planner' ? defaultOptions : undefined);
         
+        // Parse plan steps for planner messages
+        let planSteps: any[] = [];
+        if (currentMessage.metadata?.agent === 'planner' && currentMessage.content) {
+          try {
+            const parsed = JSON.parse(currentMessage.content);
+            planSteps = parsed.steps || [];
+          } catch (e) {
+            // If parsing fails, try to extract steps from the content
+            const stepMatches = currentMessage.content.match(/\d+\.\s+(.+)/g);
+            if (stepMatches) {
+              planSteps = stepMatches.map(match => match.replace(/^\d+\.\s+/, ''));
+            }
+          }
+        }
+        
         return {
           ...currentMessage,
           finishReason: 'interrupt',
           isStreaming: false,
-          options: options
+          options: options,
+          metadata: {
+            ...currentMessage.metadata,
+            planSteps: planSteps
+          }
         };
       }
 

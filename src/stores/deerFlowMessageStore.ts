@@ -47,6 +47,7 @@ export interface DeerMessage {
     visitedUrls?: Array<{ url: string; title?: string; content?: string }>;
     reportContent?: string;
     citations?: any[];
+    planSteps?: any[]; // Parsed plan steps for research activities
   };
 }
 
@@ -56,7 +57,7 @@ export interface ResearchActivity {
   title: string;
   content: any;
   timestamp: Date;
-  status: 'running' | 'completed' | 'failed';
+  status: 'pending' | 'running' | 'completed' | 'failed';
   threadId?: string;
 }
 

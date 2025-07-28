@@ -33,8 +33,10 @@ export const useEnhancedDeerStreaming = () => {
     setResearchPanelOpen,
     setActiveResearchTab,
     addResearchActivity,
+    updateResearchActivity,
     setReportContent,
-    currentThreadId
+    currentThreadId,
+    researchActivities
   } = useDeerFlowStore();
 
   const startDeerFlowStreaming = useCallback(async (
@@ -133,38 +135,68 @@ export const useEnhancedDeerStreaming = () => {
             }
           }
 
-          // Handle tool calls - add to research activities
+          // Handle tool calls - update pending research activities or add new ones
           if ('event' in streamEvent && streamEvent.event === 'tool_call') {
-            addResearchActivity({
-              toolType: getToolType(streamEvent.data.name),
-              title: `Using tool: ${streamEvent.data.name}`,
-              content: streamEvent.data.args,
-              status: 'running'
-            });
+            // Try to find a pending research activity that matches this tool call
+            const pendingActivity = researchActivities
+              .filter(activity => activity.threadId === currentThreadId && activity.status === 'pending')
+              .shift(); // Get the first pending activity
+            
+            if (pendingActivity) {
+              // Update the first pending activity to running
+              updateResearchActivity(pendingActivity.id, {
+                ...pendingActivity,
+                title: `${streamEvent.data.name}: ${pendingActivity.title}`,
+                content: streamEvent.data.args,
+                status: 'running'
+              });
+            } else {
+              // Add new research activity if no pending ones found
+              addResearchActivity({
+                toolType: getToolType(streamEvent.data.name),
+                title: `Using tool: ${streamEvent.data.name}`,
+                content: streamEvent.data.args,
+                status: 'running'
+              });
+            }
           }
 
-          // Handle tool results - update research activities
+          // Handle tool results - update research activities to completed
           if ('event' in streamEvent && streamEvent.event === 'tool_call_result') {
             const result = streamEvent.data.result;
             
-            // Handle GitHub repositories
-            if (result?.repositories) {
-              addResearchActivity({
-                toolType: 'web-search',
-                title: 'GitHub Trending Repositories',
-                content: result.repositories,
+            // Find the most recent running activity for this thread
+            const runningActivity = researchActivities
+              .filter(activity => activity.threadId === currentThreadId && activity.status === 'running')
+              .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+              .shift(); // Get the most recent running activity
+            
+            if (runningActivity) {
+              // Update the running activity with results
+              updateResearchActivity(runningActivity.id, {
+                ...runningActivity,
+                content: result,
                 status: 'completed'
               });
-            }
+            } else {
+              // Fallback: create new activities for specific result types
+              if (result?.repositories) {
+                addResearchActivity({
+                  toolType: 'web-search',
+                  title: 'GitHub Trending Repositories',
+                  content: result.repositories,
+                  status: 'completed'
+                });
+              }
 
-            // Handle search results
-            if (result?.results) {
-              addResearchActivity({
-                toolType: 'web-search', 
-                title: 'Search Results',
-                content: result.results,
-                status: 'completed'
-              });
+              if (result?.results) {
+                addResearchActivity({
+                  toolType: 'web-search', 
+                  title: 'Search Results',
+                  content: result.results,
+                  status: 'completed'
+                });
+              }
             }
           }
 
@@ -196,6 +228,29 @@ export const useEnhancedDeerStreaming = () => {
             if (existsMessage(messageId)) {
               updateMessage(messageId, currentPartialMessage);
             }
+          }
+
+          // Handle planner message plan steps -> research activities
+          if (currentPartialMessage?.metadata?.agent === 'planner' && 
+              currentPartialMessage?.finishReason === 'interrupt' && 
+              currentPartialMessage?.metadata?.planSteps) {
+            const planSteps = currentPartialMessage.metadata.planSteps;
+            
+            // Add each plan step as a pending research activity
+            planSteps.forEach((step: any, index: number) => {
+              const stepTitle = typeof step === 'string' ? step : (step.title || step.description || `Step ${index + 1}`);
+              const stepDescription = typeof step === 'string' ? '' : (step.description || '');
+              
+              addResearchActivity({
+                toolType: 'web-search', // Default type for plan steps
+                title: stepTitle,
+                content: stepDescription,
+                status: 'pending'
+              });
+            });
+
+            setResearchPanelOpen(true);
+            setActiveResearchTab('activities');
           }
 
         } catch (parseError) {
@@ -247,8 +302,10 @@ export const useEnhancedDeerStreaming = () => {
     setResearchPanelOpen,
     setActiveResearchTab,
     addResearchActivity,
+    updateResearchActivity,
     setReportContent,
-    currentThreadId
+    currentThreadId,
+    researchActivities
   ]);
 
   const stopStreaming = useCallback(() => {
