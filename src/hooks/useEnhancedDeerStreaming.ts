@@ -406,10 +406,28 @@ export const useEnhancedDeerStreaming = () => {
             }
           }
 
-          // Reset thread context when reporter finishes providing direct answer
+          // Handle reporter completion and extract report content
           if (currentPartialMessageRef.current?.metadata?.agent === 'reporter' && 
               currentPartialMessageRef.current?.finishReason === 'interrupt') {
             const threadContext = getThreadContext(currentThreadId);
+            const reporterContent = currentPartialMessageRef.current?.content || '';
+            
+            // Extract report content if it's substantial (more than just a simple answer)
+            if (reporterContent.length > 200 && (
+              reporterContent.includes('#') || // Has headers
+              reporterContent.includes('##') ||
+              reporterContent.includes('**') || // Has bold text
+              reporterContent.includes('Analysis') ||
+              reporterContent.includes('Report') ||
+              reporterContent.includes('Summary') ||
+              reporterContent.includes('Conclusion')
+            )) {
+              console.log('📄 Extracting report from reporter message');
+              setReportContent(reporterContent);
+              setActiveResearchTab('report');
+              setResearchPanelOpen(true);
+            }
+            
             if (threadContext.expectingReporterDirectAnswer) {
               console.log('✅ Reporter direct answer completed, resetting thread context');
               setThreadContext(currentThreadId, {
@@ -430,6 +448,30 @@ export const useEnhancedDeerStreaming = () => {
       // Finalize the message when streaming ends
       if (messageIdRef.current && currentPartialMessageRef.current) {
         const finalMessage = finalizeMessage(currentPartialMessageRef.current, messageIdRef.current);
+        
+        // Check if the final message contains a report that should be extracted
+        const finalContent = finalMessage.content || '';
+        const isReporterMessage = finalMessage.metadata?.agent === 'reporter';
+        
+        if (isReporterMessage && finalContent.length > 200 && (
+          finalContent.includes('#') || // Has headers
+          finalContent.includes('##') ||
+          finalContent.includes('**') || // Has bold text
+          finalContent.includes('Analysis') ||
+          finalContent.includes('Report') ||
+          finalContent.includes('Summary') ||
+          finalContent.includes('Conclusion') ||
+          finalContent.includes('Introduction') ||
+          finalContent.includes('Background') ||
+          finalContent.includes('Findings') ||
+          finalContent.includes('Recommendations')
+        )) {
+          console.log('📄 Final message contains report content - extracting');
+          setReportContent(finalContent);
+          setActiveResearchTab('report');
+          setResearchPanelOpen(true);
+        }
+        
         updateMessage(messageIdRef.current, {
           ...finalMessage,
           isStreaming: false
