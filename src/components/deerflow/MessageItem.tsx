@@ -226,7 +226,7 @@ const PlannerMessage = ({ message, onFeedback }: PlannerMessageProps) => {
                       key={index}
                       size="sm"
                       variant={option.value === 'accepted' ? 'default' : 'outline'}
-                      onClick={() => onFeedback(option.value)}
+                      onClick={() => onFeedback?.(option.value)}
                     >
                       {option.value === 'accepted' ? (
                         <Check className="h-4 w-4 mr-1" />
