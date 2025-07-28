@@ -96,7 +96,9 @@ export function mergeMessage(
   }
 
   if ('content' in event && event.content) {
-    currentMessage.content = (currentMessage.content || '') + event.content;
+    // Ensure content is always a string
+    const content = typeof event.content === 'string' ? event.content : JSON.stringify(event.content);
+    currentMessage.content = (currentMessage.content || '') + content;
   }
 
   if ('tool_call_chunks' in event && event.tool_call_chunks && event.tool_call_chunks.length > 0) {
@@ -336,9 +338,8 @@ export function mergeMessage(
       }
 
       default: {
-        // TypeScript exhaustiveness check - this should never be reached
-        const _exhaustiveCheck: never = event;
-        console.warn('Unknown DeerFlow event:', _exhaustiveCheck);
+        // Handle unknown events by safely converting to string
+        console.warn('Unknown DeerFlow event:', event);
         return {
           ...currentMessage,
           isStreaming: true
