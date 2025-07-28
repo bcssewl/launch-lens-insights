@@ -2,9 +2,71 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { cn } from '@/lib/utils';
+
+// Safe Syntax Highlighter Component
+const SafeSyntaxHighlighter: React.FC<{
+  language: string;
+  children: string;
+}> = ({ language, children }) => {
+  try {
+    // Try to dynamically import syntax highlighter
+    const [SyntaxHighlighter, setSyntaxHighlighter] = React.useState<any>(null);
+    const [style, setStyle] = React.useState<any>(null);
+
+    React.useEffect(() => {
+      const loadHighlighter = async () => {
+        try {
+          const { Prism } = await import('react-syntax-highlighter');
+          const { oneDark } = await import('react-syntax-highlighter/dist/esm/styles/prism');
+          setSyntaxHighlighter(() => Prism);
+          setStyle(oneDark);
+        } catch (error) {
+          console.warn('Failed to load syntax highlighter:', error);
+          // Fallback will be used
+        }
+      };
+      loadHighlighter();
+    }, []);
+
+    if (SyntaxHighlighter && style) {
+      return (
+        <SyntaxHighlighter
+          style={style}
+          language={language}
+          PreTag="div"
+          className="text-xs rounded-md"
+          customStyle={{
+            margin: '8px 0',
+            borderRadius: '0.375rem',
+            fontSize: '0.75rem',
+            lineHeight: '1rem'
+          }}
+        >
+          {children}
+        </SyntaxHighlighter>
+      );
+    }
+
+    // Safe fallback
+    return (
+      <div className="my-2 overflow-x-auto bg-muted rounded-md border">
+        <pre className="p-3 text-xs font-mono">
+          <code>{children}</code>
+        </pre>
+      </div>
+    );
+  } catch (error) {
+    console.warn('SafeSyntaxHighlighter error:', error);
+    return (
+      <div className="my-2 overflow-x-auto bg-muted rounded-md border">
+        <pre className="p-3 text-xs font-mono">
+          <code>{children}</code>
+        </pre>
+      </div>
+    );
+  }
+};
 
 interface Citation {
   name: string;
@@ -139,20 +201,9 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
             }
             
             return (
-              <SyntaxHighlighter
-                style={oneDark}
-                language={match[1]}
-                PreTag="div"
-                className="text-xs rounded-md"
-                customStyle={{
-                  margin: '8px 0',
-                  borderRadius: '0.375rem',
-                  fontSize: '0.75rem',
-                  lineHeight: '1rem'
-                }}
-              >
+              <SafeSyntaxHighlighter language={match[1]}>
                 {String(children).replace(/\n$/, '')}
-              </SyntaxHighlighter>
+              </SafeSyntaxHighlighter>
             );
           },
           
