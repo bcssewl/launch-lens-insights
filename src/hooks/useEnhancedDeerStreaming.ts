@@ -3,12 +3,13 @@
  * @description Enhanced DeerFlow streaming with proper event handling and store integration
  */
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useMemo } from 'react';
 import { useDeerFlowStore } from '@/stores/deerFlowStore';
 import { useDeerFlowMessageStore } from '@/stores/deerFlowMessageStore';
 import { mergeMessage, finalizeMessage, StreamEvent } from '@/utils/mergeMessage';
 import { DeerMessage } from '@/stores/deerFlowMessageStore';
 import { fetchStream } from '@/utils/fetchStream';
+import { useDebounceEvents } from '@/hooks/useDebounceEvents';
 
 interface DeerStreamingOptions {
   maxPlanIterations?: number;
@@ -23,7 +24,10 @@ interface DeerStreamingOptions {
 export const useEnhancedDeerStreaming = () => {
   const [isStreaming, setIsStreaming] = useState(false);
   const [currentMessageId, setCurrentMessageId] = useState<string | null>(null);
+  const [eventCount, setEventCount] = useState(0);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const currentPartialMessageRef = useRef<Partial<DeerMessage> | null>(null);
+  const messageIdRef = useRef<string | null>(null);
   
   const storeActions = useDeerFlowStore();
   const {
@@ -45,6 +49,29 @@ export const useEnhancedDeerStreaming = () => {
   
   const { settings } = storeActions;
 
+  // Debounced event processing to prevent UI overload
+  const processEventBatch = useCallback((events: StreamEvent[]) => {
+    if (!currentPartialMessageRef.current || !messageIdRef.current) return;
+
+    try {
+      // Process events in batch
+      for (const event of events) {
+        currentPartialMessageRef.current = mergeMessage(currentPartialMessageRef.current, event);
+      }
+
+      // Update message in store (throttled)
+      if (existsMessage(messageIdRef.current)) {
+        updateMessage(messageIdRef.current, currentPartialMessageRef.current);
+      }
+
+      setEventCount(prev => prev + events.length);
+    } catch (error) {
+      console.warn('Error processing event batch:', error);
+    }
+  }, [existsMessage, updateMessage]);
+
+  const { processEvent, flush, cancel } = useDebounceEvents(processEventBatch, 100);
+
   const startDeerFlowStreaming = useCallback(async (
     question: string,
     options: DeerStreamingOptions = {}
@@ -59,6 +86,11 @@ export const useEnhancedDeerStreaming = () => {
     
     setIsStreaming(true);
     setIsResponding(true);
+    setEventCount(0);
+    
+    // Reset refs
+    currentPartialMessageRef.current = null;
+    messageIdRef.current = null;
     
     console.log('🦌 Starting DeerFlow streaming for:', question);
 
@@ -84,9 +116,6 @@ export const useEnhancedDeerStreaming = () => {
       enable_deep_thinking: options.enableDeepThinking ?? settings.deepThinking
     };
 
-    let currentPartialMessage: Partial<DeerMessage> | null = null;
-    let messageId: string | null = null;
-
     try {
       const url = 'https://deer-flow-wrappers.up.railway.app/api/chat/stream';
       const requestInit: RequestInit = {
@@ -100,9 +129,10 @@ export const useEnhancedDeerStreaming = () => {
 
       console.log('🔗 Connecting to DeerFlow API:', url);
 
-      let eventCount = 0;
+      let processedEventCount = 0;
       let lastEventTime = Date.now();
       const STREAM_TIMEOUT = 30000; // 30 seconds
+      const MAX_EVENTS_PER_BATCH = 50; // Prevent memory overflow
 
       for await (const { event, data } of fetchStream(url, requestInit)) {
         if (abortControllerRef.current?.signal.aborted) {
@@ -112,8 +142,14 @@ export const useEnhancedDeerStreaming = () => {
 
         try {
           // Update event tracking
-          eventCount++;
+          processedEventCount++;
           lastEventTime = Date.now();
+
+          // Prevent memory overflow from too many rapid events
+          if (processedEventCount > MAX_EVENTS_PER_BATCH * 10) {
+            console.warn('🚨 Too many events, throttling stream');
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
 
           // Parse the SSE data
           let parsedData: any;
@@ -124,10 +160,13 @@ export const useEnhancedDeerStreaming = () => {
             continue;
           }
 
-          console.log(`📨 Event ${eventCount}: ${event || 'unknown'}`, {
-            ...parsedData,
-            content: parsedData.content ? `${parsedData.content.substring(0, 100)}${parsedData.content.length > 100 ? '...' : ''}` : undefined
-          });
+          // Only log every 10th event to reduce console spam
+          if (processedEventCount % 10 === 0) {
+            console.log(`📨 Event ${processedEventCount}: ${event || 'unknown'}`, {
+              ...parsedData,
+              content: parsedData.content ? `${parsedData.content.substring(0, 50)}...` : undefined
+            });
+          }
 
           // Check for stream timeout
           if (Date.now() - lastEventTime > STREAM_TIMEOUT) {
@@ -290,15 +329,15 @@ export const useEnhancedDeerStreaming = () => {
             setResearchPanelOpen(true);
           }
 
-          // Merge the event into the current message
-          currentPartialMessage = mergeMessage(currentPartialMessage, streamEvent);
-
           // Create or update message in store
-          if (!messageId) {
-            messageId = crypto.randomUUID();
-            setCurrentMessageId(messageId);
+          if (!messageIdRef.current) {
+            messageIdRef.current = crypto.randomUUID();
+            setCurrentMessageId(messageIdRef.current);
             
-            const initialMessage = finalizeMessage(currentPartialMessage, messageId);
+            // Initialize the partial message and refs
+            currentPartialMessageRef.current = mergeMessage(null, streamEvent);
+            
+            const initialMessage = finalizeMessage(currentPartialMessageRef.current, messageIdRef.current);
             addMessageWithId({
               ...initialMessage,
               isStreaming: true,
@@ -308,19 +347,17 @@ export const useEnhancedDeerStreaming = () => {
               }
             });
           } else {
-            // Update existing message
-            if (existsMessage(messageId)) {
-              updateMessage(messageId, currentPartialMessage);
-            }
+            // Process event through debounced handler for performance
+            processEvent(streamEvent);
           }
 
           // Handle planner message plan steps -> research activities + context tracking
-          if (currentPartialMessage?.metadata?.agent === 'planner' && 
-              currentPartialMessage?.finishReason === 'interrupt' && 
-              currentPartialMessage?.metadata?.planSteps) {
-            const planSteps = currentPartialMessage.metadata.planSteps;
-            const hasEnoughContext = currentPartialMessage.metadata.hasEnoughContext || false;
-            const isPlannerDirectAnswer = currentPartialMessage.metadata.isPlannerDirectAnswer || false;
+          if (currentPartialMessageRef.current?.metadata?.agent === 'planner' && 
+              currentPartialMessageRef.current?.finishReason === 'interrupt' && 
+              currentPartialMessageRef.current?.metadata?.planSteps) {
+            const planSteps = currentPartialMessageRef.current.metadata.planSteps;
+            const hasEnoughContext = currentPartialMessageRef.current.metadata.hasEnoughContext || false;
+            const isPlannerDirectAnswer = currentPartialMessageRef.current.metadata.isPlannerDirectAnswer || false;
             
             console.log('🎯 Planner finished with', planSteps.length, 'steps, hasEnoughContext:', hasEnoughContext);
             
@@ -353,8 +390,8 @@ export const useEnhancedDeerStreaming = () => {
           }
 
           // Reset thread context when reporter finishes providing direct answer
-          if (currentPartialMessage?.metadata?.agent === 'reporter' && 
-              currentPartialMessage?.finishReason === 'interrupt') {
+          if (currentPartialMessageRef.current?.metadata?.agent === 'reporter' && 
+              currentPartialMessageRef.current?.finishReason === 'interrupt') {
             const threadContext = getThreadContext(currentThreadId);
             if (threadContext.expectingReporterDirectAnswer) {
               console.log('✅ Reporter direct answer completed, resetting thread context');
@@ -370,16 +407,19 @@ export const useEnhancedDeerStreaming = () => {
         }
       }
 
+      // Flush any remaining debounced events
+      flush();
+
       // Finalize the message when streaming ends
-      if (messageId && currentPartialMessage) {
-        const finalMessage = finalizeMessage(currentPartialMessage, messageId);
-        updateMessage(messageId, {
+      if (messageIdRef.current && currentPartialMessageRef.current) {
+        const finalMessage = finalizeMessage(currentPartialMessageRef.current, messageIdRef.current);
+        updateMessage(messageIdRef.current, {
           ...finalMessage,
           isStreaming: false
         });
       }
 
-      console.log(`✅ DeerFlow streaming completed successfully - processed ${eventCount} events`);
+      console.log(`✅ DeerFlow streaming completed successfully - processed ${processedEventCount} events`);
 
     } catch (error) {
       console.error('❌ DeerFlow streaming error:', error);
@@ -392,8 +432,8 @@ export const useEnhancedDeerStreaming = () => {
         error.message.includes('connection')
       );
       
-      if (messageId) {
-        let errorMessage = currentPartialMessage?.content || '';
+      if (messageIdRef.current) {
+        let errorMessage = currentPartialMessageRef.current?.content || '';
         
         if (isAbortError) {
           errorMessage += '\n\n⏹️ Stream was stopped by user.';
@@ -403,7 +443,7 @@ export const useEnhancedDeerStreaming = () => {
           errorMessage += `\n\n❌ An error occurred: ${error instanceof Error ? error.message : 'Unknown error'}`;
         }
         
-        updateMessage(messageId, {
+        updateMessage(messageIdRef.current, {
           content: errorMessage || 'Sorry, there was an error processing your request.',
           isStreaming: false,
           finishReason: isAbortError ? 'interrupt' : 'error'
@@ -417,10 +457,17 @@ export const useEnhancedDeerStreaming = () => {
         });
       }
     } finally {
+      // Cancel any pending debounced events
+      cancel();
+      
       setIsStreaming(false);
       setIsResponding(false);
       setCurrentMessageId(null);
       abortControllerRef.current = null;
+      
+      // Clear refs
+      currentPartialMessageRef.current = null;
+      messageIdRef.current = null;
     }
   }, [
     isStreaming,
@@ -443,14 +490,28 @@ export const useEnhancedDeerStreaming = () => {
       abortControllerRef.current.abort();
       console.log('⏹️ DeerFlow streaming stopped by user');
     }
-  }, []);
+    
+    // Cancel pending events and flush immediately
+    cancel();
+    flush();
+  }, [cancel, flush]);
 
-  return {
+  // Memory cleanup
+  const cleanup = useCallback(() => {
+    stopStreaming();
+    currentPartialMessageRef.current = null;
+    messageIdRef.current = null;
+    setEventCount(0);
+  }, [stopStreaming]);
+
+  return useMemo(() => ({
     startDeerFlowStreaming,
     stopStreaming,
+    cleanup,
     isStreaming,
-    currentMessageId
-  };
+    currentMessageId,
+    eventCount
+  }), [startDeerFlowStreaming, stopStreaming, cleanup, isStreaming, currentMessageId, eventCount]);
 };
 
 // Helper function to determine tool type from tool name

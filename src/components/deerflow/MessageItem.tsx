@@ -3,7 +3,7 @@
  * @description Enhanced message item component with full DeerFlow event support
  */
 
-import React from 'react';
+import React, { memo, useMemo } from 'react';
 import { motion } from "motion/react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ import { DeepThinkingSection } from './DeepThinkingSection';
 import { ToolExecutionDisplay } from './ToolExecutionDisplay';
 import { ResearchActivitiesDisplay } from './ResearchActivitiesDisplay';
 import { ReportGenerationProgress } from './ReportGenerationProgress';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 interface MessageItemProps {
   message: DeerMessage;
@@ -32,14 +33,14 @@ interface PlannerMessageProps {
   onFeedback: (feedback: string) => void;
 }
 
-export const MessageItem = ({ message, 'aria-posinset': ariaPosinset, 'aria-setsize': ariaSetsize, className = '' }: MessageItemProps) => {
+export const MessageItem = memo(({ message, 'aria-posinset': ariaPosinset, 'aria-setsize': ariaSetsize, className = '' }: MessageItemProps) => {
   const { sendFeedback } = useStreamingChat();
 
   const handleFeedback = (feedback: string) => {
     sendFeedback(feedback);
   };
 
-  const renderMessageContent = () => {
+  const renderMessageContent = useMemo(() => {
     const agent = message.metadata?.agent;
     
     switch (message.role) {
@@ -72,7 +73,7 @@ export const MessageItem = ({ message, 'aria-posinset': ariaPosinset, 'aria-sets
       default:
         return <div className="text-muted-foreground">Unknown message type</div>;
     }
-  };
+  }, [message, handleFeedback]);
 
   const getMessageTypeDescription = (): string => {
     const agent = message.metadata?.agent;
@@ -89,34 +90,45 @@ export const MessageItem = ({ message, 'aria-posinset': ariaPosinset, 'aria-sets
   const timestamp = message.timestamp.toLocaleString();
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      className={`w-full focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-lg ${className}`}
-      role="article"
-      aria-label={`${messageTypeDescription} from ${timestamp}`}
-      aria-posinset={ariaPosinset}
-      aria-setsize={ariaSetsize}
-      tabIndex={0}
-    >
-      {/* Live region for streaming updates */}
-      {message.isStreaming && (
-        <div 
-          aria-live="polite" 
-          aria-atomic="false"
-          className="sr-only"
-        >
-          {message.metadata?.agent === 'planner' ? 'Planning in progress' : 
-           message.metadata?.agent === 'reporter' ? 'Generating report' : 
-           'Response in progress'}
-        </div>
-      )}
-      
-      {renderMessageContent()}
-    </motion.div>
+    <ErrorBoundary>
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className={`w-full focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-lg ${className}`}
+        role="article"
+        aria-label={`${messageTypeDescription} from ${timestamp}`}
+        aria-posinset={ariaPosinset}
+        aria-setsize={ariaSetsize}
+        tabIndex={0}
+      >
+        {/* Live region for streaming updates */}
+        {message.isStreaming && (
+          <div 
+            aria-live="polite" 
+            aria-atomic="false"
+            className="sr-only"
+          >
+            {message.metadata?.agent === 'planner' ? 'Planning in progress' : 
+             message.metadata?.agent === 'reporter' ? 'Generating report' : 
+             'Response in progress'}
+          </div>
+        )}
+        
+        {renderMessageContent}
+      </motion.div>
+    </ErrorBoundary>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison for memo optimization
+  return (
+    prevProps.message.id === nextProps.message.id &&
+    prevProps.message.content === nextProps.message.content &&
+    prevProps.message.isStreaming === nextProps.message.isStreaming &&
+    prevProps.message.finishReason === nextProps.message.finishReason &&
+    JSON.stringify(prevProps.message.metadata) === JSON.stringify(nextProps.message.metadata)
+  );
+});
 
 const UserMessage = ({ content }: { content: string }) => (
   <div className="flex justify-end mb-4">
