@@ -6,12 +6,10 @@ import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Separator } from '@/components/ui/separator';
-import { ThemeToggle } from '@/components/ThemeToggle'; // Assuming this provides Light/Dark
-import { useTheme } from 'next-themes';
+import { ClientOnlyThemeToggle } from '@/components/ClientOnlyThemeToggle';
 
 
 const PreferencesSettingsTab: React.FC = () => {
-  const { theme, setTheme } = useTheme();
 
   return (
     <Card>
@@ -23,7 +21,7 @@ const PreferencesSettingsTab: React.FC = () => {
         {/* Theme Selection */}
         <section className="space-y-4">
           <h3 className="text-lg font-medium">Theme Selection</h3>
-           <RadioGroup defaultValue={theme} onValueChange={(value) => setTheme(value)}>
+           <RadioGroup defaultValue="system">
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="light" id="theme-light" />
               <Label htmlFor="theme-light">Light Mode</Label>
