@@ -398,7 +398,10 @@ export const useEnhancedDeerStreaming = () => {
 };
 
 // Helper function to determine tool type from tool name
-function getToolType(toolName: string): 'web-search' | 'crawl' | 'python' | 'retriever' {
+function getToolType(toolName: string | undefined): 'web-search' | 'crawl' | 'python' | 'retriever' {
+  if (!toolName) {
+    return 'web-search'; // Default fallback
+  }
   if (toolName.includes('search') || toolName.includes('github')) {
     return 'web-search';
   }
