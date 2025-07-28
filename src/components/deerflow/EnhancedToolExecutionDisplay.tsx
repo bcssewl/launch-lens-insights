@@ -72,6 +72,8 @@ export const EnhancedToolExecutionDisplay = ({
 }: EnhancedToolExecutionDisplayProps) => {
   const [expandedTools, setExpandedTools] = useState<Set<string>>(new Set());
 
+  console.log('🔧 EnhancedToolExecutionDisplay rendering with toolCalls:', toolCalls);
+
   if (!toolCalls || toolCalls.length === 0) return null;
 
   const toggleExpanded = (toolId: string) => {
@@ -85,12 +87,16 @@ export const EnhancedToolExecutionDisplay = ({
   };
 
   const getToolConfig = (toolName: string) => {
-    if (!toolName) return { 
-      icon: Database, 
-      color: 'text-gray-600', 
-      bg: 'bg-gray-50 border-gray-200 dark:bg-gray-950/20 dark:border-gray-800',
-      label: 'Unknown Tool' 
-    };
+    console.log('🔧 getToolConfig called with:', { toolName, type: typeof toolName });
+    if (!toolName || typeof toolName !== 'string') {
+      console.log('🚨 Invalid toolName, returning default config');
+      return { 
+        icon: Database, 
+        color: 'text-gray-600', 
+        bg: 'bg-gray-50 border-gray-200 dark:bg-gray-950/20 dark:border-gray-800',
+        label: 'Unknown Tool' 
+      };
+    }
     const name = toolName.toLowerCase();
     if (name.includes('search')) {
       return name.includes('github') ? TOOL_CONFIG['github-search'] : TOOL_CONFIG['web-search'];
