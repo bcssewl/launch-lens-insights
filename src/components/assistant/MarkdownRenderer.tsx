@@ -3,7 +3,7 @@ import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { cn } from '@/lib/utils';
 
 interface Citation {
@@ -140,7 +140,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({
             
             return (
               <SyntaxHighlighter
-                style={oneDark}
+                style={tomorrow}
                 language={match[1]}
                 PreTag="div"
                 className="text-xs rounded-md"

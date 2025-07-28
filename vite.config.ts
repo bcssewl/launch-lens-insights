@@ -17,24 +17,6 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  build: {
-    rollupOptions: {
-      external: [
-        'react',
-        'react-dom',
-        'react/jsx-runtime',
-        'react/jsx-dev-runtime'
-      ],
-      output: {
-        globals: {
-          react: 'React',
-          'react-dom': 'ReactDOM',
-          'react/jsx-runtime': 'ReactJsxRuntime',
-          'react/jsx-dev-runtime': 'ReactJsxDevRuntime'
-        }
-      }
-    }
-  },
   optimizeDeps: {
     include: ['react', 'react-dom'],
     dedupe: ['react', 'react-dom']
