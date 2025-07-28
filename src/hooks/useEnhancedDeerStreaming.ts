@@ -3,13 +3,11 @@
  * @description Enhanced DeerFlow streaming with proper event handling and store integration
  */
 
-import { useState, useRef, useCallback, useMemo } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useDeerFlowStore } from '@/stores/deerFlowStore';
-import { useDeerFlowMessageStore } from '@/stores/deerFlowMessageStore';
 import { mergeMessage, finalizeMessage, StreamEvent } from '@/utils/mergeMessage';
 import { DeerMessage } from '@/stores/deerFlowMessageStore';
 import { fetchStream } from '@/utils/fetchStream';
-import { useDebounceEvents } from '@/hooks/useDebounceEvents';
 
 interface DeerStreamingOptions {
   maxPlanIterations?: number;
@@ -24,12 +22,8 @@ interface DeerStreamingOptions {
 export const useEnhancedDeerStreaming = () => {
   const [isStreaming, setIsStreaming] = useState(false);
   const [currentMessageId, setCurrentMessageId] = useState<string | null>(null);
-  const [eventCount, setEventCount] = useState(0);
   const abortControllerRef = useRef<AbortController | null>(null);
-  const currentPartialMessageRef = useRef<Partial<DeerMessage> | null>(null);
-  const messageIdRef = useRef<string | null>(null);
   
-  const storeActions = useDeerFlowStore();
   const {
     addMessage,
     updateMessage,
@@ -43,39 +37,8 @@ export const useEnhancedDeerStreaming = () => {
     setReportContent,
     currentThreadId,
     researchActivities,
-    setThreadContext,
-    getThreadContext
-  } = useDeerFlowMessageStore();
-  
-  const { settings } = storeActions;
-
-  // Debounced event processing to prevent UI overload
-  const processEventBatch = useCallback((events: StreamEvent[]) => {
-    if (!currentPartialMessageRef.current || !messageIdRef.current) return;
-
-    try {
-      // Process events in batch
-      for (const event of events) {
-        currentPartialMessageRef.current = mergeMessage(currentPartialMessageRef.current, event);
-      }
-
-      // Update message in store (throttled)
-      if (existsMessage(messageIdRef.current)) {
-        updateMessage(messageIdRef.current, currentPartialMessageRef.current);
-      }
-
-      setEventCount(prev => prev + events.length);
-    } catch (error) {
-      console.warn('Error processing event batch:', error);
-    }
-  }, [existsMessage, updateMessage]);
-
-  const { processEvent, flush, cancel } = useDebounceEvents(processEventBatch, {
-    baseDelay: 250,
-    maxDelay: 1000,
-    throttleThreshold: 100,
-    maxBatchSize: 25
-  });
+    settings
+  } = useDeerFlowStore();
 
   const startDeerFlowStreaming = useCallback(async (
     question: string,
@@ -91,11 +54,6 @@ export const useEnhancedDeerStreaming = () => {
     
     setIsStreaming(true);
     setIsResponding(true);
-    setEventCount(0);
-    
-    // Reset refs
-    currentPartialMessageRef.current = null;
-    messageIdRef.current = null;
     
     console.log('🦌 Starting DeerFlow streaming for:', question);
 
@@ -121,6 +79,9 @@ export const useEnhancedDeerStreaming = () => {
       enable_deep_thinking: options.enableDeepThinking ?? settings.deepThinking
     };
 
+    let currentPartialMessage: Partial<DeerMessage> | null = null;
+    let messageId: string | null = null;
+
     try {
       const url = 'https://deer-flow-wrappers.up.railway.app/api/chat/stream';
       const requestInit: RequestInit = {
@@ -134,10 +95,9 @@ export const useEnhancedDeerStreaming = () => {
 
       console.log('🔗 Connecting to DeerFlow API:', url);
 
-      let processedEventCount = 0;
+      let eventCount = 0;
       let lastEventTime = Date.now();
       const STREAM_TIMEOUT = 30000; // 30 seconds
-      const MAX_EVENTS_PER_BATCH = 50; // Prevent memory overflow
 
       for await (const { event, data } of fetchStream(url, requestInit)) {
         if (abortControllerRef.current?.signal.aborted) {
@@ -147,18 +107,8 @@ export const useEnhancedDeerStreaming = () => {
 
         try {
           // Update event tracking
-          processedEventCount++;
+          eventCount++;
           lastEventTime = Date.now();
-
-          // Advanced throttling with progressive delays
-          if (processedEventCount > 100) { // Much lower threshold
-            const throttleDelay = Math.min(200 + (processedEventCount - 100) * 50, 2000);
-            console.warn(`🔥 High event volume (${processedEventCount}), applying ${throttleDelay}ms throttle`);
-            await new Promise(resolve => setTimeout(resolve, throttleDelay));
-            
-            // Reset counter but with memory of recent throttling
-            processedEventCount = Math.max(0, processedEventCount - 50);
-          }
 
           // Parse the SSE data
           let parsedData: any;
@@ -169,13 +119,10 @@ export const useEnhancedDeerStreaming = () => {
             continue;
           }
 
-          // Only log every 10th event to reduce console spam
-          if (processedEventCount % 10 === 0) {
-            console.log(`📨 Event ${processedEventCount}: ${event || 'unknown'}`, {
-              ...parsedData,
-              content: parsedData.content ? `${parsedData.content.substring(0, 50)}...` : undefined
-            });
-          }
+          console.log(`📨 Event ${eventCount}: ${event || 'unknown'}`, {
+            ...parsedData,
+            content: parsedData.content ? `${parsedData.content.substring(0, 100)}${parsedData.content.length > 100 ? '...' : ''}` : undefined
+          });
 
           // Check for stream timeout
           if (Date.now() - lastEventTime > STREAM_TIMEOUT) {
@@ -191,45 +138,12 @@ export const useEnhancedDeerStreaming = () => {
           // Handle agent-specific logic and UI management
           if ('event' in streamEvent && streamEvent.event === 'message_chunk') {
             const agent = streamEvent.data.agent;
-            const content = streamEvent.data.content || '';
-            console.log(`🤖 Message chunk from agent: ${agent}, content: "${content.substring(0, 50)}..."`);
+            console.log(`🤖 Message chunk from agent: ${agent}, content: "${streamEvent.data.content?.substring(0, 50)}..."`);
             
-            // Context-aware panel management
-            if (agent === 'planner') {
+            if (agent === 'planner' || agent === 'reporter') {
               setResearchPanelOpen(true);
-            } else if (agent === 'reporter') {
-              // Check if this is a direct answer based on thread context
-              const threadContext = getThreadContext(currentThreadId);
-              if (!threadContext.expectingReporterDirectAnswer) {
-                // Only open research panel if this is not a direct answer
-                setResearchPanelOpen(true);
+              if (agent === 'reporter') {
                 setActiveResearchTab('report');
-              } else {
-                console.log('🔄 Reporter providing direct answer - not opening research panel');
-              }
-              
-              // Check if accumulated content looks like a report and extract it
-              // We do this during streaming to provide real-time updates
-              if (currentPartialMessageRef.current?.content) {
-                const accumulatedContent = currentPartialMessageRef.current.content;
-                if (accumulatedContent.length > 200 && (
-                  accumulatedContent.includes('# ') || // Has headers
-                  accumulatedContent.includes('## ') ||
-                  accumulatedContent.includes('**') || // Has bold text
-                  accumulatedContent.includes('Analysis') ||
-                  accumulatedContent.includes('Report') ||
-                  accumulatedContent.includes('Summary') ||
-                  accumulatedContent.includes('Executive Summary') ||
-                  accumulatedContent.includes('Introduction') ||
-                  accumulatedContent.includes('Background') ||
-                  accumulatedContent.includes('Findings') ||
-                  accumulatedContent.includes('Conclusion')
-                )) {
-                  console.log('📄 Live report content detected - updating research panel');
-                  setReportContent(accumulatedContent);
-                  setActiveResearchTab('report');
-                  setResearchPanelOpen(true);
-                }
               }
             } else if (agent === 'coordinator' || agent === 'assistant') {
               // Close research panel for final answers
@@ -237,32 +151,20 @@ export const useEnhancedDeerStreaming = () => {
             }
           } else if ('agent' in streamEvent && streamEvent.agent) {
             const agent = streamEvent.agent;
-            const content = streamEvent.content || '';
-            console.log(`🤖 Legacy format - agent: ${agent}, content: "${content.substring(0, 50)}..."`);
+            console.log(`🤖 Legacy format - agent: ${agent}`);
             
-            // Context-aware panel management for legacy format
-            if (agent === 'planner') {
+            if (agent === 'planner' || agent === 'reporter') {
               setResearchPanelOpen(true);
-            } else if (agent === 'reporter') {
-              // Check if this is a direct answer based on thread context
-              const threadContext = getThreadContext(currentThreadId);
-              if (!threadContext.expectingReporterDirectAnswer) {
-                setResearchPanelOpen(true);
+              if (agent === 'reporter') {
                 setActiveResearchTab('report');
               }
             }
           }
 
-          // Handle tool_calls event specifically
+          // Handle tool calls - update pending research activities or add new ones
           if ('event' in streamEvent && streamEvent.event === 'tool_calls') {
-            console.log('🔧 Processing tool_calls (plural) event:', streamEvent.data);
-            // This will be handled by mergeMessage function now
-          }
-
-          // Handle legacy tool calls - update pending research activities or add new ones
-          if ('tool_calls' in streamEvent && streamEvent.tool_calls) {
             // Handle array of tool calls
-            const toolCalls = Array.isArray(streamEvent.tool_calls) ? streamEvent.tool_calls : [streamEvent.tool_calls];
+            const toolCalls = Array.isArray(streamEvent.data) ? streamEvent.data : [streamEvent.data];
             
             for (const toolCall of toolCalls) {
               // Try to find a pending research activity that matches this tool call
@@ -370,21 +272,15 @@ export const useEnhancedDeerStreaming = () => {
             setResearchPanelOpen(true);
           }
 
-          // Handle reasoning content streaming
-          if ('event' in streamEvent && streamEvent.event === 'reasoning_content') {
-            console.log('🧠 Reasoning content chunk received:', streamEvent.data);
-            // This will be handled by mergeMessage function to update the message metadata
-          }
+          // Merge the event into the current message
+          currentPartialMessage = mergeMessage(currentPartialMessage, streamEvent);
 
           // Create or update message in store
-          if (!messageIdRef.current) {
-            messageIdRef.current = crypto.randomUUID();
-            setCurrentMessageId(messageIdRef.current);
+          if (!messageId) {
+            messageId = crypto.randomUUID();
+            setCurrentMessageId(messageId);
             
-            // Initialize the partial message and refs
-            currentPartialMessageRef.current = mergeMessage(null, streamEvent);
-            
-            const initialMessage = finalizeMessage(currentPartialMessageRef.current, messageIdRef.current);
+            const initialMessage = finalizeMessage(currentPartialMessage, messageId);
             addMessageWithId({
               ...initialMessage,
               isStreaming: true,
@@ -394,77 +290,33 @@ export const useEnhancedDeerStreaming = () => {
               }
             });
           } else {
-            // Process event through debounced handler for performance
-            processEvent(streamEvent);
+            // Update existing message
+            if (existsMessage(messageId)) {
+              updateMessage(messageId, currentPartialMessage);
+            }
           }
 
-          // Handle planner message plan steps -> research activities + context tracking
-          if (currentPartialMessageRef.current?.metadata?.agent === 'planner' && 
-              currentPartialMessageRef.current?.finishReason === 'interrupt' && 
-              currentPartialMessageRef.current?.metadata?.planSteps) {
-            const planSteps = currentPartialMessageRef.current.metadata.planSteps;
-            const hasEnoughContext = currentPartialMessageRef.current.metadata.hasEnoughContext || false;
-            const isPlannerDirectAnswer = currentPartialMessageRef.current.metadata.isPlannerDirectAnswer || false;
+          // Handle planner message plan steps -> research activities
+          if (currentPartialMessage?.metadata?.agent === 'planner' && 
+              currentPartialMessage?.finishReason === 'interrupt' && 
+              currentPartialMessage?.metadata?.planSteps) {
+            const planSteps = currentPartialMessage.metadata.planSteps;
             
-            console.log('🎯 Planner finished with', planSteps.length, 'steps, hasEnoughContext:', hasEnoughContext);
-            
-            // Set thread context based on planner decision
-            setThreadContext(currentThreadId, {
-              plannerIndicatedDirectAnswer: isPlannerDirectAnswer,
-              expectingReporterDirectAnswer: isPlannerDirectAnswer
+            // Add each plan step as a pending research activity
+            planSteps.forEach((step: any, index: number) => {
+              const stepTitle = typeof step === 'string' ? step : (step.title || step.description || `Step ${index + 1}`);
+              const stepDescription = typeof step === 'string' ? '' : (step.description || '');
+              
+              addResearchActivity({
+                toolType: 'web-search', // Default type for plan steps
+                title: stepTitle,
+                content: stepDescription,
+                status: 'pending'
+              });
             });
-            
-            if (planSteps.length > 0) {
-              // Add each plan step as a pending research activity
-              planSteps.forEach((step: any, index: number) => {
-                const stepTitle = typeof step === 'string' ? step : (step.title || step.description || `Step ${index + 1}`);
-                const stepDescription = typeof step === 'string' ? '' : (step.description || '');
-                
-                addResearchActivity({
-                  toolType: 'web-search', // Default type for plan steps
-                  title: stepTitle,
-                  content: stepDescription,
-                  status: 'pending'
-                });
-              });
 
-              setResearchPanelOpen(true);
-              setActiveResearchTab('activities');
-            } else if (isPlannerDirectAnswer) {
-              // For direct answers, don't open research panel
-              console.log('🔄 Expecting reporter direct answer, not opening research panel');
-            }
-          }
-
-          // Handle reporter completion and extract report content
-          if (currentPartialMessageRef.current?.metadata?.agent === 'reporter' && 
-              currentPartialMessageRef.current?.finishReason === 'interrupt') {
-            const threadContext = getThreadContext(currentThreadId);
-            const reporterContent = currentPartialMessageRef.current?.content || '';
-            
-            // Extract report content if it's substantial (more than just a simple answer)
-            if (reporterContent.length > 200 && (
-              reporterContent.includes('#') || // Has headers
-              reporterContent.includes('##') ||
-              reporterContent.includes('**') || // Has bold text
-              reporterContent.includes('Analysis') ||
-              reporterContent.includes('Report') ||
-              reporterContent.includes('Summary') ||
-              reporterContent.includes('Conclusion')
-            )) {
-              console.log('📄 Extracting report from reporter message');
-              setReportContent(reporterContent);
-              setActiveResearchTab('report');
-              setResearchPanelOpen(true);
-            }
-            
-            if (threadContext.expectingReporterDirectAnswer) {
-              console.log('✅ Reporter direct answer completed, resetting thread context');
-              setThreadContext(currentThreadId, {
-                plannerIndicatedDirectAnswer: false,
-                expectingReporterDirectAnswer: false
-              });
-            }
+            setResearchPanelOpen(true);
+            setActiveResearchTab('activities');
           }
 
         } catch (parseError) {
@@ -472,43 +324,16 @@ export const useEnhancedDeerStreaming = () => {
         }
       }
 
-      // Flush any remaining debounced events
-      flush();
-
       // Finalize the message when streaming ends
-      if (messageIdRef.current && currentPartialMessageRef.current) {
-        const finalMessage = finalizeMessage(currentPartialMessageRef.current, messageIdRef.current);
-        
-        // Check if the final message contains a report that should be extracted
-        const finalContent = finalMessage.content || '';
-        const isReporterMessage = finalMessage.metadata?.agent === 'reporter';
-        
-        if (isReporterMessage && finalContent.length > 200 && (
-          finalContent.includes('#') || // Has headers
-          finalContent.includes('##') ||
-          finalContent.includes('**') || // Has bold text
-          finalContent.includes('Analysis') ||
-          finalContent.includes('Report') ||
-          finalContent.includes('Summary') ||
-          finalContent.includes('Conclusion') ||
-          finalContent.includes('Introduction') ||
-          finalContent.includes('Background') ||
-          finalContent.includes('Findings') ||
-          finalContent.includes('Recommendations')
-        )) {
-          console.log('📄 Final message contains report content - extracting');
-          setReportContent(finalContent);
-          setActiveResearchTab('report');
-          setResearchPanelOpen(true);
-        }
-        
-        updateMessage(messageIdRef.current, {
+      if (messageId && currentPartialMessage) {
+        const finalMessage = finalizeMessage(currentPartialMessage, messageId);
+        updateMessage(messageId, {
           ...finalMessage,
           isStreaming: false
         });
       }
 
-      console.log(`✅ DeerFlow streaming completed successfully - processed ${processedEventCount} events`);
+      console.log(`✅ DeerFlow streaming completed successfully - processed ${eventCount} events`);
 
     } catch (error) {
       console.error('❌ DeerFlow streaming error:', error);
@@ -521,8 +346,8 @@ export const useEnhancedDeerStreaming = () => {
         error.message.includes('connection')
       );
       
-      if (messageIdRef.current) {
-        let errorMessage = currentPartialMessageRef.current?.content || '';
+      if (messageId) {
+        let errorMessage = currentPartialMessage?.content || '';
         
         if (isAbortError) {
           errorMessage += '\n\n⏹️ Stream was stopped by user.';
@@ -532,7 +357,7 @@ export const useEnhancedDeerStreaming = () => {
           errorMessage += `\n\n❌ An error occurred: ${error instanceof Error ? error.message : 'Unknown error'}`;
         }
         
-        updateMessage(messageIdRef.current, {
+        updateMessage(messageId, {
           content: errorMessage || 'Sorry, there was an error processing your request.',
           isStreaming: false,
           finishReason: isAbortError ? 'interrupt' : 'error'
@@ -546,17 +371,10 @@ export const useEnhancedDeerStreaming = () => {
         });
       }
     } finally {
-      // Cancel any pending debounced events
-      cancel();
-      
       setIsStreaming(false);
       setIsResponding(false);
       setCurrentMessageId(null);
       abortControllerRef.current = null;
-      
-      // Clear refs
-      currentPartialMessageRef.current = null;
-      messageIdRef.current = null;
     }
   }, [
     isStreaming,
@@ -579,28 +397,14 @@ export const useEnhancedDeerStreaming = () => {
       abortControllerRef.current.abort();
       console.log('⏹️ DeerFlow streaming stopped by user');
     }
-    
-    // Cancel pending events and flush immediately
-    cancel();
-    flush();
-  }, [cancel, flush]);
+  }, []);
 
-  // Memory cleanup
-  const cleanup = useCallback(() => {
-    stopStreaming();
-    currentPartialMessageRef.current = null;
-    messageIdRef.current = null;
-    setEventCount(0);
-  }, [stopStreaming]);
-
-  return useMemo(() => ({
+  return {
     startDeerFlowStreaming,
     stopStreaming,
-    cleanup,
     isStreaming,
-    currentMessageId,
-    eventCount
-  }), [startDeerFlowStreaming, stopStreaming, cleanup, isStreaming, currentMessageId, eventCount]);
+    currentMessageId
+  };
 };
 
 // Helper function to determine tool type from tool name

@@ -4,7 +4,7 @@ import React from 'react';
 import type { ComponentProps, ReactNode } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
 import { Facebook, Instagram, Linkedin, Youtube } from 'lucide-react';
-import { LogoOnly } from '@/components/icons';
+import { Logo } from '@/components/icons';
 
 interface FooterLink {
 	title: string;
@@ -89,7 +89,7 @@ export function Footer() {
 
 			<div className="grid w-full gap-8 xl:grid-cols-3 xl:gap-8">
 				<AnimatedContainer className="space-y-4">
-					<LogoOnly className="h-8" />
+					<Logo className="h-8" />
 					<p className="text-muted-foreground mt-8 text-sm md:mt-0">
 						© {new Date().getFullYear()} Optivise. All rights reserved.
 					</p>

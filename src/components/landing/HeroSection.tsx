@@ -1,12 +1,11 @@
 
-import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, CheckCircle, Users, Star, Zap } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { FloatingElements } from "./FloatingElements";
 import { DashboardPreview } from "./DashboardPreview";
 import { useAuth } from "@/contexts/AuthContext";
-
+import { useState } from "react";
 import TutorialVideoDialog from "@/components/tutorial/TutorialVideoDialog";
 
 export const HeroSection = () => {

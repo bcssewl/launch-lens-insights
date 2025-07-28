@@ -28,7 +28,7 @@ export interface ToolCallResult {
 export type StreamEvent = 
   | { event: 'message_chunk'; data: MessageChunk }
   | { event: 'tool_call'; data: { id: string; name: string; args: Record<string, any> } }
-  | { event: 'tool_calls'; data: { tool_calls: Array<{ id: string; name: string; args: Record<string, any> }> } }
+  | { event: 'tool_calls'; data: Array<{ id: string; name: string; args: Record<string, any> }> | { id: string; name: string; args: Record<string, any> } }
   | { event: 'tool_call_chunk'; data: ToolCallChunk }
   | { event: 'tool_call_chunks'; data: ToolCallChunk[] | ToolCallChunk }
   | { event: 'tool_call_result'; data: ToolCallResult & { 
@@ -50,7 +50,6 @@ export type StreamEvent =
       }
     } }
   | { event: 'thinking'; data: { phase: string; content: string } }
-  | { event: 'reasoning_content'; data: { content: string; agent?: string; id?: string; role?: string; thread_id?: string } }
   | { event: 'reasoning'; data: { step: string; content: string } }
   | { event: 'search'; data: { query: string; results?: any[] } }
   | { event: 'visit'; data: { url: string; title?: string; content?: string } }
@@ -224,20 +223,31 @@ export function mergeMessage(
       }
 
       case 'tool_calls': {
-        console.log('🔧 Processing tool_calls (plural) event:', event.data);
-        const newToolCalls = event.data.tool_calls?.map((call: any) => ({
-          id: call.id || `tool_${Date.now()}`,
-          name: call.name || 'unknown',
-          args: call.args || {},
-          argsChunks: []
-        })) || [];
-        
+        const toolCallsData = Array.isArray(event.data) ? event.data : [event.data];
+        const existingToolCalls = [...(currentMessage.toolCalls || [])];
+
+        for (const toolCall of toolCallsData) {
+          const existingIndex = existingToolCalls.findIndex(tc => tc.id === toolCall.id);
+          
+          if (existingIndex >= 0) {
+            existingToolCalls[existingIndex] = {
+              ...existingToolCalls[existingIndex],
+              name: toolCall.name,
+              args: toolCall.args
+            };
+          } else {
+            existingToolCalls.push({
+              id: toolCall.id,
+              name: toolCall.name,
+              args: toolCall.args,
+              argsChunks: []
+            });
+          }
+        }
+
         return {
           ...currentMessage,
-          toolCalls: [
-            ...(currentMessage.toolCalls || []),
-            ...newToolCalls
-          ],
+          toolCalls: existingToolCalls,
           isStreaming: true
         };
       }
@@ -343,32 +353,6 @@ export function mergeMessage(
         };
       }
 
-      case 'reasoning_content': {
-        if (!currentMessage.metadata) currentMessage.metadata = {};
-        if (!currentMessage.metadata.reasoningContentChunks) currentMessage.metadata.reasoningContentChunks = [];
-        
-        const newContent = event.data.content || '';
-        const agent = event.data.agent || currentMessage.metadata?.agent;
-        
-        console.log(`🧠 Merging reasoning content from ${agent}: "${newContent.substring(0, 50)}..."`);
-        
-        // Add to chunks for streaming
-        currentMessage.metadata.reasoningContentChunks.push(newContent);
-        
-        // Update the full reasoning content
-        const fullReasoningContent = currentMessage.metadata.reasoningContentChunks.join('');
-        currentMessage.metadata.reasoningContent = fullReasoningContent;
-        
-        return {
-          ...currentMessage,
-          metadata: {
-            ...currentMessage.metadata,
-            agent: agent
-          },
-          isStreaming: true
-        };
-      }
-
       case 'thinking': {
         if (!currentMessage.metadata) currentMessage.metadata = {};
         if (!currentMessage.metadata.thinkingPhases) currentMessage.metadata.thinkingPhases = [];
@@ -430,21 +414,14 @@ export function mergeMessage(
         const options = event.data.options || 
           (currentMessage.metadata?.agent === 'planner' ? defaultOptions : undefined);
         
-        // Parse plan data for planner messages
+        // Parse plan steps for planner messages
         let planSteps: any[] = [];
-        let hasEnoughContext = false;
-        let isPlannerDirectAnswer = false;
-        
         if (currentMessage.metadata?.agent === 'planner' && currentMessage.content) {
           try {
             const parsed = JSON.parse(currentMessage.content);
             planSteps = parsed.steps || [];
-            hasEnoughContext = parsed.has_enough_context || false;
-            // If planner says has enough context and no steps, it's indicating direct answer
-            isPlannerDirectAnswer = hasEnoughContext && planSteps.length === 0;
           } catch (e) {
-            // JSON parsing failed, try regex fallback for plain text
-            console.log('🔍 JSON parsing failed for planner content, using regex fallback');
+            // If parsing fails, try to extract steps from the content
             const stepMatches = currentMessage.content.match(/\d+\.\s+(.+)/g);
             if (stepMatches) {
               planSteps = stepMatches.map(match => match.replace(/^\d+\.\s+/, ''));
@@ -459,9 +436,7 @@ export function mergeMessage(
           options: options,
           metadata: {
             ...currentMessage.metadata,
-            planSteps: planSteps,
-            hasEnoughContext: hasEnoughContext,
-            isPlannerDirectAnswer: isPlannerDirectAnswer
+            planSteps: planSteps
           }
         };
       }
@@ -509,11 +484,7 @@ export function finalizeMessage(
     options: partialMessage.options || [],
     metadata: {
       ...partialMessage.metadata,
-      threadId: partialMessage.metadata?.threadId,
-      // Ensure optional fields are properly typed
-      planSteps: partialMessage.metadata?.planSteps,
-      thinkingPhases: partialMessage.metadata?.thinkingPhases,
-      researchState: partialMessage.metadata?.researchState
+      threadId: partialMessage.metadata?.threadId
     }
   };
 }

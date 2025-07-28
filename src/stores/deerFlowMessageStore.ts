@@ -37,7 +37,6 @@ export interface DeerMessage {
     steps?: string[];
     audioUrl?: string;
     reasoningContent?: string;
-    reasoningContentChunks?: string[]; // For streaming reasoning content
     researchState?: 'researching' | 'generating_report' | 'report_generated';
     threadId?: string;
     
@@ -49,8 +48,6 @@ export interface DeerMessage {
     reportContent?: string;
     citations?: any[];
     planSteps?: any[]; // Parsed plan steps for research activities
-    hasEnoughContext?: boolean; // Whether planner indicated it has enough context
-    isPlannerDirectAnswer?: boolean; // Whether this indicates next reporter message is direct answer
   };
 }
 
@@ -89,12 +86,6 @@ interface DeerFlowMessageState {
   reportContent: string;
   isResearchPanelOpen: boolean;
   activeResearchTab: 'activities' | 'report';
-  
-  // Thread context tracking
-  threadContexts: Record<string, {
-    plannerIndicatedDirectAnswer: boolean;
-    expectingReporterDirectAnswer: boolean;
-  }>;
 }
 
 interface DeerFlowMessageActions {
@@ -122,10 +113,6 @@ interface DeerFlowMessageActions {
   setIsResponding: (responding: boolean) => void;
   setResearchPanelOpen: (open: boolean) => void;
   setActiveResearchTab: (tab: 'activities' | 'report') => void;
-  
-  // Thread context actions
-  setThreadContext: (threadId: string, context: { plannerIndicatedDirectAnswer: boolean; expectingReporterDirectAnswer: boolean; }) => void;
-  getThreadContext: (threadId: string) => { plannerIndicatedDirectAnswer: boolean; expectingReporterDirectAnswer: boolean; };
 }
 
 type DeerFlowMessageStore = DeerFlowMessageState & DeerFlowMessageActions;
@@ -143,7 +130,6 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()(
       reportContent: '',
       isResearchPanelOpen: false,
       activeResearchTab: 'activities',
-      threadContexts: {},
 
       // Thread management
       createNewThread: () => {
@@ -297,19 +283,6 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()(
       setIsResponding: (responding) => set({ isResponding: responding }),
       setResearchPanelOpen: (open) => set({ isResearchPanelOpen: open }),
       setActiveResearchTab: (tab) => set({ activeResearchTab: tab }),
-      
-      // Thread context actions
-      setThreadContext: (threadId, context) => 
-        set((state) => ({
-          threadContexts: { ...state.threadContexts, [threadId]: context }
-        })),
-      getThreadContext: (threadId) => {
-        const state = get();
-        return state.threadContexts[threadId] || { 
-          plannerIndicatedDirectAnswer: false, 
-          expectingReporterDirectAnswer: false 
-        };
-      },
     }),
     {
       name: 'deer-flow-messages',

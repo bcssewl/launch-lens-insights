@@ -3,7 +3,7 @@
  * @description Enhanced message item component with full DeerFlow event support
  */
 
-import React, { memo } from 'react';
+import React from 'react';
 import { motion } from "motion/react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,16 +11,13 @@ import { Badge } from "@/components/ui/badge";
 import { Play, Download, Check, X, Bot } from "lucide-react";
 import MarkdownRenderer from "@/components/assistant/MarkdownRenderer";
 import { DeerMessage } from "@/stores/deerFlowStore";
-import { useDeerFlowMessageStore } from "@/stores/deerFlowMessageStore";
 import UserAvatar from "@/components/assistant/UserAvatar";
 import AIAvatar from "@/components/assistant/AIAvatar";
 import { useStreamingChat } from "@/hooks/useStreamingChat";
 import { DeepThinkingSection } from './DeepThinkingSection';
-import { ThoughtBlock } from './ThoughtBlock';
 import { ToolExecutionDisplay } from './ToolExecutionDisplay';
 import { ResearchActivitiesDisplay } from './ResearchActivitiesDisplay';
 import { ReportGenerationProgress } from './ReportGenerationProgress';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 interface MessageItemProps {
   message: DeerMessage;
@@ -34,7 +31,7 @@ interface PlannerMessageProps {
   onFeedback: (feedback: string) => void;
 }
 
-export const MessageItem = memo(({ message, 'aria-posinset': ariaPosinset, 'aria-setsize': ariaSetsize, className = '' }: MessageItemProps) => {
+export const MessageItem = ({ message, 'aria-posinset': ariaPosinset, 'aria-setsize': ariaSetsize, className = '' }: MessageItemProps) => {
   const { sendFeedback } = useStreamingChat();
 
   const handleFeedback = (feedback: string) => {
@@ -53,17 +50,7 @@ export const MessageItem = memo(({ message, 'aria-posinset': ariaPosinset, 'aria
         if (agent === 'planner') {
           return <PlannerMessage message={message} onFeedback={handleFeedback} />;
         } else if (agent === 'reporter') {
-          // Check if this is a direct answer based on thread context
-          const { getThreadContext } = useDeerFlowMessageStore();
-          const threadContext = getThreadContext(message.metadata?.threadId || '');
-          
-          if (threadContext.expectingReporterDirectAnswer) {
-            // This is a direct answer - show in main chat
-            return <CoordinatorMessage message={message} />;
-          } else {
-            // This is research content - show in research panel
-            return <ResearchMessage message={message} />;
-          }
+          return <ResearchMessage message={message} />;
         } else if (message.metadata?.audioUrl) {
           return <PodcastMessage message={message} />;
         } else {
@@ -91,45 +78,34 @@ export const MessageItem = memo(({ message, 'aria-posinset': ariaPosinset, 'aria
   const timestamp = message.timestamp.toLocaleString();
 
   return (
-    <ErrorBoundary>
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className={`w-full focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-lg ${className}`}
-        role="article"
-        aria-label={`${messageTypeDescription} from ${timestamp}`}
-        aria-posinset={ariaPosinset}
-        aria-setsize={ariaSetsize}
-        tabIndex={0}
-      >
-        {/* Live region for streaming updates */}
-        {message.isStreaming && (
-          <div 
-            aria-live="polite" 
-            aria-atomic="false"
-            className="sr-only"
-          >
-            {message.metadata?.agent === 'planner' ? 'Planning in progress' : 
-             message.metadata?.agent === 'reporter' ? 'Generating report' : 
-             'Response in progress'}
-          </div>
-        )}
-        
-        {renderMessageContent()}
-      </motion.div>
-    </ErrorBoundary>
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      className={`w-full focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-lg ${className}`}
+      role="article"
+      aria-label={`${messageTypeDescription} from ${timestamp}`}
+      aria-posinset={ariaPosinset}
+      aria-setsize={ariaSetsize}
+      tabIndex={0}
+    >
+      {/* Live region for streaming updates */}
+      {message.isStreaming && (
+        <div 
+          aria-live="polite" 
+          aria-atomic="false"
+          className="sr-only"
+        >
+          {message.metadata?.agent === 'planner' ? 'Planning in progress' : 
+           message.metadata?.agent === 'reporter' ? 'Generating report' : 
+           'Response in progress'}
+        </div>
+      )}
+      
+      {renderMessageContent()}
+    </motion.div>
   );
-}, (prevProps, nextProps) => {
-  // Custom comparison for memo optimization
-  return (
-    prevProps.message.id === nextProps.message.id &&
-    prevProps.message.content === nextProps.message.content &&
-    prevProps.message.isStreaming === nextProps.message.isStreaming &&
-    prevProps.message.finishReason === nextProps.message.finishReason &&
-    JSON.stringify(prevProps.message.metadata) === JSON.stringify(nextProps.message.metadata)
-  );
-});
+};
 
 const UserMessage = ({ content }: { content: string }) => (
   <div className="flex justify-end mb-4">
@@ -161,7 +137,6 @@ const PlannerMessage = ({ message, onFeedback }: PlannerMessageProps) => {
     thought, 
     steps, 
     reasoningContent,
-    reasoningContentChunks = [],
     thinkingPhases = [],
     reasoningSteps = [],
     searchActivities = [],
@@ -169,9 +144,6 @@ const PlannerMessage = ({ message, onFeedback }: PlannerMessageProps) => {
   } = message.metadata || {};
   const options = message.options;
   const toolCalls = message.toolCalls || [];
-
-  // Check if we have main content to determine thinking state
-  const hasMainContent = message.content && message.content.trim() !== "";
 
   const parsedContent = (() => {
     try {
@@ -185,106 +157,82 @@ const PlannerMessage = ({ message, onFeedback }: PlannerMessageProps) => {
     <div className="flex justify-start mb-4">
       <div className="flex items-start space-x-3 max-w-[90%]">
         <AIAvatar className="w-8 h-8" />
-        <div className="w-full space-y-4">
-          {/* Thought Block - Smart thinking display */}
-          {reasoningContent && (
-            <ThoughtBlock
-              reasoningContent={reasoningContent}
-              reasoningContentChunks={reasoningContentChunks}
-              hasMainContent={hasMainContent}
+        <Card className="w-full border-blue-200 bg-blue-50/50 dark:bg-blue-950/20 dark:border-blue-800">
+          <CardContent className="p-4">
+            {/* Agent indicator */}
+            <Badge variant="outline" className="mb-2 text-xs">
+              planner
+            </Badge>
+
+            {/* Deep Thinking Section for planner messages */}
+            <DeepThinkingSection
+              thinkingPhases={thinkingPhases}
+              reasoningSteps={reasoningSteps}
               isStreaming={message.isStreaming}
-              agent="planner"
             />
-          )}
 
-          {/* Plan Content Card - Show with elegant animation when content exists */}
-          {hasMainContent && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, ease: "easeOut" }}
-            >
-              <Card className="w-full border-blue-200 bg-blue-50/50 dark:bg-blue-950/20 dark:border-blue-800">
-                <CardContent className="p-4">
-                  {/* Agent indicator */}
-                  <Badge variant="outline" className="mb-2 text-xs">
-                    planner
-                  </Badge>
+            {/* Tool Execution Display */}
+            <ToolExecutionDisplay
+              toolCalls={toolCalls}
+              isStreaming={message.isStreaming}
+            />
 
-                  {/* Legacy Deep Thinking Section for backward compatibility */}
-                  {!reasoningContent && (
-                    <DeepThinkingSection
-                      thinkingPhases={thinkingPhases}
-                      reasoningSteps={reasoningSteps}
-                      isStreaming={message.isStreaming}
-                    />
-                  )}
+            {/* Research Activities Display */}
+            <ResearchActivitiesDisplay
+              searchActivities={searchActivities}
+              visitedUrls={visitedUrls}
+              isStreaming={message.isStreaming}
+            />
 
-                  {/* Tool Execution Display */}
-                  <ToolExecutionDisplay
-                    toolCalls={toolCalls}
-                    isStreaming={message.isStreaming}
-                  />
+            {/* Plan Content - Simplified for planner messages */}
+            <div className="space-y-3">
+              <h3 className="font-semibold text-foreground">
+                {parsedContent.title || title || "Research Plan"}
+              </h3>
+              
+              {(parsedContent.thought || thought) && (
+                <p className="text-sm text-muted-foreground">
+                  {parsedContent.thought || thought}
+                </p>
+              )}
 
-                  {/* Research Activities Display */}
-                  <ResearchActivitiesDisplay
-                    searchActivities={searchActivities}
-                    visitedUrls={visitedUrls}
-                    isStreaming={message.isStreaming}
-                  />
+              {/* Show only a summary for plan steps, detailed steps go to research panel */}
+              {(parsedContent.steps || steps) && (
+                <div className="text-sm text-muted-foreground">
+                  <p>📋 Plan created with {(parsedContent.steps || steps).length} steps. View details in the Research Panel →</p>
+                </div>
+              )}
 
-                  {/* Plan Content - Simplified for planner messages */}
-                  <div className="space-y-3">
-                    <h3 className="font-semibold text-foreground">
-                      {parsedContent.title || title || "Research Plan"}
-                    </h3>
-                    
-                    {(parsedContent.thought || thought) && (
-                      <p className="text-sm text-muted-foreground">
-                        {parsedContent.thought || thought}
-                      </p>
-                    )}
+              {/* Legacy reasoning content fallback */}
+              {reasoningContent && !reasoningSteps.length && !thinkingPhases.length && (
+                <div className="text-sm text-muted-foreground bg-muted/50 rounded p-3">
+                  {reasoningContent}
+                </div>
+              )}
 
-                    {/* Show only a summary for plan steps, detailed steps go to research panel */}
-                    {(parsedContent.steps || steps) && (
-                      <div className="text-sm text-muted-foreground">
-                        <p>📋 Plan created with {(parsedContent.steps || steps).length} steps. View details in the Research Panel →</p>
-                      </div>
-                    )}
-
-                    {/* Legacy reasoning content fallback */}
-                    {reasoningContent && !reasoningSteps.length && !thinkingPhases.length && !reasoningContentChunks.length && (
-                      <div className="text-sm text-muted-foreground bg-muted/50 rounded p-3">
-                        {reasoningContent}
-                      </div>
-                    )}
-
-                    {/* Show interrupt options if available */}
-                    {options && options.length > 0 && (
-                      <div className="flex space-x-2 pt-2">
-                        {options.map((option, index) => (
-                          <Button
-                            key={index}
-                            size="sm"
-                            variant={option.value === 'accepted' ? 'default' : 'outline'}
-                            onClick={() => onFeedback?.(option.value)}
-                          >
-                            {option.value === 'accepted' ? (
-                              <Check className="h-4 w-4 mr-1" />
-                            ) : (
-                              <X className="h-4 w-4 mr-1" />
-                            )}
-                            {option.text}
-                          </Button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-        </div>
+              {/* Show interrupt options if available */}
+              {options && options.length > 0 && (
+                <div className="flex space-x-2 pt-2">
+                  {options.map((option, index) => (
+                    <Button
+                      key={index}
+                      size="sm"
+                      variant={option.value === 'accepted' ? 'default' : 'outline'}
+                      onClick={() => onFeedback?.(option.value)}
+                    >
+                      {option.value === 'accepted' ? (
+                        <Check className="h-4 w-4 mr-1" />
+                      ) : (
+                        <X className="h-4 w-4 mr-1" />
+                      )}
+                      {option.text}
+                    </Button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
@@ -342,81 +290,55 @@ const PodcastMessage = ({ message }: { message: DeerMessage }) => {
 const CoordinatorMessage = ({ message }: { message: DeerMessage }) => {
   const agent = message.metadata?.agent || 'assistant';
   const isCoordinator = agent === 'coordinator' || agent === 'assistant';
-  const { reasoningContent, reasoningContentChunks = [] } = message.metadata || {};
-  
-  // Check if we have main content to determine thinking state
-  const hasMainContent = message.content && message.content.trim() !== "";
   
   return (
     <div className="flex justify-start mb-4">
       <div className="flex items-start space-x-3 max-w-[90%]">
         <AIAvatar className="w-8 h-8" />
-        <div className="w-full space-y-4">
-          {/* Thought Block for reporter reasoning */}
-          {reasoningContent && agent === 'reporter' && (
-            <ThoughtBlock
-              reasoningContent={reasoningContent}
-              reasoningContentChunks={reasoningContentChunks}
-              hasMainContent={hasMainContent}
-              isStreaming={message.isStreaming}
-              agent="reporter"
-            />
-          )}
-
-          {/* Main Content Card */}
-          {hasMainContent && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, ease: "easeOut" }}
-            >
-              <Card className={`w-full ${isCoordinator ? 'border-primary/20 bg-primary/5' : 'bg-muted/50'}`}>
-                <CardContent className="p-4">
-                  {/* Agent indicator for non-standard agents */}
-                  {agent !== 'assistant' && (
-                    <Badge variant="outline" className="mb-3 text-xs">
-                      <Bot className="h-3 w-3 mr-1" />
-                      {agent}
-                    </Badge>
-                  )}
-                  
-                  {/* Main content with markdown rendering - maintains streaming effects */}
-                  <div className="space-y-3">
-                    {message.content ? (
-                      <MarkdownRenderer content={message.content} />
-                    ) : (
-                      <div className="text-muted-foreground text-sm italic">
-                        {message.isStreaming ? 'Thinking...' : 'No response content available'}
-                      </div>
-                    )}
-                    
-                    {/* Show streaming indicator */}
-                    {message.isStreaming && (
-                      <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-                        <div className="flex space-x-1">
-                          <div className="w-1 h-1 bg-primary rounded-full animate-pulse" />
-                          <div className="w-1 h-1 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
-                          <div className="w-1 h-1 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
-                        </div>
-                        <span>Responding...</span>
-                      </div>
-                    )}
-                    
-                    {/* Tool calls if any */}
-                    {message.toolCalls && message.toolCalls.length > 0 && (
-                      <div className="mt-4">
-                        <ToolExecutionDisplay
-                          toolCalls={message.toolCalls}
-                          isStreaming={message.isStreaming}
-                        />
-                      </div>
-                    )}
+        <Card className={`w-full ${isCoordinator ? 'border-primary/20 bg-primary/5' : 'bg-muted/50'}`}>
+          <CardContent className="p-4">
+            {/* Agent indicator for non-standard agents */}
+            {agent !== 'assistant' && (
+              <Badge variant="outline" className="mb-3 text-xs">
+                <Bot className="h-3 w-3 mr-1" />
+                {agent}
+              </Badge>
+            )}
+            
+            {/* Main content with markdown rendering */}
+            <div className="space-y-3">
+              {message.content ? (
+                <MarkdownRenderer content={message.content} />
+              ) : (
+                <div className="text-muted-foreground text-sm italic">
+                  {message.isStreaming ? 'Thinking...' : 'No response content available'}
+                </div>
+              )}
+              
+              {/* Show streaming indicator */}
+              {message.isStreaming && (
+                <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+                  <div className="flex space-x-1">
+                    <div className="w-1 h-1 bg-primary rounded-full animate-pulse" />
+                    <div className="w-1 h-1 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
+                    <div className="w-1 h-1 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
                   </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-        </div>
+                  <span>Responding...</span>
+                </div>
+              )}
+              
+              {/* Tool calls if any */}
+              {message.toolCalls && message.toolCalls.length > 0 && (
+                <div className="mt-4">
+                  <ToolExecutionDisplay
+                    toolCalls={message.toolCalls}
+                    isStreaming={message.isStreaming}
+                  />
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
