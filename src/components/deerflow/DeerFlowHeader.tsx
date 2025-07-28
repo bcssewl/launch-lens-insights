@@ -1,4 +1,4 @@
-import { Settings, Github, Languages } from "lucide-react";
+import { Settings, Github, Languages, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -6,10 +6,21 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useToast } from "@/hooks/use-toast";
 import { useDeerFlowStore } from "@/stores/deerFlowStore";
 
 export const DeerFlowHeader = () => {
-  const { setSettingsOpen } = useDeerFlowStore();
+  const { setSettingsOpen, clearMessages, createNewThread, messages } = useDeerFlowStore();
+  const { toast } = useToast();
+
+  const handleClearChat = () => {
+    clearMessages();
+    createNewThread();
+    toast({
+      title: "Chat Cleared",
+      description: "Started a new conversation",
+    });
+  };
 
   return (
     <header className="h-14 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -21,6 +32,19 @@ export const DeerFlowHeader = () => {
         </div>
 
         <div className="flex items-center space-x-2">
+          {/* Clear Chat Button - only show if there are messages */}
+          {messages.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleClearChat}
+              className="text-muted-foreground hover:text-destructive"
+            >
+              <Trash2 className="h-4 w-4" />
+              <span className="sr-only">Clear Chat</span>
+            </Button>
+          )}
+
           {/* Language Selector */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
