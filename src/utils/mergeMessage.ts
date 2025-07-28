@@ -28,7 +28,9 @@ export interface ToolCallResult {
 export type StreamEvent = 
   | { event: 'message_chunk'; data: MessageChunk }
   | { event: 'tool_call'; data: { id: string; name: string; args: Record<string, any> } }
+  | { event: 'tool_calls'; data: Array<{ id: string; name: string; args: Record<string, any> }> | { id: string; name: string; args: Record<string, any> } }
   | { event: 'tool_call_chunk'; data: ToolCallChunk }
+  | { event: 'tool_call_chunks'; data: ToolCallChunk[] | ToolCallChunk }
   | { event: 'tool_call_result'; data: ToolCallResult & { 
       result?: {
         repositories?: Array<{
@@ -212,6 +214,36 @@ export function mergeMessage(
         };
       }
 
+      case 'tool_calls': {
+        const toolCallsData = Array.isArray(event.data) ? event.data : [event.data];
+        const existingToolCalls = [...(currentMessage.toolCalls || [])];
+
+        for (const toolCall of toolCallsData) {
+          const existingIndex = existingToolCalls.findIndex(tc => tc.id === toolCall.id);
+          
+          if (existingIndex >= 0) {
+            existingToolCalls[existingIndex] = {
+              ...existingToolCalls[existingIndex],
+              name: toolCall.name,
+              args: toolCall.args
+            };
+          } else {
+            existingToolCalls.push({
+              id: toolCall.id,
+              name: toolCall.name,
+              args: toolCall.args,
+              argsChunks: []
+            });
+          }
+        }
+
+        return {
+          ...currentMessage,
+          toolCalls: existingToolCalls,
+          isStreaming: true
+        };
+      }
+
       case 'tool_call_chunk': {
         const existingToolCalls = [...(currentMessage.toolCalls || [])];
         const existingIndex = existingToolCalls.findIndex(tc => tc.id === event.data.id);
@@ -240,6 +272,49 @@ export function mergeMessage(
               existingToolCalls[targetIndex].args = JSON.parse(completeArgsString);
             } catch (e) {
               // Args not complete yet
+            }
+          }
+        }
+
+        return {
+          ...currentMessage,
+          toolCalls: existingToolCalls,
+          isStreaming: true
+        };
+      }
+
+      case 'tool_call_chunks': {
+        const chunksData = Array.isArray(event.data) ? event.data : [event.data];
+        const existingToolCalls = [...(currentMessage.toolCalls || [])];
+
+        for (const chunk of chunksData) {
+          const existingIndex = existingToolCalls.findIndex(tc => tc.id === chunk.id);
+
+          if (chunk.name && existingIndex >= 0) {
+            existingToolCalls[existingIndex].name = chunk.name;
+          } else if (chunk.name) {
+            existingToolCalls.push({
+              id: chunk.id,
+              name: chunk.name,
+              args: {},
+              argsChunks: []
+            });
+          }
+
+          if (chunk.args) {
+            const targetIndex = existingToolCalls.findIndex(tc => tc.id === chunk.id);
+            if (targetIndex >= 0) {
+              if (!existingToolCalls[targetIndex].argsChunks) {
+                existingToolCalls[targetIndex].argsChunks = [];
+              }
+              existingToolCalls[targetIndex].argsChunks!.push(chunk.args);
+              
+              const completeArgsString = existingToolCalls[targetIndex].argsChunks!.join('');
+              try {
+                existingToolCalls[targetIndex].args = JSON.parse(completeArgsString);
+              } catch (e) {
+                // Args not complete yet
+              }
             }
           }
         }

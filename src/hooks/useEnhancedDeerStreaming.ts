@@ -137,28 +137,66 @@ export const useEnhancedDeerStreaming = () => {
           }
 
           // Handle tool calls - update pending research activities or add new ones
-          if ('event' in streamEvent && streamEvent.event === 'tool_call') {
-            // Try to find a pending research activity that matches this tool call
-            const pendingActivity = researchActivities
-              .filter(activity => activity.threadId === currentThreadId && activity.status === 'pending')
-              .shift(); // Get the first pending activity
+          if ('event' in streamEvent && streamEvent.event === 'tool_calls') {
+            // Handle array of tool calls
+            const toolCalls = Array.isArray(streamEvent.data) ? streamEvent.data : [streamEvent.data];
             
-            if (pendingActivity) {
-              // Update the first pending activity to running
-              updateResearchActivity(pendingActivity.id, {
-                ...pendingActivity,
-                title: `${streamEvent.data.name}: ${pendingActivity.title}`,
-                content: streamEvent.data.args,
-                status: 'running'
-              });
-            } else {
-              // Add new research activity if no pending ones found
-              addResearchActivity({
-                toolType: getToolType(streamEvent.data.name),
-                title: `Using tool: ${streamEvent.data.name}`,
-                content: streamEvent.data.args,
-                status: 'running'
-              });
+            for (const toolCall of toolCalls) {
+              // Try to find a pending research activity that matches this tool call
+              const pendingActivity = researchActivities
+                .filter(activity => activity.threadId === currentThreadId && activity.status === 'pending')
+                .shift(); // Get the first pending activity
+              
+              if (pendingActivity) {
+                // Update the first pending activity to running
+                updateResearchActivity(pendingActivity.id, {
+                  ...pendingActivity,
+                  title: `${toolCall.name}: ${pendingActivity.title}`,
+                  content: toolCall.args,
+                  status: 'running'
+                });
+              } else {
+                // Add new research activity if no pending ones found
+                addResearchActivity({
+                  toolType: getToolType(toolCall.name),
+                  title: `Using tool: ${toolCall.name}`,
+                  content: toolCall.args,
+                  status: 'running'
+                });
+              }
+            }
+          }
+
+          // Handle tool call chunks - update pending research activities or add new ones
+          if ('event' in streamEvent && streamEvent.event === 'tool_call_chunks') {
+            // Handle array of tool call chunks
+            const toolCallChunks = Array.isArray(streamEvent.data) ? streamEvent.data : [streamEvent.data];
+            
+            for (const chunk of toolCallChunks) {
+              if (chunk.name) {
+                // Try to find a pending research activity that matches this tool call
+                const pendingActivity = researchActivities
+                  .filter(activity => activity.threadId === currentThreadId && activity.status === 'pending')
+                  .shift(); // Get the first pending activity
+                
+                if (pendingActivity) {
+                  // Update the first pending activity to running
+                  updateResearchActivity(pendingActivity.id, {
+                    ...pendingActivity,
+                    title: `${chunk.name}: ${pendingActivity.title}`,
+                    content: chunk.args || {},
+                    status: 'running'
+                  });
+                } else {
+                  // Add new research activity if no pending ones found
+                  addResearchActivity({
+                    toolType: getToolType(chunk.name),
+                    title: `Using tool: ${chunk.name}`,
+                    content: chunk.args || {},
+                    status: 'running'
+                  });
+                }
+              }
             }
           }
 
