@@ -40,6 +40,7 @@ export const useEnhancedDeerStreaming = () => {
   
   const {
     addMessage,
+    addMessageWithId,
     updateMessage,
     existsMessage,
     getMessage,
@@ -52,20 +53,48 @@ export const useEnhancedDeerStreaming = () => {
   const { settings } = useDeerFlowStore();
   const { toast } = useToast();
 
-  // Simple event processing like original
+  // Enhanced event processing with API ID priority and debugging
   const processEvent = useCallback((event: StreamEvent) => {
     const data = 'data' in event ? event.data : event;
-    const messageId = data.id || data.message_id || currentMessageId;
+    // Primary ID source: API data
+    let messageId = data.id || data.message_id;
     
-    if (!messageId) return;
+    // Fallback: use current message ID if API doesn't provide one
+    if (!messageId) {
+      messageId = currentMessageId;
+    }
+    
+    if (!messageId) {
+      console.warn('🚨 Event missing message ID:', event);
+      return;
+    }
 
-    // Get existing message
-    const existingMessage = getMessage(messageId);
-    if (!existingMessage) return;
+    console.log('🔄 Processing event for message ID:', messageId, 'Event:', event.event);
+
+    // Get existing message using API ID
+    let existingMessage = getMessage(messageId);
+    
+    // Fallback: if message not found, try to find most recent streaming message
+    if (!existingMessage && currentMessageId) {
+      console.warn(`Message ${messageId} not found, trying fallback to currentMessageId: ${currentMessageId}`);
+      existingMessage = getMessage(currentMessageId);
+      if (existingMessage) {
+        messageId = currentMessageId;
+      }
+    }
+    
+    if (!existingMessage) {
+      console.error('❌ No suitable message found for event processing. MessageId:', messageId);
+      return;
+    }
+
+    console.log('📦 Message found in store:', '✅');
 
     // Update message with new event data
     const updatedMessage = mergeMessage(existingMessage, event);
     updateMessage(messageId, updatedMessage);
+    
+    console.log('✨ Message updated successfully');
 
     // Handle UI updates based on agent
     if (event.event === 'message_chunk' && data.agent) {
@@ -125,7 +154,7 @@ export const useEnhancedDeerStreaming = () => {
     
     console.log('🦌 Starting DeerFlow streaming for:', question);
 
-    // Add user message (like original)
+    // Add user message
     addMessage({
       role: 'user',
       content: question,
@@ -133,24 +162,9 @@ export const useEnhancedDeerStreaming = () => {
       contentChunks: [question]
     });
 
-    // Create assistant message
-    const assistantMessageId = crypto.randomUUID();
-    setCurrentMessageId(assistantMessageId);
-    
-    const initialMessage = {
-      role: 'assistant' as const,
-      content: '',
-      threadId: currentThreadId,
-      contentChunks: [],
-      isStreaming: true
-    };
-    
-    addMessage(initialMessage);
-    
-    // Get the created message ID
-    const messages = useDeerFlowMessageStore.getState().messageIds;
-    const createdId = messages[messages.length - 1];
-    setCurrentMessageId(createdId);
+    // Reset current message ID - will be set by first API event
+    setCurrentMessageId(null);
+    let messageCreated = false;
 
     // Prepare request body
     const requestBody = JSON.stringify({
@@ -229,7 +243,32 @@ export const useEnhancedDeerStreaming = () => {
                   data: JSON.parse(currentData)
                 };
                 
-                // Process every event the same way (like original)
+                // Extract API message ID from first event
+                const apiMessageId = event.data.id || event.data.message_id;
+                
+                // Create message with API ID on first event
+                if (!messageCreated && apiMessageId) {
+                  console.log('📝 Creating message with API ID:', apiMessageId);
+                  
+                  const initialMessage = {
+                    id: apiMessageId,
+                    role: 'assistant' as const,
+                    content: '',
+                    threadId: currentThreadId,
+                    contentChunks: [],
+                    reasoningContent: '',
+                    reasoningContentChunks: [],
+                    timestamp: new Date(),
+                    isStreaming: true,
+                    agent: event.data.agent
+                  };
+                  
+                  addMessageWithId(initialMessage);
+                  setCurrentMessageId(apiMessageId);
+                  messageCreated = true;
+                }
+                
+                // Process event with consistent API ID
                 processEvent(event);
               } catch (error) {
                 console.warn('Failed to parse SSE data:', currentData);
@@ -239,11 +278,11 @@ export const useEnhancedDeerStreaming = () => {
         }
       }
 
-      // Mark message as complete
-      if (assistantMessageId) {
-        const finalMessage = getMessage(assistantMessageId);
+      // Mark message as complete using current message ID
+      if (currentMessageId) {
+        const finalMessage = getMessage(currentMessageId);
         if (finalMessage) {
-          updateMessage(assistantMessageId, {
+          updateMessage(currentMessageId, {
             ...finalMessage,
             isStreaming: false
           });
@@ -262,6 +301,7 @@ export const useEnhancedDeerStreaming = () => {
   }, [
     isStreaming,
     addMessage,
+    addMessageWithId,
     updateMessage,
     getMessage,
     setIsResponding,
