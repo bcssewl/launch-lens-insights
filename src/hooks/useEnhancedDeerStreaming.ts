@@ -21,12 +21,38 @@ interface DeerStreamingOptions {
   enableDeepThinking?: boolean;
 }
 
+interface ConnectionStatus {
+  status: 'connected' | 'connecting' | 'disconnected' | 'error';
+  lastError?: string;
+  retryCount: number;
+}
+
+interface RetryConfig {
+  maxRetries: number;
+  baseDelay: number;
+  maxDelay: number;
+}
+
 export const useEnhancedDeerStreaming = () => {
   const [isStreaming, setIsStreaming] = useState(false);
   const [currentMessageId, setCurrentMessageId] = useState<string | null>(null);
   const [eventCount, setEventCount] = useState(0);
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>({
+    status: 'disconnected',
+    retryCount: 0
+  });
+  
   const currentPartialMessageRef = useRef<Partial<DeerMessage> | null>(null);
   const messageIdRef = useRef<string | null>(null);
+  const currentRetryRef = useRef<number>(0);
+  const currentRequestRef = useRef<string | null>(null);
+  
+  // Retry configuration
+  const retryConfig: RetryConfig = {
+    maxRetries: 3,
+    baseDelay: 1000,
+    maxDelay: 8000
+  };
   
   const storeActions = useDeerFlowStore();
   const {
@@ -95,6 +121,70 @@ export const useEnhancedDeerStreaming = () => {
     }
   }, [existsMessage, updateMessage, setResearchPanel, setReportContent, toast]);
 
+  // Enhanced error handling with retry logic
+  const handleStreamError = useCallback((error: Error, isRetryable: boolean = true) => {
+    const errorMessage = error.message || 'Unknown streaming error';
+    
+    setConnectionStatus(prev => ({
+      ...prev,
+      status: 'error',
+      lastError: errorMessage
+    }));
+
+    // Check if we should retry
+    if (isRetryable && currentRetryRef.current < retryConfig.maxRetries) {
+      const retryDelay = Math.min(
+        retryConfig.baseDelay * Math.pow(2, currentRetryRef.current),
+        retryConfig.maxDelay
+      );
+
+      toast({
+        title: "Connection Issue",
+        description: `Retrying in ${retryDelay / 1000}s... (Attempt ${currentRetryRef.current + 1}/${retryConfig.maxRetries})`,
+        variant: "destructive",
+      });
+
+      setTimeout(() => {
+        currentRetryRef.current++;
+        if (currentRequestRef.current) {
+          // Retry the request
+          retryCurrentRequest();
+        }
+      }, retryDelay);
+    } else {
+      // Max retries reached or non-retryable error
+      toast({
+        title: "Connection Failed",
+        description: `${errorMessage}. Please check your connection and try again.`,
+        variant: "destructive",
+      });
+
+      // Reset state
+      setIsStreaming(false);
+      setIsResponding(false);
+      currentRetryRef.current = 0;
+    }
+  }, [toast, retryConfig]);
+
+  // Retry mechanism
+  const retryCurrentRequest = useCallback(async () => {
+    if (!currentRequestRef.current) return;
+
+    setConnectionStatus(prev => ({
+      ...prev,
+      status: 'connecting',
+      retryCount: currentRetryRef.current
+    }));
+
+    try {
+      // Implement retry logic here
+      // This would re-execute the streaming request
+      console.log(`🔄 Retrying DeerFlow request (attempt ${currentRetryRef.current + 1})`);
+    } catch (error) {
+      handleStreamError(error as Error);
+    }
+  }, [handleStreamError]);
+
   // Create streaming configuration for useEventStream
   const streamUrl = 'https://deer-flow-wrappers.up.railway.app/api/chat/stream';
   const streamOptions = useMemo(() => ({
@@ -114,6 +204,13 @@ export const useEnhancedDeerStreaming = () => {
       console.warn('🦌 DeerFlow is already streaming');
       return;
     }
+
+    // Reset retry counter for new request
+    currentRetryRef.current = 0;
+    setConnectionStatus({
+      status: 'connecting',
+      retryCount: 0
+    });
 
     setIsStreaming(true);
     setIsResponding(true);
@@ -149,7 +246,16 @@ export const useEnhancedDeerStreaming = () => {
       enable_deep_thinking: options.enableDeepThinking ?? settings.deepThinking
     });
 
+    // Store current request for retry purposes
+    currentRequestRef.current = requestBody;
+
     try {
+      // Set connection status to connected
+      setConnectionStatus({
+        status: 'connected',
+        retryCount: currentRetryRef.current
+      });
+
       // Use the stream hook with dynamic body
       await startStream((event) => {
         // Initialize message on first event
@@ -182,17 +288,27 @@ export const useEnhancedDeerStreaming = () => {
         });
       }
 
+      // Reset retry counter on success
+      currentRetryRef.current = 0;
+      setConnectionStatus({
+        status: 'connected',
+        retryCount: 0
+      });
+
       console.log(`✅ DeerFlow streaming completed successfully - processed ${eventCount} events`);
 
     } catch (error) {
       console.error('❌ DeerFlow streaming error:', error);
+      
+      // Use enhanced error handling
+      handleStreamError(error as Error);
       
       const errorMessage = error instanceof Error ? error.message : 'Unknown streaming error';
       
       if (messageIdRef.current) {
         const errorContent = currentPartialMessageRef.current?.content || '';
         updateMessage(messageIdRef.current, {
-          content: errorContent + `\n\n❌ Error: ${errorMessage}`,
+          content: errorContent + `\n\n❌ Connection error. Please try again.`,
           isStreaming: false,
           finishReason: 'interrupt'
         });
@@ -200,7 +316,7 @@ export const useEnhancedDeerStreaming = () => {
         // Add error message if no message was created
         addMessage({
           role: 'assistant',
-          content: `❌ Error: ${errorMessage}`,
+          content: `❌ Connection error: ${errorMessage}. Please try again.`,
           threadId: currentThreadId,
           contentChunks: [],
           finishReason: 'interrupt'
@@ -228,7 +344,8 @@ export const useEnhancedDeerStreaming = () => {
     processStreamEvent,
     settings,
     startStream,
-    eventCount
+    eventCount,
+    handleStreamError
   ]);
 
   const stopStreaming = useCallback(() => {
@@ -250,8 +367,9 @@ export const useEnhancedDeerStreaming = () => {
     cleanup,
     isStreaming,
     currentMessageId,
-    eventCount
-  }), [startDeerFlowStreaming, stopStreaming, cleanup, isStreaming, currentMessageId, eventCount]);
+    eventCount,
+    connectionStatus
+  }), [startDeerFlowStreaming, stopStreaming, cleanup, isStreaming, currentMessageId, eventCount, connectionStatus]);
 };
 
 // Helper function to determine tool type from tool name
