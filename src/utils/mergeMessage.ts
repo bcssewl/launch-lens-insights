@@ -6,6 +6,45 @@
 import { DeerMessage, ToolCall } from '@/stores/deerFlowMessageStore';
 import { nanoid } from 'nanoid';
 
+/**
+ * Detects if message content represents a research plan
+ */
+function isPlanMessage(content: string): boolean {
+  if (!content || content.length < 10) return false;
+  
+  try {
+    // First try to parse as JSON directly
+    const parsed = JSON.parse(content);
+    if (parsed && typeof parsed === 'object') {
+      // Check for plan structure: steps array and planner fields
+      return !!(parsed.steps || parsed.title || parsed.thought || parsed.locale);
+    }
+  } catch {
+    // Not valid JSON, check for plan-like content patterns
+    const lowerContent = content.toLowerCase();
+    
+    // Look for research plan indicators
+    const planIndicators = [
+      'research plan',
+      'research steps', 
+      '"steps"',
+      '"thought"',
+      '"locale"',
+      'need_web_search',
+      'step_type',
+      'has_enough_context'
+    ];
+    
+    const hasMultipleIndicators = planIndicators.filter(indicator => 
+      lowerContent.includes(indicator)
+    ).length >= 2;
+    
+    return hasMultipleIndicators;
+  }
+  
+  return false;
+}
+
 // Base interface for all DeerFlow events
 export interface GenericEvent<T = any> {
   event: string;
@@ -101,15 +140,20 @@ export function mergeMessage(message: DeerMessage, event: any): Partial<DeerMess
       result.id = data.id;
       result.threadId = data.thread_id;
       result.role = data.role || 'assistant';
-      result.agent = data.agent || message.agent || 'assistant';
-      result.content = data.content || '';
+      
+      // Detect if this is a planner message based on content structure
+      const initialContent = data.content || '';
+      const isPlanContent = isPlanMessage(initialContent);
+      
+      result.agent = isPlanContent ? 'planner' : (data.agent || message.agent || 'assistant');
+      result.content = initialContent;
       result.contentChunks = [];
       result.isStreaming = true;
       result.timestamp = new Date();
       if (data.options) {
         result.options = data.options;
       }
-      console.log('🎯 message_start: set agent to', result.agent);
+      console.log('🎯 message_start: set agent to', result.agent, 'isPlan:', isPlanContent);
       break;
       
     case 'message_chunk':
@@ -117,6 +161,16 @@ export function mergeMessage(message: DeerMessage, event: any): Partial<DeerMess
       if (data.content) {
         result.content = (message.content || '') + data.content;
         result.contentChunks = [...(message.contentChunks || []), data.content];
+        
+        // Check if accumulated content looks like a plan
+        const totalContent = result.content;
+        const isPlanContent = isPlanMessage(totalContent);
+        
+        // Update agent if we detect this is a plan message
+        if (isPlanContent && message.agent !== 'planner') {
+          result.agent = 'planner';
+          console.log('🎯 message_chunk: detected plan content, updated agent to planner');
+        }
       }
       
       // Handle reasoning content
@@ -125,7 +179,7 @@ export function mergeMessage(message: DeerMessage, event: any): Partial<DeerMess
         result.reasoningContentChunks = [...(message.reasoningContentChunks || []), data.reasoning_content];
       }
       
-      // Preserve agent information from event data
+      // Preserve agent information from event data if explicitly provided
       if (data.agent && data.agent !== message.agent) {
         result.agent = data.agent;
         console.log('🎯 message_chunk: updated agent to', data.agent);
