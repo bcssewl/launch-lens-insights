@@ -133,8 +133,11 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
   };
 
   const handleStartResearch = (planId: string) => {
-    const researchId = startResearch(planId);
-    openResearchPanel(researchId, 'activities');
+    // Create research session manually from planner
+    const researchId = startResearch(planId); // Now works with planner ID
+    if (researchId) {
+      openResearchPanel(researchId, 'activities');
+    }
   };
 
   // Show conversation starter if no messages

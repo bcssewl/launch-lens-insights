@@ -371,42 +371,35 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
     return null;
   },
 
-  // MODIFIED: Manual research start (for UI buttons)
-  startResearch: (researcherMessageId) => {
-    // Use provided researcher message ID as research session ID
-    const { researchIds, researchPlanIds, researchActivityIds, messageIds, getMessage } = get();
+  // MODIFIED: Manual research start (for UI buttons) - now accepts planner message ID
+  startResearch: (plannerMessageId) => {
+    const { researchIds, researchPlanIds, researchActivityIds, getMessage } = get();
     
-    // Find associated planner message
-    const reversedMessageIds = [...messageIds].reverse();
-    let plannerMessage;
+    // Get the planner message
+    const plannerMessage = getMessage(plannerMessageId);
+    if (!plannerMessage || plannerMessage.agent !== 'planner') {
+      console.error('❌ startResearch called with invalid planner message ID:', plannerMessageId);
+      return null;
+    }
     
-    for (const messageId of reversedMessageIds) {
-      const msg = getMessage(messageId);
-      if (msg?.agent === 'planner') {
-        plannerMessage = msg;
-        break;
+    // Create a research session ID (different from planner ID to avoid conflicts)
+    const researchId = nanoid();
+    
+    set({
+      researchIds: [...researchIds, researchId],
+      researchPlanIds: new Map(researchPlanIds).set(researchId, plannerMessageId),
+      researchActivityIds: new Map(researchActivityIds).set(researchId, [plannerMessageId]),
+      ongoingResearchId: researchId,
+      openResearchId: researchId,
+      researchPanelState: {
+        isOpen: true,
+        openResearchId: researchId,
+        activeTab: 'activities'
       }
-    }
+    });
     
-    if (plannerMessage) {
-      set({
-        researchIds: [...researchIds, researcherMessageId],
-        researchPlanIds: new Map(researchPlanIds).set(researcherMessageId, plannerMessage.id),
-        researchActivityIds: new Map(researchActivityIds).set(researcherMessageId, [plannerMessage.id, researcherMessageId]),
-        ongoingResearchId: researcherMessageId,
-        openResearchId: researcherMessageId,
-        researchPanelState: {
-          isOpen: true,
-          openResearchId: researcherMessageId,
-          activeTab: 'activities'
-        }
-      });
-      
-      console.log('🔬 Manual research session started:', researcherMessageId);
-      return researcherMessageId;
-    }
-    
-    return null;
+    console.log('🔬 Manual research session started from planner:', plannerMessageId, 'Research ID:', researchId);
+    return researchId;
   },
 
   addResearchActivity: (researchId, messageId) => {
