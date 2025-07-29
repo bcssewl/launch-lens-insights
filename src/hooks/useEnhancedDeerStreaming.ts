@@ -164,7 +164,7 @@ export const useEnhancedDeerStreaming = () => {
 
     // Reset current message ID - will be set by first API event
     setCurrentMessageId(null);
-    let messageCreated = false;
+    const createdMessageIds = new Set<string>();
 
     // Prepare request body
     const requestBody = JSON.stringify({
@@ -243,12 +243,12 @@ export const useEnhancedDeerStreaming = () => {
                   data: JSON.parse(currentData)
                 };
                 
-                // Extract API message ID from first event
+                // Extract API message ID from event
                 const apiMessageId = event.data.id || event.data.message_id;
                 
-                // Create message with API ID on first event
-                if (!messageCreated && apiMessageId) {
-                  console.log('📝 Creating message with API ID:', apiMessageId);
+                // Create message for each unique API message ID (one per agent)
+                if (apiMessageId && !createdMessageIds.has(apiMessageId)) {
+                  console.log('📝 Creating message with API ID:', apiMessageId, 'Agent:', event.data.agent);
                   
                   const initialMessage = {
                     id: apiMessageId,
@@ -265,7 +265,7 @@ export const useEnhancedDeerStreaming = () => {
                   
                   addMessageWithId(initialMessage);
                   setCurrentMessageId(apiMessageId);
-                  messageCreated = true;
+                  createdMessageIds.add(apiMessageId);
                 }
                 
                 // Process event with consistent API ID
@@ -278,11 +278,11 @@ export const useEnhancedDeerStreaming = () => {
         }
       }
 
-      // Mark message as complete using current message ID
-      if (currentMessageId) {
-        const finalMessage = getMessage(currentMessageId);
+      // Mark all created messages as complete
+      for (const messageId of createdMessageIds) {
+        const finalMessage = getMessage(messageId);
         if (finalMessage) {
-          updateMessage(currentMessageId, {
+          updateMessage(messageId, {
             ...finalMessage,
             isStreaming: false
           });
