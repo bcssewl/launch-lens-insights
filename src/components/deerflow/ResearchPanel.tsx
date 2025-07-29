@@ -13,6 +13,7 @@ import { Separator } from '@/components/ui/separator';
 import { useResearchPanel } from '@/hooks/useOptimizedMessages';
 import { useStreamingChat } from '@/hooks/useStreamingChat';
 import { ToolCall } from '@/stores/deerFlowMessageStore';
+import { ActivitiesTab } from './ActivitiesTab';
 import { 
   Search, 
   Globe, 
@@ -483,14 +484,20 @@ export const ResearchPanel = () => {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="activities" className="flex-1 px-4 pb-4">
-            <ScrollArea className="h-full">
-              <ToolCallsGroup
-                toolCalls={toolCalls}
-                expandedItems={expandedItems}
-                onToggleExpand={handleToggleExpand}
-              />
-            </ScrollArea>
+          <TabsContent value="activities" className="flex-1">
+            {openResearchId ? (
+              <ActivitiesTab researchId={openResearchId} />
+            ) : (
+              <div className="flex items-center justify-center h-64 text-center">
+                <div>
+                  <Activity className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No Research Selected</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Select a research session to view activities
+                  </p>
+                </div>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="report" className="flex-1 px-4 pb-4">
