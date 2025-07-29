@@ -52,26 +52,6 @@ export interface DeerMessage {
   };
 }
 
-// Legacy compatibility interfaces
-export interface ResearchActivity {
-  id: string;
-  toolType: 'web-search' | 'crawl' | 'python' | 'retriever';
-  title: string;
-  content: any;
-  timestamp: Date;
-  status: 'pending' | 'running' | 'completed' | 'failed';
-  threadId?: string;
-}
-
-export interface ResearchSession {
-  id: string;
-  threadId: string;
-  planId?: string;
-  reportId?: string;
-  activities: string[];
-  createdAt: Date;
-  updatedAt: Date;
-}
 
 interface DeerFlowMessageState {
   // Optimized Map-based storage
@@ -116,14 +96,8 @@ interface DeerFlowMessageActions {
   
   // Legacy compatibility - computed properties
   messages: DeerMessage[];
-  researchActivities: ResearchActivity[];
-  researchSessions: ResearchSession[];
   
-  // Legacy compatibility - no-op methods
-  addResearchActivity: (activity: Omit<ResearchActivity, 'id' | 'timestamp'>) => void;
-  updateResearchActivity: (activityId: string, updates: Partial<ResearchActivity>) => void;
-  createResearchSession: (threadId: string) => ResearchSession;
-  getResearchSession: (threadId: string) => ResearchSession | undefined;
+  // Legacy compatibility - no-op methods  
   getThreadContext: (threadId: string) => { plannerIndicatedDirectAnswer: boolean; expectingReporterDirectAnswer: boolean };
   
   
@@ -282,37 +256,6 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
   // Legacy compatibility - computed properties
   get messages() {
     return get().getAllMessages();
-  },
-  
-  get researchActivities() {
-    return [];
-  },
-  
-  get researchSessions() {
-    return [];
-  },
-
-  // Legacy compatibility - no-op methods
-  addResearchActivity: () => {
-    // No-op for compatibility
-  },
-  
-  updateResearchActivity: () => {
-    // No-op for compatibility
-  },
-  
-  createResearchSession: (threadId) => {
-    return {
-      id: nanoid(),
-      threadId,
-      activities: [],
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-  },
-  
-  getResearchSession: () => {
-    return undefined;
   },
   
   getThreadContext: () => {

@@ -10,9 +10,7 @@ import { useDeerFlowSettingsStore } from './deerFlowSettingsStore';
 export type {
   DeerMessage,
   ToolCall,
-  FeedbackOption,
-  ResearchActivity,
-  ResearchSession
+  FeedbackOption
 } from './deerFlowMessageStore';
 
 export type {
@@ -34,8 +32,6 @@ export const useDeerFlowStore = () => {
     messages: messageStore.messages,
     isResponding: messageStore.isResponding,
     currentPrompt: messageStore.currentPrompt,
-    researchActivities: messageStore.researchActivities,
-    researchSessions: messageStore.researchSessions,
     reportContent: messageStore.reportContent,
     
     // Computed properties from new panel state structure
@@ -57,8 +53,6 @@ export const useDeerFlowStore = () => {
     clearMessages: messageStore.clearMessages,
     getMessagesByThread: messageStore.getMessagesByThread,
     setReportContent: messageStore.setReportContent,
-    createResearchSession: messageStore.createResearchSession,
-    getResearchSession: messageStore.getResearchSession,
     setCurrentPrompt: messageStore.setCurrentPrompt,
     setIsResponding: messageStore.setIsResponding,
     
