@@ -202,67 +202,13 @@ export const useEnhancedDeerStreaming = () => {
               // Close research panel for final answers
               console.log(`📝 Final answer from ${agent}`);
             }
-          } else if ('agent' in streamEvent && streamEvent.agent) {
-            const agent = streamEvent.agent;
-            const content = streamEvent.content || '';
-            console.log(`🤖 Legacy format - agent: ${agent}, content: "${content.substring(0, 50)}..."`);
-            
-            // Context-aware panel management for legacy format
-            if (agent === 'planner') {
-              setResearchPanelOpen(true);
-            } else if (agent === 'reporter') {
-              // Check if this is a direct answer based on thread context
-              const threadContext = getThreadContext(currentThreadId);
-              if (!threadContext.expectingReporterDirectAnswer) {
-                setResearchPanelOpen(true);
-                setActiveResearchTab('report');
-              }
-            }
-          }
-
-          // Handle tool_calls event specifically
-          if ('event' in streamEvent && streamEvent.event === 'tool_calls') {
-            console.log('🔧 Processing tool_calls (plural) event:', streamEvent.data);
-            // This will be handled by mergeMessage function now
-          }
-
-          // Handle legacy tool calls - update pending research activities or add new ones
-          if ('tool_calls' in streamEvent && streamEvent.tool_calls) {
-            // Handle array of tool calls
-            const toolCalls = Array.isArray(streamEvent.tool_calls) ? streamEvent.tool_calls : [streamEvent.tool_calls];
-            
-            for (const toolCall of toolCalls) {
-              // Try to find a pending research activity that matches this tool call
-              const pendingActivity = researchActivities
-                .filter(activity => activity.threadId === currentThreadId && activity.status === 'pending')
-                .shift(); // Get the first pending activity
-              
-              if (pendingActivity) {
-                // Update the first pending activity to running
-                updateResearchActivity(pendingActivity.id, {
-                  ...pendingActivity,
-                  title: `${toolCall.name}: ${pendingActivity.title}`,
-                  content: toolCall.args,
-                  status: 'running'
-                });
-              } else {
-                // Add new research activity if no pending ones found
-                addResearchActivity({
-                  toolType: getToolType(toolCall.name),
-                  title: `Using tool: ${toolCall.name}`,
-                  content: toolCall.args,
-                  status: 'running'
-                });
-              }
-            }
           }
 
           // Handle tool call chunks - update pending research activities or add new ones
-          if ('event' in streamEvent && streamEvent.event === 'tool_call_chunks') {
-            // Handle array of tool call chunks
-            const toolCallChunks = Array.isArray(streamEvent.data) ? streamEvent.data : [streamEvent.data];
+          if ('event' in streamEvent && streamEvent.event === 'tool_call_chunk') {
+            const chunk = streamEvent.data;
             
-            for (const chunk of toolCallChunks) {
+            if (chunk) {
               if (chunk.name) {
                 // Try to find a pending research activity that matches this tool call
                 const pendingActivity = researchActivities
