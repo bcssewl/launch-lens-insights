@@ -24,32 +24,17 @@ export interface FeedbackOption {
 
 export interface DeerMessage {
   id: string;
+  threadId: string;
   role: 'user' | 'assistant';
   content: string;
+  contentChunks: string[];
   timestamp: Date;
   isStreaming?: boolean;
-  finishReason?: 'interrupt' | 'completed' | 'error';
-  options?: FeedbackOption[];
+  finishReason?: 'stop' | 'interrupt' | 'tool_calls';
   toolCalls?: ToolCall[];
-  metadata?: {
-    agent?: string;
-    threadId?: string;
-    title?: string;
-    thought?: string;
-    steps?: string[];
-    audioUrl?: string;
-    reasoningContent?: string;
-    thinkingPhases?: Array<{ phase: string; content: string }>;
-    reasoningSteps?: Array<{ step: string; content: string }>;
-    searchActivities?: Array<{ query: string; results?: any[] }>;
-    visitedUrls?: Array<{ url: string; title?: string; content?: string }>;
-    reportContent?: string;
-    citations?: any[];
-    planSteps?: any[];
-    hasEnoughContext?: boolean;
-    isPlannerDirectAnswer?: boolean;
-    researchState?: 'researching' | 'generating_report' | 'report_generated';
-  };
+  reasoningContent?: string;
+  reasoningContentChunks?: string[];
+  agent?: string;
 }
 
 
@@ -158,10 +143,8 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
       ...message,
       id: nanoid(),
       timestamp: new Date(),
-      metadata: {
-        ...message.metadata,
-        threadId: currentThreadId
-      }
+      threadId: message.threadId || currentThreadId,
+      contentChunks: message.contentChunks || []
     };
 
     // Update Map-based storage immediately
@@ -181,7 +164,7 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
 
   addMessageWithId: (message) => {
     const { messageMap, threadMessageIds, messageIds, currentThreadId } = get();
-    const threadId = message.metadata?.threadId || currentThreadId;
+    const threadId = message.threadId || currentThreadId;
 
     // Update Map-based storage immediately
     const newMessageMap = new Map(messageMap);
