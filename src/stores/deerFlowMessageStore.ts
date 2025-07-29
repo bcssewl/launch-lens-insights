@@ -44,6 +44,7 @@ interface DeerFlowMessageState {
   messageIds: string[]; // Ordered array for rendering
   messageMap: Map<string, DeerMessage>; // Fast O(1) lookups
   threadMessageIds: Map<string, string[]>; // threadId -> messageIds
+  messageCache: Map<string, DeerMessage[]>; // Cache for computed message arrays
   isResponding: boolean;
   currentPrompt: string;
   streamingMessageId: string | null;
@@ -101,6 +102,7 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
   messageIds: [],
   messageMap: new Map(),
   threadMessageIds: new Map(),
+  messageCache: new Map(),
   isResponding: false,
   currentPrompt: '',
   streamingMessageId: null,
@@ -136,7 +138,7 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
     set({ currentThreadId: threadId });
   },
 
-  // Message actions with immediate Map updates
+  // Message actions with immediate Map updates and cache invalidation
   addMessage: (message) => {
     const { messageMap, threadMessageIds, messageIds, currentThreadId } = get();
     const newMessage: DeerMessage = {
@@ -158,7 +160,8 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
     set({ 
       messageIds: [...messageIds, newMessage.id],
       messageMap: newMessageMap,
-      threadMessageIds: newThreadMessageIds
+      threadMessageIds: newThreadMessageIds,
+      messageCache: new Map() // Clear cache
     });
   },
 
@@ -184,7 +187,8 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
     set({ 
       messageIds: newMessageIds,
       messageMap: newMessageMap,
-      threadMessageIds: newThreadMessageIds
+      threadMessageIds: newThreadMessageIds,
+      messageCache: new Map() // Clear cache
     });
   },
 
@@ -199,7 +203,10 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
     if (existingMessage) {
       const newMessageMap = new Map(messageMap);
       newMessageMap.set(messageId, { ...existingMessage, ...updates });
-      set({ messageMap: newMessageMap });
+      set({ 
+        messageMap: newMessageMap,
+        messageCache: new Map() // Clear cache
+      });
     }
   },
 
@@ -212,6 +219,7 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
       messageIds: [],
       messageMap: new Map(),
       threadMessageIds: new Map(),
+      messageCache: new Map(), // Clear cache
       reportContent: '',
       researchPanelState: {
         isOpen: false,
@@ -222,12 +230,30 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
   },
 
   getMessagesByThread: (threadId) => {
-    const { messageMap, threadMessageIds } = get();
-    const messageIds = threadMessageIds.get(threadId) || [];
-    return messageIds
+    const { messageMap, threadMessageIds, messageCache } = get();
+    
+    // Generate cache key based on threadId + data sizes
+    const threadMessages = threadMessageIds.get(threadId) || [];
+    const cacheKey = `${threadId}-${messageMap.size}-${threadMessages.length}`;
+    
+    // Check if we have a cached result
+    const cached = messageCache.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+    
+    // Compute the result
+    const messages = threadMessages
       .map(id => messageMap.get(id))
       .filter((msg): msg is DeerMessage => msg !== undefined)
       .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+    
+    // Cache the result
+    const newCache = new Map(messageCache);
+    newCache.set(cacheKey, messages);
+    set({ messageCache: newCache });
+    
+    return messages;
   },
 
   getAllMessages: () => {
