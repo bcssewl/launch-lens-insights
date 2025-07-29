@@ -60,6 +60,7 @@ export const useEnhancedDeerStreaming = () => {
     updateMessage,
     existsMessage,
     addMessageWithId,
+    getMessage,
     setIsResponding,
     setResearchPanel,
     setReportContent,
@@ -258,24 +259,34 @@ export const useEnhancedDeerStreaming = () => {
 
       // Use the stream hook with dynamic body
       await startStream((event) => {
-        // Initialize message on first event
-        if (!messageIdRef.current) {
-          messageIdRef.current = crypto.randomUUID();
-          setCurrentMessageId(messageIdRef.current);
-          
-          // Initialize the partial message and refs
-          currentPartialMessageRef.current = mergeMessage(null, event);
-          
-          const initialMessage = createCompleteMessage(currentPartialMessageRef.current);
-          addMessageWithId({
-            ...initialMessage,
-            id: messageIdRef.current,
-            threadId: currentThreadId,
+        const data = 'data' in event ? event.data : event;
+        const messageId = data.id || data.message_id || crypto.randomUUID(); // Use API-provided ID or generate one
+        
+        // Create message if doesn't exist (like original)
+        if (!existsMessage(messageId)) {
+          const initialMessage = {
+            id: messageId,
+            threadId: data.thread_id || currentThreadId,
+            agent: data.agent,
+            role: data.role || 'assistant',
+            content: '',
+            contentChunks: [],
+            reasoningContent: '',
+            reasoningContentChunks: [],
+            timestamp: new Date(),
             isStreaming: true
-          });
-        } else {
-          // Process subsequent events immediately
-          processStreamEvent(event);
+          };
+          
+          addMessageWithId(initialMessage);
+          messageIdRef.current = messageId;
+          setCurrentMessageId(messageId);
+        }
+        
+        // Always process every event (like original)
+        const existingMessage = getMessage(messageId);
+        if (existingMessage) {
+          const updatedMessage = mergeMessage(existingMessage, event);
+          updateMessage(messageId, updatedMessage);
         }
       }, requestBody); // Pass request body to the stream
 
