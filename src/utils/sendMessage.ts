@@ -204,15 +204,37 @@ function convertDeerFlowEvent(deerFlowEvent: any): any | null {
     };
   }
   
-  // Handle structured events
-  if (typeof deerFlowEvent === 'object' && deerFlowEvent !== null) {
-    const eventType = deerFlowEvent.type || deerFlowEvent.event;
-    const agent = extractAgent(deerFlowEvent);
-    const messageId = extractId(deerFlowEvent);
-    
-    console.log('🔍 Event details:', { eventType, agent, messageId, fullEvent: deerFlowEvent });
-    
-    if (eventType) {
+    // Handle structured events
+    if (typeof deerFlowEvent === 'object' && deerFlowEvent !== null) {
+      const eventType = deerFlowEvent.type || deerFlowEvent.event;
+      const agent = extractAgent(deerFlowEvent);
+      const messageId = extractId(deerFlowEvent);
+      
+      console.log('🔍 Event details:', { eventType, agent, messageId, fullEvent: deerFlowEvent });
+      
+      // Handle tool_call_chunks specifically (this is how DeerFlow sends plan data)
+      if (deerFlowEvent.tool_call_chunks && Array.isArray(deerFlowEvent.tool_call_chunks)) {
+        console.log('🔧 Processing tool_call_chunks for agent:', agent);
+        
+        // Extract content from tool call chunks
+        const content = deerFlowEvent.tool_call_chunks
+          .map(chunk => chunk.args || chunk.content || '')
+          .join('');
+        
+        return {
+          type: 'message_chunk',
+          data: {
+            id: messageId,
+            content: content,
+            role: deerFlowEvent.role || 'assistant',
+            agent: agent || 'assistant',
+            thread_id: deerFlowEvent.thread_id,
+            tool_call_chunks: deerFlowEvent.tool_call_chunks
+          }
+        };
+      }
+      
+      if (eventType) {
       switch (eventType) {
         case 'content':
         case 'message':
