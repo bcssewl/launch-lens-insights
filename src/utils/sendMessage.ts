@@ -46,194 +46,104 @@ const getChatStreamSettings = (): ChatSettings => ({
   mcpSettings: {}
 });
 
-// Mock stream generator - replace with real API call
+// Real DeerFlow streaming API call
 async function* chatStream(
   content: string,
   params: any,
   options: StreamOptions = {}
 ): AsyncGenerator<any> {
-  // This is a mock implementation - replace with real streaming API
-  console.log('🌊 Mock chatStream called with:', { content, params });
+  console.log('🌊 Starting DeerFlow stream with backend API:', { content, params });
   
-  // Simulate different message types for testing
-  const messageId = nanoid();
-  const threadId = params.thread_id;
-  
-  // ALWAYS respond with at least a basic assistant message
-  if (!params.interrupt_feedback) {
-    // Generate basic assistant response for any input
-    yield {
-      type: 'message_start',
-      data: {
-        id: messageId,
-        thread_id: threadId,
-        role: 'assistant',
-        content: ''
-      }
-    };
+  try {
+    // Get auth token from Supabase
+    const { supabase } = await import('@/integrations/supabase/client');
+    const { data: { session } } = await supabase.auth.getSession();
     
-    let responseContent = '';
-    if (content.toLowerCase().includes('research') || content.toLowerCase().includes('analyze')) {
-      responseContent = 'I can help you with research and analysis. Let me create a comprehensive plan for this.';
-    } else {
-      responseContent = `I understand you're asking about: "${content}". I'm here to help with research, analysis, and answering your questions.`;
+    if (!session?.access_token) {
+      throw new Error('No authentication token available');
     }
-    
-    // Stream the basic response character by character
-    for (const char of responseContent) {
-      yield {
-        type: 'message_chunk',
-        data: {
-          id: messageId,
-          thread_id: threadId,
-          content: char
-        }
-      };
-      await new Promise(resolve => setTimeout(resolve, 20));
-    }
-    
-    yield {
-      type: 'message_end',
-      data: {
-        id: messageId,
-        thread_id: threadId,
-        isStreaming: false
-      }
-    };
-  }
-  
-  // Simulate planner response for research-related queries
-  if (content.toLowerCase().includes('research') || content.toLowerCase().includes('analyze')) {
-    const plannerMessageId = nanoid();
-    yield {
-      type: 'message_start',
-      data: {
-        id: plannerMessageId,
-        thread_id: threadId,
-        role: 'assistant',
-        agent: 'planner',
-        content: ''
-      }
-    };
-    
-    const planContent = JSON.stringify({
-      title: 'Research Analysis Plan',
-      thought: 'I need to create a comprehensive research plan for this topic.',
-      steps: [
-        {
-          title: 'Initial Research',
-          description: 'Gather basic information about the topic',
-          step_type: 'research',
-          need_web_search: true
-        },
-        {
-          title: 'Analysis',
-          description: 'Analyze the gathered information',
-          step_type: 'processing',
-          need_web_search: false
-        }
-      ]
+
+    // Call the DeerFlow streaming edge function
+    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/deerflow-stream`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        content,
+        thread_id: params.thread_id,
+        interrupt_feedback: params.interrupt_feedback,
+        resources: params.resources,
+        auto_accepted_plan: params.auto_accepted_plan,
+        enable_deep_thinking: params.enable_deep_thinking,
+        enable_background_investigation: params.enable_background_investigation,
+        max_plan_iterations: params.max_plan_iterations,
+        max_step_num: params.max_step_num,
+        max_search_results: params.max_search_results,
+        report_style: params.report_style,
+        mcp_settings: params.mcp_settings,
+      }),
+      signal: options.abortSignal,
     });
-    
-    // Simulate streaming content
-    for (let i = 0; i < planContent.length; i += 10) {
-      const chunk = planContent.slice(i, i + 10);
-      yield {
-        type: 'message_chunk',
-        data: {
-          id: plannerMessageId,
-          thread_id: threadId,
-          content: chunk
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`Stream request failed: ${response.status} ${errorData.error || response.statusText}`);
+    }
+
+    if (!response.body) {
+      throw new Error('No response body received from stream');
+    }
+
+    // Parse Server-Sent Events
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        
+        if (done) {
+          console.log('🏁 Stream completed');
+          break;
         }
-      };
-      await new Promise(resolve => setTimeout(resolve, 50));
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const eventData = JSON.parse(line.slice(6));
+              console.log('📨 Stream event:', eventData.type, eventData.data);
+              yield eventData;
+            } catch (parseError) {
+              console.warn('Failed to parse SSE data:', line, parseError);
+            }
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+
+  } catch (error) {
+    console.error('❌ Stream error:', error);
+    
+    // If it's an abort error, don't yield error - just return
+    if (error.name === 'AbortError') {
+      console.log('🛑 Stream aborted by user');
+      return;
     }
     
+    // Yield error event for other errors
     yield {
-      type: 'message_end',
+      type: 'error',
       data: {
-        id: plannerMessageId,
-        thread_id: threadId,
-        isStreaming: false,
-        options: [
-          { text: 'Accept Plan', value: 'accepted' },
-          { text: 'Modify Plan', value: 'modify' },
-          { text: 'Reject Plan', value: 'reject' }
-        ]
-      }
-    };
-  }
-  
-  // If interrupt feedback is "accepted", start research agents
-  if (params.interrupt_feedback === 'accepted') {
-    // Simulate researcher agent
-    const researcherId = nanoid();
-    yield {
-      type: 'message_start',
-      data: {
-        id: researcherId,
-        thread_id: threadId,
-        role: 'assistant',
-        agent: 'researcher',
-        content: ''
-      }
-    };
-    
-    const researchContent = 'Starting comprehensive research on the topic...';
-    for (const char of researchContent) {
-      yield {
-        type: 'message_chunk',
-        data: {
-          id: researcherId,
-          thread_id: threadId,
-          content: char
-        }
-      };
-      await new Promise(resolve => setTimeout(resolve, 30));
-    }
-    
-    yield {
-      type: 'message_end',
-      data: {
-        id: researcherId,
-        thread_id: threadId,
-        isStreaming: false
-      }
-    };
-    
-    // Simulate reporter agent
-    const reporterId = nanoid();
-    yield {
-      type: 'message_start',
-      data: {
-        id: reporterId,
-        thread_id: threadId,
-        role: 'assistant',
-        agent: 'reporter',
-        content: ''
-      }
-    };
-    
-    const reportContent = '# Research Report\n\nBased on the research conducted, here are the key findings...\n\n## Summary\n\nThe analysis reveals important insights about the topic.';
-    for (let i = 0; i < reportContent.length; i += 5) {
-      const chunk = reportContent.slice(i, i + 5);
-      yield {
-        type: 'message_chunk',
-        data: {
-          id: reporterId,
-          thread_id: threadId,
-          content: chunk
-        }
-      };
-      await new Promise(resolve => setTimeout(resolve, 40));
-    }
-    
-    yield {
-      type: 'message_end',
-      data: {
-        id: reporterId,
-        thread_id: threadId,
-        isStreaming: false
+        error: error.message || 'Stream connection failed'
       }
     };
   }
