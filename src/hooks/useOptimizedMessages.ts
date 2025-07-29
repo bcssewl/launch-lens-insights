@@ -4,12 +4,26 @@
  */
 
 import { useCallback, useMemo } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { useDeerFlowMessageStore } from '@/stores/deerFlowMessageStore';
 import type { DeerMessage } from '@/stores/deerFlowMessageStore';
 
 /**
- * Efficient message list hook with memoization
- * Only re-renders when the specific thread's messages change
+ * Message IDs hook following original DeerFlow pattern
+ * Returns array of message IDs for efficient individual subscriptions
+ */
+export const useMessageIds = (threadId?: string) => {
+  return useDeerFlowMessageStore(
+    useShallow((state) => {
+      const targetThreadId = threadId || state.currentThreadId;
+      return state.threadMessageIds.get(targetThreadId) || [];
+    })
+  );
+};
+
+/**
+ * LEGACY: Kept for backward compatibility - use useMessageIds instead
+ * Only use for non-reactive cases or when you need the full message objects
  */
 export const useMessageList = (threadId?: string) => {
   // Remove over-aggressive memoization during debugging
@@ -22,13 +36,15 @@ export const useMessageList = (threadId?: string) => {
 };
 
 /**
- * Individual message hook for optimized re-renders
+ * Individual message hook for optimized re-renders - PREFERRED PATTERN
  * Only re-renders when the specific message changes
  */
 export const useMessage = (messageId: string) => {
-  return useDeerFlowMessageStore(useCallback((state) => {
-    return state.getMessage(messageId);
-  }, [messageId]));
+  return useDeerFlowMessageStore(
+    useShallow((state) => {
+      return state.getMessage(messageId);
+    })
+  );
 };
 
 /**

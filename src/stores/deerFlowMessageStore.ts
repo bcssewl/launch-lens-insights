@@ -4,6 +4,7 @@
  */
 
 import { create } from 'zustand';
+import { useShallow } from 'zustand/react/shallow';
 import { nanoid } from 'nanoid';
 
 export interface ToolCall {
@@ -198,21 +199,19 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
 
   updateMessage: (messageId, updates) => {
     console.log('🔄 updateMessage called:', messageId, updates);
-    const { messageMap, messageIds, threadMessageIds } = get();
+    const { messageMap } = get();
     const existingMessage = messageMap.get(messageId);
     
     if (existingMessage) {
       const newMessageMap = new Map(messageMap);
       newMessageMap.set(messageId, { ...existingMessage, ...updates });
       
-      // CRITICAL: Force array reference changes to trigger re-renders
+      // Simplified update - individual subscriptions will handle re-renders
       set({ 
         messageMap: newMessageMap,
-        messageIds: [...messageIds], // New array reference
-        threadMessageIds: new Map(threadMessageIds), // New Map reference
-        messageCache: new Map() // Clear cache completely
+        messageCache: new Map() // Clear cache
       });
-      console.log('✅ updateMessage completed, triggering re-render');
+      console.log('✅ updateMessage completed, individual subscriptions will re-render');
     }
   },
 
@@ -309,5 +308,18 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
     }));
   },
   
+  
   setReportContent: (content) => set({ reportContent: content })
 }));
+
+/**
+ * Individual message hook with useShallow for efficient updates
+ * This follows the original DeerFlow pattern for individual message subscriptions
+ */
+export const useMessage = (messageId: string | null | undefined) => {
+  return useDeerFlowMessageStore(
+    useShallow((state) => 
+      messageId ? state.messageMap.get(messageId) : undefined
+    )
+  );
+};

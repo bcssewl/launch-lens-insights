@@ -11,8 +11,7 @@ import { User, Bot, Brain, Search, FileText, Lightbulb, MessageSquare } from 'lu
 import React from 'react';
 
 interface MessageItemProps {
-  message?: DeerMessage;
-  messageId?: string;
+  messageId: string;
 }
 
 /**
@@ -81,23 +80,20 @@ const getAgentDisplay = (agent?: string, role?: string) => {
   }
 };
 
-export const MessageItem = React.memo(({ message, messageId }: MessageItemProps) => {
-  // Use hook for efficient message updates if messageId provided
-  const hookMessage = useMessage(messageId || '');
+export const MessageItem = React.memo(({ messageId }: { messageId: string }) => {
+  // Use individual message subscription following original DeerFlow pattern
+  const message = useMessage(messageId);
   const { openResearchPanel } = useResearchPanel();
   
-  // Use either prop message or hook message
-  const currentMessage = message || hookMessage;
+  if (!message) return null;
   
-  if (!currentMessage) return null;
-  
-  const agentDisplay = getAgentDisplay(currentMessage.agent, currentMessage.role);
+  const agentDisplay = getAgentDisplay(message.agent, message.role);
   const IconComponent = agentDisplay.icon;
   
   // Handle click for research panel
   const handleClick = () => {
-    if (currentMessage.agent === 'planner' || currentMessage.agent === 'researcher') {
-      openResearchPanel(currentMessage.id);
+    if (message.agent === 'planner' || message.agent === 'researcher') {
+      openResearchPanel(message.id);
     }
   };
 
@@ -114,19 +110,19 @@ export const MessageItem = React.memo(({ message, messageId }: MessageItemProps)
         "p-4 sm:p-6",
         
         // Streaming animations
-        currentMessage.isStreaming && [
+        message.isStreaming && [
           "border-blue-500/30 shadow-blue-500/20",
           "shadow-lg animate-pulse"
         ],
         
         // Agent-specific styling using platform's color system
-        currentMessage.role === 'user' && "ml-8 bg-primary/5 border-primary/20",
-        currentMessage.role === 'assistant' && "mr-8",
+        message.role === 'user' && "ml-8 bg-primary/5 border-primary/20",
+        message.role === 'assistant' && "mr-8",
         agentDisplay.bgColor && agentDisplay.bgColor,
         agentDisplay.borderColor && agentDisplay.borderColor,
         
         // Make clickable for research agents
-        (currentMessage.agent === 'planner' || currentMessage.agent === 'researcher') && 
+        (message.agent === 'planner' || message.agent === 'researcher') && 
           "cursor-pointer hover:bg-opacity-80",
           
         // Slide-in animation for streaming content
@@ -148,7 +144,7 @@ export const MessageItem = React.memo(({ message, messageId }: MessageItemProps)
             <span className={cn("font-medium text-sm", agentDisplay.color)}>
               {agentDisplay.name}
             </span>
-            {currentMessage.isStreaming && (
+            {message.isStreaming && (
               <div className="flex items-center gap-1">
                 <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
                 <span className="text-xs text-blue-600 font-medium">Streaming...</span>
@@ -156,7 +152,7 @@ export const MessageItem = React.memo(({ message, messageId }: MessageItemProps)
             )}
           </div>
           <time className="text-xs text-muted-foreground">
-            {currentMessage.timestamp.toLocaleTimeString()}
+            {message.timestamp.toLocaleTimeString()}
           </time>
         </div>
       </div>
@@ -164,12 +160,12 @@ export const MessageItem = React.memo(({ message, messageId }: MessageItemProps)
       {/* Message Content */}
       <div className={cn(
         "transition-all duration-300 ease-out",
-        currentMessage.isStreaming && "animate-slide-in-left"
+        message.isStreaming && "animate-slide-in-left"
       )}>
         <MessageContent 
-          content={currentMessage.content} 
-          agent={currentMessage.agent}
-          toolCalls={currentMessage.toolCalls}
+          content={message.content} 
+          agent={message.agent}
+          toolCalls={message.toolCalls}
         />
       </div>
     </div>

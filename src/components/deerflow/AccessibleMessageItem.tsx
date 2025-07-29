@@ -96,7 +96,7 @@ export const AccessibleMessageItem: React.FC<AccessibleMessageItemProps> = ({
       aria-label={ariaLabel}
       className={className}
     >
-      <MessageItem message={message} />
+      <MessageItem messageId={message.id} />
     </div>
   );
 };

@@ -45,7 +45,7 @@ const MessageItemWrapper: React.FC<MessageItemWrapperProps> = ({
     <div style={style}>
       <div className="px-4">
         <MessageItem 
-          message={message} 
+          messageId={message.id} 
           aria-posinset={index + 1}
           aria-setsize={messages.length}
         />
@@ -146,7 +146,7 @@ export const OptimizedMessageList: React.FC<OptimizedMessageListProps> = ({
             transition={{ duration: 0.3, delay: index * 0.05 }}
           >
             <MessageItem 
-              message={message}
+              messageId={message.id}
               aria-posinset={index + 1}
               aria-setsize={messages.length}
             />

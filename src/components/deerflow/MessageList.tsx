@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useMessageList } from '@/hooks/useOptimizedMessages';
+import { useMessageIds } from '@/hooks/useOptimizedMessages';
 import { MessageItem } from './MessageItem';
 import { ConversationStarter } from './ConversationStarter';
 import { cn } from '@/lib/utils';
@@ -34,7 +34,8 @@ interface MessageListProps {
 }
 
 export const MessageList = ({ onSendMessage }: MessageListProps) => {
-  const messages = useMessageList();
+  // Use individual message subscriptions following original DeerFlow pattern
+  const messageIds = useMessageIds();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom when new messages arrive - use stable dependencies
@@ -45,7 +46,7 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
         scrollElement.scrollTop = scrollElement.scrollHeight;
       }
     }
-  }, [messages.length, messages[messages.length - 1]?.id]);
+  }, [messageIds.length, messageIds[messageIds.length - 1]]);
 
   const handleSendMessage = (message: string) => {
     if (onSendMessage) {
@@ -53,7 +54,7 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
     }
   };
 
-  if (messages.length === 0) {
+  if (messageIds.length === 0) {
     return (
       <div className="flex items-center justify-center h-full">
         <ConversationStarter onSendMessage={handleSendMessage} />
@@ -70,9 +71,9 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
         "py-4 sm:py-6 lg:py-8", // Platform's container padding
         "px-4 sm:px-6 lg:px-8" // Platform's horizontal padding
       )}>
-        {messages.map((message, index) => (
-          <MessageEntryAnimation key={message.id} index={index}>
-            <MessageItem messageId={message.id} />
+        {messageIds.map((messageId, index) => (
+          <MessageEntryAnimation key={messageId} index={index}>
+            <MessageItem messageId={messageId} />
           </MessageEntryAnimation>
         ))}
       </div>
