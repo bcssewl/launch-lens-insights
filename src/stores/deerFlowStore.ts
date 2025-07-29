@@ -37,8 +37,11 @@ export const useDeerFlowStore = () => {
     researchActivities: messageStore.researchActivities,
     researchSessions: messageStore.researchSessions,
     reportContent: messageStore.reportContent,
-    isResearchPanelOpen: messageStore.isResearchPanelOpen,
-    activeResearchTab: messageStore.activeResearchTab,
+    
+    // Computed properties from new panel state structure
+    isResearchPanelOpen: messageStore.researchPanelState.isOpen,
+    activeResearchTab: messageStore.researchPanelState.activeTab,
+    openResearchId: messageStore.researchPanelState.openResearchId,
 
     // Settings store state
     settings: settingsStore.settings,
@@ -60,8 +63,12 @@ export const useDeerFlowStore = () => {
     getResearchSession: messageStore.getResearchSession,
     setCurrentPrompt: messageStore.setCurrentPrompt,
     setIsResponding: messageStore.setIsResponding,
-    setResearchPanelOpen: messageStore.setResearchPanelOpen,
-    setActiveResearchTab: messageStore.setActiveResearchTab,
+    
+    // Panel management actions using new unified method
+    setResearchPanelOpen: (open: boolean, messageId?: string) => 
+      messageStore.setResearchPanel(open, messageId),
+    setActiveResearchTab: (tab: 'activities' | 'report') => 
+      messageStore.setResearchPanel(messageStore.researchPanelState.isOpen, undefined, tab),
 
     // Settings store actions
     updateSettings: settingsStore.updateSettings,

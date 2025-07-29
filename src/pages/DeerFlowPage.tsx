@@ -39,7 +39,12 @@ export default function DeerFlowPage() {
               {isResearchPanelOpen && (
                 <>
                   <ResizableHandle withHandle />
-                  <ResizablePanel defaultSize={40} minSize={30}>
+              {/* Resizable panel with smooth transitions matching platform animations */}
+              <ResizablePanel 
+                defaultSize={40} 
+                minSize={30}
+                className="animate-slide-in-right"
+              >
                     <ErrorBoundary 
                       fallback={
                         <div className="p-4 text-center text-muted-foreground">

@@ -79,11 +79,13 @@ interface DeerFlowMessageState {
   isResponding: boolean;
   currentPrompt: string;
   
-  // Simple panel state
+  // Simplified React-based panel state
+  researchPanelState: {
+    isOpen: boolean;
+    openResearchId: string | null;
+    activeTab: 'activities' | 'report';
+  };
   reportContent: string;
-  isResearchPanelOpen: boolean;
-  activeResearchTab: 'activities' | 'report';
-  openResearchId: string | null; // Message ID that opened research panel
 }
 
 interface DeerFlowMessageActions {
@@ -113,12 +115,12 @@ interface DeerFlowMessageActions {
   getResearchSession: (threadId: string) => ResearchSession | undefined;
   getThreadContext: (threadId: string) => { plannerIndicatedDirectAnswer: boolean; expectingReporterDirectAnswer: boolean };
   
-  // Simple UI actions
+  
+  // Simplified React panel management
+  setResearchPanel: (isOpen: boolean, messageId?: string, tab?: 'activities' | 'report') => void;
+  setReportContent: (content: string) => void;
   setCurrentPrompt: (prompt: string) => void;
   setIsResponding: (responding: boolean) => void;
-  setResearchPanelOpen: (open: boolean, messageId?: string) => void;
-  setActiveResearchTab: (tab: 'activities' | 'report') => void;
-  setReportContent: (content: string) => void;
 }
 
 type DeerFlowMessageStore = DeerFlowMessageState & DeerFlowMessageActions;
@@ -130,10 +132,12 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
   threadMessages: new Map(),
   isResponding: false,
   currentPrompt: '',
+  researchPanelState: {
+    isOpen: false,
+    openResearchId: null,
+    activeTab: 'activities'
+  },
   reportContent: '',
-  isResearchPanelOpen: false,
-  activeResearchTab: 'activities',
-  openResearchId: null,
 
   // Thread management
   createNewThread: () => {
@@ -142,8 +146,11 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
       currentThreadId: threadId,
       currentPrompt: '',
       isResponding: false,
-      isResearchPanelOpen: false,
-      openResearchId: null
+      researchPanelState: {
+        isOpen: false,
+        openResearchId: null,
+        activeTab: 'activities'
+      }
     });
     return threadId;
   },
@@ -223,8 +230,11 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
       messageMap: new Map(),
       threadMessages: new Map(),
       reportContent: '',
-      isResearchPanelOpen: false,
-      openResearchId: null
+      researchPanelState: {
+        isOpen: false,
+        openResearchId: null,
+        activeTab: 'activities'
+      }
     });
   },
 
@@ -286,17 +296,20 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
     };
   },
 
-  // Simple UI actions with immediate updates
+  // Simplified React-based panel management with immediate updates
   setCurrentPrompt: (prompt) => set({ currentPrompt: prompt }),
   
   setIsResponding: (responding) => set({ isResponding: responding }),
   
-  setResearchPanelOpen: (open, messageId) => set({ 
-    isResearchPanelOpen: open,
-    openResearchId: open ? (messageId || get().openResearchId) : null
-  }),
-  
-  setActiveResearchTab: (tab) => set({ activeResearchTab: tab }),
+  setResearchPanel: (isOpen, messageId, tab = 'activities') => {
+    set(state => ({
+      researchPanelState: {
+        isOpen,
+        openResearchId: isOpen ? (messageId || state.researchPanelState.openResearchId) : null,
+        activeTab: tab
+      }
+    }));
+  },
   
   setReportContent: (content) => set({ reportContent: content })
 }));

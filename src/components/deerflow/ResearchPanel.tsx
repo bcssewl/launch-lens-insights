@@ -48,15 +48,17 @@ const SafeSyntaxHighlighter = ({ children, language }: { children: string; langu
 };
 
 export const ResearchPanel = () => {
+  const store = useDeerFlowStore();
   const {
     isResearchPanelOpen,
-    setResearchPanelOpen,
     activeResearchTab,
-    setActiveResearchTab,
-    researchActivities,
+    openResearchId,
     reportContent,
+    researchActivities,
+    setResearchPanelOpen,
+    setActiveResearchTab,
     setReportContent,
-  } = useDeerFlowStore();
+  } = store;
 
   const { generatePodcast } = useStreamingChat();
   const [isEditingReport, setIsEditingReport] = useState(false);

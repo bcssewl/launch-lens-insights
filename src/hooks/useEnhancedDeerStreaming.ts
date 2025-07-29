@@ -35,8 +35,7 @@ export const useEnhancedDeerStreaming = () => {
     existsMessage,
     addMessageWithId,
     setIsResponding,
-    setResearchPanelOpen,
-    setActiveResearchTab,
+    setResearchPanel,
     setReportContent,
     currentThreadId
   } = useDeerFlowMessageStore();
@@ -169,44 +168,35 @@ export const useEnhancedDeerStreaming = () => {
             { event: event as any, data: parsedData } : 
             parsedData; // Legacy format
 
-          // Original agent-based panel management
+          // Simple agent-based panel control for immediate responsiveness
           if ('event' in streamEvent && streamEvent.event === 'message_chunk') {
             const agent = streamEvent.data.agent;
-            console.log(`🤖 Agent: ${agent}`);
+            const messageId = messageIdRef.current;
             
-            // Process agent types exactly as original
-            switch (agent) {
-              case 'coordinator':
-                // Coordinator manages overall flow - no special panel action
-                break;
-              case 'planner':
-                setResearchPanelOpen(true);
-                setActiveResearchTab('activities');
-                break;
-              case 'researcher':
-                setResearchPanelOpen(true);
-                setActiveResearchTab('activities');
-                break;
-              case 'coder':
-                setResearchPanelOpen(true);
-                setActiveResearchTab('activities');
-                break;
-              case 'reporter':
-                setResearchPanelOpen(true);
-                setActiveResearchTab('report');
-                break;
-              default:
-                // Unknown agent - no panel action
-                break;
+            if (agent && messageId) {
+              switch (agent) {
+                case 'planner':
+                case 'researcher':
+                case 'coder':
+                  setResearchPanel(true, messageId, 'activities');
+                  break;
+                case 'reporter':
+                  setResearchPanel(true, messageId, 'report');
+                  break;
+                case 'coordinator':
+                  // Keep panel state unchanged for coordinator
+                  break;
+              }
             }
           }
 
-          // Handle report generation
+          // Handle report generation with immediate panel updates
           if ('event' in streamEvent && streamEvent.event === 'report_generated') {
-            console.log('📄 Report generated!', streamEvent.data);
+            const messageId = messageIdRef.current;
             setReportContent(streamEvent.data.content);
-            setActiveResearchTab('report');
-            setResearchPanelOpen(true);
+            if (messageId) {
+              setResearchPanel(true, messageId, 'report');
+            }
           }
 
           // Create or update message in store
@@ -300,8 +290,7 @@ export const useEnhancedDeerStreaming = () => {
     existsMessage,
     addMessageWithId,
     setIsResponding,
-    setResearchPanelOpen,
-    setActiveResearchTab,
+    setResearchPanel,
     setReportContent,
     currentThreadId,
     processStreamEvent,
