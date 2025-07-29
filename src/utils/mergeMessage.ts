@@ -92,14 +92,16 @@ export function mergeMessage(message: DeerMessage, event: any): Partial<DeerMess
   const { type, data } = event;
   const result: Partial<DeerMessage> = {};
   
+  console.log('🔀 Merging message:', message.id, 'Type:', type, 'Agent:', data.agent, 'Event:', event);
+  
   // Handle different event types from sendMessage stream
   switch (type) {
     case 'message_start':
-      // Initialize message properties
+      // Initialize message properties and preserve agent
       result.id = data.id;
       result.threadId = data.thread_id;
       result.role = data.role || 'assistant';
-      result.agent = data.agent;
+      result.agent = data.agent || message.agent || 'assistant';
       result.content = data.content || '';
       result.contentChunks = [];
       result.isStreaming = true;
@@ -107,10 +109,11 @@ export function mergeMessage(message: DeerMessage, event: any): Partial<DeerMess
       if (data.options) {
         result.options = data.options;
       }
+      console.log('🎯 message_start: set agent to', result.agent);
       break;
       
     case 'message_chunk':
-      // Accumulate content chunks
+      // Accumulate content chunks and preserve agent
       if (data.content) {
         result.content = (message.content || '') + data.content;
         result.contentChunks = [...(message.contentChunks || []), data.content];
@@ -121,14 +124,24 @@ export function mergeMessage(message: DeerMessage, event: any): Partial<DeerMess
         result.reasoningContent = (message.reasoningContent || '') + data.reasoning_content;
         result.reasoningContentChunks = [...(message.reasoningContentChunks || []), data.reasoning_content];
       }
+      
+      // Preserve agent information from event data
+      if (data.agent && data.agent !== message.agent) {
+        result.agent = data.agent;
+        console.log('🎯 message_chunk: updated agent to', data.agent);
+      }
       break;
       
     case 'message_end':
-      // Finalize message
+      // Finalize message and preserve agent
       result.isStreaming = false;
       result.finishReason = data.finish_reason || 'stop';
       if (data.options) {
         result.options = data.options;
+      }
+      if (data.agent) {
+        result.agent = data.agent;
+        console.log('🎯 message_end: finalized with agent', data.agent);
       }
       break;
       

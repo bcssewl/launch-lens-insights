@@ -166,8 +166,21 @@ async function* chatStream(
 function convertDeerFlowEvent(deerFlowEvent: any): any | null {
   console.log('🔄 Converting DeerFlow event:', deerFlowEvent);
   
-  // DeerFlow API sends different event types than our internal format
-  // We need to map them correctly based on the API docs
+  // Extract agent information from various possible locations
+  const extractAgent = (event: any): string | undefined => {
+    return event.agent || 
+           event.data?.agent || 
+           event.metadata?.agent ||
+           (event.role === 'assistant' ? 'assistant' : undefined);
+  };
+  
+  // Extract message ID from various possible locations
+  const extractId = (event: any): string => {
+    return event.id || 
+           event.data?.id || 
+           event.metadata?.message_id || 
+           nanoid();
+  };
   
   // Handle simple text content
   if (typeof deerFlowEvent === 'string') {
@@ -176,28 +189,59 @@ function convertDeerFlowEvent(deerFlowEvent: any): any | null {
       data: {
         id: nanoid(),
         content: deerFlowEvent,
-        role: 'assistant'
+        role: 'assistant',
+        agent: 'assistant' // Default agent for simple strings
       }
     };
   }
   
   // Handle structured events
   if (typeof deerFlowEvent === 'object' && deerFlowEvent !== null) {
-    // If it has type/event field, handle based on that
     const eventType = deerFlowEvent.type || deerFlowEvent.event;
+    const agent = extractAgent(deerFlowEvent);
+    const messageId = extractId(deerFlowEvent);
+    
+    console.log('🔍 Event details:', { eventType, agent, messageId, fullEvent: deerFlowEvent });
     
     if (eventType) {
       switch (eventType) {
         case 'content':
         case 'message':
         case 'text':
+        case 'message_chunk':
           return {
             type: 'message_chunk',
             data: {
-              id: deerFlowEvent.id || nanoid(),
+              id: messageId,
               content: deerFlowEvent.content || deerFlowEvent.text || '',
-              role: 'assistant',
-              agent: deerFlowEvent.agent
+              role: deerFlowEvent.role || 'assistant',
+              agent: agent || 'assistant',
+              thread_id: deerFlowEvent.thread_id || deerFlowEvent.metadata?.thread_id,
+              options: deerFlowEvent.options
+            }
+          };
+          
+        case 'message_start':
+          return {
+            type: 'message_start',
+            data: {
+              id: messageId,
+              role: deerFlowEvent.role || 'assistant',
+              agent: agent || 'assistant',
+              thread_id: deerFlowEvent.thread_id || deerFlowEvent.metadata?.thread_id,
+              content: deerFlowEvent.content || '',
+              options: deerFlowEvent.options
+            }
+          };
+          
+        case 'message_end':
+          return {
+            type: 'message_end',
+            data: {
+              id: messageId,
+              finish_reason: deerFlowEvent.finish_reason || 'stop',
+              agent: agent,
+              options: deerFlowEvent.options
             }
           };
           
@@ -206,16 +250,29 @@ function convertDeerFlowEvent(deerFlowEvent: any): any | null {
           return {
             type: 'message_chunk',
             data: {
-              id: deerFlowEvent.id || nanoid(),
+              id: messageId,
               reasoning_content: deerFlowEvent.content || deerFlowEvent.text || '',
-              role: 'assistant'
+              role: 'assistant',
+              agent: agent || 'assistant'
             }
           };
           
         case 'tool_call':
           return {
             type: 'tool_call',
-            data: deerFlowEvent.data || deerFlowEvent
+            data: {
+              ...(deerFlowEvent.data || deerFlowEvent),
+              agent: agent
+            }
+          };
+          
+        case 'tool_call_result':
+          return {
+            type: 'tool_call_result',
+            data: {
+              ...(deerFlowEvent.data || deerFlowEvent),
+              agent: agent
+            }
           };
           
         case 'done':
@@ -223,29 +280,44 @@ function convertDeerFlowEvent(deerFlowEvent: any): any | null {
           return {
             type: 'message_end',
             data: {
-              id: deerFlowEvent.id || nanoid(),
-              finish_reason: 'stop'
+              id: messageId,
+              finish_reason: 'stop',
+              agent: agent
+            }
+          };
+          
+        case 'error':
+          return {
+            type: 'error',
+            data: {
+              error: deerFlowEvent.error || deerFlowEvent.data?.error || 'Unknown error',
+              agent: agent
             }
           };
           
         default:
-          // Pass through unknown events
+          // Pass through unknown events with agent preservation
+          console.log('🔄 Passing through unknown event:', eventType);
           return {
             type: eventType,
-            data: deerFlowEvent.data || deerFlowEvent
+            data: {
+              ...(deerFlowEvent.data || deerFlowEvent),
+              agent: agent
+            }
           };
       }
     }
     
-    // If no type field, treat as content
+    // If no type field but has content, treat as content
     if (deerFlowEvent.content || deerFlowEvent.text) {
       return {
         type: 'message_chunk',
         data: {
-          id: deerFlowEvent.id || nanoid(),
+          id: messageId,
           content: deerFlowEvent.content || deerFlowEvent.text || '',
-          role: 'assistant',
-          agent: deerFlowEvent.agent
+          role: deerFlowEvent.role || 'assistant',
+          agent: agent || 'assistant',
+          thread_id: deerFlowEvent.thread_id
         }
       };
     }
@@ -328,10 +400,18 @@ export async function sendMessage(
       } else if (!messageId || !existsMessage(messageId)) {
         // STEP 4: Create new assistant message
         const newMessageId = messageId || nanoid();
+        
+        // Preserve agent information from the event data
+        const agent = data.agent || 
+                     (type === 'message_start' && data.agent) || 
+                     'assistant';
+        
+        console.log('🎯 Creating new message with agent:', agent, 'from event:', type, data);
+        
         message = {
           id: newMessageId,
           threadId: data.thread_id || currentThreadId,
-          agent: data.agent || 'assistant',
+          agent: agent,
           role: data.role || 'assistant',
           content: "",
           contentChunks: [],

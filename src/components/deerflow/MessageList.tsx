@@ -107,7 +107,10 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
           message.role === 'assistant' ||
           message.agent === 'coordinator' ||
           message.agent === 'planner' ||
-          message.agent === 'podcast'
+          message.agent === 'podcast' ||
+          message.agent === 'researcher' ||
+          message.agent === 'reporter' ||
+          message.agent === 'coder'
         );
         
         if (!shouldShow) {
@@ -120,6 +123,7 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
       });
     
     console.log('🔍 DEBUG: Final visible messages count:', allMessages.length);
+    console.log('🔍 DEBUG: Planner messages found:', allMessages.filter(m => m.agent === 'planner').map(m => ({ id: m.id, content: m.content?.slice(0, 50) })));
     return allMessages;
   }, [safeMessageIds, getMessage, researchIds, researchPlanIds]);
 
