@@ -11,9 +11,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { useResearchPanel } from '@/hooks/useOptimizedMessages';
+import { useDeerFlowMessageStore } from '@/stores/deerFlowMessageStore';
 import { useStreamingChat } from '@/hooks/useStreamingChat';
 import { ToolCall } from '@/stores/deerFlowMessageStore';
 import { ActivitiesTab } from './ActivitiesTab';
+import { ReportTab as NewReportTab } from './ReportTab';
 import { 
   Search, 
   Globe, 
@@ -318,73 +320,20 @@ const ToolCallsGroup: React.FC<ToolCallsGroupProps> = ({
   );
 };
 
-const ReportTab = ({
-  content,
-  editableContent,
-  setEditableContent,
-  isEditing,
-  setIsEditing,
-  onSave,
-  onCopy,
-  onDownload,
-}: any) => {
-  return (
-    <div className="h-[calc(100vh-300px)] flex flex-col">
-      <div className="flex items-center justify-between mb-4">
-        <h4 className="font-medium">Research Report</h4>
-        <div className="flex items-center space-x-2">
-          {isEditing ? (
-            <>
-              <Button size="sm" onClick={onSave}>
-                Save
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => setIsEditing(false)}>
-                Cancel
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button size="sm" variant="ghost" onClick={onCopy}>
-                <Copy className="h-4 w-4" />
-              </Button>
-              <Button size="sm" variant="ghost" onClick={onDownload}>
-                <Download className="h-4 w-4" />
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => setIsEditing(true)}>
-                Edit
-              </Button>
-            </>
-          )}
-        </div>
-      </div>
-
-      <ScrollArea className="flex-1">
-        {content ? (
-          isEditing ? (
-            <textarea
-              value={editableContent}
-              onChange={(e) => setEditableContent(e.target.value)}
-              className="w-full h-full min-h-[400px] p-4 border rounded-lg bg-background resize-none focus:outline-none focus:ring-2 focus:ring-primary"
-              placeholder="Edit your report here..."
-            />
-          ) : (
-            <div className="prose prose-sm max-w-none dark:prose-invert">
-              <ReactMarkdown>{content}</ReactMarkdown>
-            </div>
-          )
-        ) : (
-          <div className="text-center text-muted-foreground py-8">
-            <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>No report generated yet</p>
-            <p className="text-sm">Start a research conversation to generate a report</p>
-          </div>
-        )}
-      </ScrollArea>
-    </div>
-  );
-};
 
 export const ResearchPanel = () => {
+  const { getMessagesByThread, getMessage } = useDeerFlowMessageStore();
+  
+  // Helper function to find reporter message for a research session
+  const getReporterMessageId = (researchId: string): string | null => {
+    const researchMessage = getMessage(researchId);
+    if (!researchMessage?.threadId) return null;
+    
+    const threadMessages = getMessagesByThread(researchMessage.threadId);
+    const reporterMessage = threadMessages.find(msg => msg.agent === 'reporter');
+    
+    return reporterMessage?.id || null;
+  };
   const {
     isOpen: isResearchPanelOpen,
     activeTab: activeResearchTab,
@@ -395,9 +344,6 @@ export const ResearchPanel = () => {
   } = useResearchPanel();
   
   const { generatePodcast } = useStreamingChat();
-  const [reportContent, setReportContent] = useState('');
-  const [isEditingReport, setIsEditingReport] = useState(false);
-  const [editableContent, setEditableContent] = useState(reportContent);
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
 
   // Extract tool calls from the research message
@@ -417,45 +363,11 @@ export const ResearchPanel = () => {
 
   if (!isResearchPanelOpen) return null;
 
-  const handleSaveReport = () => {
-    setReportContent(editableContent);
-    setIsEditingReport(false);
-  };
-
-  const handleCopyReport = () => {
-    navigator.clipboard.writeText(reportContent);
-  };
-
-  const handleDownloadReport = () => {
-    const blob = new Blob([reportContent], { type: "text/markdown" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "research-report.md";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
-
   return (
     <Card className="h-full border-l bg-card">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b">
         <h3 className="text-lg font-semibold">Research Panel</h3>
         <div className="flex items-center space-x-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              if (reportContent) {
-                generatePodcast(reportContent);
-              }
-            }}
-            disabled={!reportContent}
-            className="h-8 w-8 p-0"
-          >
-            <Play className="h-4 w-4" />
-          </Button>
           <Button
             variant="ghost"
             size="sm"
@@ -500,17 +412,23 @@ export const ResearchPanel = () => {
             )}
           </TabsContent>
 
-          <TabsContent value="report" className="flex-1 px-4 pb-4">
-            <ReportTab
-              content={reportContent}
-              editableContent={editableContent}
-              setEditableContent={setEditableContent}
-              isEditing={isEditingReport}
-              setIsEditing={setIsEditingReport}
-              onSave={handleSaveReport}
-              onCopy={handleCopyReport}
-              onDownload={handleDownloadReport}
-            />
+          <TabsContent value="report" className="flex-1">
+            {openResearchId ? (
+              <NewReportTab 
+                researchId={openResearchId} 
+                reportMessageId={getReporterMessageId(openResearchId)}
+              />
+            ) : (
+              <div className="flex items-center justify-center h-64 text-center">
+                <div>
+                  <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No Research Selected</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Select a research session to view the report
+                  </p>
+                </div>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </CardContent>
