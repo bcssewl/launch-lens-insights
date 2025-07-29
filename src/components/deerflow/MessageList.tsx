@@ -84,7 +84,8 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
     researchIds,
     researchPlanIds,
     ongoingResearchId,
-    isResponding
+    isResponding,
+    getResearchTitle
   } = useDeerFlowMessageStore();
   
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -99,26 +100,16 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
       .filter((message): message is DeerMessage => {
         if (!message) return false;
         
-        // Only show these types in main chat (matching original DeerFlow logic)
+        // Original DeerFlow logic: show main chat types + startOfResearch
         return (
           message.role === 'user' ||
           message.agent === 'coordinator' ||
           message.agent === 'planner' ||
-          message.agent === 'podcast'
+          message.agent === 'podcast' ||
+          researchIds.includes(message.id) // ADD THIS: startOfResearch logic
         );
       });
-  }, [safeMessageIds, getMessage]);
-
-  // Research sessions that should be displayed
-  const activeResearchSessions = useMemo(() => {
-    return researchIds
-      .map(researchId => {
-        const planId = researchPlanIds.get(researchId);
-        const planMessage = planId ? getMessage(planId) : null;
-        return planMessage ? { researchId, planMessage } : null;
-      })
-      .filter((session): session is { researchId: string; planMessage: DeerMessage } => session !== null);
-  }, [researchIds, researchPlanIds, getMessage]);
+  }, [safeMessageIds, getMessage, researchIds]); // ADD researchIds dependency
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -133,7 +124,7 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
         setTimeout(scrollToBottom, 100);
       }
     }
-  }, [visibleMessages.length, activeResearchSessions.length]);
+  }, [visibleMessages.length]);
 
   const handleSendMessage = (message: string) => {
     if (onSendMessage) {
@@ -147,7 +138,7 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
   };
 
   // Show conversation starter if no messages
-  if (visibleMessages.length === 0 && activeResearchSessions.length === 0) {
+  if (visibleMessages.length === 0) {
     return (
       <div className="flex items-center justify-center h-full">
         <motion.div
@@ -180,7 +171,7 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
           {/* Render visible messages */}
           {visibleMessages.map((message, index) => {
             const isPlanner = message.agent === 'planner';
-            const isPlanWithResearch = isPlanner && isResearchStarter(message, researchIds, researchPlanIds);
+            const isStartOfResearch = researchIds.includes(message.id); // First researcher message
             
             return (
               <MessageEntryAnimation key={message.id} index={index}>
@@ -196,11 +187,16 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
                     </motion.div>
                   }
                 >
-                  {isPlanWithResearch ? (
+                  {isPlanner ? (
                     <PlanCard 
                       message={message}
                       onStartResearch={handleStartResearch}
                       isExecuting={ongoingResearchId !== null}
+                    />
+                  ) : isStartOfResearch ? (
+                    <ResearchCard 
+                      researchId={message.id} // Use the researcher message ID
+                      title={getResearchTitle(message.id)}
                     />
                   ) : (
                     <MessageItem messageId={message.id} />
@@ -209,29 +205,6 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
               </MessageEntryAnimation>
             );
           })}
-
-          {/* Render research session cards */}
-          {activeResearchSessions.map(({ researchId, planMessage }, index) => (
-            <MessageEntryAnimation key={`research-${researchId}`} index={visibleMessages.length + index}>
-              <ErrorBoundary
-                fallback={
-                  <motion.div 
-                    className="animate-pulse bg-destructive/10 border border-destructive/20 rounded-lg h-16 p-4 flex items-center justify-center"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <span className="text-destructive text-sm">Research session failed to load</span>
-                  </motion.div>
-                }
-              >
-                <ResearchCard 
-                  researchId={researchId}
-                  title={planMessage.content}
-                />
-              </ErrorBoundary>
-            </MessageEntryAnimation>
-          ))}
 
           {/* Loading indicator when responding */}
           {isResponding && (
