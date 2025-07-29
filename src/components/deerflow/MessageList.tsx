@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useMessageIds } from '@/hooks/useOptimizedMessages';
+import { useDeerFlowMessageStore } from '@/stores/deerFlowMessageStore';
 import { MessageItem } from './MessageItem';
 import { ConversationStarter } from './ConversationStarter';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -30,6 +31,17 @@ const MessageEntryAnimation = ({ children, index }: { children: React.ReactNode;
   );
 };
 
+/**
+ * Helper function to identify messages that start a research session
+ */
+const isStartOfResearch = (messageId: string, getMessage: (id: string) => any) => {
+  const message = getMessage(messageId);
+  if (!message) return false;
+  
+  // Research starts when we see first researcher activity or tool call
+  return message.agent === 'researcher' && message.toolCalls && message.toolCalls.length > 0;
+};
+
 interface MessageListProps {
   onSendMessage?: (message: string) => void;
 }
@@ -37,10 +49,26 @@ interface MessageListProps {
 export const MessageList = ({ onSendMessage }: MessageListProps) => {
   // Use individual message subscriptions following original DeerFlow pattern
   const messageIds = useMessageIds();
+  const getMessage = useDeerFlowMessageStore(state => state.getMessage);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   // Defensive coding: ensure messageIds is always an array
   const safeMessageIds = Array.isArray(messageIds) ? messageIds : [];
+
+  // Filter messages for main chat display (matching original DeerFlow logic)
+  const visibleMessageIds = safeMessageIds.filter(messageId => {
+    const message = getMessage(messageId);
+    if (!message) return false;
+    
+    // Only show these in main chat
+    return (
+      message.role === 'user' ||
+      message.agent === 'coordinator' ||
+      message.agent === 'planner' ||
+      message.agent === 'podcast' ||
+      isStartOfResearch(messageId, getMessage)
+    );
+  });
 
   // Auto-scroll to bottom when new messages arrive - use stable dependencies
   useEffect(() => {
@@ -75,7 +103,7 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
         "py-4 sm:py-6 lg:py-8", // Platform's container padding
         "px-4 sm:px-6 lg:px-8" // Platform's horizontal padding
       )}>
-        {safeMessageIds.map((messageId, index) => (
+        {visibleMessageIds.map((messageId, index) => (
           <MessageEntryAnimation key={messageId} index={index}>
             <ErrorBoundary
               fallback={
