@@ -6,45 +6,6 @@
 import { DeerMessage, ToolCall } from '@/stores/deerFlowMessageStore';
 import { nanoid } from 'nanoid';
 
-/**
- * Detects if message content represents a research plan
- */
-function isPlanMessage(content: string): boolean {
-  if (!content || content.length < 10) return false;
-  
-  try {
-    // First try to parse as JSON directly
-    const parsed = JSON.parse(content);
-    if (parsed && typeof parsed === 'object') {
-      // Check for plan structure: steps array and planner fields
-      return !!(parsed.steps || parsed.title || parsed.thought || parsed.locale);
-    }
-  } catch {
-    // Not valid JSON, check for plan-like content patterns
-    const lowerContent = content.toLowerCase();
-    
-    // Look for research plan indicators
-    const planIndicators = [
-      'research plan',
-      'research steps', 
-      '"steps"',
-      '"thought"',
-      '"locale"',
-      'need_web_search',
-      'step_type',
-      'has_enough_context'
-    ];
-    
-    const hasMultipleIndicators = planIndicators.filter(indicator => 
-      lowerContent.includes(indicator)
-    ).length >= 2;
-    
-    return hasMultipleIndicators;
-  }
-  
-  return false;
-}
-
 // Base interface for all DeerFlow events
 export interface GenericEvent<T = any> {
   event: string;
@@ -125,96 +86,98 @@ export type StreamEvent =
   | GenericEvent<ErrorData> & { event: 'error' }
 
 /**
- * Merges streaming events into a message object with DeerFlow exact behavior
+ * Merges streaming events into a message object with simplified structure
  */
-export function mergeMessage(message: DeerMessage, event: any): Partial<DeerMessage> {
-  const { type, data } = event;
-  const result: Partial<DeerMessage> = {};
+export function mergeMessage(message: DeerMessage, event: StreamEvent): DeerMessage {
+  const result = { ...message };
   
-  console.log('🔀 Merging message:', message.id, 'Type:', type, 'Agent:', data.agent, 'Event:', event);
+  if (event.event === "message_chunk") {
+    // Handle content like original
+    if (event.data.content) {
+      result.content += event.data.content;
+      result.contentChunks.push(event.data.content);
+    }
+    
+    // Handle reasoning content like original
+    if (event.data.reasoning_content) {
+      result.reasoningContent = (result.reasoningContent ?? "") + event.data.reasoning_content;
+      result.reasoningContentChunks = result.reasoningContentChunks ?? [];
+      result.reasoningContentChunks.push(event.data.reasoning_content);
+    }
+    
+    // Update agent if provided
+    if (event.data.agent) {
+      result.agent = event.data.agent;
+    }
+  }
   
-  // Handle different event types from sendMessage stream
-  switch (type) {
-    case 'message_start':
-      // Initialize message properties and preserve agent
-      result.id = data.id;
-      result.threadId = data.thread_id;
-      result.role = data.role || 'assistant';
-      
-      // Detect if this is a planner message based on content structure
-      const initialContent = data.content || '';
-      const isPlanContent = isPlanMessage(initialContent);
-      
-      result.agent = isPlanContent ? 'planner' : (data.agent || message.agent || 'assistant');
-      result.content = initialContent;
-      result.contentChunks = [];
-      result.isStreaming = true;
-      result.timestamp = new Date();
-      if (data.options) {
-        result.options = data.options;
-      }
-      console.log('🎯 message_start: set agent to', result.agent, 'isPlan:', isPlanContent);
-      break;
-      
-    case 'message_chunk':
-      // Accumulate content chunks and preserve agent
-      if (data.content) {
-        result.content = (message.content || '') + data.content;
-        result.contentChunks = [...(message.contentChunks || []), data.content];
-        
-        // Check if accumulated content looks like a plan
-        const totalContent = result.content;
-        const isPlanContent = isPlanMessage(totalContent);
-        
-        // Update agent if we detect this is a plan message
-        if (isPlanContent && message.agent !== 'planner') {
-          result.agent = 'planner';
-          console.log('🎯 message_chunk: detected plan content, updated agent to planner');
+  // Handle finish reason like original
+  if (event.data.finish_reason) {
+    result.finishReason = event.data.finish_reason;
+    result.isStreaming = false;
+    
+    // Process tool call args like original
+    if (result.toolCalls) {
+      result.toolCalls.forEach((toolCall) => {
+        if (toolCall.argsChunks?.length) {
+          toolCall.args = JSON.parse(toolCall.argsChunks.join(""));
+          delete toolCall.argsChunks;
         }
+      });
+    }
+  }
+  
+  // Handle tool calls like original - only create tool calls if they have a name
+  if (event.event === "tool_calls" || event.event === "tool_call_chunks") {
+    const toolCalls = result.toolCalls || [];
+    
+    if (event.event === "tool_calls" && event.data.name) {
+      // Complete tool call - only if it has a name
+      const existingIndex = toolCalls.findIndex(tc => tc.id === event.data.id);
+      if (existingIndex >= 0) {
+        toolCalls[existingIndex] = {
+          ...toolCalls[existingIndex],
+          ...event.data,
+          status: 'running',
+          timestamp: Date.now()
+        };
+      } else {
+        toolCalls.push({
+          ...event.data,
+          status: 'running',
+          timestamp: Date.now(),
+          argsChunks: []
+        });
       }
-      
-      // Handle reasoning content
-      if (data.reasoning_content) {
-        result.reasoningContent = (message.reasoningContent || '') + data.reasoning_content;
-        result.reasoningContentChunks = [...(message.reasoningContentChunks || []), data.reasoning_content];
+    } else if (event.event === "tool_call_chunks") {
+      // Tool call chunk
+      const existingIndex = toolCalls.findIndex(tc => tc.id === event.data.id);
+      if (existingIndex >= 0) {
+        const toolCall = toolCalls[existingIndex];
+        const argsChunks = [...(toolCall.argsChunks || [])];
+        
+        if (event.data.name) {
+          toolCall.name = event.data.name;
+        }
+        
+        if (event.data.args) {
+          argsChunks.push(event.data.args);
+          toolCall.argsChunks = argsChunks;
+          
+          // Try to parse complete args
+          try {
+            const completeArgs = JSON.parse(argsChunks.join(''));
+            toolCall.args = completeArgs;
+          } catch (e) {
+            // Args not complete yet
+          }
+        }
+        
+        toolCalls[existingIndex] = toolCall;
       }
-      
-      // Preserve agent information from event data if explicitly provided
-      if (data.agent && data.agent !== message.agent) {
-        result.agent = data.agent;
-        console.log('🎯 message_chunk: updated agent to', data.agent);
-      }
-      break;
-      
-    case 'message_end':
-      // Finalize message and preserve agent
-      result.isStreaming = false;
-      result.finishReason = data.finish_reason || 'stop';
-      if (data.options) {
-        result.options = data.options;
-      }
-      if (data.agent) {
-        result.agent = data.agent;
-        console.log('🎯 message_end: finalized with agent', data.agent);
-      }
-      break;
-      
-    case 'tool_call_result':
-      // Handle tool call results
-      if (message.toolCalls) {
-        const updatedToolCalls = message.toolCalls.map(tc => 
-          tc.id === data.tool_call_id 
-            ? { ...tc, result: data.result, status: 'completed' as const }
-            : tc
-        );
-        result.toolCalls = updatedToolCalls;
-      }
-      break;
-      
-    default:
-      // Handle other event types as needed
-      console.log('🔄 Unhandled event type:', type, data);
-      break;
+    }
+    
+    result.toolCalls = toolCalls;
   }
   
   return result;

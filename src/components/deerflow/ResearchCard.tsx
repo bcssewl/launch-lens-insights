@@ -18,27 +18,11 @@ export const ResearchCard = ({ researchId, title, onToggleResearch }: ResearchCa
     closeResearchPanel,
     getResearchStatus,
     getResearchTitle,
-    getMessage,
-    researchActivityIds,
-    researchPlanIds
+    getMessage
   } = useDeerFlowMessageStore();
   
   // Get the actual research message (first researcher message)
   const researchMessage = getMessage(researchId);
-  
-  // Debug logging for research card
-  console.log('🔬 DEBUG ResearchCard:', {
-    researchId,
-    title,
-    researchMessage: researchMessage ? {
-      id: researchMessage.id,
-      role: researchMessage.role,
-      agent: researchMessage.agent,
-      content: researchMessage.content?.slice(0, 100)
-    } : null,
-    researchActivities: researchActivityIds.get(researchId),
-    planId: researchPlanIds.get(researchId)
-  });
   
   const [isAnimating, setIsAnimating] = useState(true);
 

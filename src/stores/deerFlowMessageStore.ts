@@ -39,8 +39,6 @@ export interface DeerMessage {
   reasoningContent?: string;
   reasoningContentChunks?: string[];
   agent?: string;
-  options?: FeedbackOption[];
-  interruptFeedback?: string;
 }
 
 
@@ -85,22 +83,17 @@ interface DeerFlowMessageActions {
   createNewThread: (forceDifferent?: boolean) => string;
   setCurrentThread: (threadId: string) => void;
   
-  // Message actions with exact DeerFlow behavior
+  // Message actions with Map-based storage
   addMessage: (message: Omit<DeerMessage, 'id' | 'timestamp'>) => void;
   addMessageWithId: (message: DeerMessage) => void;
-  appendMessage: (message: DeerMessage) => void; // NEW: Main entry point from original DeerFlow
   existsMessage: (messageId: string) => boolean;
   updateMessage: (messageId: string, updates: Partial<DeerMessage>) => void;
   getMessage: (messageId: string) => DeerMessage | undefined;
-  findMessageByToolCallId: (toolCallId: string) => DeerMessage | undefined; // NEW: Tool call lookup
   clearMessages: () => void;
   getMessagesByThread: (threadId: string) => DeerMessage[];
   getAllMessages: () => DeerMessage[];
   
-  // Research session management - DeerFlow exact behavior
-  appendResearch: (researchId: string) => void; // NEW: Auto-create research session
-  appendResearchActivity: (message: DeerMessage) => void; // NEW: Auto-add to research
-  openResearch: (researchId: string | null) => void; // NEW: Auto-open research panel
+  // Research session management
   autoStartResearchOnFirstActivity: (message: DeerMessage) => string | null;
   startResearch: (plannerMessageId: string) => string | null;
   addResearchActivity: (researchId: string, messageId: string) => void;
@@ -119,9 +112,6 @@ interface DeerFlowMessageActions {
   
   // Legacy compatibility - no-op methods  
   getThreadContext: (threadId: string) => { plannerIndicatedDirectAnswer: boolean; expectingReporterDirectAnswer: boolean };
-  
-  // Podcast generation
-  listenToPodcast: (researchId: string) => Promise<void>;
   
   // Simplified React panel management (legacy)
   setResearchPanel: (isOpen: boolean, messageId?: string, tab?: 'activities' | 'report') => void;
@@ -232,102 +222,6 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
     });
   },
 
-  // EXACT DeerFlow appendMessage behavior (main entry point)
-  appendMessage: (message: DeerMessage) => {
-    // STEP 1: Auto-create research session for research agents
-    if (
-      message.agent === "coder" ||
-      message.agent === "reporter" ||
-      message.agent === "researcher"
-    ) {
-      const currentOngoing = get().ongoingResearchId;
-      if (!currentOngoing) {
-        const id = message.id;
-        get().appendResearch(id);
-        get().openResearch(id);
-      }
-      get().appendResearchActivity(message);
-    }
-    
-    // STEP 2: Add message to store
-    get().addMessageWithId(message);
-  },
-
-  // Helper function: appendResearch (from original lines 220-240)
-  appendResearch: (researchId: string) => {
-    let planMessage: DeerMessage | undefined;
-    const reversedMessageIds = [...get().messageIds].reverse();
-    
-    for (const messageId of reversedMessageIds) {
-      const message = get().getMessage(messageId);
-      if (message?.agent === "planner") {
-        planMessage = message;
-        break;
-      }
-    }
-    
-    if (!planMessage) {
-      console.warn('No planner message found for research session');
-      return;
-    }
-    
-    const messageIds = [researchId];
-    messageIds.unshift(planMessage.id);
-    
-    set({
-      ongoingResearchId: researchId,
-      researchIds: [...get().researchIds, researchId],
-      researchPlanIds: new Map(get().researchPlanIds).set(researchId, planMessage.id),
-      researchActivityIds: new Map(get().researchActivityIds).set(researchId, messageIds),
-    });
-  },
-
-  // Helper function: appendResearchActivity
-  appendResearchActivity: (message: DeerMessage) => {
-    const researchId = get().ongoingResearchId;
-    if (researchId) {
-      const researchActivityIds = get().researchActivityIds;
-      const current = researchActivityIds.get(researchId) || [];
-      if (!current.includes(message.id)) {
-        set({
-          researchActivityIds: new Map(researchActivityIds).set(researchId, [
-            ...current,
-            message.id,
-          ]),
-        });
-      }
-      if (message.agent === "reporter") {
-        set({
-          researchReportIds: new Map(get().researchReportIds).set(researchId, message.id),
-        });
-      }
-    }
-  },
-
-  // Tool Call ID Lookup (Lines 170-180 from original)
-  findMessageByToolCallId: (toolCallId: string) => {
-    return Array.from(get().messageMap.values())
-      .reverse()
-      .find((message) => {
-        if (message.toolCalls) {
-          return message.toolCalls.some((toolCall) => toolCall.id === toolCallId);
-        }
-        return false;
-      });
-  },
-
-  // Auto-Open Research Panel (Lines 250-270 from original)
-  openResearch: (researchId: string | null) => {
-    set({ 
-      openResearchId: researchId,
-      researchPanelState: {
-        isOpen: researchId !== null,
-        openResearchId: researchId,
-        activeTab: 'activities'
-      }
-    });
-  },
-
   addMessageWithId: (message) => {
     const { messageMap, threadMessageIds, messageIds, currentThreadId } = get();
     const threadId = message.threadId || currentThreadId;
@@ -349,33 +243,17 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
 
     console.log('📝 addMessageWithId created:', message.id, 'Thread:', threadId, 'Agent:', message.agent);
     
-    // Set state first
+    // UPDATE: Set state first
     set({ 
       messageIds: newMessageIds,
       messageMap: newMessageMap,
       threadMessageIds: newThreadMessageIds
     });
     
-    // Automated research session management
+    // NEW: Auto-handle research session management
     if (message.agent === 'researcher' || message.agent === 'coder' || message.agent === 'reporter') {
-      console.log('🔬 Auto-research trigger:', message.id, 'Agent:', message.agent);
       const store = get();
-      const researchId = store.autoStartResearchOnFirstActivity(message);
-      
-      // Add to existing research session if auto-start didn't create one
-      if (!researchId && store.ongoingResearchId) {
-        console.log('🔬 Adding to ongoing research:', store.ongoingResearchId);
-        store.addResearchActivity(store.ongoingResearchId, message.id);
-      }
-      
-      // Handle reporter completion - auto-close research and switch to report tab
-      if (message.agent === 'reporter' && !message.isStreaming) {
-        console.log('📄 Reporter finished, completing research session');
-        const activeResearchId = store.ongoingResearchId || researchId;
-        if (activeResearchId) {
-          store.setResearchReport(activeResearchId, message.id);
-        }
-      }
+      store.autoStartResearchOnFirstActivity(message);
     }
   },
 
@@ -384,24 +262,19 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
   },
 
   updateMessage: (messageId, updates) => {
-    const { messageMap, ongoingResearchId } = get();
+    console.log('🔄 updateMessage called:', messageId, updates);
+    const { messageMap } = get();
     const existingMessage = messageMap.get(messageId);
     
     if (existingMessage) {
-      const updatedMessage = { ...existingMessage, ...updates };
-      
-      // Auto-close research session when reporter finishes
-      if (
-        ongoingResearchId &&
-        updatedMessage.agent === "reporter" &&
-        !updatedMessage.isStreaming
-      ) {
-        set({ ongoingResearchId: null });
-      }
-      
       const newMessageMap = new Map(messageMap);
-      newMessageMap.set(messageId, updatedMessage);
-      set({ messageMap: newMessageMap });
+      newMessageMap.set(messageId, { ...existingMessage, ...updates });
+      
+      // Enhanced Map reference replacement for React reactivity
+      set({ 
+        messageMap: newMessageMap
+      });
+      console.log('✅ updateMessage completed, Map reference replaced for reactivity');
     }
   },
 
@@ -444,80 +317,7 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
     return Array.from(messageMap.values())
       .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
   },
-  
-  // Podcast generation workflow
-  listenToPodcast: async (researchId: string) => {
-    const { researchPlanIds, researchReportIds, getMessage, addMessageWithId, updateMessage, currentThreadId } = get();
-    
-    const planMessageId = researchPlanIds.get(researchId);
-    const reportMessageId = researchReportIds.get(researchId);
-    
-    if (planMessageId && reportMessageId) {
-      const planMessage = getMessage(planMessageId);
-      const reportMessage = getMessage(reportMessageId);
-      
-      if (planMessage && reportMessage?.content) {
-        let title = "Research Podcast";
-        try {
-          const planData = JSON.parse(planMessage.content);
-          title = planData.title || title;
-        } catch {
-          // Use default title if parsing fails
-        }
-        
-        // 1. Create user request message
-        addMessageWithId({
-          id: nanoid(),
-          role: "user",
-          content: "Please generate a podcast for the above research.",
-          contentChunks: ["Please generate a podcast for the above research."],
-          threadId: currentThreadId,
-          timestamp: new Date(),
-        });
-        
-        // 2. Create streaming podcast message
-        const podcastMessageId = nanoid();
-        const podcastObject = { title, researchId };
-        
-        addMessageWithId({
-          id: podcastMessageId,
-          role: "assistant",
-          agent: "podcast",
-          content: JSON.stringify(podcastObject),
-          contentChunks: [],
-          isStreaming: true,
-          threadId: currentThreadId,
-          timestamp: new Date(),
-        });
-        
-        // 3. Mock podcast generation (replace with real API later)
-        try {
-          // Simulate generation time
-          await new Promise(resolve => setTimeout(resolve, 3000));
-          
-          // Create mock audio URL - will be replaced with real generation
-          const mockAudioUrl = `data:audio/mp3;base64,mock-audio-data-${researchId}`;
-          
-          updateMessage(podcastMessageId, {
-            content: JSON.stringify({ 
-              ...podcastObject, 
-              audioUrl: mockAudioUrl 
-            }),
-            isStreaming: false,
-          });
-        } catch (error) {
-          updateMessage(podcastMessageId, {
-            content: JSON.stringify({ 
-              ...podcastObject, 
-              error: error instanceof Error ? error.message : "Unknown error"
-            }),
-            isStreaming: false,
-          });
-        }
-      }
-    }
-  },
-  
+
   // Legacy compatibility - computed properties
   get messages() {
     return get().getAllMessages();
@@ -550,15 +350,7 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
   // Research session management
   // NEW: Auto-detect and start research on first researcher message
   autoStartResearchOnFirstActivity: (message) => {
-    const { ongoingResearchId, researchIds, messageIds, getMessage, researchPlanIds, researchActivityIds } = get();
-    
-    console.log('🔬 DEBUG autoStartResearchOnFirstActivity:', {
-      messageId: message.id,
-      agent: message.agent,
-      ongoingResearchId,
-      currentResearchIds: researchIds,
-      messageContent: message.content?.slice(0, 100)
-    });
+    const { ongoingResearchId, researchIds, messageIds, getMessage } = get();
     
     // Only start research if we don't have an ongoing session
     if (!ongoingResearchId && (message.agent === 'researcher' || message.agent === 'coder' || message.agent === 'reporter')) {
@@ -571,7 +363,6 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
         const msg = getMessage(messageId);
         if (msg?.agent === 'planner') {
           plannerMessage = msg;
-          console.log('🔬 DEBUG found planner message:', plannerMessage.id);
           break;
         }
       }
@@ -580,32 +371,22 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
         // Use the researcher message ID as the research session ID (matching original)
         const researchId = message.id;
         
-        const newState = {
+        set({
           researchIds: [...researchIds, researchId],
-          researchPlanIds: new Map(researchPlanIds).set(researchId, plannerMessage.id),
-          researchActivityIds: new Map(researchActivityIds).set(researchId, [plannerMessage.id, message.id]),
+          researchPlanIds: new Map(get().researchPlanIds).set(researchId, plannerMessage.id),
+          researchActivityIds: new Map(get().researchActivityIds).set(researchId, [plannerMessage.id, message.id]),
           ongoingResearchId: researchId,
           openResearchId: researchId,
           researchPanelState: {
             isOpen: true,
             openResearchId: researchId,
-            activeTab: 'activities' as const
+            activeTab: 'activities'
           }
-        };
-        
-        set(newState);
-        
-        console.log('🔬 Auto-started research session:', researchId, 'triggered by:', message.agent, 'with state:', {
-          researchIds: newState.researchIds,
-          planId: plannerMessage.id,
-          activities: newState.researchActivityIds.get(researchId)
         });
+        
+        console.log('🔬 Auto-started research session:', researchId, 'triggered by:', message.agent);
         return researchId;
-      } else {
-        console.log('🔬 DEBUG: No planner message found for research activity');
       }
-    } else if (ongoingResearchId) {
-      console.log('🔬 DEBUG: Research session already ongoing:', ongoingResearchId);
     }
     
     return null;

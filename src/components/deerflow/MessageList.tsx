@@ -6,8 +6,6 @@ import { MessageItem } from './MessageItem';
 import { ResearchCard } from './ResearchCard';
 import { PlanCard } from './PlanCard';
 import { ConversationStarter } from './ConversationStarter';
-import { PodcastCard } from './PodcastCard';
-import { MessageContainer } from './AnimatedContainers';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -39,6 +37,26 @@ const LoadingAnimation = () => (
   </div>
 );
 
+/**
+ * Message entry animation component with staggered animations
+ */
+const MessageEntryAnimation = ({ children, index }: { children: React.ReactNode; index: number }) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -24 }}
+      transition={{
+        duration: 0.4,
+        ease: "easeOut",
+        delay: index * 0.1 // Stagger animation
+      }}
+      layout
+    >
+      {children}
+    </motion.div>
+  );
+};
 
 /**
  * Helper function to determine if a message should start a research session display
@@ -78,54 +96,23 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
   // Defensive coding: ensure messageIds is always an array
   const safeMessageIds = Array.isArray(messageIds) ? messageIds : [];
 
-  // Enhanced message filtering for main chat display with debug logging
+  // Enhanced message filtering for main chat display
   const visibleMessages = useMemo(() => {
-    console.log('🔍 DEBUG: Processing message IDs:', safeMessageIds);
-    console.log('🔍 DEBUG: ResearchIds:', researchIds);
-    console.log('🔍 DEBUG: ResearchPlanIds:', Array.from(researchPlanIds.entries()));
-    
-    const allMessages = safeMessageIds
-      .map(id => {
-        const message = getMessage(id);
-        console.log('🔍 DEBUG: Message', id, ':', {
-          role: message?.role,
-          agent: message?.agent,
-          content: message?.content?.slice(0, 100),
-          isStreaming: message?.isStreaming
-        });
-        return message;
-      })
+    return safeMessageIds
+      .map(id => getMessage(id))
       .filter((message): message is DeerMessage => {
-        if (!message) {
-          console.log('🔍 DEBUG: Filtered out null message');
-          return false;
-        }
+        if (!message) return false;
         
-        // Log all messages and their filtering decisions
-        const shouldShow = (
+        // Original DeerFlow logic: show main chat types + startOfResearch
+        return (
           message.role === 'user' ||
-          message.role === 'assistant' ||
           message.agent === 'coordinator' ||
           message.agent === 'planner' ||
           message.agent === 'podcast' ||
-          message.agent === 'researcher' ||
-          message.agent === 'reporter' ||
-          message.agent === 'coder'
+          researchIds.includes(message.id) // ADD THIS: startOfResearch logic
         );
-        
-        if (!shouldShow) {
-          console.log('🔍 DEBUG: Filtered out message:', message.id, 'Role:', message.role, 'Agent:', message.agent);
-        } else {
-          console.log('🔍 DEBUG: Including message:', message.id, 'Role:', message.role, 'Agent:', message.agent);
-        }
-        
-        return shouldShow;
       });
-    
-    console.log('🔍 DEBUG: Final visible messages count:', allMessages.length);
-    console.log('🔍 DEBUG: Planner messages found:', allMessages.filter(m => m.agent === 'planner').map(m => ({ id: m.id, content: m.content?.slice(0, 50) })));
-    return allMessages;
-  }, [safeMessageIds, getMessage, researchIds, researchPlanIds]);
+  }, [safeMessageIds, getMessage, researchIds]); // ADD researchIds dependency
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -196,23 +183,10 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
           {/* Render visible messages */}
           {visibleMessages.map((message, index) => {
             const isPlanner = message.agent === 'planner';
-            
-            // Check if this planner message has an associated research session
-            const hasResearchSession = Array.from(researchPlanIds.entries())
-              .some(([_, planId]) => planId === message.id);
-            
-            console.log('🔄 Rendering message:', message.id, 'Agent:', message.agent, 'Has research:', hasResearchSession);
-            console.log('🎯 PLAN DETECTION:', {
-              messageId: message.id,
-              agent: message.agent,
-              isPlanner: isPlanner,
-              shouldShowPlanCard: isPlanner,
-              contentPreview: message.content?.slice(0, 100),
-              hasOptions: !!message.options?.length
-            });
+            const isStartOfResearch = researchIds.includes(message.id); // First researcher message
             
             return (
-              <MessageContainer key={message.id} index={index}>
+              <MessageEntryAnimation key={message.id} index={index}>
                 <ErrorBoundary
                   fallback={
                     <motion.div 
@@ -226,42 +200,22 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
                   }
                 >
                   {isPlanner ? (
-                    <>
-                      <div className="text-xs text-green-600 bg-green-100 p-2 rounded mb-2">
-                        🎯 RENDERING PLAN CARD for message {message.id}
-                      </div>
-                      <PlanCard 
-                        message={message}
-                        onStartResearch={handleStartResearch}
-                        onSendMessage={handleSendMessage}
-                        isExecuting={ongoingResearchId !== null}
-                      />
-                    </>
-                  ) : message.agent === 'podcast' ? (
-                    <PodcastCard message={message} />
+                    <PlanCard 
+                      message={message}
+                      onStartResearch={handleStartResearch}
+                      onSendMessage={handleSendMessage}  // ADD
+                      isExecuting={ongoingResearchId !== null}
+                    />
+                  ) : isStartOfResearch ? (
+                    <ResearchCard 
+                      researchId={message.id} // Use the researcher message ID
+                      title={getResearchTitle(message.id)}
+                    />
                   ) : (
-                    <>
-                      <div className="text-xs text-blue-600 bg-blue-100 p-2 rounded mb-2">
-                        📝 RENDERING MESSAGE ITEM for {message.agent || 'no-agent'} message {message.id}
-                      </div>
-                      <MessageItem messageId={message.id} />
-                    </>
+                    <MessageItem messageId={message.id} />
                   )}
                 </ErrorBoundary>
-              </MessageContainer>
-            );
-          })}
-
-          {/* Show ResearchCard for active research sessions */}
-          {researchIds.map((researchId, index) => {
-            const researchTitle = getResearchTitle(researchId);
-            return (
-              <MessageContainer key={`research-${researchId}`} index={visibleMessages.length + index}>
-                <ResearchCard 
-                  researchId={researchId}
-                  title={researchTitle}
-                />
-              </MessageContainer>
+              </MessageEntryAnimation>
             );
           })}
 

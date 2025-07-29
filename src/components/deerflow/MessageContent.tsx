@@ -3,9 +3,9 @@
  * @description Message content component with platform's typography scale
  */
 
+import ReactMarkdown from 'react-markdown';
 import { ToolCall } from '@/stores/deerFlowMessageStore';
 import { ToolCallDisplay } from '@/components/assistant/ToolCallDisplay';
-import { AnimatedMarkdown } from './AnimatedMarkdown';
 import { cn } from '@/lib/utils';
 
 interface MessageContentProps {
@@ -19,13 +19,29 @@ export const MessageContent = ({ content, agent, toolCalls }: MessageContentProp
     <div className="space-y-4">
       {/* Main content with platform's prose styling */}
       {content && (
-        <AnimatedMarkdown 
-          animated={false}
-          checkLinkCredibility={true}
-          className="max-w-none"
-        >
-          {content}
-        </AnimatedMarkdown>
+        <div className={cn(
+          // Use platform's prose styling
+          "prose prose-sm sm:prose-base",
+          "dark:prose-invert",
+          "prose-headings:text-foreground",
+          "prose-p:text-foreground",
+          "prose-strong:text-foreground",
+          "prose-code:text-foreground",
+          "prose-pre:bg-muted prose-pre:text-foreground",
+          
+          // Apply platform's link styling
+          "prose-a:text-primary prose-a:decoration-primary/30",
+          "hover:prose-a:decoration-primary/60",
+          
+          // Use platform's list styling
+          "prose-ul:text-foreground prose-ol:text-foreground",
+          "prose-li:text-foreground",
+          
+          // Override max-width to use full container
+          "max-w-none"
+        )}>
+          <ReactMarkdown>{content}</ReactMarkdown>
+        </div>
       )}
 
       {/* Tool calls display */}

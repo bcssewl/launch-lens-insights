@@ -36,7 +36,6 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ReactMarkdown from 'react-markdown';
-import { WebSearchToolCall, PythonToolCall, CrawlToolCall, GenericToolCall } from './toolcalls';
 
 // Tool type configurations with Launch Lens design system colors
 const TOOL_CONFIGS = {
@@ -89,25 +88,156 @@ const getToolConfig = (toolName: string) => {
   return TOOL_CONFIGS['web-search'];
 };
 
-// Rich tool call visualization component that routes to specialized visualizations
-const RichToolCallItem: React.FC<{ toolCall: ToolCall }> = ({ toolCall }) => {
-  const toolName = toolCall.name.toLowerCase();
+interface ToolCallItemProps {
+  toolCall: ToolCall;
+  isExpanded: boolean;
+  onToggle: () => void;
+}
+
+const ToolCallItem: React.FC<ToolCallItemProps> = ({ toolCall, isExpanded, onToggle }) => {
+  const config = getToolConfig(toolCall.name);
+  const IconComponent = config.icon;
   
-  // Route to specialized visualizations based on tool type
-  if (toolName.includes('search') || toolName.includes('web')) {
-    return <WebSearchToolCall toolCall={toolCall} />;
-  }
-  
-  if (toolName.includes('python') || toolName.includes('code')) {
-    return <PythonToolCall toolCall={toolCall} />;
-  }
-  
-  if (toolName.includes('crawl') || toolName.includes('scrape')) {
-    return <CrawlToolCall toolCall={toolCall} />;
-  }
-  
-  // Fallback to generic visualization for unknown tool types
-  return <GenericToolCall toolCall={toolCall} />;
+  const getStatusIcon = () => {
+    switch (toolCall.status) {
+      case 'running':
+        return <Loader2 className="w-4 h-4 animate-spin" />;
+      case 'completed':
+        return <CheckCircle className="w-4 h-4 text-green-500" />;
+      case 'error':
+        return <XCircle className="w-4 h-4 text-destructive" />;
+      default:
+        return <Clock className="w-4 h-4 text-muted-foreground" />;
+    }
+  };
+
+  const getStatusText = () => {
+    switch (toolCall.status) {
+      case 'running':
+        return 'Running...';
+      case 'completed':
+        return 'Completed';
+      case 'error':
+        return 'Failed';
+      default:
+        return 'Pending';
+    }
+  };
+
+  return (
+    <Card className={cn(
+      "transition-all duration-200",
+      config.bgColor,
+      config.borderColor,
+      "border-l-4"
+    )}>
+      <CardHeader 
+        className="pb-2 cursor-pointer"
+        onClick={onToggle}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className={cn(
+              "flex items-center justify-center w-8 h-8 rounded-full",
+              "bg-background border border-border"
+            )}>
+              <IconComponent className={cn("w-4 h-4", config.textColor)} />
+            </div>
+            <div>
+              <CardTitle className="text-sm font-medium">
+                {toolCall.name}
+              </CardTitle>
+              <div className="flex items-center gap-2 mt-1">
+                {getStatusIcon()}
+                <span className="text-xs text-muted-foreground">
+                  {getStatusText()}
+                </span>
+                {toolCall.timestamp && (
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(toolCall.timestamp).toLocaleTimeString()}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge 
+              variant="secondary" 
+              className={cn(config.badgeColor, "text-white text-xs")}
+            >
+              {config.label.split(' ')[0]}
+            </Badge>
+            {isExpanded ? (
+              <ChevronDown className="w-4 h-4 text-muted-foreground" />
+            ) : (
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            )}
+          </div>
+        </div>
+      </CardHeader>
+      
+      {isExpanded && (
+        <CardContent className="pt-0">
+          <Separator className="mb-4" />
+          
+          {/* Tool Arguments */}
+          {toolCall.args && Object.keys(toolCall.args).length > 0 && (
+            <div className="mb-4">
+              <h4 className="text-sm font-medium mb-2 text-foreground">Arguments:</h4>
+              <div className="bg-muted/50 rounded-md p-3">
+                <pre className="text-xs text-muted-foreground whitespace-pre-wrap">
+                  {JSON.stringify(toolCall.args, null, 2)}
+                </pre>
+              </div>
+            </div>
+          )}
+
+          {/* Tool Result */}
+          {toolCall.result && (
+            <div className="mb-4">
+              <h4 className="text-sm font-medium mb-2 text-foreground">Result:</h4>
+              <div className="bg-muted/50 rounded-md p-3">
+                {typeof toolCall.result === 'string' ? (
+                  <p className="text-xs text-muted-foreground whitespace-pre-wrap">
+                    {toolCall.result}
+                  </p>
+                ) : (
+                  <pre className="text-xs text-muted-foreground whitespace-pre-wrap">
+                    {JSON.stringify(toolCall.result, null, 2)}
+                  </pre>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Error Display */}
+          {toolCall.error && (
+            <div className="mb-4">
+              <h4 className="text-sm font-medium mb-2 text-destructive">Error:</h4>
+              <div className="bg-destructive/10 border border-destructive/20 rounded-md p-3">
+                <p className="text-xs text-destructive">
+                  {toolCall.error}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Args Chunks (for streaming) */}
+          {toolCall.argsChunks && toolCall.argsChunks.length > 0 && !toolCall.args && (
+            <div>
+              <h4 className="text-sm font-medium mb-2 text-foreground">Streaming Arguments:</h4>
+              <div className="bg-muted/50 rounded-md p-3">
+                <p className="text-xs text-muted-foreground">
+                  {toolCall.argsChunks.join('')}
+                  <span className="animate-pulse">|</span>
+                </p>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      )}
+    </Card>
+  );
 };
 
 interface ToolCallsGroupProps {
@@ -175,9 +305,11 @@ const ToolCallsGroup: React.FC<ToolCallsGroupProps> = ({
             
             <div className="space-y-3 ml-9">
               {calls.map(toolCall => (
-                <RichToolCallItem
+                <ToolCallItem
                   key={toolCall.id}
                   toolCall={toolCall}
+                  isExpanded={expandedItems.has(toolCall.id)}
+                  onToggle={() => onToggleExpand(toolCall.id)}
                 />
               ))}
             </div>

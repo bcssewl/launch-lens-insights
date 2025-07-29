@@ -1,142 +1,401 @@
 /**
- * @file useEnhancedDeerStreaming.ts  
- * @description Simplified streaming hook that uses the exact DeerFlow sendMessage implementation
+ * @file useEnhancedDeerStreaming.ts
+ * @description Enhanced DeerFlow streaming with proper event handling and store integration
  */
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useRef, useCallback, useMemo } from 'react';
+import { useDeerFlowStore } from '@/stores/deerFlowStore';
 import { useDeerFlowMessageStore } from '@/stores/deerFlowMessageStore';
-import { sendMessage } from '@/utils/sendMessage';
+import { mergeMessage, createCompleteMessage, StreamEvent } from '@/utils/mergeMessage';
+import { DeerMessage } from '@/stores/deerFlowMessageStore';
+import { useEventStream } from '@/hooks/useEventStream';
 import { useToast } from '@/hooks/use-toast';
 
-// Simplified interfaces to match the exact DeerFlow behavior
 interface DeerStreamingOptions {
-  interruptFeedback?: string;
-  resources?: Array<{
-    id: string;
-    type: string;
-    content: string;
-  }>;
+  maxPlanIterations?: number;
+  maxStepNum?: number;
+  maxSearchResults?: number;
+  autoAcceptedPlan?: boolean;
+  enableBackgroundInvestigation?: boolean;
+  reportStyle?: 'academic' | 'casual' | 'detailed';
+  enableDeepThinking?: boolean;
+  interruptFeedback?: string; // ADD interruptFeedback
 }
 
 interface ConnectionStatus {
-  connected: boolean;
-  error?: string;
+  status: 'connected' | 'connecting' | 'disconnected' | 'error';
+  lastError?: string;
+  retryCount: number;
+}
+
+interface RetryConfig {
+  maxRetries: number;
+  baseDelay: number;
+  maxDelay: number;
 }
 
 export const useEnhancedDeerStreaming = () => {
   const [isStreaming, setIsStreaming] = useState(false);
   const [eventCount, setEventCount] = useState(0);
-  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>({
-    connected: true
-  });
   
-  const abortControllerRef = useRef<AbortController | null>(null);
-  const { toast } = useToast();
-  const { isResponding } = useDeerFlowMessageStore();
+  const {
+    addMessage,
+    addMessageWithId,
+    updateMessage,
+    existsMessage,
+    getMessage,
+    setIsResponding,
+    setResearchPanel,
+    setReportContent,
+    currentThreadId,
+    // Research session management
+    startResearch,
+    addResearchActivity,
+    setResearchReport,
+    getCurrentResearchId,
+    autoStartResearchOnFirstActivity
+  } = useDeerFlowMessageStore();
 
-  /**
-   * Main streaming function that wraps the exact DeerFlow sendMessage
-   */
+  const { settings } = useDeerFlowStore();
+  const { toast } = useToast();
+
+  // Simplified and robust event processing
+  const processEvent = useCallback((event: StreamEvent) => {
+    // Defensive: ensure event has proper structure
+    if (!event || !('data' in event) || !event.data) {
+      console.error('❌ Invalid event structure:', event);
+      return;
+    }
+
+    const data = event.data;
+    
+    // Extract message ID from API data - this is required
+    const messageId = data.id || data.message_id;
+    
+    if (!messageId) {
+      console.error('❌ Event missing required message ID:', event);
+      return;
+    }
+
+    console.log('🔄 Processing event for message ID:', messageId, 'Event:', event.event);
+
+    // Get message from store - if it doesn't exist, that's an error
+    const existingMessage = getMessage(messageId);
+    
+    if (!existingMessage) {
+      console.error('❌ Message not found in store for ID:', messageId, 'Event:', event.event);
+      
+      // Create message on-demand for robustness
+      const newMessage = {
+        id: messageId,
+        role: 'assistant' as const,
+        content: '',
+        threadId: currentThreadId,
+        contentChunks: [],
+        reasoningContent: '',
+        reasoningContentChunks: [],
+        timestamp: new Date(),
+        isStreaming: true,
+        agent: data.agent
+      };
+      
+      console.log('🆘 Creating missing message on-demand:', messageId);
+      addMessageWithId(newMessage);
+      
+      // Get the newly created message
+      const createdMessage = getMessage(messageId);
+      if (!createdMessage) {
+        console.error('❌ Failed to create message on-demand');
+        return;
+      }
+      
+      // Continue with the newly created message
+      const updatedMessage = mergeMessage(createdMessage, event);
+      updateMessage(messageId, updatedMessage);
+    } else {
+      // Normal case: merge event with existing message
+      const updatedMessage = mergeMessage(existingMessage, event);
+      updateMessage(messageId, updatedMessage);
+    }
+
+    console.log('✨ Message updated successfully for ID:', messageId);
+
+    // Research session management - CORRECTED TO MATCH ORIGINAL
+    if (event.event === 'message_chunk' && data.agent) {
+      switch (data.agent) {
+        case 'researcher':
+        case 'coder':
+        case 'reporter':
+          // Get the updated message
+          const currentMessage = getMessage(messageId);
+          if (currentMessage) {
+            // Auto-start research session on FIRST researcher/coder/reporter (matching original)
+            const researchId = autoStartResearchOnFirstActivity(currentMessage);
+            
+            if (researchId) {
+              // Research session just started
+              console.log('🔬 Research session auto-started:', researchId);
+            } else {
+              // Add to existing research session
+              const currentResearchId = getCurrentResearchId();
+              if (currentResearchId) {
+                addResearchActivity(currentResearchId, messageId);
+                console.log('🔍 Added activity to existing research:', currentResearchId);
+              }
+            }
+          }
+          break;
+          
+        case 'planner':
+          // Planner messages do NOT start research - they just exist for linking
+          console.log('📋 Planner message processed, waiting for researcher to start session');
+          break;
+          
+        case 'reporter':
+          // Reporter ends the research session
+          const reportResearchId = getCurrentResearchId();
+          if (reportResearchId) {
+            setResearchReport(reportResearchId, messageId);
+            console.log('📄 Research completed with report:', messageId);
+          }
+          break;
+      }
+    }
+
+    // Handle report generation
+    if (event.event === 'report_generated') {
+      setReportContent(event.data.content);
+      setResearchPanel(true, messageId, 'report');
+    }
+
+    setEventCount(prev => prev + 1);
+  }, [getMessage, addMessageWithId, updateMessage, setResearchPanel, setReportContent, currentThreadId, startResearch, addResearchActivity, setResearchReport, getCurrentResearchId, autoStartResearchOnFirstActivity]);
+
+  // Simplified error handling without currentMessageId fallback
+  const handleError = useCallback((error: Error) => {
+    console.error('❌ DeerFlow streaming error:', error);
+    
+    toast({
+      title: "Connection Error", 
+      description: error.message || "Failed to connect to DeerFlow. Please try again.",
+      variant: "destructive",
+    });
+
+    // Error handling is now handled per-message in processEvent
+    // No global currentMessageId to update
+  }, [toast]);
+
   const startDeerFlowStreaming = useCallback(async (
     question: string,
     options: DeerStreamingOptions = {}
   ) => {
-    console.log('🌊 startDeerFlowStreaming called:', { question, options });
-    console.log('🔍 Current state:', { isStreaming, isResponding });
+    if (isStreaming) return;
     
-    // Prevent multiple concurrent streams
-    if (isStreaming || isResponding) {
-      console.warn('🚫 Streaming already in progress, ignoring request');
-      console.warn('🚫 Details:', { isStreaming, isResponding });
-      return;
-    }
+    setIsStreaming(true);
+    setIsResponding(true);
+    setEventCount(0);
+    
+    console.log('🦌 Starting DeerFlow streaming for:', question);
 
-    // Create abort controller for this stream
-    abortControllerRef.current = new AbortController();
-    
+    // Add user message
+    addMessage({
+      role: 'user',
+      content: question,
+      threadId: currentThreadId,
+      contentChunks: [question]
+    });
+
+    // Track created message IDs to mark as complete later
+    const createdMessageIds = new Set<string>();
+
+    // Prepare request body
+    const requestBody = JSON.stringify({
+      messages: [{ role: "user", content: question }],
+      debug: true,
+      thread_id: currentThreadId, // This is now persistent
+      interrupt_feedback: options.interruptFeedback, // ADD
+      max_plan_iterations: options.maxPlanIterations ?? settings.maxPlanIterations,
+      max_step_num: options.maxStepNum ?? settings.maxStepNum,
+      max_search_results: options.maxSearchResults ?? settings.maxSearchResults,
+      auto_accepted_plan: options.autoAcceptedPlan ?? settings.autoAcceptedPlan,
+      enable_background_investigation: options.enableBackgroundInvestigation ?? settings.backgroundInvestigation,
+      report_style: options.reportStyle ?? settings.reportStyle,
+      enable_deep_thinking: options.enableDeepThinking ?? settings.deepThinking
+    });
+
+    console.log('📤 Sending to backend:', {
+      thread_id: currentThreadId,
+      interrupt_feedback: options.interruptFeedback,
+      content: question
+    });
+
+    // Simple streaming like original - no complex initialization
     try {
-      setIsStreaming(true);
-      setEventCount(0);
-      setConnectionStatus({ connected: true });
-
-      // Use the exact DeerFlow sendMessage function
-      await sendMessage(
-        question,
-        {
-          interruptFeedback: options.interruptFeedback,
-          resources: options.resources
+      const response = await fetch('https://deer-flow-wrappers.up.railway.app/api/chat/stream', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        {
-          abortSignal: abortControllerRef.current.signal
-        }
-      );
+        body: requestBody
+      });
 
-      console.log('✅ DeerFlow streaming completed successfully');
-      
-    } catch (error: any) {
-      console.error('❌ DeerFlow streaming error:', error);
-      
-      // Don't show error toast for aborted requests
-      if (error.name !== 'AbortError') {
-        setConnectionStatus({ 
-          connected: false, 
-          error: error.message || 'Streaming failed' 
-        });
-        
-        toast({
-          title: "Streaming Error",
-          description: error.message || "Failed to complete the request. Please try again.",
-          variant: "destructive"
-        });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
+
+      if (!response.body) {
+        throw new Error('No response body available');
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        
+        if (done) break;
+        
+        // Decode chunk and add to buffer
+        const chunk = decoder.decode(value, { stream: true });
+        buffer += chunk;
+        
+        // Process complete events from buffer
+        const lines = buffer.split('\n\n');
+        buffer = lines.pop() || ''; // Keep incomplete part in buffer
+        
+        for (const eventBlock of lines) {
+          if (eventBlock.trim()) {
+            const lines = eventBlock.split('\n');
+            let currentEvent = 'message';
+            let currentData: string | null = null;
+            
+            for (const line of lines) {
+              const colonIndex = line.indexOf(': ');
+              if (colonIndex === -1) continue;
+              
+              const key = line.slice(0, colonIndex);
+              const value = line.slice(colonIndex + 2);
+              
+              if (key === 'event') {
+                currentEvent = value;
+              } else if (key === 'data') {
+                currentData = value;
+              }
+            }
+            
+            // Process event if we have data
+            if (currentData !== null && currentData !== '[DONE]') {
+              try {
+                const event = {
+                  event: currentEvent as any,
+                  data: JSON.parse(currentData)
+                };
+                
+                // Extract API message ID from event
+                const apiMessageId = event.data.id || event.data.message_id;
+                
+                // Create message for each unique API message ID (one per agent)
+                if (apiMessageId && !createdMessageIds.has(apiMessageId)) {
+                  console.log('📝 Creating message with API ID:', apiMessageId, 'Agent:', event.data.agent);
+                  
+                  const initialMessage = {
+                    id: apiMessageId,
+                    role: 'assistant' as const,
+                    content: '',
+                    threadId: currentThreadId,
+                    contentChunks: [],
+                    reasoningContent: '',
+                    reasoningContentChunks: [],
+                    timestamp: new Date(),
+                    isStreaming: true,
+                    agent: event.data.agent
+                  };
+                  
+                  addMessageWithId(initialMessage);
+                  createdMessageIds.add(apiMessageId);
+                }
+                
+                // Process event with consistent API ID
+                processEvent(event);
+              } catch (error) {
+                console.warn('Failed to parse SSE data:', currentData);
+              }
+            }
+          }
+        }
+      }
+
+      // Mark all created messages as complete
+      for (const messageId of createdMessageIds) {
+        const finalMessage = getMessage(messageId);
+        if (finalMessage) {
+          updateMessage(messageId, {
+            ...finalMessage,
+            isStreaming: false
+          });
+        }
+      }
+
+      console.log(`✅ DeerFlow streaming completed successfully - processed ${eventCount} events`);
+
+    } catch (error) {
+      handleError(error as Error);
     } finally {
       setIsStreaming(false);
-      abortControllerRef.current = null;
+      setIsResponding(false);
     }
-  }, [isStreaming, isResponding, toast]);
+  }, [
+    isStreaming,
+    addMessage,
+    addMessageWithId,
+    updateMessage,
+    getMessage,
+    setIsResponding,
+    currentThreadId,
+    processEvent,
+    handleError,
+    settings,
+    eventCount
+  ]);
 
-  /**
-   * Stop streaming function
-   */
   const stopStreaming = useCallback(() => {
-    console.log('🛑 Stopping DeerFlow streaming');
-    
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-      abortControllerRef.current = null;
-    }
-    
+    console.log('⏹️ DeerFlow streaming stopped by user');
     setIsStreaming(false);
-    
-    // Clear responding state in store
-    const { setIsResponding } = useDeerFlowMessageStore.getState();
     setIsResponding(false);
-    
-    toast({
-      title: "Streaming Stopped",
-      description: "The request has been cancelled.",
-    });
-  }, [toast]);
-
-  /**
-   * Cleanup function
-   */
-  const cleanup = useCallback(() => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-      abortControllerRef.current = null;
-    }
-    setIsStreaming(false);
-    setEventCount(0);
-    setConnectionStatus({ connected: true });
   }, []);
+
+  const cleanup = useCallback(() => {
+    stopStreaming();
+    setEventCount(0);
+  }, [stopStreaming]);
 
   return {
     startDeerFlowStreaming,
     stopStreaming,
     cleanup,
-    isStreaming: isStreaming || isResponding, // Include store responding state
+    isStreaming,
     eventCount,
-    connectionStatus
+    connectionStatus: {
+      status: isStreaming ? 'connected' : 'disconnected',
+      retryCount: 0
+    }
   };
 };
+
+// Helper function to determine tool type from tool name
+function getToolType(toolName: string | undefined): 'web-search' | 'crawl' | 'python' | 'retriever' {
+  if (!toolName) {
+    return 'web-search'; // Default fallback
+  }
+  if (toolName.includes('search') || toolName.includes('github')) {
+    return 'web-search';
+  }
+  if (toolName.includes('crawl') || toolName.includes('visit')) {
+    return 'crawl';
+  }
+  if (toolName.includes('python') || toolName.includes('code')) {
+    return 'python';
+  }
+  return 'retriever';
+}
