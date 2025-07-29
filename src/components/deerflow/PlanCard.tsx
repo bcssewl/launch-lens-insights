@@ -1,13 +1,13 @@
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Brain, Play, CheckCircle, Clock, Loader2, Search, Cog, AlertCircle, ChevronDown, ChevronRight } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { DeerMessage } from '@/stores/deerFlowMessageStore';
+import { Separator } from '@/components/ui/separator';
+import { Brain, Play, Loader2, Search, Settings, ChevronDown, ChevronUp, AlertCircle } from 'lucide-react';
 import { motion } from 'motion/react';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { useDeerFlowMessageStore } from '@/stores/deerFlowMessageStore';
+import { DeerMessage } from '@/stores/deerFlowMessageStore';
+import { cn } from '@/lib/utils';
+import { parse } from 'best-effort-json-parser';
 
 // Greeting messages array matching original DeerFlow
 const GREETINGS = [
@@ -35,6 +35,26 @@ interface Plan {
   steps: Step[];                   // Array of research/processing steps
 }
 
+// Robust JSON parsing function from original DeerFlow
+function parseJSON<T>(json: string | null | undefined, fallback: T): T {
+  if (!json) {
+    return fallback;
+  }
+  try {
+    const raw = json
+      .trim()
+      .replace(/^```json\s*/, "")
+      .replace(/^```js\s*/, "")
+      .replace(/^```ts\s*/, "")
+      .replace(/^```plaintext\s*/, "")
+      .replace(/^```\s*/, "")
+      .replace(/\s*```$/, "");
+    return parse(raw) as T;
+  } catch {
+    return fallback;
+  }
+}
+
 interface PlanCardProps {
   message: DeerMessage;
   onStartResearch?: (planId: string) => void;
@@ -43,142 +63,57 @@ interface PlanCardProps {
 }
 
 export const PlanCard = ({ message, onStartResearch, onSendMessage, isExecuting = false }: PlanCardProps) => {
-  const [planData, setPlanData] = useState<Plan | null>(null);
-  const [isCompleted, setIsCompleted] = useState(false);
-  const [isErrorExpanded, setIsErrorExpanded] = useState(false);
-  const [parseError, setParseError] = useState<string | null>(null);
-  
-  // Parse plan data from message content
-  useEffect(() => {
-    if (!message?.content) {
-      setPlanData(null);
-      setParseError("No content available");
-      return;
-    }
-
-    try {
-      // Handle streamed content - try direct JSON parse first
-      let content = message.content.trim();
-      
-      // If content starts with text before JSON, try to extract JSON block
-      if (!content.startsWith('{')) {
-        const jsonMatch = content.match(/```json\s*(\{.*?\})\s*```/s) || 
-                         content.match(/(\{.*\})/s);
-        if (jsonMatch) {
-          content = jsonMatch[1];
-        }
-      }
-      
-      const parsed = JSON.parse(content) as Plan;
-      
-      // Validate required fields
-      if (!parsed.title || !Array.isArray(parsed.steps)) {
-        throw new Error("Invalid plan structure: missing title or steps");
-      }
-      
-      setPlanData(parsed);
-      setParseError(null);
-      console.log('📋 Parsed plan data:', parsed);
-    } catch (error) {
-      console.error('❌ Failed to parse planner content:', error);
-      setParseError(`JSON parsing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      setPlanData(null);
-    }
+  // Parse plan data using robust parseJSON function (matching original DeerFlow)
+  const planData = useMemo(() => {
+    return parseJSON<Plan>(message.content ?? "", {} as Plan);
   }, [message.content]);
 
+  // Status tracking
+  const [isCompleted, setIsCompleted] = useState(false);
+
+  // Update completion status based on streaming
   useEffect(() => {
-    // Check if research is completed (can be expanded based on your completion logic)
     setIsCompleted(!message.isStreaming && message.content.length > 0);
-  }, [message.isStreaming, message.content]);
+  }, [message.isStreaming, message.content.length]);
+
+  // Validate plan structure (graceful degradation)
+  const isValidPlan = planData && 
+    typeof planData === 'object' && 
+    ('steps' in planData || 'title' in planData || 'thought' in planData);
 
   const handleStartResearch = () => {
-    if (onSendMessage) {
-      // Send acceptance message to backend (matching original DeerFlow)
-      const greeting = GREETINGS[Math.floor(Math.random() * GREETINGS.length)];
-      const acceptanceMessage = `${greeting}! Let's get started.`;
-      
-      onSendMessage(acceptanceMessage, {
-        interruptFeedback: "accepted"
-      });
-      
-      console.log('📤 Sent plan acceptance:', acceptanceMessage);
-    }
+    // Send acceptance message with interrupt feedback
+    const greeting = GREETINGS[Math.floor(Math.random() * GREETINGS.length)];
+    const acceptanceMessage = `${greeting}! Let's get started.`;
     
-    // Also start local research session
-    if (onStartResearch) {
-      onStartResearch(message.id);
-    }
+    onSendMessage?.(acceptanceMessage, { interruptFeedback: "accepted" });
+    
+    // Start research session
+    onStartResearch?.(message.id);
   };
 
-  // Error state with collapsible raw content
-  if (parseError) {
+  // Show loading state if plan is not yet complete or invalid
+  if (!isCompleted || !isValidPlan) {
     return (
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.3 }}
       >
-        <Card className="border-red-200 bg-red-50/50">
+        <Card className="border-blue-200 bg-blue-50/50 dark:bg-blue-950/20 dark:border-blue-800/50">
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-red-500" />
-              <span className="font-semibold text-red-700">Plan Parsing Error</span>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-sm text-red-600">
-              Unable to parse research plan. Expected JSON format.
-            </p>
-            
-            <Collapsible open={isErrorExpanded} onOpenChange={setIsErrorExpanded}>
-              <CollapsibleTrigger asChild>
-                <Button variant="ghost" size="sm" className="w-full justify-between text-red-600">
-                  View Raw Content
-                  {isErrorExpanded ? (
-                    <ChevronDown className="h-4 w-4" />
-                  ) : (
-                    <ChevronRight className="h-4 w-4" />
-                  )}
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="space-y-2">
-                <div className="rounded border bg-red-100/50 p-3">
-                  <p className="text-xs font-medium text-red-700 mb-1">Error:</p>
-                  <p className="text-xs text-red-600 mb-3">{parseError}</p>
-                  <p className="text-xs font-medium text-red-700 mb-1">Raw Content:</p>
-                  <pre className="text-xs text-red-600 whitespace-pre-wrap break-words">
-                    {message.content}
-                  </pre>
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-          </CardContent>
-        </Card>
-      </motion.div>
-    );
-  }
-
-  // Loading state while parsing or if no plan data yet
-  if (!planData) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.3 }}
-      >
-        <Card className="border-blue-200 bg-blue-50/50">
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-2">
-              <Brain className="h-5 w-5 text-blue-600" />
-              <span className="font-semibold text-blue-700">Research Plan</span>
-              <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+              <Brain className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <span className="font-semibold text-blue-700 dark:text-blue-300">Research Plan</span>
+              <Badge variant="secondary" className="bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-300">
+                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
                 Generating...
               </Badge>
             </div>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+              <Loader2 className="h-6 w-6 animate-spin text-blue-600 dark:text-blue-400" />
             </div>
           </CardContent>
         </Card>
@@ -218,12 +153,10 @@ export const PlanCard = ({ message, onStartResearch, onSendMessage, isExecuting 
                     </Badge>
                   ) : isCompleted ? (
                     <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-300">
-                      <CheckCircle className="w-3 h-3 mr-1" />
                       Ready
                     </Badge>
                   ) : (
                     <Badge variant="secondary" className="bg-gray-100 text-gray-700 dark:bg-gray-950/30 dark:text-gray-300">
-                      <Clock className="w-3 h-3 mr-1" />
                       Pending
                     </Badge>
                   )}
@@ -238,15 +171,15 @@ export const PlanCard = ({ message, onStartResearch, onSendMessage, isExecuting 
           {(planData.locale || planData.has_enough_context !== undefined) && (
             <div className="flex flex-wrap gap-2 text-xs">
               {planData.locale && (
-                <Badge variant="outline" className="border-blue-200 text-blue-700">
+                <Badge variant="outline" className="border-blue-200 text-blue-700 dark:border-blue-700 dark:text-blue-300">
                   {planData.locale}
                 </Badge>
               )}
               <Badge 
                 variant="outline" 
                 className={`${planData.has_enough_context 
-                  ? 'border-green-200 text-green-700' 
-                  : 'border-orange-200 text-orange-700'
+                  ? 'border-green-200 text-green-700 dark:border-green-700 dark:text-green-300' 
+                  : 'border-orange-200 text-orange-700 dark:border-orange-700 dark:text-orange-300'
                 }`}
               >
                 {planData.has_enough_context ? 'Sufficient Context' : 'Additional Context Needed'}
@@ -295,17 +228,17 @@ export const PlanCard = ({ message, onStartResearch, onSendMessage, isExecuting 
                        
                        {/* Step metadata badges */}
                        <div className="flex flex-wrap gap-1.5">
-                         <Badge 
-                           variant="outline" 
-                           className={`text-xs ${
-                             step.step_type === 'research' 
-                               ? 'border-purple-200 text-purple-700 bg-purple-50 dark:border-purple-700 dark:text-purple-300 dark:bg-purple-950/30'
-                               : 'border-gray-200 text-gray-700 bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:bg-gray-950/30'
-                           }`}
-                         >
-                           <Cog className="w-3 h-3 mr-1" />
-                           {step.step_type}
-                         </Badge>
+                          <Badge 
+                            variant="outline" 
+                            className={`text-xs ${
+                              step.step_type === 'research' 
+                                ? 'border-purple-200 text-purple-700 bg-purple-50 dark:border-purple-700 dark:text-purple-300 dark:bg-purple-950/30'
+                                : 'border-gray-200 text-gray-700 bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:bg-gray-950/30'
+                            }`}
+                          >
+                            <Settings className="w-3 h-3 mr-1" />
+                            {step.step_type}
+                          </Badge>
                          
                          {step.need_web_search && (
                            <Badge 
