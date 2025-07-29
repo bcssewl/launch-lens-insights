@@ -4,24 +4,24 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { 
   Headphones, 
   Pencil, 
-  Undo2, 
   Copy, 
   Check, 
-  Download, 
   Loader2,
   Share,
   Bookmark,
   Eye
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { DownloadMenu } from './DownloadMenu';
 import { cn } from '@/lib/utils';
 
 interface ReportControlsProps {
   reportId?: string;
+  content?: string; // Add content for download
+  title?: string; // Add title for download
   editing?: boolean;
   onToggleEdit?: () => void;
   onCopy?: () => void;
-  onDownload?: () => void;
   onGeneratePodcast?: () => void;
   onShare?: () => void;
   onBookmark?: () => void;
@@ -32,10 +32,11 @@ interface ReportControlsProps {
 
 export const ReportControls: React.FC<ReportControlsProps> = ({
   reportId,
+  content = '',
+  title = 'Research Report',
   editing = false,
   onToggleEdit,
   onCopy,
-  onDownload,
   onGeneratePodcast,
   onShare,
   onBookmark,
@@ -212,26 +213,20 @@ export const ReportControls: React.FC<ReportControlsProps> = ({
                 </Tooltip>
               </motion.div>
 
-              {/* Download */}
+              {/* Professional Download Menu */}
               <motion.div
                 initial={{ opacity: 0, x: 10 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 10 }}
                 transition={{ duration: 0.15, delay: 0.15 }}
               >
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-muted-foreground hover:text-foreground transition-colors"
-                      onClick={onDownload}
-                    >
-                      <Download className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Download as Markdown</TooltipContent>
-                </Tooltip>
+                <DownloadMenu
+                  content={content}
+                  title={title}
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                />
               </motion.div>
             </>
           )}

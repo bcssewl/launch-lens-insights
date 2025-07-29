@@ -59,25 +59,6 @@ export const ResearchReportBlock: React.FC<ResearchReportBlockProps> = ({
     }
   };
 
-  const handleDownload = () => {
-    if (message?.content) {
-      const blob = new Blob([message.content], { type: 'text/markdown' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `report-${messageId.slice(0, 8)}.md`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      
-      toast({
-        title: "Download started",
-        description: "Report is being downloaded as markdown file.",
-      });
-    }
-  };
-
   const handleGeneratePodcast = async () => {
     if (researchId) {
       try {
@@ -104,10 +85,11 @@ export const ResearchReportBlock: React.FC<ResearchReportBlockProps> = ({
       {isCompleted && (
         <ReportControls
           reportId={messageId}
+          content={message?.content || ''}
+          title={`Research Report ${messageId.slice(0, 8)}`}
           editing={isEditing}
           onToggleEdit={handleToggleEdit}
           onCopy={handleCopy}
-          onDownload={handleDownload}
           onGeneratePodcast={handleGeneratePodcast}
           copied={copied}
         />
