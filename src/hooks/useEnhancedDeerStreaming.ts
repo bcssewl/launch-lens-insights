@@ -19,6 +19,7 @@ interface DeerStreamingOptions {
   enableBackgroundInvestigation?: boolean;
   reportStyle?: 'academic' | 'casual' | 'detailed';
   enableDeepThinking?: boolean;
+  interruptFeedback?: string; // ADD interruptFeedback
 }
 
 interface ConnectionStatus {
@@ -211,7 +212,8 @@ export const useEnhancedDeerStreaming = () => {
     const requestBody = JSON.stringify({
       messages: [{ role: "user", content: question }],
       debug: true,
-      thread_id: currentThreadId,
+      thread_id: currentThreadId, // This is now persistent
+      interrupt_feedback: options.interruptFeedback, // ADD
       max_plan_iterations: options.maxPlanIterations ?? settings.maxPlanIterations,
       max_step_num: options.maxStepNum ?? settings.maxStepNum,
       max_search_results: options.maxSearchResults ?? settings.maxSearchResults,
@@ -219,6 +221,12 @@ export const useEnhancedDeerStreaming = () => {
       enable_background_investigation: options.enableBackgroundInvestigation ?? settings.backgroundInvestigation,
       report_style: options.reportStyle ?? settings.reportStyle,
       enable_deep_thinking: options.enableDeepThinking ?? settings.deepThinking
+    });
+
+    console.log('📤 Sending to backend:', {
+      thread_id: currentThreadId,
+      interrupt_feedback: options.interruptFeedback,
+      content: question
     });
 
     // Simple streaming like original - no complex initialization

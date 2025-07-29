@@ -7,6 +7,9 @@ import { create } from 'zustand';
 import { useShallow } from 'zustand/react/shallow';
 import { nanoid } from 'nanoid';
 
+// ADD at top of file:
+const PERSISTENT_THREAD_ID = nanoid(); // Generate once for the session
+
 export interface ToolCall {
   id: string;
   name: string;
@@ -77,7 +80,7 @@ interface DeerFlowMessageState {
 
 interface DeerFlowMessageActions {
   // Thread management
-  createNewThread: () => string;
+  createNewThread: (forceDifferent?: boolean) => string;
   setCurrentThread: (threadId: string) => void;
   
   // Message actions with Map-based storage
@@ -121,7 +124,7 @@ type DeerFlowMessageStore = DeerFlowMessageState & DeerFlowMessageActions;
 
 export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get) => ({
   // Initial state
-  currentThreadId: nanoid(),
+  currentThreadId: PERSISTENT_THREAD_ID, // Use persistent ID
   messageIds: [],
   messageMap: new Map(),
   threadMessageIds: new Map(),
@@ -155,18 +158,36 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
   },
 
   // Thread management
-  createNewThread: () => {
-    const threadId = nanoid();
+  createNewThread: (forceDifferent = false) => {
+    let threadId;
+    
+    if (forceDifferent) {
+      threadId = nanoid(); // Create new thread for fresh conversation
+    } else {
+      threadId = get().currentThreadId; // Keep current thread for research continuity
+    }
+    
     set({ 
       currentThreadId: threadId,
       currentPrompt: '',
       isResponding: false,
+      // DON'T reset research state for same thread
+      ...(forceDifferent && {
+        researchIds: [],
+        researchActivityIds: new Map(),
+        researchReportIds: new Map(),
+        researchPlanIds: new Map(),
+        ongoingResearchId: null,
+        openResearchId: null,
+      }),
       researchPanelState: {
         isOpen: false,
         openResearchId: null,
         activeTab: 'activities'
       }
     });
+    
+    console.log('🔗 Thread management:', forceDifferent ? 'new thread' : 'persistent thread', threadId);
     return threadId;
   },
 
