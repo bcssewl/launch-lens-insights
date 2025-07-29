@@ -108,10 +108,16 @@ export const MessageItem = React.memo(({ message, messageId }: MessageItemProps)
         "rounded-lg border border-border",
         "bg-card text-card-foreground",
         "shadow-sm hover:shadow-md",
-        "transition-shadow duration-200",
+        "transition-all duration-300 ease-out",
         
         // Apply platform's padding scale
         "p-4 sm:p-6",
+        
+        // Streaming animations
+        currentMessage.isStreaming && [
+          "border-blue-500/30 shadow-blue-500/20",
+          "shadow-lg animate-pulse"
+        ],
         
         // Agent-specific styling using platform's color system
         currentMessage.role === 'user' && "ml-8 bg-primary/5 border-primary/20",
@@ -121,7 +127,10 @@ export const MessageItem = React.memo(({ message, messageId }: MessageItemProps)
         
         // Make clickable for research agents
         (currentMessage.agent === 'planner' || currentMessage.agent === 'researcher') && 
-          "cursor-pointer hover:bg-opacity-80"
+          "cursor-pointer hover:bg-opacity-80",
+          
+        // Slide-in animation for streaming content
+        "animate-fade-in"
       )}
       onClick={handleClick}
     >
@@ -141,9 +150,8 @@ export const MessageItem = React.memo(({ message, messageId }: MessageItemProps)
             </span>
             {currentMessage.isStreaming && (
               <div className="flex items-center gap-1">
-                <div className="w-1 h-1 bg-current rounded-full animate-pulse" />
-                <div className="w-1 h-1 bg-current rounded-full animate-pulse [animation-delay:0.2s]" />
-                <div className="w-1 h-1 bg-current rounded-full animate-pulse [animation-delay:0.4s]" />
+                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+                <span className="text-xs text-blue-600 font-medium">Streaming...</span>
               </div>
             )}
           </div>
@@ -154,11 +162,16 @@ export const MessageItem = React.memo(({ message, messageId }: MessageItemProps)
       </div>
 
       {/* Message Content */}
-      <MessageContent 
-        content={currentMessage.content} 
-        agent={currentMessage.agent}
-        toolCalls={currentMessage.toolCalls}
-      />
+      <div className={cn(
+        "transition-all duration-300 ease-out",
+        currentMessage.isStreaming && "animate-slide-in-left"
+      )}>
+        <MessageContent 
+          content={currentMessage.content} 
+          agent={currentMessage.agent}
+          toolCalls={currentMessage.toolCalls}
+        />
+      </div>
     </div>
   );
 });
