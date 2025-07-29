@@ -91,12 +91,12 @@ export const MessageItem = React.memo(({ message, messageId }: MessageItemProps)
   
   if (!currentMessage) return null;
   
-  const agentDisplay = getAgentDisplay(currentMessage.metadata?.agent, currentMessage.role);
+  const agentDisplay = getAgentDisplay(currentMessage.agent, currentMessage.role);
   const IconComponent = agentDisplay.icon;
   
   // Handle click for research panel
   const handleClick = () => {
-    if (currentMessage.metadata?.agent === 'planner' || currentMessage.metadata?.agent === 'researcher') {
+    if (currentMessage.agent === 'planner' || currentMessage.agent === 'researcher') {
       openResearchPanel(currentMessage.id);
     }
   };
@@ -120,7 +120,7 @@ export const MessageItem = React.memo(({ message, messageId }: MessageItemProps)
         agentDisplay.borderColor && agentDisplay.borderColor,
         
         // Make clickable for research agents
-        (currentMessage.metadata?.agent === 'planner' || currentMessage.metadata?.agent === 'researcher') && 
+        (currentMessage.agent === 'planner' || currentMessage.agent === 'researcher') && 
           "cursor-pointer hover:bg-opacity-80"
       )}
       onClick={handleClick}
@@ -156,7 +156,7 @@ export const MessageItem = React.memo(({ message, messageId }: MessageItemProps)
       {/* Message Content */}
       <MessageContent 
         content={currentMessage.content} 
-        agent={currentMessage.metadata?.agent}
+        agent={currentMessage.agent}
         toolCalls={currentMessage.toolCalls}
       />
     </div>

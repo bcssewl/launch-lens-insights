@@ -15,7 +15,7 @@ interface AccessibleMessageItemProps {
 }
 
 const getMessageTypeDescription = (message: DeerMessage): string => {
-  const agent = message.metadata?.agent;
+  const agent = message.agent;
   
   if (message.role === 'user') {
     return 'User message';
@@ -25,12 +25,8 @@ const getMessageTypeDescription = (message: DeerMessage): string => {
     return 'AI Planner response with research plan';
   }
   
-  if (agent === 'reporter') {
+  if (agent === 'researcher') {
     return 'AI Reporter response with research findings';
-  }
-  
-  if (message.metadata?.audioUrl) {
-    return 'AI generated podcast audio';
   }
   
   return 'AI Assistant response';
@@ -38,9 +34,9 @@ const getMessageTypeDescription = (message: DeerMessage): string => {
 
 const getStreamingDescription = (message: DeerMessage): string => {
   if (message.isStreaming) {
-    const agent = message.metadata?.agent;
+    const agent = message.agent;
     if (agent === 'planner') return 'Planning in progress';
-    if (agent === 'reporter') return 'Generating report';
+    if (agent === 'researcher') return 'Generating report';
     return 'Response in progress';
   }
   return '';
@@ -58,99 +54,49 @@ const getContentSummary = (message: DeerMessage): string => {
 };
 
 const getActivitySummary = (message: DeerMessage): string => {
-  const metadata = message.metadata;
-  if (!metadata) return '';
-  
   const activities = [];
   
-  if (metadata.thinkingPhases?.length) {
-    activities.push(`${metadata.thinkingPhases.length} thinking phases`);
-  }
-  
-  if (metadata.reasoningSteps?.length) {
-    activities.push(`${metadata.reasoningSteps.length} reasoning steps`);
-  }
-  
-  if (metadata.searchActivities?.length) {
-    activities.push(`${metadata.searchActivities.length} search queries`);
-  }
-  
-  if (metadata.visitedUrls?.length) {
-    activities.push(`${metadata.visitedUrls.length} websites visited`);
-  }
-  
   if (message.toolCalls?.length) {
-    activities.push(`${message.toolCalls.length} tool executions`);
+    activities.push(`${message.toolCalls.length} tool calls`);
   }
   
-  return activities.length > 0 ? `Activities: ${activities.join(', ')}` : '';
+  if (message.reasoningContent) {
+    activities.push('reasoning content available');
+  }
+  
+  return activities.length > 0 ? activities.join(', ') : '';
 };
 
+/**
+ * Accessible wrapper around MessageItem with enhanced screen reader support
+ */
 export const AccessibleMessageItem: React.FC<AccessibleMessageItemProps> = ({
   message,
   'aria-posinset': ariaPosinset,
   'aria-setsize': ariaSetsize,
-  className = ''
+  className
 }) => {
-  const messageType = getMessageTypeDescription(message);
-  const streamingStatus = getStreamingDescription(message);
+  const messageTypeDescription = getMessageTypeDescription(message);
+  const streamingDescription = getStreamingDescription(message);
   const contentSummary = getContentSummary(message);
   const activitySummary = getActivitySummary(message);
   
-  const timestamp = message.timestamp.toLocaleString();
-  
-  // Combine all accessibility information
   const ariaLabel = [
-    messageType,
-    streamingStatus,
-    `at ${timestamp}`,
+    messageTypeDescription,
+    streamingDescription,
     contentSummary,
     activitySummary
   ].filter(Boolean).join('. ');
 
-  const ariaDescribedBy = `message-${message.id}-description`;
-
   return (
-    <article
-      className={`focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-lg ${className}`}
+    <div
       role="listitem"
-      aria-label={ariaLabel}
       aria-posinset={ariaPosinset}
       aria-setsize={ariaSetsize}
-      aria-describedby={ariaDescribedBy}
-      tabIndex={0}
+      aria-label={ariaLabel}
+      className={className}
     >
-      {/* Hidden description for screen readers */}
-      <div 
-        id={ariaDescribedBy}
-        className="sr-only"
-      >
-        {messageType} from {timestamp}. 
-        {streamingStatus && `${streamingStatus}. `}
-        {activitySummary && `${activitySummary}. `}
-        Content: {contentSummary}
-      </div>
-      
-      {/* Live region for streaming updates */}
-      {message.isStreaming && (
-        <div 
-          aria-live="polite" 
-          aria-atomic="false"
-          className="sr-only"
-        >
-          {streamingStatus}
-        </div>
-      )}
-      
-      {/* Actual message content */}
       <MessageItem message={message} />
-      
-      {/* Keyboard navigation hints */}
-      <div className="sr-only">
-        Press Tab to navigate to next message, 
-        Shift+Tab to navigate to previous message,
-        Enter or Space to interact with message actions
-      </div>
-    </article>
+    </div>
   );
 };
