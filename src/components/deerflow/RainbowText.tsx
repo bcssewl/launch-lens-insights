@@ -6,34 +6,39 @@ interface RainbowTextProps {
   children: React.ReactNode;
   animated?: boolean;
   className?: string;
+  duration?: number;
 }
 
 export const RainbowText: React.FC<RainbowTextProps> = ({ 
   children, 
   animated = false, 
-  className 
+  className,
+  duration = 2
 }) => {
+  if (!animated) {
+    return <span className={cn("text-foreground", className)}>{children}</span>;
+  }
+
   return (
-    <motion.div
+    <motion.span
       className={cn(
-        "inline-flex items-center",
-        animated && "bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent bg-[length:200%_100%]",
-        !animated && "text-foreground",
+        "inline-block bg-gradient-to-r from-primary via-purple-500 to-primary bg-clip-text text-transparent",
+        "bg-[length:200%_100%]",
         className
       )}
-      animate={animated ? {
+      animate={{
         backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"]
-      } : {}}
-      transition={animated ? {
-        duration: 2,
+      }}
+      transition={{
+        duration,
         repeat: Infinity,
         ease: "linear"
-      } : {}}
-      style={animated ? {
+      }}
+      style={{
         backgroundImage: "linear-gradient(90deg, hsl(var(--primary)), hsl(var(--purple-500)), hsl(var(--primary)))"
-      } : {}}
+      }}
     >
       {children}
-    </motion.div>
+    </motion.span>
   );
 };

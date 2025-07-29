@@ -125,6 +125,7 @@ export const ResearchReportBlock: React.FC<ResearchReportBlockProps> = ({
             content={message?.content || ''}
             onMarkdownChange={handleMarkdownChange}
             isStreaming={isStreaming}
+            animated={isStreaming}
           />
           
           {isStreaming && (

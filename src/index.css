@@ -76,6 +76,9 @@
     /* Focus Ring Colors for Accessibility */
     --focus-ring: 251 91% 69%;        /* #8B5CF6 - Primary color */
     --focus-ring-offset: 0 0% 100%;   /* #FFFFFF - White background */
+    
+    /* Rainbow Text Colors */
+    --purple-500: 271 91% 65%;        /* #A855F7 - For rainbow animations */
   }
 
   .dark {
@@ -149,6 +152,9 @@
     /* Focus Ring Colors for Accessibility */
     --focus-ring: 271 91% 65%;        /* #A855F7 - Adjusted for dark mode */
     --focus-ring-offset: 0 0% 7%;     /* #111111 - Dark background */
+    
+    /* Rainbow Text Colors */
+    --purple-500: 271 91% 65%;        /* #A855F7 - For rainbow animations */
   }
 
   /* Modern, lightweight platform typography */

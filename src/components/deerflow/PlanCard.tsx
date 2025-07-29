@@ -6,6 +6,7 @@ import { Separator } from '@/components/ui/separator';
 import { Brain, Play, Loader2, Search, Settings, ChevronDown, ChevronUp, AlertCircle } from 'lucide-react';
 import { motion } from 'motion/react';
 import { DeerMessage } from '@/stores/deerFlowMessageStore';
+import { AnimatedMarkdown } from './AnimatedMarkdown';
 import { cn } from '@/lib/utils';
 // Greeting messages array matching original DeerFlow
 const GREETINGS = [
@@ -255,9 +256,15 @@ export const PlanCard = ({ message, onStartResearch, onSendMessage, isExecuting 
           {planData.thought && (
             <div className="rounded-lg bg-blue-100/50 p-3 border border-blue-200/50 dark:bg-blue-950/30 dark:border-blue-800/50">
               <p className="text-xs font-semibold text-blue-800 dark:text-blue-200 mb-2">Reasoning:</p>
-              <p className="text-sm text-blue-700 dark:text-blue-300 leading-relaxed">
-                {planData.thought}
-              </p>
+              <div className="text-sm text-blue-700 dark:text-blue-300">
+                <AnimatedMarkdown 
+                  animated={message.isStreaming} 
+                  checkLinkCredibility 
+                  className="text-sm"
+                >
+                  {planData.thought}
+                </AnimatedMarkdown>
+              </div>
             </div>
           )}
           

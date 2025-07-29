@@ -7,145 +7,22 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Pencil, Eye, Save, X, Undo2, Redo2, Type, Code } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/lib/utils';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { AnimatedMarkdown } from './AnimatedMarkdown';
 
 interface ReportEditorProps {
   content: string;
   onMarkdownChange: (markdown: string) => void;
   isStreaming?: boolean;
+  animated?: boolean;
   className?: string;
 }
 
-// Enhanced markdown with link credibility checking
-const EnhancedMarkdown: React.FC<{ children: string; animated?: boolean; checkLinkCredibility?: boolean }> = ({ 
-  children, 
-  animated = false, 
-  checkLinkCredibility = false 
-}) => {
-  // Simple link credibility check (in real implementation, this would call an API)
-  const checkLinkSafety = (url: string): 'safe' | 'suspicious' | 'unknown' => {
-    if (!url) return 'unknown';
-    
-    // Simple heuristics for demo
-    if (url.includes('.edu') || url.includes('.gov') || url.includes('wikipedia.org')) {
-      return 'safe';
-    }
-    if (url.includes('bit.ly') || url.includes('tinyurl') || url.match(/[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/)) {
-      return 'suspicious';
-    }
-    return 'unknown';
-  };
-
-  return (
-    <motion.div
-      initial={animated ? { opacity: 0, y: 10 } : {}}
-      animate={animated ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.5, ease: "easeOut" }}
-      className="prose prose-lg max-w-none dark:prose-invert"
-    >
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        components={{
-          // Enhanced link component with credibility checking
-          a: ({ href, children, ...props }) => {
-            const safety = checkLinkCredibility ? checkLinkSafety(href || '') : 'unknown';
-            return (
-              <a
-                href={href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={cn(
-                  "text-primary hover:text-primary/80 underline transition-colors",
-                  checkLinkCredibility && safety === 'suspicious' && "text-orange-500 hover:text-orange-600",
-                  checkLinkCredibility && safety === 'safe' && "text-green-600 hover:text-green-700"
-                )}
-                title={checkLinkCredibility ? `Link safety: ${safety}` : undefined}
-                {...props}
-              >
-                {children}
-                {checkLinkCredibility && safety === 'suspicious' && (
-                  <span className="text-orange-500 text-xs ml-1">⚠️</span>
-                )}
-                {checkLinkCredibility && safety === 'safe' && (
-                  <span className="text-green-600 text-xs ml-1">✓</span>
-                )}
-              </a>
-            );
-          },
-          // Enhanced code blocks
-          pre: ({ children, ...props }) => (
-            <pre
-              className="bg-muted p-4 rounded-lg overflow-x-auto border border-border"
-              {...props}
-            >
-              {children}
-            </pre>
-          ),
-          // Enhanced tables
-          table: ({ children, ...props }) => (
-            <div className="overflow-x-auto my-4">
-              <table className="min-w-full border-collapse border border-border rounded-lg" {...props}>
-                {children}
-              </table>
-            </div>
-          ),
-          th: ({ children, ...props }) => (
-            <th className="border border-border bg-muted p-3 text-left font-semibold" {...props}>
-              {children}
-            </th>
-          ),
-          td: ({ children, ...props }) => (
-            <td className="border border-border p-3" {...props}>
-              {children}
-            </td>
-          ),
-          // Enhanced headings with animations
-          h1: ({ children, ...props }) => (
-            <h1
-              className="text-3xl font-bold mb-4 mt-8 first:mt-0"
-              {...props}
-            >
-              {children}
-            </h1>
-          ),
-          h2: ({ children, ...props }) => (
-            <h2
-              className="text-2xl font-semibold mb-3 mt-6"
-              {...props}
-            >
-              {children}
-            </h2>
-          ),
-          h3: ({ children, ...props }) => (
-            <h3
-              className="text-xl font-medium mb-2 mt-4"
-              {...props}
-            >
-              {children}
-            </h3>
-          ),
-          // Enhanced paragraphs
-          p: ({ children, ...props }) => (
-            <p
-              className="mb-4 leading-relaxed"
-              {...props}
-            >
-              {children}
-            </p>
-          )
-        }}
-      >
-        {children}
-      </ReactMarkdown>
-    </motion.div>
-  );
-};
 
 export const ReportEditor: React.FC<ReportEditorProps> = ({ 
   content, 
   onMarkdownChange, 
   isStreaming = false,
+  animated = false,
   className 
 }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -338,9 +215,9 @@ export const ReportEditor: React.FC<ReportEditorProps> = ({
 
           <TabsContent value="preview" className="space-y-2">
             <Card className="p-6 min-h-[500px] border-dashed">
-              <EnhancedMarkdown animated checkLinkCredibility>
+              <AnimatedMarkdown animated checkLinkCredibility>
                 {editContent || '*Preview will appear here as you type...*'}
-              </EnhancedMarkdown>
+              </AnimatedMarkdown>
             </Card>
           </TabsContent>
 
@@ -358,9 +235,9 @@ export const ReportEditor: React.FC<ReportEditorProps> = ({
               <div>
                 <h4 className="text-sm font-medium mb-2">Preview</h4>
                 <Card className="p-4 min-h-[500px] overflow-auto border-dashed">
-                  <EnhancedMarkdown checkLinkCredibility>
+                  <AnimatedMarkdown checkLinkCredibility>
                     {editContent || '*Preview will appear here as you type...*'}
-                  </EnhancedMarkdown>
+                  </AnimatedMarkdown>
                 </Card>
               </div>
             </div>
@@ -386,9 +263,9 @@ export const ReportEditor: React.FC<ReportEditorProps> = ({
       </div>
       
       <div className="relative">
-        <EnhancedMarkdown animated checkLinkCredibility>
+        <AnimatedMarkdown animated={animated} checkLinkCredibility>
           {content}
-        </EnhancedMarkdown>
+        </AnimatedMarkdown>
         
         {isStreaming && (
           <motion.div
