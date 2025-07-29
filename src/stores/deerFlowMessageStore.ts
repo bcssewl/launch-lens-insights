@@ -1,10 +1,9 @@
 /**
  * @file deerFlowMessageStore.ts
- * @description Zustand store for DeerFlow messages and research state
+ * @description Simplified Zustand store for DeerFlow messages with Map-based storage
  */
 
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import { nanoid } from 'nanoid';
 
 export interface ToolCall {
@@ -31,28 +30,27 @@ export interface DeerMessage {
   options?: FeedbackOption[];
   toolCalls?: ToolCall[];
   metadata?: {
-    agent?: string; // Store the agent type (planner, coordinator, etc.)
+    agent?: string;
+    threadId?: string;
     title?: string;
     thought?: string;
     steps?: string[];
     audioUrl?: string;
     reasoningContent?: string;
-    researchState?: 'researching' | 'generating_report' | 'report_generated';
-    threadId?: string;
-    
-    // New DeerFlow event fields
     thinkingPhases?: Array<{ phase: string; content: string }>;
     reasoningSteps?: Array<{ step: string; content: string }>;
     searchActivities?: Array<{ query: string; results?: any[] }>;
     visitedUrls?: Array<{ url: string; title?: string; content?: string }>;
     reportContent?: string;
     citations?: any[];
-    planSteps?: any[]; // Parsed plan steps for research activities
-    hasEnoughContext?: boolean; // Whether planner indicated it has enough context
-    isPlannerDirectAnswer?: boolean; // Whether this indicates next reporter message is direct answer
+    planSteps?: any[];
+    hasEnoughContext?: boolean;
+    isPlannerDirectAnswer?: boolean;
+    researchState?: 'researching' | 'generating_report' | 'report_generated';
   };
 }
 
+// Legacy compatibility interfaces
 export interface ResearchActivity {
   id: string;
   toolType: 'web-search' | 'crawl' | 'python' | 'retriever';
@@ -68,32 +66,24 @@ export interface ResearchSession {
   threadId: string;
   planId?: string;
   reportId?: string;
-  activities: string[]; // Activity IDs
+  activities: string[];
   createdAt: Date;
   updatedAt: Date;
 }
 
 interface DeerFlowMessageState {
-  // Current session
+  // Simple state management
   currentThreadId: string;
-  
-  // Messages state
-  messages: DeerMessage[];
+  messageMap: Map<string, DeerMessage>;
+  threadMessages: Map<string, string[]>; // threadId -> messageIds[]
   isResponding: boolean;
   currentPrompt: string;
   
-  // Research state
-  researchActivities: ResearchActivity[];
-  researchSessions: ResearchSession[];
+  // Simple panel state
   reportContent: string;
   isResearchPanelOpen: boolean;
   activeResearchTab: 'activities' | 'report';
-  
-  // Thread context tracking
-  threadContexts: Record<string, {
-    plannerIndicatedDirectAnswer: boolean;
-    expectingReporterDirectAnswer: boolean;
-  }>;
+  openResearchId: string | null; // Message ID that opened research panel
 }
 
 interface DeerFlowMessageActions {
@@ -101,223 +91,212 @@ interface DeerFlowMessageActions {
   createNewThread: () => string;
   setCurrentThread: (threadId: string) => void;
   
-  // Message actions
+  // Message actions with Map-based storage
   addMessage: (message: Omit<DeerMessage, 'id' | 'timestamp'>) => void;
   addMessageWithId: (message: DeerMessage) => void;
   existsMessage: (messageId: string) => boolean;
   updateMessage: (messageId: string, updates: Partial<DeerMessage>) => void;
+  getMessage: (messageId: string) => DeerMessage | undefined;
   clearMessages: () => void;
   getMessagesByThread: (threadId: string) => DeerMessage[];
+  getAllMessages: () => DeerMessage[];
   
-  // Research actions
+  // Legacy compatibility - computed properties
+  messages: DeerMessage[];
+  researchActivities: ResearchActivity[];
+  researchSessions: ResearchSession[];
+  
+  // Legacy compatibility - no-op methods
   addResearchActivity: (activity: Omit<ResearchActivity, 'id' | 'timestamp'>) => void;
   updateResearchActivity: (activityId: string, updates: Partial<ResearchActivity>) => void;
-  setReportContent: (content: string) => void;
   createResearchSession: (threadId: string) => ResearchSession;
   getResearchSession: (threadId: string) => ResearchSession | undefined;
+  getThreadContext: (threadId: string) => { plannerIndicatedDirectAnswer: boolean; expectingReporterDirectAnswer: boolean };
   
-  // UI actions
+  // Simple UI actions
   setCurrentPrompt: (prompt: string) => void;
   setIsResponding: (responding: boolean) => void;
-  setResearchPanelOpen: (open: boolean) => void;
+  setResearchPanelOpen: (open: boolean, messageId?: string) => void;
   setActiveResearchTab: (tab: 'activities' | 'report') => void;
-  
-  // Thread context actions
-  setThreadContext: (threadId: string, context: { plannerIndicatedDirectAnswer: boolean; expectingReporterDirectAnswer: boolean; }) => void;
-  getThreadContext: (threadId: string) => { plannerIndicatedDirectAnswer: boolean; expectingReporterDirectAnswer: boolean; };
+  setReportContent: (content: string) => void;
 }
 
 type DeerFlowMessageStore = DeerFlowMessageState & DeerFlowMessageActions;
 
-export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()(
-  persist(
-    (set, get) => ({
-      // Initial state
-      currentThreadId: nanoid(),
-      messages: [],
-      isResponding: false,
+export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get) => ({
+  // Initial state
+  currentThreadId: nanoid(),
+  messageMap: new Map(),
+  threadMessages: new Map(),
+  isResponding: false,
+  currentPrompt: '',
+  reportContent: '',
+  isResearchPanelOpen: false,
+  activeResearchTab: 'activities',
+  openResearchId: null,
+
+  // Thread management
+  createNewThread: () => {
+    const threadId = nanoid();
+    set({ 
+      currentThreadId: threadId,
       currentPrompt: '',
-      researchActivities: [],
-      researchSessions: [],
+      isResponding: false,
+      isResearchPanelOpen: false,
+      openResearchId: null
+    });
+    return threadId;
+  },
+
+  setCurrentThread: (threadId) => {
+    set({ currentThreadId: threadId });
+  },
+
+  // Message actions with immediate Map updates
+  addMessage: (message) => {
+    const { messageMap, threadMessages, currentThreadId } = get();
+    const newMessage: DeerMessage = {
+      ...message,
+      id: nanoid(),
+      timestamp: new Date(),
+      metadata: {
+        ...message.metadata,
+        threadId: currentThreadId
+      }
+    };
+
+    // Update Map-based storage immediately
+    const newMessageMap = new Map(messageMap);
+    newMessageMap.set(newMessage.id, newMessage);
+
+    const newThreadMessages = new Map(threadMessages);
+    const currentMessages = newThreadMessages.get(currentThreadId) || [];
+    newThreadMessages.set(currentThreadId, [...currentMessages, newMessage.id]);
+
+    set({ 
+      messageMap: newMessageMap,
+      threadMessages: newThreadMessages
+    });
+  },
+
+  addMessageWithId: (message) => {
+    const { messageMap, threadMessages, currentThreadId } = get();
+    const threadId = message.metadata?.threadId || currentThreadId;
+
+    // Update Map-based storage immediately
+    const newMessageMap = new Map(messageMap);
+    newMessageMap.set(message.id, message);
+
+    const newThreadMessages = new Map(threadMessages);
+    const currentMessages = newThreadMessages.get(threadId) || [];
+    if (!currentMessages.includes(message.id)) {
+      newThreadMessages.set(threadId, [...currentMessages, message.id]);
+    }
+
+    set({ 
+      messageMap: newMessageMap,
+      threadMessages: newThreadMessages
+    });
+  },
+
+  existsMessage: (messageId) => {
+    return get().messageMap.has(messageId);
+  },
+
+  updateMessage: (messageId, updates) => {
+    const { messageMap } = get();
+    const existingMessage = messageMap.get(messageId);
+    
+    if (existingMessage) {
+      const newMessageMap = new Map(messageMap);
+      newMessageMap.set(messageId, { ...existingMessage, ...updates });
+      set({ messageMap: newMessageMap });
+    }
+  },
+
+  getMessage: (messageId) => {
+    return get().messageMap.get(messageId);
+  },
+
+  clearMessages: () => {
+    set({ 
+      messageMap: new Map(),
+      threadMessages: new Map(),
       reportContent: '',
       isResearchPanelOpen: false,
-      activeResearchTab: 'activities',
-      threadContexts: {},
+      openResearchId: null
+    });
+  },
 
-      // Thread management
-      createNewThread: () => {
-        const threadId = nanoid();
-        set({ 
-          currentThreadId: threadId,
-          messages: [],
-          researchActivities: [],
-          reportContent: '',
-          currentPrompt: ''
-        });
-        return threadId;
-      },
+  getMessagesByThread: (threadId) => {
+    const { messageMap, threadMessages } = get();
+    const messageIds = threadMessages.get(threadId) || [];
+    return messageIds
+      .map(id => messageMap.get(id))
+      .filter((msg): msg is DeerMessage => msg !== undefined)
+      .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+  },
 
-      setCurrentThread: (threadId) => {
-        const state = get();
-        const threadMessages = state.messages.filter(msg => 
-          msg.metadata?.threadId === threadId
-        );
-        const threadActivities = state.researchActivities.filter(activity => 
-          activity.threadId === threadId
-        );
-        
-        set({
-          currentThreadId: threadId,
-          messages: threadMessages,
-          researchActivities: threadActivities,
-          currentPrompt: ''
-        });
-      },
+  getAllMessages: () => {
+    const { messageMap } = get();
+    return Array.from(messageMap.values())
+      .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+  },
 
-      // Message actions
-      addMessage: (message) => {
-        const state = get();
-        const newMessage: DeerMessage = {
-          ...message,
-          id: nanoid(),
-          timestamp: new Date(),
-          metadata: {
-            ...message.metadata,
-            threadId: state.currentThreadId
-          }
-        };
+  // Legacy compatibility - computed properties
+  get messages() {
+    return get().getAllMessages();
+  },
+  
+  get researchActivities() {
+    return [];
+  },
+  
+  get researchSessions() {
+    return [];
+  },
 
-        // Auto-create research session for planner/reporter messages
-        if (message.metadata?.agent === 'planner' || message.metadata?.agent === 'reporter') {
-          const existingSession = state.researchSessions.find(s => s.threadId === state.currentThreadId);
-          if (!existingSession) {
-            get().createResearchSession(state.currentThreadId);
-          }
-        }
+  // Legacy compatibility - no-op methods
+  addResearchActivity: () => {
+    // No-op for compatibility
+  },
+  
+  updateResearchActivity: () => {
+    // No-op for compatibility
+  },
+  
+  createResearchSession: (threadId) => {
+    return {
+      id: nanoid(),
+      threadId,
+      activities: [],
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+  },
+  
+  getResearchSession: () => {
+    return undefined;
+  },
+  
+  getThreadContext: () => {
+    return { 
+      plannerIndicatedDirectAnswer: false, 
+      expectingReporterDirectAnswer: false 
+    };
+  },
 
-        set((state) => ({
-          messages: [...state.messages, newMessage],
-        }));
-      },
-
-      addMessageWithId: (message) => {
-        const state = get();
-        const messageWithThread = {
-          ...message,
-          metadata: {
-            ...message.metadata,
-            threadId: message.metadata?.threadId || state.currentThreadId
-          }
-        };
-
-        set((state) => ({
-          messages: [...state.messages, messageWithThread],
-        }));
-      },
-
-      existsMessage: (messageId) => {
-        const state = get();
-        return state.messages.some(msg => msg.id === messageId);
-      },
-
-      updateMessage: (messageId, updates) =>
-        set((state) => ({
-          messages: state.messages.map((msg) =>
-            msg.id === messageId ? { ...msg, ...updates } : msg
-          ),
-        })),
-
-      clearMessages: () =>
-        set({
-          messages: [],
-          researchActivities: [],
-          reportContent: '',
-        }),
-
-      getMessagesByThread: (threadId) => {
-        const state = get();
-        return state.messages.filter(msg => msg.metadata?.threadId === threadId);
-      },
-
-      // Research actions
-      addResearchActivity: (activity) => {
-        const state = get();
-        const newActivity: ResearchActivity = {
-          ...activity,
-          id: nanoid(),
-          timestamp: new Date(),
-          threadId: state.currentThreadId
-        };
-
-        // Add to current session
-        const session = state.researchSessions.find(s => s.threadId === state.currentThreadId);
-        if (session) {
-          session.activities.push(newActivity.id);
-          session.updatedAt = new Date();
-        }
-
-        set((state) => ({
-          researchActivities: [...state.researchActivities, newActivity],
-        }));
-      },
-
-      updateResearchActivity: (activityId, updates) =>
-        set((state) => ({
-          researchActivities: state.researchActivities.map((activity) =>
-            activity.id === activityId ? { ...activity, ...updates } : activity
-          ),
-        })),
-
-      setReportContent: (content) => set({ reportContent: content }),
-
-      createResearchSession: (threadId) => {
-        const session: ResearchSession = {
-          id: nanoid(),
-          threadId,
-          activities: [],
-          createdAt: new Date(),
-          updatedAt: new Date()
-        };
-
-        set((state) => ({
-          researchSessions: [...state.researchSessions, session]
-        }));
-
-        return session;
-      },
-
-      getResearchSession: (threadId) => {
-        const state = get();
-        return state.researchSessions.find(s => s.threadId === threadId);
-      },
-
-      // UI actions
-      setCurrentPrompt: (prompt) => set({ currentPrompt: prompt }),
-      setIsResponding: (responding) => set({ isResponding: responding }),
-      setResearchPanelOpen: (open) => set({ isResearchPanelOpen: open }),
-      setActiveResearchTab: (tab) => set({ activeResearchTab: tab }),
-      
-      // Thread context actions
-      setThreadContext: (threadId, context) => 
-        set((state) => ({
-          threadContexts: { ...state.threadContexts, [threadId]: context }
-        })),
-      getThreadContext: (threadId) => {
-        const state = get();
-        return state.threadContexts[threadId] || { 
-          plannerIndicatedDirectAnswer: false, 
-          expectingReporterDirectAnswer: false 
-        };
-      },
-    }),
-    {
-      name: 'deer-flow-messages',
-      partialize: (state) => ({
-        messages: state.messages,
-        researchActivities: state.researchActivities,
-        researchSessions: state.researchSessions,
-        currentThreadId: state.currentThreadId
-      }),
-    }
-  )
-);
+  // Simple UI actions with immediate updates
+  setCurrentPrompt: (prompt) => set({ currentPrompt: prompt }),
+  
+  setIsResponding: (responding) => set({ isResponding: responding }),
+  
+  setResearchPanelOpen: (open, messageId) => set({ 
+    isResearchPanelOpen: open,
+    openResearchId: open ? (messageId || get().openResearchId) : null
+  }),
+  
+  setActiveResearchTab: (tab) => set({ activeResearchTab: tab }),
+  
+  setReportContent: (content) => set({ reportContent: content })
+}));
