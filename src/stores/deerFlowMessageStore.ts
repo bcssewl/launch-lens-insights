@@ -91,7 +91,8 @@ interface DeerFlowMessageActions {
   getAllMessages: () => DeerMessage[];
   
   // Research session management
-  startResearch: (plannerMessageId: string) => string;
+  autoStartResearchOnFirstActivity: (message: DeerMessage) => string | null;
+  startResearch: (plannerMessageId: string) => string | null;
   addResearchActivity: (researchId: string, messageId: string) => void;
   setResearchReport: (researchId: string, reportMessageId: string) => void;
   getResearchStatus: (researchId: string) => 'researching' | 'generating-report' | 'completed' | 'unknown';
@@ -318,26 +319,86 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
   setReportContent: (content) => set({ reportContent: content }),
 
   // Research session management
-  startResearch: (plannerMessageId) => {
-    const researchId = nanoid();
-    const { researchIds, researchPlanIds, researchActivityIds } = get();
+  // NEW: Auto-detect and start research on first researcher message
+  autoStartResearchOnFirstActivity: (message) => {
+    const { ongoingResearchId, researchIds, messageIds, getMessage } = get();
     
-    // Initialize research session
-    set({
-      researchIds: [...researchIds, researchId],
-      researchPlanIds: new Map(researchPlanIds).set(researchId, plannerMessageId),
-      researchActivityIds: new Map(researchActivityIds).set(researchId, [plannerMessageId]),
-      ongoingResearchId: researchId,
-      openResearchId: researchId,
-      researchPanelState: {
-        isOpen: true,
-        openResearchId: researchId,
-        activeTab: 'activities'
+    // Only start research if we don't have an ongoing session
+    if (!ongoingResearchId && (message.agent === 'researcher' || message.agent === 'coder' || message.agent === 'reporter')) {
+      
+      // Find the most recent planner message by searching backwards
+      const reversedMessageIds = [...messageIds].reverse();
+      let plannerMessage;
+      
+      for (const messageId of reversedMessageIds) {
+        const msg = getMessage(messageId);
+        if (msg?.agent === 'planner') {
+          plannerMessage = msg;
+          break;
+        }
       }
-    });
+      
+      if (plannerMessage) {
+        // Use the researcher message ID as the research session ID (matching original)
+        const researchId = message.id;
+        
+        set({
+          researchIds: [...researchIds, researchId],
+          researchPlanIds: new Map(get().researchPlanIds).set(researchId, plannerMessage.id),
+          researchActivityIds: new Map(get().researchActivityIds).set(researchId, [plannerMessage.id, message.id]),
+          ongoingResearchId: researchId,
+          openResearchId: researchId,
+          researchPanelState: {
+            isOpen: true,
+            openResearchId: researchId,
+            activeTab: 'activities'
+          }
+        });
+        
+        console.log('🔬 Auto-started research session:', researchId, 'triggered by:', message.agent);
+        return researchId;
+      }
+    }
     
-    console.log('🔬 Started research session:', researchId);
-    return researchId;
+    return null;
+  },
+
+  // MODIFIED: Manual research start (for UI buttons)
+  startResearch: (researcherMessageId) => {
+    // Use provided researcher message ID as research session ID
+    const { researchIds, researchPlanIds, researchActivityIds, messageIds, getMessage } = get();
+    
+    // Find associated planner message
+    const reversedMessageIds = [...messageIds].reverse();
+    let plannerMessage;
+    
+    for (const messageId of reversedMessageIds) {
+      const msg = getMessage(messageId);
+      if (msg?.agent === 'planner') {
+        plannerMessage = msg;
+        break;
+      }
+    }
+    
+    if (plannerMessage) {
+      set({
+        researchIds: [...researchIds, researcherMessageId],
+        researchPlanIds: new Map(researchPlanIds).set(researcherMessageId, plannerMessage.id),
+        researchActivityIds: new Map(researchActivityIds).set(researcherMessageId, [plannerMessage.id, researcherMessageId]),
+        ongoingResearchId: researcherMessageId,
+        openResearchId: researcherMessageId,
+        researchPanelState: {
+          isOpen: true,
+          openResearchId: researcherMessageId,
+          activeTab: 'activities'
+        }
+      });
+      
+      console.log('🔬 Manual research session started:', researcherMessageId);
+      return researcherMessageId;
+    }
+    
+    return null;
   },
 
   addResearchActivity: (researchId, messageId) => {

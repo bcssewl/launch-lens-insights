@@ -51,7 +51,8 @@ export const useEnhancedDeerStreaming = () => {
     startResearch,
     addResearchActivity,
     setResearchReport,
-    getCurrentResearchId
+    getCurrentResearchId,
+    autoStartResearchOnFirstActivity
   } = useDeerFlowMessageStore();
 
   const { settings } = useDeerFlowStore();
@@ -118,35 +119,44 @@ export const useEnhancedDeerStreaming = () => {
 
     console.log('✨ Message updated successfully for ID:', messageId);
 
-    // Research session management
+    // Research session management - CORRECTED TO MATCH ORIGINAL
     if (event.event === 'message_chunk' && data.agent) {
       switch (data.agent) {
-        case 'planner':
-          // Start new research session for planner messages
-          const researchId = startResearch(messageId);
-          console.log('🔬 Started research session:', researchId, 'for planner:', messageId);
-          setResearchPanel(true, messageId, 'activities');
-          break;
-          
         case 'researcher':
         case 'coder':
-          // Add to current research activities
-          const currentResearchId = getCurrentResearchId();
-          if (currentResearchId) {
-            addResearchActivity(currentResearchId, messageId);
-            console.log('🔍 Added activity:', messageId, 'to research:', currentResearchId);
+        case 'reporter':
+          // Get the updated message
+          const currentMessage = getMessage(messageId);
+          if (currentMessage) {
+            // Auto-start research session on FIRST researcher/coder/reporter (matching original)
+            const researchId = autoStartResearchOnFirstActivity(currentMessage);
+            
+            if (researchId) {
+              // Research session just started
+              console.log('🔬 Research session auto-started:', researchId);
+            } else {
+              // Add to existing research session
+              const currentResearchId = getCurrentResearchId();
+              if (currentResearchId) {
+                addResearchActivity(currentResearchId, messageId);
+                console.log('🔍 Added activity to existing research:', currentResearchId);
+              }
+            }
           }
-          setResearchPanel(true, messageId, 'activities');
+          break;
+          
+        case 'planner':
+          // Planner messages do NOT start research - they just exist for linking
+          console.log('📋 Planner message processed, waiting for researcher to start session');
           break;
           
         case 'reporter':
-          // Assign as research report
+          // Reporter ends the research session
           const reportResearchId = getCurrentResearchId();
           if (reportResearchId) {
             setResearchReport(reportResearchId, messageId);
-            console.log('📄 Set research report:', messageId, 'for research:', reportResearchId);
+            console.log('📄 Research completed with report:', messageId);
           }
-          setResearchPanel(true, messageId, 'report');
           break;
       }
     }
@@ -158,7 +168,7 @@ export const useEnhancedDeerStreaming = () => {
     }
 
     setEventCount(prev => prev + 1);
-  }, [getMessage, addMessageWithId, updateMessage, setResearchPanel, setReportContent, currentThreadId, startResearch, addResearchActivity, setResearchReport, getCurrentResearchId]);
+  }, [getMessage, addMessageWithId, updateMessage, setResearchPanel, setReportContent, currentThreadId, startResearch, addResearchActivity, setResearchReport, getCurrentResearchId, autoStartResearchOnFirstActivity]);
 
   // Simplified error handling without currentMessageId fallback
   const handleError = useCallback((error: Error) => {
