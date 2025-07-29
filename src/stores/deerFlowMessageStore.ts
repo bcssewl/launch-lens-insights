@@ -221,11 +221,19 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
       : [...messageIds, message.id];
 
     console.log('📝 addMessageWithId created:', message.id, 'Thread:', threadId, 'Agent:', message.agent);
+    
+    // UPDATE: Set state first
     set({ 
       messageIds: newMessageIds,
       messageMap: newMessageMap,
       threadMessageIds: newThreadMessageIds
     });
+    
+    // NEW: Auto-handle research session management
+    if (message.agent === 'researcher' || message.agent === 'coder' || message.agent === 'reporter') {
+      const store = get();
+      store.autoStartResearchOnFirstActivity(message);
+    }
   },
 
   existsMessage: (messageId) => {
