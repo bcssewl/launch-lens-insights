@@ -3,6 +3,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useMessageIds } from '@/hooks/useOptimizedMessages';
 import { useDeerFlowMessageStore } from '@/stores/deerFlowMessageStore';
 import { MessageItem } from './MessageItem';
+import { ResearchCard } from './ResearchCard';
 import { ConversationStarter } from './ConversationStarter';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { cn } from '@/lib/utils';
@@ -103,19 +104,31 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
         "py-4 sm:py-6 lg:py-8", // Platform's container padding
         "px-4 sm:px-6 lg:px-8" // Platform's horizontal padding
       )}>
-        {visibleMessageIds.map((messageId, index) => (
-          <MessageEntryAnimation key={messageId} index={index}>
-            <ErrorBoundary
-              fallback={
-                <div className="animate-pulse bg-muted/20 rounded-lg h-16 p-4 flex items-center justify-center">
-                  <span className="text-muted-foreground text-sm">Message failed to load</span>
-                </div>
-              }
-            >
-              <MessageItem messageId={messageId} />
-            </ErrorBoundary>
-          </MessageEntryAnimation>
-        ))}
+        {visibleMessageIds.map((messageId, index) => {
+          const message = getMessage(messageId);
+          const isResearchStart = isStartOfResearch(messageId, getMessage);
+          
+          return (
+            <MessageEntryAnimation key={messageId} index={index}>
+              <ErrorBoundary
+                fallback={
+                  <div className="animate-pulse bg-muted/20 rounded-lg h-16 p-4 flex items-center justify-center">
+                    <span className="text-muted-foreground text-sm">Message failed to load</span>
+                  </div>
+                }
+              >
+                {isResearchStart ? (
+                  <ResearchCard 
+                    researchId={messageId}
+                    title={message?.content}
+                  />
+                ) : (
+                  <MessageItem messageId={messageId} />
+                )}
+              </ErrorBoundary>
+            </MessageEntryAnimation>
+          );
+        })}
       </div>
     </ScrollArea>
   );
