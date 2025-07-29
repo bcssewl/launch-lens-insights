@@ -9,7 +9,6 @@ import { useDeerFlowMessageStore } from '@/stores/deerFlowMessageStore';
 import { mergeMessage, finalizeMessage, StreamEvent } from '@/utils/mergeMessage';
 import { DeerMessage } from '@/stores/deerFlowMessageStore';
 import { fetchStream } from '@/utils/fetchStream';
-import { useDebounceEvents } from '@/hooks/useDebounceEvents';
 
 interface DeerStreamingOptions {
   maxPlanIterations?: number;
@@ -44,28 +43,24 @@ export const useEnhancedDeerStreaming = () => {
   
   const { settings } = storeActions;
 
-  // Debounced event processing to prevent UI overload
-  const processEventBatch = useCallback((events: StreamEvent[]) => {
+  // Immediate event processing for maximum responsiveness
+  const processStreamEvent = useCallback((event: StreamEvent) => {
     if (!currentPartialMessageRef.current || !messageIdRef.current) return;
 
     try {
-      // Process events in batch
-      for (const event of events) {
-        currentPartialMessageRef.current = mergeMessage(currentPartialMessageRef.current, event);
-      }
+      // Process event immediately
+      currentPartialMessageRef.current = mergeMessage(currentPartialMessageRef.current, event);
 
-      // Update message in store (throttled)
+      // Update message in store immediately (React 18 batches automatically)
       if (existsMessage(messageIdRef.current)) {
         updateMessage(messageIdRef.current, currentPartialMessageRef.current);
       }
 
-      setEventCount(prev => prev + events.length);
+      setEventCount(prev => prev + 1);
     } catch (error) {
-      console.warn('Error processing event batch:', error);
+      console.warn('Error processing stream event:', error);
     }
   }, [existsMessage, updateMessage]);
-
-  const { processEvent, flush, cancel } = useDebounceEvents(processEventBatch, 100);
 
   const startDeerFlowStreaming = useCallback(async (
     question: string,
@@ -232,8 +227,8 @@ export const useEnhancedDeerStreaming = () => {
               }
             });
           } else {
-            // Process event through debounced handler for performance
-            processEvent(streamEvent);
+            // Process event immediately for maximum responsiveness
+            processStreamEvent(streamEvent);
           }
 
 
@@ -241,9 +236,6 @@ export const useEnhancedDeerStreaming = () => {
           console.warn('Failed to process DeerFlow event:', parseError);
         }
       }
-
-      // Flush any remaining debounced events
-      flush();
 
       // Finalize the message when streaming ends
       if (messageIdRef.current && currentPartialMessageRef.current) {
@@ -292,9 +284,6 @@ export const useEnhancedDeerStreaming = () => {
         });
       }
     } finally {
-      // Cancel any pending debounced events
-      cancel();
-      
       setIsStreaming(false);
       setIsResponding(false);
       setCurrentMessageId(null);
@@ -315,8 +304,7 @@ export const useEnhancedDeerStreaming = () => {
     setActiveResearchTab,
     setReportContent,
     currentThreadId,
-    processEvent,
-    flush,
+    processStreamEvent,
     settings
   ]);
 
@@ -325,11 +313,7 @@ export const useEnhancedDeerStreaming = () => {
       abortControllerRef.current.abort();
       console.log('⏹️ DeerFlow streaming stopped by user');
     }
-    
-    // Cancel pending events and flush immediately
-    cancel();
-    flush();
-  }, [cancel, flush]);
+  }, []);
 
   // Memory cleanup
   const cleanup = useCallback(() => {

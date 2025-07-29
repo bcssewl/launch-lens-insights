@@ -9,7 +9,6 @@ import { DeerMessage } from '@/stores/deerFlowMessageStore';
 import { mergeMessage, finalizeMessage, StreamEvent } from '@/utils/mergeMessage';
 import { useToast } from '@/hooks/use-toast';
 import { useLiveActivityTracker } from '@/hooks/useLiveActivityTracker';
-import { useDebounceEvents } from '@/hooks/useDebounceEvents';
 import { useMemoryOptimization } from '@/hooks/useMemoryOptimization';
 
 interface StreamingState {
@@ -45,16 +44,10 @@ export const useEnhancedStreaming = () => {
     { maxMessages: 100, preserveLastN: 20 }
   );
 
-  // Phase 4: Debounced event processing
-  const debouncedEventHandler = useDebounceEvents(
-    (events: StreamEvent[]) => {
-      // Process batched events for better performance
-      events.forEach(event => {
-        activityTracker.processStreamingEvent(event);
-      });
-    },
-    50 // 50ms debounce delay
-  );
+  // Immediate event processing for maximum responsiveness
+  const processActivityEvent = useCallback((event: StreamEvent) => {
+    activityTracker.processStreamingEvent(event);
+  }, [activityTracker]);
 
   const { toast } = useToast();
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -145,8 +138,8 @@ export const useEnhancedStreaming = () => {
           try {
             const event: StreamEvent = JSON.parse(dataStr);
             
-            // Phase 4: Use debounced event processing for performance
-            debouncedEventHandler.processEvent(event);
+            // Process events immediately for maximum responsiveness
+            processActivityEvent(event);
             
             currentMessage = mergeMessage(currentMessage, event);
 
@@ -253,8 +246,6 @@ export const useEnhancedStreaming = () => {
     } finally {
       // Phase 3: Stop activity tracking
       activityTracker.stopStreaming();
-      // Phase 4: Flush any pending debounced events
-      debouncedEventHandler.flush();
       setIsResponding(false);
       setStreamingState(prev => ({
         ...prev,
@@ -299,7 +290,6 @@ export const useEnhancedStreaming = () => {
     // Phase 3: Activity tracking
     activityTracker,
     // Phase 4: Performance optimizations
-    cleanupMemory,
-    debouncedEventHandler
+    cleanupMemory
   };
 };
