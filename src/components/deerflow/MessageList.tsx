@@ -1,46 +1,73 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useMessageIds } from '@/hooks/useOptimizedMessages';
-import { useDeerFlowMessageStore } from '@/stores/deerFlowMessageStore';
+import { useDeerFlowMessageStore, DeerMessage } from '@/stores/deerFlowMessageStore';
 import { MessageItem } from './MessageItem';
 import { ResearchCard } from './ResearchCard';
+import { PlanCard } from './PlanCard';
 import { ConversationStarter } from './ConversationStarter';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { cn } from '@/lib/utils';
+import { motion, AnimatePresence } from 'motion/react';
+import { Loader2 } from 'lucide-react';
 
 /**
- * Message entry animation component using platform's timing
+ * Loading animation component
+ */
+const LoadingAnimation = () => (
+  <div className="flex items-center justify-center py-8">
+    <div className="flex space-x-2">
+      <motion.div 
+        className="w-2 h-2 bg-primary rounded-full"
+        animate={{ y: [0, -8, 0] }}
+        transition={{ duration: 0.6, repeat: Infinity, delay: 0 }}
+      />
+      <motion.div 
+        className="w-2 h-2 bg-primary rounded-full"
+        animate={{ y: [0, -8, 0] }}
+        transition={{ duration: 0.6, repeat: Infinity, delay: 0.1 }}
+      />
+      <motion.div 
+        className="w-2 h-2 bg-primary rounded-full"
+        animate={{ y: [0, -8, 0] }}
+        transition={{ duration: 0.6, repeat: Infinity, delay: 0.2 }}
+      />
+    </div>
+  </div>
+);
+
+/**
+ * Message entry animation component with staggered animations
  */
 const MessageEntryAnimation = ({ children, index }: { children: React.ReactNode; index: number }) => {
-  const [isVisible, setIsVisible] = useState(false);
-  
-  useEffect(() => {
-    // Stagger animation using platform's timing
-    const delay = index * 100; // Platform's stagger delay
-    setTimeout(() => setIsVisible(true), delay);
-  }, [index]);
-  
   return (
-    <div className={cn(
-      // Use platform's animation classes
-      "transition-all duration-300 ease-out", // Standard transition
-      !isVisible && "opacity-0 transform translate-y-4", // Entry state
-      isVisible && "opacity-100 transform translate-y-0" // Final state
-    )}>
+    <motion.div
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -24 }}
+      transition={{
+        duration: 0.4,
+        ease: "easeOut",
+        delay: index * 0.1 // Stagger animation
+      }}
+      layout
+    >
       {children}
-    </div>
+    </motion.div>
   );
 };
 
 /**
- * Helper function to identify messages that start a research session
+ * Helper function to determine if a message should start a research session display
  */
-const isStartOfResearch = (messageId: string, getMessage: (id: string) => any) => {
-  const message = getMessage(messageId);
-  if (!message) return false;
-  
-  // Research starts when we see first researcher activity or tool call
-  return message.agent === 'researcher' && message.toolCalls && message.toolCalls.length > 0;
+const isResearchStarter = (message: DeerMessage, researchIds: string[], researchPlanIds: Map<string, string>): boolean => {
+  // Check if this message is a plan that has an associated research session
+  for (const [researchId, planId] of researchPlanIds.entries()) {
+    if (planId === message.id && researchIds.includes(researchId)) {
+      return true;
+    }
+  }
+  return false;
 };
 
 interface MessageListProps {
@@ -48,38 +75,65 @@ interface MessageListProps {
 }
 
 export const MessageList = ({ onSendMessage }: MessageListProps) => {
-  // Use individual message subscriptions following original DeerFlow pattern
+  // Store access
   const messageIds = useMessageIds();
-  const getMessage = useDeerFlowMessageStore(state => state.getMessage);
+  const { 
+    getMessage, 
+    openResearchPanel, 
+    startResearch,
+    researchIds,
+    researchPlanIds,
+    ongoingResearchId,
+    isResponding
+  } = useDeerFlowMessageStore();
+  
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   // Defensive coding: ensure messageIds is always an array
   const safeMessageIds = Array.isArray(messageIds) ? messageIds : [];
 
-  // Filter messages for main chat display (matching original DeerFlow logic)
-  const visibleMessageIds = safeMessageIds.filter(messageId => {
-    const message = getMessage(messageId);
-    if (!message) return false;
-    
-    // Only show these in main chat
-    return (
-      message.role === 'user' ||
-      message.agent === 'coordinator' ||
-      message.agent === 'planner' ||
-      message.agent === 'podcast' ||
-      isStartOfResearch(messageId, getMessage)
-    );
-  });
+  // Enhanced message filtering for main chat display
+  const visibleMessages = useMemo(() => {
+    return safeMessageIds
+      .map(id => getMessage(id))
+      .filter((message): message is DeerMessage => {
+        if (!message) return false;
+        
+        // Only show these types in main chat (matching original DeerFlow logic)
+        return (
+          message.role === 'user' ||
+          message.agent === 'coordinator' ||
+          message.agent === 'planner' ||
+          message.agent === 'podcast'
+        );
+      });
+  }, [safeMessageIds, getMessage]);
 
-  // Auto-scroll to bottom when new messages arrive - use stable dependencies
+  // Research sessions that should be displayed
+  const activeResearchSessions = useMemo(() => {
+    return researchIds
+      .map(researchId => {
+        const planId = researchPlanIds.get(researchId);
+        const planMessage = planId ? getMessage(planId) : null;
+        return planMessage ? { researchId, planMessage } : null;
+      })
+      .filter((session): session is { researchId: string; planMessage: DeerMessage } => session !== null);
+  }, [researchIds, researchPlanIds, getMessage]);
+
+  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (scrollAreaRef.current) {
       const scrollElement = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
       if (scrollElement) {
-        scrollElement.scrollTop = scrollElement.scrollHeight;
+        const scrollToBottom = () => {
+          scrollElement.scrollTop = scrollElement.scrollHeight;
+        };
+        
+        // Smooth scroll with slight delay for animations
+        setTimeout(scrollToBottom, 100);
       }
     }
-  }, [safeMessageIds.length]);
+  }, [visibleMessages.length, activeResearchSessions.length]);
 
   const handleSendMessage = (message: string) => {
     if (onSendMessage) {
@@ -87,48 +141,121 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
     }
   };
 
-  if (messageIds.length === 0) {
+  const handleStartResearch = (planId: string) => {
+    const researchId = startResearch(planId);
+    openResearchPanel(researchId, 'activities');
+  };
+
+  // Show conversation starter if no messages
+  if (visibleMessages.length === 0 && activeResearchSessions.length === 0) {
     return (
       <div className="flex items-center justify-center h-full">
-        <ConversationStarter onSendMessage={handleSendMessage} />
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+        >
+          <ConversationStarter onSendMessage={handleSendMessage} />
+        </motion.div>
       </div>
     );
   }
 
   return (
-    <ScrollArea ref={scrollAreaRef} className="h-full">
+    <ScrollArea 
+      ref={scrollAreaRef} 
+      className="h-full"
+      // Accessibility improvements
+      role="log"
+      aria-label="Chat messages"
+      aria-live="polite"
+    >
       <div className={cn(
-        // Use existing content container styling
-        "w-full max-w-none", // Override prose max-width
-        "space-y-6 sm:space-y-8", // Platform's message spacing
-        "py-4 sm:py-6 lg:py-8", // Platform's container padding
-        "px-4 sm:px-6 lg:px-8" // Platform's horizontal padding
+        // Enhanced spacing and responsive design
+        "w-full max-w-none space-y-6 sm:space-y-8",
+        "py-4 sm:py-6 lg:py-8",
+        "px-4 sm:px-6 lg:px-8"
       )}>
-        {visibleMessageIds.map((messageId, index) => {
-          const message = getMessage(messageId);
-          const isResearchStart = isStartOfResearch(messageId, getMessage);
-          
-          return (
-            <MessageEntryAnimation key={messageId} index={index}>
+        <AnimatePresence mode="popLayout">
+          {/* Render visible messages */}
+          {visibleMessages.map((message, index) => {
+            const isPlanner = message.agent === 'planner';
+            const isPlanWithResearch = isPlanner && isResearchStarter(message, researchIds, researchPlanIds);
+            
+            return (
+              <MessageEntryAnimation key={message.id} index={index}>
+                <ErrorBoundary
+                  fallback={
+                    <motion.div 
+                      className="animate-pulse bg-destructive/10 border border-destructive/20 rounded-lg h-16 p-4 flex items-center justify-center"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <span className="text-destructive text-sm">Message failed to load</span>
+                    </motion.div>
+                  }
+                >
+                  {isPlanWithResearch ? (
+                    <PlanCard 
+                      message={message}
+                      onStartResearch={handleStartResearch}
+                      isExecuting={ongoingResearchId !== null}
+                    />
+                  ) : (
+                    <MessageItem messageId={message.id} />
+                  )}
+                </ErrorBoundary>
+              </MessageEntryAnimation>
+            );
+          })}
+
+          {/* Render research session cards */}
+          {activeResearchSessions.map(({ researchId, planMessage }, index) => (
+            <MessageEntryAnimation key={`research-${researchId}`} index={visibleMessages.length + index}>
               <ErrorBoundary
                 fallback={
-                  <div className="animate-pulse bg-muted/20 rounded-lg h-16 p-4 flex items-center justify-center">
-                    <span className="text-muted-foreground text-sm">Message failed to load</span>
-                  </div>
+                  <motion.div 
+                    className="animate-pulse bg-destructive/10 border border-destructive/20 rounded-lg h-16 p-4 flex items-center justify-center"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <span className="text-destructive text-sm">Research session failed to load</span>
+                  </motion.div>
                 }
               >
-                {isResearchStart ? (
-                  <ResearchCard 
-                    researchId={messageId}
-                    title={message?.content}
-                  />
-                ) : (
-                  <MessageItem messageId={messageId} />
-                )}
+                <ResearchCard 
+                  researchId={researchId}
+                  title={planMessage.content}
+                />
               </ErrorBoundary>
             </MessageEntryAnimation>
-          );
-        })}
+          ))}
+
+          {/* Loading indicator when responding */}
+          {isResponding && (
+            <motion.div
+              key="loading"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+              className="flex justify-center"
+            >
+              <div className={cn(
+                "flex items-center gap-3 px-4 py-3 rounded-lg",
+                "bg-muted/50 border border-border/50",
+                "backdrop-blur-sm"
+              )}>
+                <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                <span className="text-sm text-muted-foreground">
+                  AI is thinking...
+                </span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </ScrollArea>
   );

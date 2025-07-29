@@ -1,5 +1,6 @@
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { useDeerFlowMessageStore } from '@/stores/deerFlowMessageStore';
+import { useDeerFlowKeyboard } from '@/hooks/useDeerFlowKeyboard';
 import { DeerFlowHeader } from '@/components/deerflow/DeerFlowHeader';
 import { MessageList } from '@/components/deerflow/MessageList';
 import { InputBox } from '@/components/deerflow/InputBox';
@@ -8,6 +9,7 @@ import { DeerFlowSettings } from '@/components/deerflow/DeerFlowSettings';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
+import { motion, AnimatePresence } from 'motion/react';
 
 /**
  * Responsive width calculations using platform's breakpoint system
@@ -62,6 +64,10 @@ export default function DeerFlowPage() {
  */
 const DesktopDeerFlowLayout = () => {
   const { researchPanelState } = useDeerFlowMessageStore();
+  
+  // Enable keyboard navigation
+  useDeerFlowKeyboard();
+  
   const doubleColumnMode = researchPanelState.isOpen;
 
   return (
@@ -98,29 +104,43 @@ const DesktopDeerFlowLayout = () => {
               </div>
             </div>
 
-            {/* Research Panel */}
-            <div className={cn(
-              "pb-4 transition-all duration-300 ease-out will-change-transform",
-              "w-[min(max(calc((100vw-538px)*0.75),575px),960px)]",
-              !doubleColumnMode && "scale-0 opacity-0 pointer-events-none",
-              doubleColumnMode && "scale-100 opacity-100"
-            )}>
-              <div className={cn(
-                "h-full bg-card border border-border rounded-lg shadow-lg",
-                "overflow-hidden"
-              )}>
-                <ErrorBoundary 
-                  fallback={
-                    <div className="p-4 text-center text-muted-foreground">
-                      <p>Research panel temporarily unavailable</p>
-                      <p className="text-xs mt-2">Try refreshing the page</p>
-                    </div>
-                  }
+            {/* Research Panel with Enhanced Animations */}
+            <AnimatePresence mode="wait">
+              {doubleColumnMode && (
+                <motion.div
+                  key="research-panel"
+                  initial={{ opacity: 0, scale: 0.95, x: 50 }}
+                  animate={{ opacity: 1, scale: 1, x: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, x: 50 }}
+                  transition={{ 
+                    duration: 0.3, 
+                    ease: "easeOut",
+                    layout: { duration: 0.3 }
+                  }}
+                  className={cn(
+                    "pb-4 w-[min(max(calc((100vw-538px)*0.75),575px),960px)]"
+                  )}
+                  layout
                 >
-                  <ResearchPanel />
-                </ErrorBoundary>
-              </div>
-            </div>
+                  <div className={cn(
+                    "h-full bg-card border border-border rounded-lg shadow-xl",
+                    "overflow-hidden backdrop-blur-sm",
+                    "ring-1 ring-black/5 dark:ring-white/5"
+                  )}>
+                    <ErrorBoundary 
+                      fallback={
+                        <div className="p-4 text-center text-muted-foreground">
+                          <p>Research panel temporarily unavailable</p>
+                          <p className="text-xs mt-2">Try refreshing the page</p>
+                        </div>
+                      }
+                    >
+                      <ResearchPanel />
+                    </ErrorBoundary>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           <DeerFlowSettings />
@@ -134,7 +154,10 @@ const DesktopDeerFlowLayout = () => {
  * Mobile layout using platform's mobile patterns
  */
 const MobileDeerFlowLayout = () => {
-  const { researchPanelState } = useDeerFlowMessageStore();
+  const { researchPanelState, closeResearchPanel } = useDeerFlowMessageStore();
+  
+  // Enable keyboard navigation on mobile too
+  useDeerFlowKeyboard();
 
   return (
     <DashboardLayout>
@@ -159,17 +182,51 @@ const MobileDeerFlowLayout = () => {
             <InputBox />
           </div>
 
-          {/* Research panel as full-screen modal on mobile */}
-          {researchPanelState.isOpen && (
-            <div className={cn(
-              "fixed inset-0 z-50 bg-background flex flex-col",
-              "transition-all duration-300 ease-out"
-            )}>
-              <ErrorBoundary>
-                <ResearchPanel />
-              </ErrorBoundary>
-            </div>
-          )}
+          {/* Research panel as full-screen modal on mobile with enhanced animations */}
+          <AnimatePresence>
+            {researchPanelState.isOpen && (
+              <>
+                {/* Backdrop */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm"
+                  onClick={closeResearchPanel}
+                />
+                
+                {/* Panel */}
+                <motion.div
+                  initial={{ x: "100%" }}
+                  animate={{ x: 0 }}
+                  exit={{ x: "100%" }}
+                  transition={{ 
+                    duration: 0.3, 
+                    ease: "easeOut",
+                    type: "spring",
+                    damping: 25,
+                    stiffness: 300
+                  }}
+                  className={cn(
+                    "fixed inset-y-0 right-0 z-50 w-full max-w-md",
+                    "bg-background border-l border-border shadow-2xl",
+                    "flex flex-col overflow-hidden",
+                    // Touch-friendly on mobile
+                    "touch-pan-y"
+                  )}
+                  // Accessibility improvements
+                  role="dialog"
+                  aria-modal="true"
+                  aria-label="Research panel"
+                >
+                  <ErrorBoundary>
+                    <ResearchPanel />
+                  </ErrorBoundary>
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
 
           <DeerFlowSettings />
         </div>

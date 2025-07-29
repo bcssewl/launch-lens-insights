@@ -62,7 +62,7 @@
     "lucide-react": "^0.462.0",
     "mammoth": "^1.9.1",
     "marked": "^16.0.0",
-    "motion": "^12.18.1",
+    "motion": "^12.23.11",
     "nanoid": "^5.1.5",
     "next-themes": "^0.3.0",
     "pdfjs-dist": "^5.3.31",
