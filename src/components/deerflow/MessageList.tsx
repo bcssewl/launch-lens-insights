@@ -6,6 +6,7 @@ import { MessageItem } from './MessageItem';
 import { ResearchCard } from './ResearchCard';
 import { PlanCard } from './PlanCard';
 import { ConversationStarter } from './ConversationStarter';
+import { PodcastCard } from './PodcastCard';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -123,7 +124,8 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
         const shouldShow = (
           message.role === 'user' ||
           message.agent === 'coordinator' ||
-          message.agent === 'planner'
+          message.agent === 'planner' ||
+          message.agent === 'podcast'
         );
         
         if (!shouldShow) {
@@ -236,6 +238,8 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
                       onSendMessage={handleSendMessage}
                       isExecuting={ongoingResearchId !== null}
                     />
+                  ) : message.agent === 'podcast' ? (
+                    <PodcastCard message={message} />
                   ) : (
                     <MessageItem messageId={message.id} />
                   )}

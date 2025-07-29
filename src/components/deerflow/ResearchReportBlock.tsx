@@ -1,8 +1,10 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { motion } from 'motion/react';
 import { useDeerFlowMessageStore, useMessage } from '@/stores/deerFlowMessageStore';
 import { ReportEditor } from './ReportEditor';
 import { LoadingAnimation } from './LoadingAnimation';
+import { ReportControls } from './ReportControls';
+import { useToast } from '@/hooks/use-toast';
 
 interface ResearchReportBlockProps {
   messageId: string;
@@ -18,7 +20,11 @@ export const ResearchReportBlock: React.FC<ResearchReportBlockProps> = ({
   className 
 }) => {
   const message = useMessage(messageId);
-  const { updateMessage } = useDeerFlowMessageStore();
+  const { updateMessage, listenToPodcast } = useDeerFlowMessageStore();
+  const { toast } = useToast();
+  
+  const [isEditing, setIsEditing] = useState(editing);
+  const [copied, setCopied] = useState(false);
   
   const handleMarkdownChange = useCallback((markdown: string) => {
     if (message) {
@@ -29,18 +35,89 @@ export const ResearchReportBlock: React.FC<ResearchReportBlockProps> = ({
   const isCompleted = message?.isStreaming === false && message?.content !== "";
   const isStreaming = message?.isStreaming || false;
 
+  const handleToggleEdit = () => {
+    setIsEditing(!isEditing);
+  };
+
+  const handleCopy = async () => {
+    if (message?.content) {
+      try {
+        await navigator.clipboard.writeText(message.content);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+        toast({
+          title: "Copied to clipboard",
+          description: "Report content has been copied to your clipboard.",
+        });
+      } catch (error) {
+        toast({
+          title: "Copy failed",
+          description: "Unable to copy to clipboard.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const handleDownload = () => {
+    if (message?.content) {
+      const blob = new Blob([message.content], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `report-${messageId.slice(0, 8)}.md`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Download started",
+        description: "Report is being downloaded as markdown file.",
+      });
+    }
+  };
+
+  const handleGeneratePodcast = async () => {
+    if (researchId) {
+      try {
+        toast({
+          title: "API Key Required",
+          description: "Please add your ElevenLabs API key to generate podcasts.",
+          variant: "destructive",
+        });
+        // await listenToPodcast(researchId);
+      } catch (error) {
+        console.error('Podcast generation failed:', error);
+      }
+    }
+  };
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
-      className={`w-full pt-4 pb-8 ${className || ''}`}
+      className={`relative w-full pt-4 pb-8 ${className || ''}`}
     >
-      {isCompleted && editing ? (
+      {/* Report Controls */}
+      {isCompleted && (
+        <ReportControls
+          reportId={messageId}
+          editing={isEditing}
+          onToggleEdit={handleToggleEdit}
+          onCopy={handleCopy}
+          onDownload={handleDownload}
+          onGeneratePodcast={handleGeneratePodcast}
+          copied={copied}
+        />
+      )}
+      
+      {/* Report Content */}
+      {isCompleted && isEditing ? (
         <ReportEditor
           content={message?.content || ''}
           onMarkdownChange={handleMarkdownChange}
-          isStreaming={isStreaming}
         />
       ) : (
         <>

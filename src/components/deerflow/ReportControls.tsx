@@ -66,9 +66,9 @@ export const ReportControls: React.FC<ReportControlsProps> = ({
             <Button
               size="sm"
               variant="ghost"
-              className="text-muted-foreground hover:text-foreground transition-colors"
+              className="text-muted-foreground/50 cursor-not-allowed"
               onClick={onGeneratePodcast}
-              disabled={isGeneratingPodcast}
+              disabled={true} // Disabled until API key is added
             >
               <AnimatePresence mode="wait">
                 {isGeneratingPodcast ? (
@@ -95,7 +95,7 @@ export const ReportControls: React.FC<ReportControlsProps> = ({
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            {isGeneratingPodcast ? 'Generating podcast...' : 'Generate Podcast'}
+            Generate Podcast (API key required)
           </TooltipContent>
         </Tooltip>
 

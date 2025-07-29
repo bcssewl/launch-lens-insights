@@ -115,6 +115,9 @@ interface DeerFlowMessageActions {
   // Legacy compatibility - no-op methods  
   getThreadContext: (threadId: string) => { plannerIndicatedDirectAnswer: boolean; expectingReporterDirectAnswer: boolean };
   
+  // Podcast generation
+  listenToPodcast: (researchId: string) => Promise<void>;
+  
   // Simplified React panel management (legacy)
   setResearchPanel: (isOpen: boolean, messageId?: string, tab?: 'activities' | 'report') => void;
   setReportContent: (content: string) => void;
@@ -335,7 +338,80 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
     return Array.from(messageMap.values())
       .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
   },
-
+  
+  // Podcast generation workflow
+  listenToPodcast: async (researchId: string) => {
+    const { researchPlanIds, researchReportIds, getMessage, addMessageWithId, updateMessage, currentThreadId } = get();
+    
+    const planMessageId = researchPlanIds.get(researchId);
+    const reportMessageId = researchReportIds.get(researchId);
+    
+    if (planMessageId && reportMessageId) {
+      const planMessage = getMessage(planMessageId);
+      const reportMessage = getMessage(reportMessageId);
+      
+      if (planMessage && reportMessage?.content) {
+        let title = "Research Podcast";
+        try {
+          const planData = JSON.parse(planMessage.content);
+          title = planData.title || title;
+        } catch {
+          // Use default title if parsing fails
+        }
+        
+        // 1. Create user request message
+        addMessageWithId({
+          id: nanoid(),
+          role: "user",
+          content: "Please generate a podcast for the above research.",
+          contentChunks: ["Please generate a podcast for the above research."],
+          threadId: currentThreadId,
+          timestamp: new Date(),
+        });
+        
+        // 2. Create streaming podcast message
+        const podcastMessageId = nanoid();
+        const podcastObject = { title, researchId };
+        
+        addMessageWithId({
+          id: podcastMessageId,
+          role: "assistant",
+          agent: "podcast",
+          content: JSON.stringify(podcastObject),
+          contentChunks: [],
+          isStreaming: true,
+          threadId: currentThreadId,
+          timestamp: new Date(),
+        });
+        
+        // 3. Mock podcast generation (replace with real API later)
+        try {
+          // Simulate generation time
+          await new Promise(resolve => setTimeout(resolve, 3000));
+          
+          // Create mock audio URL - will be replaced with real generation
+          const mockAudioUrl = `data:audio/mp3;base64,mock-audio-data-${researchId}`;
+          
+          updateMessage(podcastMessageId, {
+            content: JSON.stringify({ 
+              ...podcastObject, 
+              audioUrl: mockAudioUrl 
+            }),
+            isStreaming: false,
+          });
+        } catch (error) {
+          updateMessage(podcastMessageId, {
+            content: JSON.stringify({ 
+              ...podcastObject, 
+              error: error instanceof Error ? error.message : "Unknown error"
+            }),
+            isStreaming: false,
+          });
+        }
+      }
+    }
+  },
+  
   // Legacy compatibility - computed properties
   get messages() {
     return get().getAllMessages();
