@@ -37,22 +37,56 @@ interface StreamOptions {
 
 // Get real chat settings from the store
 const getChatStreamSettings = (): ChatSettings => {
-  const { settings } = useDeerFlowSettingsStore.getState();
+  console.log('🔧 Getting settings from store...');
   
-  console.log('📋 Using DeerFlow settings:', settings);
-  
-  return {
-    autoAcceptedPlan: settings.autoAcceptedPlan,
-    enableDeepThinking: settings.deepThinking,
-    enableBackgroundInvestigation: settings.backgroundInvestigation,
-    maxPlanIterations: settings.maxPlanIterations,
-    maxStepNum: settings.maxStepNum,
-    maxSearchResults: settings.maxSearchResults,
-    reportStyle: settings.reportStyle,
-    mcpSettings: {
-      servers: settings.mcpServers.filter(server => server.enabled)
+  try {
+    const { settings } = useDeerFlowSettingsStore.getState();
+    console.log('📋 Raw store settings:', settings);
+    
+    if (!settings) {
+      console.warn('⚠️ No settings found in store, using defaults');
+      return {
+        autoAcceptedPlan: false,
+        enableDeepThinking: false,
+        enableBackgroundInvestigation: true,
+        maxPlanIterations: 3,
+        maxStepNum: 10,
+        maxSearchResults: 10,
+        reportStyle: 'academic',
+        mcpSettings: {}
+      };
     }
-  };
+    
+    const mappedSettings = {
+      autoAcceptedPlan: settings.autoAcceptedPlan,
+      enableDeepThinking: settings.deepThinking,
+      enableBackgroundInvestigation: settings.backgroundInvestigation,
+      maxPlanIterations: settings.maxPlanIterations,
+      maxStepNum: settings.maxStepNum,
+      maxSearchResults: settings.maxSearchResults,
+      reportStyle: settings.reportStyle,
+      mcpSettings: {
+        servers: settings.mcpServers.filter(server => server.enabled)
+      }
+    };
+    
+    console.log('📋 Mapped settings for API:', mappedSettings);
+    return mappedSettings;
+    
+  } catch (error) {
+    console.error('❌ Error getting settings:', error);
+    // Fallback to default settings
+    return {
+      autoAcceptedPlan: false,
+      enableDeepThinking: false,
+      enableBackgroundInvestigation: true,
+      maxPlanIterations: 3,
+      maxStepNum: 10,
+      maxSearchResults: 10,
+      reportStyle: 'academic',
+      mcpSettings: {}
+    };
+  }
 };
 
 // Real DeerFlow API call using the actual backend service
@@ -379,6 +413,9 @@ export async function sendMessage(
   }: SendMessageOptions = {},
   options: StreamOptions = {},
 ) {
+  console.log('🚀 sendMessage called with:', { content, interruptFeedback, resources });
+  
+  try {
   const { 
     currentThreadId, 
     appendMessage, 
@@ -504,5 +541,14 @@ export async function sendMessage(
     }
   } finally {
     setIsResponding(false);
+  }
+  
+  } catch (outerError) {
+    console.error('❌ Critical sendMessage error:', outerError);
+    toast({
+      title: "Critical Error",
+      description: "Failed to initialize message sending. Please try again.",
+      variant: "destructive"
+    });
   }
 }
