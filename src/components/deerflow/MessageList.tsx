@@ -202,6 +202,14 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
               .some(([_, planId]) => planId === message.id);
             
             console.log('🔄 Rendering message:', message.id, 'Agent:', message.agent, 'Has research:', hasResearchSession);
+            console.log('🎯 PLAN DETECTION:', {
+              messageId: message.id,
+              agent: message.agent,
+              isPlanner: isPlanner,
+              shouldShowPlanCard: isPlanner,
+              contentPreview: message.content?.slice(0, 100),
+              hasOptions: !!message.options?.length
+            });
             
             return (
               <MessageContainer key={message.id} index={index}>
@@ -218,16 +226,26 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
                   }
                 >
                   {isPlanner ? (
-                    <PlanCard 
-                      message={message}
-                      onStartResearch={handleStartResearch}
-                      onSendMessage={handleSendMessage}
-                      isExecuting={ongoingResearchId !== null}
-                    />
+                    <>
+                      <div className="text-xs text-green-600 bg-green-100 p-2 rounded mb-2">
+                        🎯 RENDERING PLAN CARD for message {message.id}
+                      </div>
+                      <PlanCard 
+                        message={message}
+                        onStartResearch={handleStartResearch}
+                        onSendMessage={handleSendMessage}
+                        isExecuting={ongoingResearchId !== null}
+                      />
+                    </>
                   ) : message.agent === 'podcast' ? (
                     <PodcastCard message={message} />
                   ) : (
-                    <MessageItem messageId={message.id} />
+                    <>
+                      <div className="text-xs text-blue-600 bg-blue-100 p-2 rounded mb-2">
+                        📝 RENDERING MESSAGE ITEM for {message.agent || 'no-agent'} message {message.id}
+                      </div>
+                      <MessageItem messageId={message.id} />
+                    </>
                   )}
                 </ErrorBoundary>
               </MessageContainer>

@@ -91,6 +91,15 @@ interface PlanCardProps {
 }
 
 export const PlanCard = ({ message, onStartResearch, onSendMessage, isExecuting = false }: PlanCardProps) => {
+  console.log('🎯 PlanCard RENDER START:', {
+    messageId: message.id,
+    agent: message.agent,
+    role: message.role,
+    contentLength: message.content?.length,
+    isStreaming: message.isStreaming,
+    rawContent: message.content
+  });
+
   // Parse plan data using robust parseJSON function (matching original DeerFlow)
   const planData = useMemo(() => {
     const parsed = parseJSON<Plan>(message.content ?? "", {} as Plan);

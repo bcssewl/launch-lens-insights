@@ -127,10 +127,19 @@ async function* chatStream(
             try {
               const eventData = JSON.parse(line.slice(6));
               console.log('📨 DeerFlow event:', eventData);
+              console.log('🔍 RAW EVENT ANALYSIS:', {
+                hasType: !!eventData.type,
+                hasEvent: !!eventData.event,
+                hasAgent: !!eventData.agent,
+                hasDataAgent: !!eventData.data?.agent,
+                hasMetadataAgent: !!eventData.metadata?.agent,
+                fullStructure: JSON.stringify(eventData, null, 2)
+              });
               
               // Convert DeerFlow events to our expected format
               const convertedEvent = convertDeerFlowEvent(eventData);
               if (convertedEvent) {
+                console.log('✅ Converted event:', convertedEvent);
                 yield convertedEvent;
               }
             } catch (parseError) {
@@ -393,6 +402,14 @@ export async function sendMessage(
       let message: any | undefined;
       
       console.log('🌊 Stream event:', type, data);
+      console.log('🔍 STREAM EVENT DETAILS:', {
+        type,
+        dataAgent: data.agent,
+        dataRole: data.role,
+        messageId: data.id,
+        hasOptions: !!data.options,
+        eventStructure: event
+      });
       
       // STEP 3: Handle tool call results (find existing message)
       if (type === "tool_call_result") {
