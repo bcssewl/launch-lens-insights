@@ -7,6 +7,16 @@ import { cn } from '@/lib/utils';
 import { DeerMessage } from '@/stores/deerFlowMessageStore';
 import { motion } from 'motion/react';
 
+// ADD greeting messages array (matching original):
+const GREETINGS = [
+  "Perfect",
+  "Great", 
+  "Excellent",
+  "Sounds good",
+  "Let's do this",
+  "Awesome"
+];
+
 interface PlanData {
   title?: string;
   thought?: string;  // ADD: reasoning content
@@ -20,10 +30,11 @@ interface PlanData {
 interface PlanCardProps {
   message: DeerMessage;
   onStartResearch?: (planId: string) => void;
+  onSendMessage?: (message: string, options?: { interruptFeedback?: string }) => void; // ADD
   isExecuting?: boolean;
 }
 
-export const PlanCard = ({ message, onStartResearch, isExecuting = false }: PlanCardProps) => {
+export const PlanCard = ({ message, onStartResearch, onSendMessage, isExecuting = false }: PlanCardProps) => {
   const [planData, setPlanData] = useState<PlanData | null>(null);
   const [isCompleted, setIsCompleted] = useState(false);
 
@@ -45,6 +56,19 @@ export const PlanCard = ({ message, onStartResearch, isExecuting = false }: Plan
   }, [message.isStreaming, message.content]);
 
   const handleStartResearch = () => {
+    if (onSendMessage) {
+      // Send acceptance message to backend (matching original DeerFlow)
+      const greeting = GREETINGS[Math.floor(Math.random() * GREETINGS.length)];
+      const acceptanceMessage = `${greeting}! Let's get started.`;
+      
+      onSendMessage(acceptanceMessage, {
+        interruptFeedback: "accepted"
+      });
+      
+      console.log('📤 Sent plan acceptance:', acceptanceMessage);
+    }
+    
+    // Also start local research session
     if (onStartResearch) {
       onStartResearch(message.id);
     }

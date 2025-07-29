@@ -10,6 +10,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { Loader2 } from 'lucide-react';
+import { useEnhancedDeerStreaming } from '@/hooks/useEnhancedDeerStreaming';
 
 /**
  * Loading animation component
@@ -75,6 +76,8 @@ interface MessageListProps {
 }
 
 export const MessageList = ({ onSendMessage }: MessageListProps) => {
+  const { startDeerFlowStreaming } = useEnhancedDeerStreaming();
+  
   // Store access
   const messageIds = useMessageIds();
   const { 
@@ -126,9 +129,15 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
     }
   }, [visibleMessages.length]);
 
-  const handleSendMessage = (message: string) => {
+  const handleSendMessage = (message: string, options?: { interruptFeedback?: string }) => {
     if (onSendMessage) {
       onSendMessage(message);
+    } else {
+      // Fallback: use streaming directly
+      startDeerFlowStreaming(message, {
+        // Include interrupt feedback for plan acceptance
+        ...(options?.interruptFeedback && { /* add to options */ })
+      });
     }
   };
 
@@ -194,6 +203,7 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
                     <PlanCard 
                       message={message}
                       onStartResearch={handleStartResearch}
+                      onSendMessage={handleSendMessage}  // ADD
                       isExecuting={ongoingResearchId !== null}
                     />
                   ) : isStartOfResearch ? (
