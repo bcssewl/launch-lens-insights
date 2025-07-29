@@ -35,7 +35,6 @@ interface RetryConfig {
 
 export const useEnhancedDeerStreaming = () => {
   const [isStreaming, setIsStreaming] = useState(false);
-  const [currentMessageId, setCurrentMessageId] = useState<string | null>(null);
   const [eventCount, setEventCount] = useState(0);
   
   const {
@@ -53,48 +52,66 @@ export const useEnhancedDeerStreaming = () => {
   const { settings } = useDeerFlowStore();
   const { toast } = useToast();
 
-  // Enhanced event processing with API ID priority and debugging
+  // Simplified and robust event processing
   const processEvent = useCallback((event: StreamEvent) => {
-    const data = 'data' in event ? event.data : event;
-    // Primary ID source: API data
-    let messageId = data.id || data.message_id;
-    
-    // Fallback: use current message ID if API doesn't provide one
-    if (!messageId) {
-      messageId = currentMessageId;
+    // Defensive: ensure event has proper structure
+    if (!event || !('data' in event) || !event.data) {
+      console.error('❌ Invalid event structure:', event);
+      return;
     }
+
+    const data = event.data;
+    
+    // Extract message ID from API data - this is required
+    const messageId = data.id || data.message_id;
     
     if (!messageId) {
-      console.warn('🚨 Event missing message ID:', event);
+      console.error('❌ Event missing required message ID:', event);
       return;
     }
 
     console.log('🔄 Processing event for message ID:', messageId, 'Event:', event.event);
 
-    // Get existing message using API ID
-    let existingMessage = getMessage(messageId);
-    
-    // Fallback: if message not found, try to find most recent streaming message
-    if (!existingMessage && currentMessageId) {
-      console.warn(`Message ${messageId} not found, trying fallback to currentMessageId: ${currentMessageId}`);
-      existingMessage = getMessage(currentMessageId);
-      if (existingMessage) {
-        messageId = currentMessageId;
-      }
-    }
+    // Get message from store - if it doesn't exist, that's an error
+    const existingMessage = getMessage(messageId);
     
     if (!existingMessage) {
-      console.error('❌ No suitable message found for event processing. MessageId:', messageId);
-      return;
+      console.error('❌ Message not found in store for ID:', messageId, 'Event:', event.event);
+      
+      // Create message on-demand for robustness
+      const newMessage = {
+        id: messageId,
+        role: 'assistant' as const,
+        content: '',
+        threadId: currentThreadId,
+        contentChunks: [],
+        reasoningContent: '',
+        reasoningContentChunks: [],
+        timestamp: new Date(),
+        isStreaming: true,
+        agent: data.agent
+      };
+      
+      console.log('🆘 Creating missing message on-demand:', messageId);
+      addMessageWithId(newMessage);
+      
+      // Get the newly created message
+      const createdMessage = getMessage(messageId);
+      if (!createdMessage) {
+        console.error('❌ Failed to create message on-demand');
+        return;
+      }
+      
+      // Continue with the newly created message
+      const updatedMessage = mergeMessage(createdMessage, event);
+      updateMessage(messageId, updatedMessage);
+    } else {
+      // Normal case: merge event with existing message
+      const updatedMessage = mergeMessage(existingMessage, event);
+      updateMessage(messageId, updatedMessage);
     }
 
-    console.log('📦 Message found in store:', '✅');
-
-    // Update message with new event data
-    const updatedMessage = mergeMessage(existingMessage, event);
-    updateMessage(messageId, updatedMessage);
-    
-    console.log('✨ Message updated successfully');
+    console.log('✨ Message updated successfully for ID:', messageId);
 
     // Handle UI updates based on agent
     if (event.event === 'message_chunk' && data.agent) {
@@ -117,30 +134,21 @@ export const useEnhancedDeerStreaming = () => {
     }
 
     setEventCount(prev => prev + 1);
-  }, [currentMessageId, getMessage, updateMessage, setResearchPanel, setReportContent]);
+  }, [getMessage, addMessageWithId, updateMessage, setResearchPanel, setReportContent, currentThreadId]);
 
-  // Simple error handling like original
+  // Simplified error handling without currentMessageId fallback
   const handleError = useCallback((error: Error) => {
     console.error('❌ DeerFlow streaming error:', error);
     
     toast({
-      title: "Connection Error",
+      title: "Connection Error", 
       description: error.message || "Failed to connect to DeerFlow. Please try again.",
       variant: "destructive",
     });
 
-    if (currentMessageId) {
-      const existingMessage = getMessage(currentMessageId);
-      if (existingMessage) {
-        updateMessage(currentMessageId, {
-          ...existingMessage,
-          content: (existingMessage.content || '') + `\n\n❌ Connection error. Please try again.`,
-          isStreaming: false,
-          finishReason: 'interrupt'
-        });
-      }
-    }
-  }, [currentMessageId, getMessage, updateMessage, toast]);
+    // Error handling is now handled per-message in processEvent
+    // No global currentMessageId to update
+  }, [toast]);
 
   const startDeerFlowStreaming = useCallback(async (
     question: string,
@@ -162,8 +170,7 @@ export const useEnhancedDeerStreaming = () => {
       contentChunks: [question]
     });
 
-    // Reset current message ID - will be set by first API event
-    setCurrentMessageId(null);
+    // Track created message IDs to mark as complete later
     const createdMessageIds = new Set<string>();
 
     // Prepare request body
@@ -264,7 +271,6 @@ export const useEnhancedDeerStreaming = () => {
                   };
                   
                   addMessageWithId(initialMessage);
-                  setCurrentMessageId(apiMessageId);
                   createdMessageIds.add(apiMessageId);
                 }
                 
@@ -296,7 +302,6 @@ export const useEnhancedDeerStreaming = () => {
     } finally {
       setIsStreaming(false);
       setIsResponding(false);
-      setCurrentMessageId(null);
     }
   }, [
     isStreaming,
@@ -321,7 +326,6 @@ export const useEnhancedDeerStreaming = () => {
   const cleanup = useCallback(() => {
     stopStreaming();
     setEventCount(0);
-    setCurrentMessageId(null);
   }, [stopStreaming]);
 
   return {
@@ -329,7 +333,6 @@ export const useEnhancedDeerStreaming = () => {
     stopStreaming,
     cleanup,
     isStreaming,
-    currentMessageId,
     eventCount,
     connectionStatus: {
       status: isStreaming ? 'connected' : 'disconnected',
