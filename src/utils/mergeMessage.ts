@@ -118,255 +118,378 @@ export type StreamEvent =
   | GenericEvent<ErrorData> & { event: 'error' }
 
 /**
- * Merges streaming events into a message object
- * Handles strict DeerFlow API format
+ * Map-based message storage for efficient lookups
+ */
+const messageStorage = new Map<string, DeerMessage>();
+
+/**
+ * Merges streaming events into a message object with immediate synchronous updates
+ * Implements immutable message updates matching original DeerFlow behavior
  */
 export function mergeMessage(
   currentMessage: Partial<DeerMessage> | null,
   event: StreamEvent
 ): Partial<DeerMessage> {
-  // Initialize message if it doesn't exist
-  if (!currentMessage) {
-    currentMessage = {
-      role: 'assistant',
-      content: '',
-      toolCalls: [],
-      isStreaming: true,
-      metadata: {}
-    };
-  }
+  // Create base message structure if none exists
+  const baseMessage: Partial<DeerMessage> = currentMessage || {
+    id: crypto.randomUUID(),
+    role: 'assistant',
+    content: '',
+    toolCalls: [],
+    isStreaming: true,
+    metadata: {},
+    timestamp: new Date()
+  };
 
-  // Extract metadata from event
-  if (event.metadata) {
-    currentMessage.metadata = {
-      ...currentMessage.metadata,
-      ...event.metadata
-    };
-  }
+  // Extract event metadata and merge immutably
+  const mergedMetadata = {
+    ...baseMessage.metadata,
+    ...(event.metadata || {})
+  };
 
-  // Handle strict discriminated union events
+  // Handle each event type with immediate synchronous processing
   switch (event.event) {
     case 'message_chunk': {
-      const newContent = event.data.content || '';
-      const currentContent = currentMessage.content || '';
-      const agent = event.data.agent || currentMessage.metadata?.agent;
-      
-      console.log(`🔤 Merging message chunk from ${agent}: "${newContent.substring(0, 50)}..."`);
-      
-      return {
-        ...currentMessage,
-        content: currentContent + newContent,
-        role: event.data.role || currentMessage.role,
+      return createImmutableUpdate(baseMessage, {
+        content: (baseMessage.content || '') + (event.data.content || ''),
+        role: event.data.role || baseMessage.role,
         metadata: {
-          ...currentMessage.metadata,
-          agent: agent
+          ...mergedMetadata,
+          agent: event.data.agent || mergedMetadata.agent
         },
         isStreaming: true
-      };
+      });
     }
 
     case 'tool_call': {
-      const newToolCall: ToolCall = {
-        id: event.data.id,
-        name: event.data.name,
-        args: event.data.args,
-        argsChunks: []
-      };
+      const updatedToolCalls = mergeToolCallImmutable(
+        baseMessage.toolCalls || [],
+        {
+          id: event.data.id,
+          name: event.data.name,
+          args: event.data.args,
+          argsChunks: []
+        }
+      );
 
-      const existingToolCalls = currentMessage.toolCalls || [];
-      const existingIndex = existingToolCalls.findIndex(tc => tc.id === event.data.id);
-
-      if (existingIndex >= 0) {
-        existingToolCalls[existingIndex] = {
-          ...existingToolCalls[existingIndex],
-          ...newToolCall
-        };
-      } else {
-        existingToolCalls.push(newToolCall);
-      }
-
-      return {
-        ...currentMessage,
-        toolCalls: existingToolCalls,
+      return createImmutableUpdate(baseMessage, {
+        toolCalls: updatedToolCalls,
+        metadata: mergedMetadata,
         isStreaming: true
-      };
+      });
     }
 
     case 'tool_call_chunk': {
-      const existingToolCalls = [...(currentMessage.toolCalls || [])];
-      const existingIndex = existingToolCalls.findIndex(tc => tc.id === event.data.id);
+      const updatedToolCalls = mergeToolCallChunkImmutable(
+        baseMessage.toolCalls || [],
+        event.data
+      );
 
-      if (event.data.name && existingIndex >= 0) {
-        existingToolCalls[existingIndex].name = event.data.name;
-      } else if (event.data.name) {
-        existingToolCalls.push({
-          id: event.data.id,
-          name: event.data.name,
-          args: {},
-          argsChunks: []
-        });
-      }
-
-      if (event.data.args) {
-        const targetIndex = existingToolCalls.findIndex(tc => tc.id === event.data.id);
-        if (targetIndex >= 0) {
-          if (!existingToolCalls[targetIndex].argsChunks) {
-            existingToolCalls[targetIndex].argsChunks = [];
-          }
-          existingToolCalls[targetIndex].argsChunks!.push(event.data.args);
-          
-          const completeArgsString = existingToolCalls[targetIndex].argsChunks!.join('');
-          try {
-            existingToolCalls[targetIndex].args = JSON.parse(completeArgsString);
-          } catch (e) {
-            // Args not complete yet
-          }
-        }
-      }
-
-      return {
-        ...currentMessage,
-        toolCalls: existingToolCalls,
+      return createImmutableUpdate(baseMessage, {
+        toolCalls: updatedToolCalls,
+        metadata: mergedMetadata,
         isStreaming: true
-      };
+      });
     }
 
     case 'tool_call_result': {
-      const existingToolCalls = [...(currentMessage.toolCalls || [])];
-      const toolCallIndex = existingToolCalls.findIndex(tc => tc.id === event.data.id);
+      const updatedToolCalls = mergeToolCallResultImmutable(
+        baseMessage.toolCalls || [],
+        event.data
+      );
 
-      if (toolCallIndex >= 0) {
-        existingToolCalls[toolCallIndex] = {
-          ...existingToolCalls[toolCallIndex],
-          result: event.data.result,
-          error: event.data.error
-        };
-      }
-
-      return {
-        ...currentMessage,
-        toolCalls: existingToolCalls,
+      return createImmutableUpdate(baseMessage, {
+        toolCalls: updatedToolCalls,
+        metadata: mergedMetadata,
         isStreaming: true
-      };
+      });
     }
 
     case 'thinking': {
-      if (!currentMessage.metadata) currentMessage.metadata = {};
-      if (!currentMessage.metadata.thinkingPhases) currentMessage.metadata.thinkingPhases = [];
-      currentMessage.metadata.thinkingPhases.push(event.data);
-      return { ...currentMessage, isStreaming: true };
+      const updatedThinkingPhases = [
+        ...(baseMessage.metadata?.thinkingPhases || []),
+        event.data
+      ];
+
+      return createImmutableUpdate(baseMessage, {
+        metadata: {
+          ...mergedMetadata,
+          thinkingPhases: updatedThinkingPhases
+        },
+        isStreaming: true
+      });
     }
 
     case 'reasoning': {
-      if (!currentMessage.metadata) currentMessage.metadata = {};
-      if (!currentMessage.metadata.reasoningSteps) currentMessage.metadata.reasoningSteps = [];
-      currentMessage.metadata.reasoningSteps.push(event.data);
-      return { ...currentMessage, isStreaming: true };
+      const updatedReasoningSteps = [
+        ...(baseMessage.metadata?.reasoningSteps || []),
+        event.data
+      ];
+
+      return createImmutableUpdate(baseMessage, {
+        metadata: {
+          ...mergedMetadata,
+          reasoningSteps: updatedReasoningSteps
+        },
+        isStreaming: true
+      });
     }
 
     case 'search': {
-      if (!currentMessage.metadata) currentMessage.metadata = {};
-      if (!currentMessage.metadata.searchActivities) currentMessage.metadata.searchActivities = [];
-      currentMessage.metadata.searchActivities.push(event.data);
-      return { ...currentMessage, isStreaming: true };
+      const updatedSearchActivities = [
+        ...(baseMessage.metadata?.searchActivities || []),
+        event.data
+      ];
+
+      return createImmutableUpdate(baseMessage, {
+        metadata: {
+          ...mergedMetadata,
+          searchActivities: updatedSearchActivities
+        },
+        isStreaming: true
+      });
     }
 
     case 'visit': {
-      if (!currentMessage.metadata) currentMessage.metadata = {};
-      if (!currentMessage.metadata.visitedUrls) currentMessage.metadata.visitedUrls = [];
-      currentMessage.metadata.visitedUrls.push(event.data);
-      return { ...currentMessage, isStreaming: true };
+      const updatedVisitedUrls = [
+        ...(baseMessage.metadata?.visitedUrls || []),
+        event.data
+      ];
+
+      return createImmutableUpdate(baseMessage, {
+        metadata: {
+          ...mergedMetadata,
+          visitedUrls: updatedVisitedUrls
+        },
+        isStreaming: true
+      });
     }
 
     case 'writing_report': {
-      if (!currentMessage.metadata) currentMessage.metadata = {};
-      currentMessage.metadata.researchState = 'generating_report';
-      return { ...currentMessage, isStreaming: true };
+      return createImmutableUpdate(baseMessage, {
+        metadata: {
+          ...mergedMetadata,
+          researchState: 'generating_report'
+        },
+        isStreaming: true
+      });
     }
 
     case 'report_generated': {
-      if (!currentMessage.metadata) currentMessage.metadata = {};
-      currentMessage.metadata.researchState = 'report_generated';
-      currentMessage.metadata.reportContent = event.data.content;
-      currentMessage.metadata.citations = event.data.citations;
-      return { ...currentMessage, isStreaming: false, finishReason: 'completed' };
+      return createImmutableUpdate(baseMessage, {
+        metadata: {
+          ...mergedMetadata,
+          researchState: 'report_generated',
+          reportContent: event.data.content,
+          citations: event.data.citations
+        },
+        isStreaming: false,
+        finishReason: 'completed'
+      });
     }
 
     case 'done': {
       const finishReason = event.data.finish_reason || 'completed';
-      return {
-        ...currentMessage,
+      return createImmutableUpdate(baseMessage, {
         finishReason,
-        isStreaming: false
-      };
+        isStreaming: false,
+        metadata: mergedMetadata
+      });
     }
 
     case 'interrupt': {
-      // Default options for planner messages that are interrupted
-      const defaultOptions = [
-        { text: 'Accept', value: 'accepted' },
-        { text: 'Edit', value: 'edit' }
-      ];
-      
-      // Use provided options or defaults for planner messages
-      const options = event.data.options || 
-        (currentMessage.metadata?.agent === 'planner' ? defaultOptions : undefined);
-      
-      // Parse plan data for planner messages
-      let planSteps: any[] = [];
-      let hasEnoughContext = false;
-      let isPlannerDirectAnswer = false;
-      
-      if (currentMessage.metadata?.agent === 'planner' && currentMessage.content) {
-        try {
-          const parsed = JSON.parse(currentMessage.content);
-          planSteps = parsed.steps || [];
-          hasEnoughContext = parsed.has_enough_context || false;
-          // If planner says has enough context and no steps, it's indicating direct answer
-          isPlannerDirectAnswer = hasEnoughContext && planSteps.length === 0;
-        } catch (e) {
-          // JSON parsing failed, try regex fallback for plain text
-          console.log('🔍 JSON parsing failed for planner content, using regex fallback');
-          const stepMatches = currentMessage.content.match(/\d+\.\s+(.+)/g);
-          if (stepMatches) {
-            planSteps = stepMatches.map(match => match.replace(/^\d+\.\s+/, ''));
-          }
-        }
-      }
-      
+      const planData = extractPlanDataImmutable(baseMessage);
       const finishReason = event.data.finish_reason || 'interrupt';
-      return {
-        ...currentMessage,
+      
+      return createImmutableUpdate(baseMessage, {
         finishReason,
         isStreaming: false,
-        options: options,
+        options: event.data.options || getDefaultInterruptOptions(baseMessage),
         metadata: {
-          ...currentMessage.metadata,
-          planSteps: planSteps,
-          hasEnoughContext: hasEnoughContext,
-          isPlannerDirectAnswer: isPlannerDirectAnswer
+          ...mergedMetadata,
+          ...planData
         }
-      };
+      });
     }
 
     case 'error': {
-      return {
-        ...currentMessage,
-        content: (currentMessage.content || '') + `\n\n**Error:** ${event.data.error}`,
+      return createImmutableUpdate(baseMessage, {
+        content: (baseMessage.content || '') + `\n\n**Error:** ${event.data.error}`,
         isStreaming: false,
-        finishReason: 'error'
-      };
+        finishReason: 'error',
+        metadata: mergedMetadata
+      });
     }
 
     default: {
-      // Handle unknown events by safely converting to string
       console.warn('Unknown DeerFlow event:', event);
-      return {
-        ...currentMessage,
+      return createImmutableUpdate(baseMessage, {
+        metadata: mergedMetadata,
         isStreaming: true
-      };
+      });
     }
   }
+}
+
+/**
+ * Creates an immutable update of a message
+ */
+function createImmutableUpdate(
+  baseMessage: Partial<DeerMessage>,
+  updates: Partial<DeerMessage>
+): Partial<DeerMessage> {
+  return {
+    ...baseMessage,
+    ...updates,
+    timestamp: baseMessage.timestamp || new Date()
+  };
+}
+
+/**
+ * Immutably merges a tool call into the tool calls array
+ */
+function mergeToolCallImmutable(
+  existingToolCalls: ToolCall[],
+  newToolCall: ToolCall
+): ToolCall[] {
+  const existingIndex = existingToolCalls.findIndex(tc => tc.id === newToolCall.id);
+  
+  if (existingIndex >= 0) {
+    // Replace existing tool call immutably
+    return existingToolCalls.map((tc, index) => 
+      index === existingIndex 
+        ? { ...tc, ...newToolCall }
+        : tc
+    );
+  } else {
+    // Add new tool call immutably
+    return [...existingToolCalls, newToolCall];
+  }
+}
+
+/**
+ * Immutably merges a tool call chunk
+ */
+function mergeToolCallChunkImmutable(
+  existingToolCalls: ToolCall[],
+  chunk: ToolCallChunkData
+): ToolCall[] {
+  const existingIndex = existingToolCalls.findIndex(tc => tc.id === chunk.id);
+
+  if (chunk.name) {
+    if (existingIndex >= 0) {
+      // Update existing tool call with name
+      return existingToolCalls.map((tc, index) =>
+        index === existingIndex 
+          ? { ...tc, name: chunk.name }
+          : tc
+      );
+    } else {
+      // Create new tool call with name
+      return [...existingToolCalls, {
+        id: chunk.id,
+        name: chunk.name,
+        args: {},
+        argsChunks: []
+      }];
+    }
+  }
+
+  if (chunk.args && existingIndex >= 0) {
+    // Update args chunks immutably
+    const targetToolCall = existingToolCalls[existingIndex];
+    const updatedArgsChunks = [...(targetToolCall.argsChunks || []), chunk.args];
+    
+    // Try to parse complete args
+    let parsedArgs = targetToolCall.args;
+    try {
+      const completeArgsString = updatedArgsChunks.join('');
+      parsedArgs = JSON.parse(completeArgsString);
+    } catch (e) {
+      // Args not complete yet, keep existing
+    }
+
+    return existingToolCalls.map((tc, index) =>
+      index === existingIndex
+        ? {
+            ...tc,
+            argsChunks: updatedArgsChunks,
+            args: parsedArgs
+          }
+        : tc
+    );
+  }
+
+  return existingToolCalls;
+}
+
+/**
+ * Immutably merges a tool call result
+ */
+function mergeToolCallResultImmutable(
+  existingToolCalls: ToolCall[],
+  resultData: ToolCallResultData
+): ToolCall[] {
+  const existingIndex = existingToolCalls.findIndex(tc => tc.id === resultData.id);
+  
+  if (existingIndex >= 0) {
+    return existingToolCalls.map((tc, index) =>
+      index === existingIndex
+        ? {
+            ...tc,
+            result: resultData.result,
+            error: resultData.error
+          }
+        : tc
+    );
+  }
+  
+  return existingToolCalls;
+}
+
+/**
+ * Extracts plan data from message content immutably
+ */
+function extractPlanDataImmutable(message: Partial<DeerMessage>): Partial<DeerMessage['metadata']> {
+  if (message.metadata?.agent !== 'planner' || !message.content) {
+    return {};
+  }
+
+  let planSteps: any[] = [];
+  let hasEnoughContext = false;
+  let isPlannerDirectAnswer = false;
+
+  try {
+    const parsed = JSON.parse(message.content);
+    planSteps = parsed.steps || [];
+    hasEnoughContext = parsed.has_enough_context || false;
+    isPlannerDirectAnswer = hasEnoughContext && planSteps.length === 0;
+  } catch (e) {
+    // Fallback to regex parsing
+    const stepMatches = message.content.match(/\d+\.\s+(.+)/g);
+    if (stepMatches) {
+      planSteps = stepMatches.map(match => match.replace(/^\d+\.\s+/, ''));
+    }
+  }
+
+  return {
+    planSteps,
+    hasEnoughContext,
+    isPlannerDirectAnswer
+  };
+}
+
+/**
+ * Gets default interrupt options based on message context
+ */
+function getDefaultInterruptOptions(message: Partial<DeerMessage>): Array<{ text: string; value: string }> {
+  if (message.metadata?.agent === 'planner') {
+    return [
+      { text: 'Accept', value: 'accepted' },
+      { text: 'Edit', value: 'edit' }
+    ];
+  }
+  return [];
 }
 
 /**
@@ -376,26 +499,59 @@ export function finalizeMessage(
   partialMessage: Partial<DeerMessage>,
   messageId?: string
 ): DeerMessage {
-  const timestamp = new Date();
-  
-  return {
-    id: messageId || crypto.randomUUID(),
+  const finalMessage: DeerMessage = {
+    id: messageId || partialMessage.id || crypto.randomUUID(),
     role: partialMessage.role || 'assistant',
     content: partialMessage.content || '',
-    timestamp,
+    timestamp: partialMessage.timestamp || new Date(),
     isStreaming: false,
     finishReason: partialMessage.finishReason || 'completed',
     toolCalls: partialMessage.toolCalls || [],
     options: partialMessage.options || [],
     metadata: {
-      ...partialMessage.metadata,
       threadId: partialMessage.metadata?.threadId,
-      // Ensure optional fields are properly typed
+      agent: partialMessage.metadata?.agent,
       planSteps: partialMessage.metadata?.planSteps,
       thinkingPhases: partialMessage.metadata?.thinkingPhases,
-      researchState: partialMessage.metadata?.researchState
+      reasoningSteps: partialMessage.metadata?.reasoningSteps,
+      searchActivities: partialMessage.metadata?.searchActivities,
+      visitedUrls: partialMessage.metadata?.visitedUrls,
+      researchState: partialMessage.metadata?.researchState,
+      reportContent: partialMessage.metadata?.reportContent,
+      citations: partialMessage.metadata?.citations,
+      hasEnoughContext: partialMessage.metadata?.hasEnoughContext,
+      isPlannerDirectAnswer: partialMessage.metadata?.isPlannerDirectAnswer,
+      ...partialMessage.metadata
     }
   };
+
+  // Store in Map for efficient lookups
+  if (finalMessage.id) {
+    messageStorage.set(finalMessage.id, finalMessage);
+  }
+
+  return finalMessage;
+}
+
+/**
+ * Retrieves a message from storage
+ */
+export function getMessageById(messageId: string): DeerMessage | undefined {
+  return messageStorage.get(messageId);
+}
+
+/**
+ * Removes a message from storage
+ */
+export function removeMessageFromStorage(messageId: string): boolean {
+  return messageStorage.delete(messageId);
+}
+
+/**
+ * Clears all messages from storage
+ */
+export function clearMessageStorage(): void {
+  messageStorage.clear();
 }
 
 /**
