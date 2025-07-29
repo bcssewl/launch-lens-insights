@@ -38,11 +38,8 @@ export const useEnhancedDeerStreaming = () => {
     setIsResponding,
     setResearchPanelOpen,
     setActiveResearchTab,
-    addResearchActivity,
-    updateResearchActivity,
     setReportContent,
-    currentThreadId,
-    researchActivities
+    currentThreadId
   } = useDeerFlowMessageStore();
   
   const { settings } = storeActions;
@@ -177,105 +174,36 @@ export const useEnhancedDeerStreaming = () => {
             { event: event as any, data: parsedData } : 
             parsedData; // Legacy format
 
-          // Simple agent-based panel management (original approach)
+          // Original agent-based panel management
           if ('event' in streamEvent && streamEvent.event === 'message_chunk') {
             const agent = streamEvent.data.agent;
-            const content = streamEvent.data.content || '';
-            console.log(`🤖 Message chunk from agent: ${agent}, content: "${content.substring(0, 50)}..."`);
+            console.log(`🤖 Agent: ${agent}`);
             
-            // Simple panel control based on agent type
-            if (agent === 'planner' || agent === 'researcher') {
-              setResearchPanelOpen(true);
-              setActiveResearchTab('activities');
-            } else if (agent === 'reporter') {
-              setResearchPanelOpen(true);
-              setActiveResearchTab('report');
+            // Process agent types exactly as original
+            switch (agent) {
+              case 'coordinator':
+                // Coordinator manages overall flow - no special panel action
+                break;
+              case 'planner':
+                setResearchPanelOpen(true);
+                setActiveResearchTab('activities');
+                break;
+              case 'researcher':
+                setResearchPanelOpen(true);
+                setActiveResearchTab('activities');
+                break;
+              case 'coder':
+                setResearchPanelOpen(true);
+                setActiveResearchTab('activities');
+                break;
+              case 'reporter':
+                setResearchPanelOpen(true);
+                setActiveResearchTab('report');
+                break;
+              default:
+                // Unknown agent - no panel action
+                break;
             }
-          }
-
-          // Handle tool call chunks - create research activities immediately
-          if ('event' in streamEvent && streamEvent.event === 'tool_call_chunk') {
-            const chunk = streamEvent.data;
-            
-            if (chunk && chunk.name) {
-              // Create research activity immediately when tool starts
-              addResearchActivity({
-                toolType: getToolType(chunk.name),
-                title: `${chunk.name}`,
-                content: chunk.args || {},
-                status: 'running'
-              });
-            }
-          }
-
-          // Handle tool calls - create research activities immediately  
-          if ('event' in streamEvent && streamEvent.event === 'tool_call') {
-            const toolCall = streamEvent.data;
-            
-            // Create research activity immediately
-            addResearchActivity({
-              toolType: getToolType(toolCall.name),
-              title: `${toolCall.name}`,
-              content: toolCall.args,
-              status: 'running'
-            });
-          }
-
-          // Handle tool results - update most recent activity to completed
-          if ('event' in streamEvent && streamEvent.event === 'tool_call_result') {
-            const result = streamEvent.data.result;
-            
-            // Find the most recent running activity and complete it
-            const runningActivity = researchActivities
-              .filter(activity => activity.threadId === currentThreadId && activity.status === 'running')
-              .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())[0];
-            
-            if (runningActivity) {
-              updateResearchActivity(runningActivity.id, {
-                ...runningActivity,
-                content: result,
-                status: 'completed'
-              });
-            } else {
-              // Create activities for specific result types
-              if (result?.repositories) {
-                addResearchActivity({
-                  toolType: 'web-search',
-                  title: 'GitHub Repositories',
-                  content: result.repositories,
-                  status: 'completed'
-                });
-              }
-
-              if (result?.results) {
-                addResearchActivity({
-                  toolType: 'web-search', 
-                  title: 'Search Results',
-                  content: result.results,
-                  status: 'completed'
-                });
-              }
-            }
-          }
-
-          // Handle search events - create search activities
-          if ('event' in streamEvent && streamEvent.event === 'search') {
-            addResearchActivity({
-              toolType: 'web-search',
-              title: `Search: ${streamEvent.data.query}`,
-              content: streamEvent.data,
-              status: 'running'
-            });
-          }
-
-          // Handle visit events - create crawl activities
-          if ('event' in streamEvent && streamEvent.event === 'visit') {
-            addResearchActivity({
-              toolType: 'crawl',
-              title: `Visit: ${streamEvent.data.url}`,
-              content: streamEvent.data,
-              status: 'running'
-            });
           }
 
           // Handle report generation
@@ -308,32 +236,6 @@ export const useEnhancedDeerStreaming = () => {
             processEvent(streamEvent);
           }
 
-          // Simple planner message handling - create research activities from plan steps
-          if (currentPartialMessageRef.current?.metadata?.agent === 'planner' && 
-              currentPartialMessageRef.current?.finishReason === 'interrupt' && 
-              currentPartialMessageRef.current?.metadata?.planSteps) {
-            const planSteps = currentPartialMessageRef.current.metadata.planSteps;
-            
-            console.log('🎯 Planner finished with', planSteps.length, 'steps');
-            
-            if (planSteps.length > 0) {
-              // Add each plan step as a pending research activity
-              planSteps.forEach((step: any, index: number) => {
-                const stepTitle = typeof step === 'string' ? step : (step.title || step.description || `Step ${index + 1}`);
-                const stepDescription = typeof step === 'string' ? '' : (step.description || '');
-                
-                addResearchActivity({
-                  toolType: 'web-search',
-                  title: stepTitle,
-                  content: stepDescription,
-                  status: 'pending'
-                });
-              });
-
-              setResearchPanelOpen(true);
-              setActiveResearchTab('activities');
-            }
-          }
 
         } catch (parseError) {
           console.warn('Failed to process DeerFlow event:', parseError);
@@ -411,11 +313,8 @@ export const useEnhancedDeerStreaming = () => {
     setIsResponding,
     setResearchPanelOpen,
     setActiveResearchTab,
-    addResearchActivity,
-    updateResearchActivity,
     setReportContent,
     currentThreadId,
-    researchActivities,
     processEvent,
     flush,
     settings
