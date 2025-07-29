@@ -42,10 +42,12 @@ export const useEnhancedDeerStreaming = () => {
     options: DeerStreamingOptions = {}
   ) => {
     console.log('🌊 startDeerFlowStreaming called:', { question, options });
+    console.log('🔍 Current state:', { isStreaming, isResponding });
     
     // Prevent multiple concurrent streams
     if (isStreaming || isResponding) {
       console.warn('🚫 Streaming already in progress, ignoring request');
+      console.warn('🚫 Details:', { isStreaming, isResponding });
       return;
     }
 
