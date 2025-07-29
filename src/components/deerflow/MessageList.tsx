@@ -96,21 +96,48 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
   // Defensive coding: ensure messageIds is always an array
   const safeMessageIds = Array.isArray(messageIds) ? messageIds : [];
 
-  // Enhanced message filtering for main chat display
+  // Enhanced message filtering for main chat display with debug logging
   const visibleMessages = useMemo(() => {
-    return safeMessageIds
-      .map(id => getMessage(id))
+    console.log('🔍 DEBUG: Processing message IDs:', safeMessageIds);
+    console.log('🔍 DEBUG: ResearchIds:', researchIds);
+    console.log('🔍 DEBUG: ResearchPlanIds:', Array.from(researchPlanIds.entries()));
+    
+    const allMessages = safeMessageIds
+      .map(id => {
+        const message = getMessage(id);
+        console.log('🔍 DEBUG: Message', id, ':', {
+          role: message?.role,
+          agent: message?.agent,
+          content: message?.content?.slice(0, 100),
+          isStreaming: message?.isStreaming
+        });
+        return message;
+      })
       .filter((message): message is DeerMessage => {
-        if (!message) return false;
+        if (!message) {
+          console.log('🔍 DEBUG: Filtered out null message');
+          return false;
+        }
         
-        // Show main chat types only
-        return (
+        // Log all messages and their filtering decisions
+        const shouldShow = (
           message.role === 'user' ||
           message.agent === 'coordinator' ||
           message.agent === 'planner'
         );
+        
+        if (!shouldShow) {
+          console.log('🔍 DEBUG: Filtered out message:', message.id, 'Role:', message.role, 'Agent:', message.agent);
+        } else {
+          console.log('🔍 DEBUG: Including message:', message.id, 'Role:', message.role, 'Agent:', message.agent);
+        }
+        
+        return shouldShow;
       });
-  }, [safeMessageIds, getMessage]);
+    
+    console.log('🔍 DEBUG: Final visible messages count:', allMessages.length);
+    return allMessages;
+  }, [safeMessageIds, getMessage, researchIds, researchPlanIds]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {

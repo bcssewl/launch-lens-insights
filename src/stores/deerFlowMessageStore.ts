@@ -252,8 +252,15 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
     
     // NEW: Auto-handle research session management
     if (message.agent === 'researcher' || message.agent === 'coder' || message.agent === 'reporter') {
+      console.log('🔬 DEBUG: Research activity detected:', message.id, 'Agent:', message.agent);
       const store = get();
-      store.autoStartResearchOnFirstActivity(message);
+      const researchId = store.autoStartResearchOnFirstActivity(message);
+      
+      // If we have an ongoing research, add this message as an activity
+      if (!researchId && store.ongoingResearchId) {
+        console.log('🔬 DEBUG: Adding to existing research session:', store.ongoingResearchId);
+        store.addResearchActivity(store.ongoingResearchId, message.id);
+      }
     }
   },
 
@@ -350,7 +357,15 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
   // Research session management
   // NEW: Auto-detect and start research on first researcher message
   autoStartResearchOnFirstActivity: (message) => {
-    const { ongoingResearchId, researchIds, messageIds, getMessage } = get();
+    const { ongoingResearchId, researchIds, messageIds, getMessage, researchPlanIds, researchActivityIds } = get();
+    
+    console.log('🔬 DEBUG autoStartResearchOnFirstActivity:', {
+      messageId: message.id,
+      agent: message.agent,
+      ongoingResearchId,
+      currentResearchIds: researchIds,
+      messageContent: message.content?.slice(0, 100)
+    });
     
     // Only start research if we don't have an ongoing session
     if (!ongoingResearchId && (message.agent === 'researcher' || message.agent === 'coder' || message.agent === 'reporter')) {
@@ -363,6 +378,7 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
         const msg = getMessage(messageId);
         if (msg?.agent === 'planner') {
           plannerMessage = msg;
+          console.log('🔬 DEBUG found planner message:', plannerMessage.id);
           break;
         }
       }
@@ -371,22 +387,32 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
         // Use the researcher message ID as the research session ID (matching original)
         const researchId = message.id;
         
-        set({
+        const newState = {
           researchIds: [...researchIds, researchId],
-          researchPlanIds: new Map(get().researchPlanIds).set(researchId, plannerMessage.id),
-          researchActivityIds: new Map(get().researchActivityIds).set(researchId, [plannerMessage.id, message.id]),
+          researchPlanIds: new Map(researchPlanIds).set(researchId, plannerMessage.id),
+          researchActivityIds: new Map(researchActivityIds).set(researchId, [plannerMessage.id, message.id]),
           ongoingResearchId: researchId,
           openResearchId: researchId,
           researchPanelState: {
             isOpen: true,
             openResearchId: researchId,
-            activeTab: 'activities'
+            activeTab: 'activities' as const
           }
-        });
+        };
         
-        console.log('🔬 Auto-started research session:', researchId, 'triggered by:', message.agent);
+        set(newState);
+        
+        console.log('🔬 Auto-started research session:', researchId, 'triggered by:', message.agent, 'with state:', {
+          researchIds: newState.researchIds,
+          planId: plannerMessage.id,
+          activities: newState.researchActivityIds.get(researchId)
+        });
         return researchId;
+      } else {
+        console.log('🔬 DEBUG: No planner message found for research activity');
       }
+    } else if (ongoingResearchId) {
+      console.log('🔬 DEBUG: Research session already ongoing:', ongoingResearchId);
     }
     
     return null;
