@@ -66,47 +66,46 @@ const DesktopDeerFlowLayout = () => {
   return (
     <DashboardLayout>
       <ErrorBoundary>
-        <div className={cn(
-          // Use existing container styling
-          "flex h-full w-full",
-          "bg-background text-foreground",
-          // Add platform's responsive container classes
-          "container mx-auto px-4 sm:px-6 lg:px-8"
-        )}>
-          <DeerFlowHeader />
+        <div className="flex flex-col h-full w-full bg-background text-foreground">
+          {/* Header - Fixed at top */}
+          <div className="flex-shrink-0 border-b bg-background/95 backdrop-blur-sm sticky top-0 z-10">
+            <DeerFlowHeader />
+          </div>
 
-          <div className="flex-1 flex overflow-hidden">
+          {/* Main content area */}
+          <div className="flex-1 flex overflow-hidden min-h-0">
             {/* Chat Container */}
             <div className={cn(
-              // Chat container with platform's max-width
               "flex-1 min-w-0 flex flex-col",
-              "max-w-4xl mx-auto",
               "transition-all duration-300 ease-out",
-              !isResearchPanelOpen && "pr-0",
-              isResearchPanelOpen && "pr-4 lg:pr-8"
+              isResearchPanelOpen ? "mr-4 lg:mr-8" : "mr-0"
             )}>
-              {/* Messages area with platform's spacing */}
-              <div className="flex-1 overflow-hidden">
-                <ErrorBoundary>
-                  <MessageList />
-                </ErrorBoundary>
+              {/* Messages area - takes remaining space */}
+              <div className="flex-1 overflow-hidden px-4 sm:px-6 lg:px-8">
+                <div className="max-w-4xl mx-auto h-full">
+                  <ErrorBoundary>
+                    <MessageList />
+                  </ErrorBoundary>
+                </div>
               </div>
               
-              {/* Input area with platform's styling */}
-              <div className="border-t bg-background/95 backdrop-blur-sm p-4">
-                <InputBox />
+              {/* Input area - Fixed at bottom */}
+              <div className="flex-shrink-0 border-t bg-background/95 backdrop-blur-sm">
+                <div className="px-4 sm:px-6 lg:px-8 py-4">
+                  <div className="max-w-4xl mx-auto">
+                    <InputBox />
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Research Panel with platform's panel design */}
+            {/* Research Panel - Fixed sidebar */}
             {isResearchPanelOpen && (
               <div className={cn(
-                // Use existing side panel styling
                 "flex-shrink-0 w-full max-w-md lg:max-w-lg",
                 "bg-card border-l border-border",
                 "transition-all duration-300 ease-out",
-                // Platform's panel animation pattern
-                "transform translate-x-0 opacity-100"
+                "overflow-hidden"
               )}>
                 <ErrorBoundary 
                   fallback={
@@ -133,33 +132,35 @@ const DesktopDeerFlowLayout = () => {
  * Mobile layout using platform's mobile patterns
  */
 const MobileDeerFlowLayout = () => {
-  const { isResearchPanelOpen, setResearchPanelOpen } = useDeerFlowStore();
+  const { isResearchPanelOpen } = useDeerFlowStore();
 
   return (
     <DashboardLayout>
       <ErrorBoundary>
-        <div className="flex flex-col h-full bg-background">
-          {/* Mobile header with platform's styling */}
-          <div className="border-b bg-background/95 backdrop-blur-sm">
+        <div className="flex flex-col h-full w-full bg-background">
+          {/* Mobile header - Fixed at top */}
+          <div className="flex-shrink-0 border-b bg-background/95 backdrop-blur-sm sticky top-0 z-10">
             <DeerFlowHeader />
           </div>
           
-          {/* Chat takes full width on mobile */}
-          <div className="flex-1 overflow-hidden px-4 py-2">
-            <ErrorBoundary>
-              <MessageList />
-            </ErrorBoundary>
+          {/* Chat area - takes remaining space */}
+          <div className="flex-1 overflow-hidden min-h-0">
+            <div className="h-full px-4 py-2">
+              <ErrorBoundary>
+                <MessageList />
+              </ErrorBoundary>
+            </div>
           </div>
           
-          {/* Mobile input with platform's input pattern */}
-          <div className="border-t bg-background/95 backdrop-blur-sm p-4">
+          {/* Mobile input - Fixed at bottom */}
+          <div className="flex-shrink-0 border-t bg-background/95 backdrop-blur-sm p-4">
             <InputBox />
           </div>
 
           {/* Research panel as full-screen modal on mobile */}
           {isResearchPanelOpen && (
             <div className={cn(
-              "fixed inset-0 z-50 bg-background",
+              "fixed inset-0 z-50 bg-background flex flex-col",
               "transition-all duration-300 ease-out"
             )}>
               <ErrorBoundary>
