@@ -22,17 +22,18 @@ interface ResearchPanelContainerProps {
   className?: string;
 }
 
-export const ResearchPanelContainer: React.FC<ResearchPanelContainerProps> = ({
+export const ResearchPanelContainer = React.forwardRef<HTMLDivElement, ResearchPanelContainerProps>(({
   isOpen,
   children,
   className
-}) => {
+}, ref) => {
   const shouldReduceMotion = useReducedMotion();
 
   return (
     <AnimatePresence mode="wait">
       {isOpen && (
         <motion.div
+          ref={ref}
           className={cn(
             "w-[min(max(calc((100vw-538px)*0.75),575px),960px)] pb-4",
             className
@@ -71,7 +72,9 @@ export const ResearchPanelContainer: React.FC<ResearchPanelContainerProps> = ({
       )}
     </AnimatePresence>
   );
-};
+});
+
+ResearchPanelContainer.displayName = "ResearchPanelContainer";
 
 // Message Container with Staggered Animation
 interface MessageContainerProps {
@@ -81,16 +84,17 @@ interface MessageContainerProps {
   isStreaming?: boolean;
 }
 
-export const MessageContainer: React.FC<MessageContainerProps> = ({ 
+export const MessageContainer = React.forwardRef<HTMLDivElement, MessageContainerProps>(({ 
   children, 
   index, 
   className,
   isStreaming = false
-}) => {
+}, ref) => {
   const shouldReduceMotion = useReducedMotion();
 
   return (
     <motion.div
+      ref={ref}
       className={className}
       initial={shouldReduceMotion ? { opacity: 0 } : { 
         opacity: 0, 
@@ -124,7 +128,9 @@ export const MessageContainer: React.FC<MessageContainerProps> = ({
       {children}
     </motion.div>
   );
-};
+});
+
+MessageContainer.displayName = "MessageContainer";
 
 // Plan Card Animation Container
 interface PlanCardContainerProps {
@@ -133,15 +139,16 @@ interface PlanCardContainerProps {
   className?: string;
 }
 
-export const PlanCardContainer: React.FC<PlanCardContainerProps> = ({ 
+export const PlanCardContainer = React.forwardRef<HTMLDivElement, PlanCardContainerProps>(({ 
   children, 
   isStreaming, 
   className 
-}) => {
+}, ref) => {
   const shouldReduceMotion = useReducedMotion();
 
   return (
     <motion.div
+      ref={ref}
       className={className}
       initial={shouldReduceMotion ? { opacity: 0 } : { 
         opacity: 0, 
@@ -172,7 +179,9 @@ export const PlanCardContainer: React.FC<PlanCardContainerProps> = ({
       {children}
     </motion.div>
   );
-};
+});
+
+PlanCardContainer.displayName = "PlanCardContainer";
 
 // Plan Step Animation
 interface PlanStepProps {
