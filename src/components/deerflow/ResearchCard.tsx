@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { ChevronRight, FileText, Search, PenTool } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useDeerFlowMessageStore } from '@/stores/deerFlowMessageStore';
-import { useMessage } from '@/hooks/useOptimizedMessages';
 
 interface ResearchCardProps {
   researchId: string;
@@ -13,20 +12,23 @@ interface ResearchCardProps {
 }
 
 export const ResearchCard = ({ researchId, title, onToggleResearch }: ResearchCardProps) => {
-  const message = useMessage(researchId);
   const { 
     researchPanelState, 
     openResearchPanel,
     closeResearchPanel,
     getResearchStatus,
-    getResearchTitle
+    getResearchTitle,
+    getMessage
   } = useDeerFlowMessageStore();
+  
+  // Get the actual research message (first researcher message)
+  const researchMessage = getMessage(researchId);
   
   const [isAnimating, setIsAnimating] = useState(true);
 
   // Get research status and title from the store
   const researchStatus = getResearchStatus(researchId);
-  const researchTitle = getResearchTitle(researchId);
+  const researchTitle = title || getResearchTitle(researchId);
 
   // Update animation based on research status
   useEffect(() => {
@@ -35,7 +37,7 @@ export const ResearchCard = ({ researchId, title, onToggleResearch }: ResearchCa
   }, [researchStatus]);
 
   const handleToggle = () => {
-    if (researchPanelState.isOpen) {
+    if (researchPanelState.isOpen && researchPanelState.openResearchId === researchId) {
       closeResearchPanel();
     } else {
       openResearchPanel(researchId, 'activities');
@@ -69,7 +71,7 @@ export const ResearchCard = ({ researchId, title, onToggleResearch }: ResearchCa
     }
   };
 
-  const displayTitle = title || researchTitle || message?.content?.slice(0, 50) || 'Research Session';
+  const displayTitle = title || researchTitle || researchMessage?.content?.slice(0, 50) || 'Research Session';
 
   return (
     <Card className={cn(
@@ -103,7 +105,7 @@ export const ResearchCard = ({ researchId, title, onToggleResearch }: ResearchCa
 
           {/* Toggle Button */}
           <Button
-            variant={researchPanelState.isOpen ? "outline" : "default"}
+            variant={researchPanelState.isOpen && researchPanelState.openResearchId === researchId ? "outline" : "default"}
             size="sm"
             onClick={handleToggle}
             className={cn(
@@ -112,11 +114,11 @@ export const ResearchCard = ({ researchId, title, onToggleResearch }: ResearchCa
             )}
           >
             <span className="text-xs">
-              {researchPanelState.isOpen ? 'Close' : 'Open'}
+              {researchPanelState.isOpen && researchPanelState.openResearchId === researchId ? 'Close' : 'Open'}
             </span>
             <ChevronRight className={cn(
               "h-3 w-3 ml-1 transition-transform duration-200",
-              researchPanelState.isOpen && "rotate-90"
+              researchPanelState.isOpen && researchPanelState.openResearchId === researchId && "rotate-90"
             )} />
           </Button>
         </div>
