@@ -1,5 +1,5 @@
 import DashboardLayout from '@/layouts/DashboardLayout';
-import { useDeerFlowStore } from '@/stores/deerFlowStore';
+import { useDeerFlowMessageStore } from '@/stores/deerFlowMessageStore';
 import { DeerFlowHeader } from '@/components/deerflow/DeerFlowHeader';
 import { MessageList } from '@/components/deerflow/MessageList';
 import { InputBox } from '@/components/deerflow/InputBox';
@@ -47,7 +47,7 @@ const useMobileDetection = () => {
 };
 
 export default function DeerFlowPage() {
-  const { isResearchPanelOpen } = useDeerFlowStore();
+  const { researchPanelState } = useDeerFlowMessageStore();
   const isMobile = useMobileDetection();
 
   if (isMobile) {
@@ -61,7 +61,8 @@ export default function DeerFlowPage() {
  * Desktop layout using platform's container patterns
  */
 const DesktopDeerFlowLayout = () => {
-  const { isResearchPanelOpen } = useDeerFlowStore();
+  const { researchPanelState } = useDeerFlowMessageStore();
+  const doubleColumnMode = researchPanelState.isOpen;
 
   return (
     <DashboardLayout>
@@ -72,39 +73,40 @@ const DesktopDeerFlowLayout = () => {
             <DeerFlowHeader />
           </div>
 
-          {/* Main content area */}
-          <div className="flex-1 flex overflow-hidden min-h-0">
-            {/* Chat Container */}
+          {/* Main content area - Dual column architecture */}
+          <div className={cn(
+            "flex-1 flex h-full w-full justify-center px-4 pt-4 pb-4 min-h-0",
+            doubleColumnMode && "gap-8"
+          )}>
+            {/* Messages Block */}
             <div className={cn(
-              "flex-1 min-w-0 flex flex-col",
-              "transition-all duration-300 ease-out",
-              isResearchPanelOpen ? "mr-4 lg:mr-8" : "mr-0"
+              "flex flex-col shrink-0",
+              "transition-all duration-300 ease-out will-change-transform",
+              !doubleColumnMode && "w-[768px] mx-auto",
+              doubleColumnMode && "w-[538px]"
             )}>
               {/* Messages area - takes remaining space */}
-              <div className="flex-1 overflow-hidden px-4 sm:px-6 lg:px-8">
-                <div className="max-w-4xl mx-auto h-full">
-                  <ErrorBoundary>
-                    <MessageList />
-                  </ErrorBoundary>
-                </div>
+              <div className="flex-1 overflow-hidden">
+                <ErrorBoundary>
+                  <MessageList />
+                </ErrorBoundary>
               </div>
               
               {/* Input area - Fixed at bottom */}
-              <div className="flex-shrink-0 border-t bg-background/95 backdrop-blur-sm">
-                <div className="px-4 sm:px-6 lg:px-8 py-4">
-                  <div className="max-w-4xl mx-auto">
-                    <InputBox />
-                  </div>
-                </div>
+              <div className="flex-shrink-0 border-t bg-background/95 backdrop-blur-sm pt-4">
+                <InputBox />
               </div>
             </div>
 
-            {/* Research Panel - Fixed sidebar */}
-            {isResearchPanelOpen && (
+            {/* Research Panel */}
+            <div className={cn(
+              "pb-4 transition-all duration-300 ease-out will-change-transform",
+              "w-[min(max(calc((100vw-538px)*0.75),575px),960px)]",
+              !doubleColumnMode && "scale-0 opacity-0 pointer-events-none",
+              doubleColumnMode && "scale-100 opacity-100"
+            )}>
               <div className={cn(
-                "flex-shrink-0 w-full max-w-md lg:max-w-lg",
-                "bg-card border-l border-border",
-                "transition-all duration-300 ease-out",
+                "h-full bg-card border border-border rounded-lg shadow-lg",
                 "overflow-hidden"
               )}>
                 <ErrorBoundary 
@@ -118,7 +120,7 @@ const DesktopDeerFlowLayout = () => {
                   <ResearchPanel />
                 </ErrorBoundary>
               </div>
-            )}
+            </div>
           </div>
 
           <DeerFlowSettings />
@@ -132,7 +134,7 @@ const DesktopDeerFlowLayout = () => {
  * Mobile layout using platform's mobile patterns
  */
 const MobileDeerFlowLayout = () => {
-  const { isResearchPanelOpen } = useDeerFlowStore();
+  const { researchPanelState } = useDeerFlowMessageStore();
 
   return (
     <DashboardLayout>
@@ -158,7 +160,7 @@ const MobileDeerFlowLayout = () => {
           </div>
 
           {/* Research panel as full-screen modal on mobile */}
-          {isResearchPanelOpen && (
+          {researchPanelState.isOpen && (
             <div className={cn(
               "fixed inset-0 z-50 bg-background flex flex-col",
               "transition-all duration-300 ease-out"
