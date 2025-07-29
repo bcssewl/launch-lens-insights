@@ -114,10 +114,9 @@ export const OptimizedMessageList: React.FC<OptimizedMessageListProps> = ({
     const message = messages[index];
     if (!message) return MESSAGE_HEIGHT_ESTIMATES.assistant;
 
-    const agent = message.metadata?.agent;
+    const agent = message.agent;
     if (agent === 'planner') return MESSAGE_HEIGHT_ESTIMATES.planner;
-    if (agent === 'reporter') return MESSAGE_HEIGHT_ESTIMATES.reporter;
-    if (message.metadata?.audioUrl) return MESSAGE_HEIGHT_ESTIMATES.podcast;
+    if (agent === 'researcher') return MESSAGE_HEIGHT_ESTIMATES.reporter;
     if (message.role === 'user') return MESSAGE_HEIGHT_ESTIMATES.user;
     
     return MESSAGE_HEIGHT_ESTIMATES.assistant;

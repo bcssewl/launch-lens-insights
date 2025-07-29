@@ -53,7 +53,7 @@ export const useStreamingMessage = (messageId: string) => {
     updateMessage(messageId, {
       ...finalUpdates,
       isStreaming: false,
-      finishReason: 'completed'
+      finishReason: 'stop'
     });
     setIsResponding(false);
   }, [messageId, updateMessage, setIsResponding]);
