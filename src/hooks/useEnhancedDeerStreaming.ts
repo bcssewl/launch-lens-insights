@@ -59,6 +59,23 @@ export const useEnhancedDeerStreaming = () => {
   const { settings } = useDeerFlowStore();
   const { toast } = useToast();
 
+  // Helper function to generate MCP settings from configured servers
+  const generateMCPSettings = useCallback(() => {
+    const mcpSettings: Record<string, any> = {};
+    
+    settings.mcpServers
+      .filter(server => server.enabled)
+      .forEach(server => {
+        mcpSettings[server.name] = {
+          url: server.url,
+          enabled: true,
+          ...server.metadata
+        };
+      });
+    
+    return mcpSettings;
+  }, [settings.mcpServers]);
+
   // Simplified and robust event processing
   const processEvent = useCallback((event: StreamEvent) => {
     // Defensive: ensure event has proper structure
@@ -208,25 +225,39 @@ export const useEnhancedDeerStreaming = () => {
     // Track created message IDs to mark as complete later
     const createdMessageIds = new Set<string>();
 
-    // Prepare request body
+    // Generate MCP settings dynamically
+    const mcpSettings = generateMCPSettings();
+    
+    // Prepare request body with dynamic settings
     const requestBody = JSON.stringify({
       messages: [{ role: "user", content: question }],
       debug: true,
-      thread_id: currentThreadId, // This is now persistent
-      interrupt_feedback: options.interruptFeedback, // ADD
+      thread_id: currentThreadId,
+      interrupt_feedback: options.interruptFeedback,
+      auto_accepted_plan: options.autoAcceptedPlan ?? settings.autoAcceptedPlan,
       max_plan_iterations: options.maxPlanIterations ?? settings.maxPlanIterations,
       max_step_num: options.maxStepNum ?? settings.maxStepNum,
       max_search_results: options.maxSearchResults ?? settings.maxSearchResults,
-      auto_accepted_plan: options.autoAcceptedPlan ?? settings.autoAcceptedPlan,
+      enable_deep_thinking: options.enableDeepThinking ?? settings.deepThinking,
       enable_background_investigation: options.enableBackgroundInvestigation ?? settings.backgroundInvestigation,
       report_style: options.reportStyle ?? settings.reportStyle,
-      enable_deep_thinking: options.enableDeepThinking ?? settings.deepThinking
+      mcp_settings: mcpSettings
     });
 
-    console.log('📤 Sending to backend:', {
+    console.log('📤 Sending to backend with dynamic settings:', {
       thread_id: currentThreadId,
       interrupt_feedback: options.interruptFeedback,
-      content: question
+      content: question,
+      settings: {
+        auto_accepted_plan: options.autoAcceptedPlan ?? settings.autoAcceptedPlan,
+        max_plan_iterations: options.maxPlanIterations ?? settings.maxPlanIterations,
+        max_step_num: options.maxStepNum ?? settings.maxStepNum,
+        max_search_results: options.maxSearchResults ?? settings.maxSearchResults,
+        enable_deep_thinking: options.enableDeepThinking ?? settings.deepThinking,
+        enable_background_investigation: options.enableBackgroundInvestigation ?? settings.backgroundInvestigation,
+        report_style: options.reportStyle ?? settings.reportStyle,
+        mcp_settings: mcpSettings
+      }
     });
 
     // Simple streaming like original - no complex initialization
@@ -356,7 +387,8 @@ export const useEnhancedDeerStreaming = () => {
     processEvent,
     handleError,
     settings,
-    eventCount
+    eventCount,
+    generateMCPSettings
   ]);
 
   const stopStreaming = useCallback(() => {
