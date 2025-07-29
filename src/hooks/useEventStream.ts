@@ -20,50 +20,37 @@ interface UseEventStreamResult {
   error: string | null;
 }
 
-/**
- * Simple SSE chunk parser - direct event processing
- */
 function parseSSEChunk(chunk: string): StreamEvent[] {
   const events: StreamEvent[] = [];
   const lines = chunk.split('\n');
   
-  let currentEvent: any = { data: null };
+  let currentEvent = 'message';
+  let currentData: string | null = null;
   
   for (const line of lines) {
-    const trimmedLine = line.trim();
+    const colonIndex = line.indexOf(': ');
+    if (colonIndex === -1) continue;
     
-    if (trimmedLine === '') {
-      // Empty line indicates end of event
-      if (currentEvent.data !== null) {
-        events.push(currentEvent as StreamEvent);
-        currentEvent = { data: null };
-      }
-      continue;
-    }
+    const key = line.slice(0, colonIndex);
+    const value = line.slice(colonIndex + 2);
     
-    if (trimmedLine.startsWith('data: ')) {
-      const dataStr = trimmedLine.slice(6);
-      if (dataStr === '[DONE]') {
-        break; // Stream completed
-      }
-      
-      try {
-        currentEvent.data = JSON.parse(dataStr);
-      } catch (e) {
-        // If not JSON, create a simple event
-        currentEvent = {
-          event: 'message_chunk',
-          data: { content: dataStr }
-        };
-      }
-    } else if (trimmedLine.startsWith('event: ')) {
-      currentEvent.event = trimmedLine.slice(7);
+    if (key === 'event') {
+      currentEvent = value;
+    } else if (key === 'data') {
+      currentData = value;
     }
   }
   
-  // Handle final event if no trailing newline
-  if (currentEvent.data !== null) {
-    events.push(currentEvent as StreamEvent);
+  // Only process if we have data (like original)
+  if (currentData !== null && currentData !== '[DONE]') {
+    try {
+      events.push({
+        event: currentEvent as any,
+        data: JSON.parse(currentData)
+      });
+    } catch (error) {
+      console.warn('Failed to parse SSE data:', currentData);
+    }
   }
   
   return events;
