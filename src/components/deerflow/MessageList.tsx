@@ -37,7 +37,7 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
   const messages = useMessageList();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom when new messages arrive
+  // Auto-scroll to bottom when new messages arrive - use stable dependencies
   useEffect(() => {
     if (scrollAreaRef.current) {
       const scrollElement = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
@@ -45,7 +45,7 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
         scrollElement.scrollTop = scrollElement.scrollHeight;
       }
     }
-  }, [messages]);
+  }, [messages.length, messages[messages.length - 1]?.id]);
 
   const handleSendMessage = (message: string) => {
     if (onSendMessage) {
