@@ -76,11 +76,17 @@ export const useEnhancedDeerStreaming = () => {
 
     try {
       // Direct message update using React state patterns
-      currentPartialMessageRef.current = mergeMessage(currentPartialMessageRef.current, event);
+      if (currentPartialMessageRef.current.id) {
+        currentPartialMessageRef.current = mergeMessage(currentPartialMessageRef.current as DeerMessage, event);
+      }
 
       // Update store immediately (React 18 batches automatically)
       if (existsMessage(messageIdRef.current)) {
-        updateMessage(messageIdRef.current, currentPartialMessageRef.current);
+        const existingMessage = getMessage(messageIdRef.current);
+        if (existingMessage) {
+          const updated = mergeMessage(existingMessage, event);
+          updateMessage(messageIdRef.current, updated);
+        }
       }
 
       // Handle agent-based UI updates with immediate responsiveness
@@ -291,10 +297,8 @@ export const useEnhancedDeerStreaming = () => {
       }, requestBody); // Pass request body to the stream
 
       // Finalize message when streaming completes
-      if (messageIdRef.current && currentPartialMessageRef.current) {
-        const finalMessage = createCompleteMessage(currentPartialMessageRef.current);
+      if (messageIdRef.current) {
         updateMessage(messageIdRef.current, {
-          ...finalMessage,
           isStreaming: false
         });
       }

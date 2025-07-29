@@ -141,7 +141,9 @@ export const useEnhancedStreaming = () => {
             // Process events immediately for maximum responsiveness
             processActivityEvent(event);
             
-            currentMessage = mergeMessage(currentMessage, event);
+            if (currentMessage.id) {
+              currentMessage = mergeMessage(currentMessage as DeerMessage, event);
+            }
 
             // Update the streaming state
             setStreamingState(prev => ({
