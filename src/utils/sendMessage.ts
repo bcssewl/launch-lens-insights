@@ -46,57 +46,64 @@ const getChatStreamSettings = (): ChatSettings => ({
   mcpSettings: {}
 });
 
-// Real DeerFlow streaming API call
+// Real DeerFlow API call using the actual backend service
 async function* chatStream(
   content: string,
   params: any,
   options: StreamOptions = {}
 ): AsyncGenerator<any> {
-  console.log('🌊 Starting DeerFlow stream with backend API:', { content, params });
+  console.log('🌊 Starting DeerFlow stream with real API:', { content, params });
   
   try {
-    // Get auth token from Supabase
-    const { supabase } = await import('@/integrations/supabase/client');
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (!session?.access_token) {
-      throw new Error('No authentication token available');
-    }
+    // Prepare the request body according to DeerFlow API schema
+    const requestBody = {
+      messages: content ? [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: content
+            }
+          ]
+        }
+      ] : null,
+      resources: params.resources || null,
+      debug: false,
+      thread_id: params.thread_id || "__default__",
+      max_plan_iterations: params.max_plan_iterations || 1,
+      max_step_num: params.max_step_num || 3,
+      max_search_results: params.max_search_results || 3,
+      auto_accepted_plan: params.auto_accepted_plan || false,
+      interrupt_feedback: params.interrupt_feedback || null,
+      mcp_settings: params.mcp_settings || null,
+      enable_background_investigation: params.enable_background_investigation ?? true,
+      report_style: params.report_style || "academic",
+      enable_deep_thinking: params.enable_deep_thinking || false,
+    };
 
-    // Call the DeerFlow streaming edge function
-    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/deerflow-stream`, {
+    console.log('📤 Sending request to DeerFlow API:', requestBody);
+
+    // Call the real DeerFlow API
+    const response = await fetch('https://deer-flow-wrappers.up.railway.app/api/chat/stream', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`,
       },
-      body: JSON.stringify({
-        content,
-        thread_id: params.thread_id,
-        interrupt_feedback: params.interrupt_feedback,
-        resources: params.resources,
-        auto_accepted_plan: params.auto_accepted_plan,
-        enable_deep_thinking: params.enable_deep_thinking,
-        enable_background_investigation: params.enable_background_investigation,
-        max_plan_iterations: params.max_plan_iterations,
-        max_step_num: params.max_step_num,
-        max_search_results: params.max_search_results,
-        report_style: params.report_style,
-        mcp_settings: params.mcp_settings,
-      }),
+      body: JSON.stringify(requestBody),
       signal: options.abortSignal,
     });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(`Stream request failed: ${response.status} ${errorData.error || response.statusText}`);
+      throw new Error(`DeerFlow API request failed: ${response.status} ${errorData.detail || response.statusText}`);
     }
 
     if (!response.body) {
-      throw new Error('No response body received from stream');
+      throw new Error('No response body received from DeerFlow API');
     }
 
-    // Parse Server-Sent Events
+    // Parse Server-Sent Events from DeerFlow
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
@@ -106,7 +113,7 @@ async function* chatStream(
         const { done, value } = await reader.read();
         
         if (done) {
-          console.log('🏁 Stream completed');
+          console.log('🏁 DeerFlow stream completed');
           break;
         }
 
@@ -118,10 +125,15 @@ async function* chatStream(
           if (line.startsWith('data: ')) {
             try {
               const eventData = JSON.parse(line.slice(6));
-              console.log('📨 Stream event:', eventData.type, eventData.data);
-              yield eventData;
+              console.log('📨 DeerFlow event:', eventData);
+              
+              // Convert DeerFlow events to our expected format
+              const convertedEvent = convertDeerFlowEvent(eventData);
+              if (convertedEvent) {
+                yield convertedEvent;
+              }
             } catch (parseError) {
-              console.warn('Failed to parse SSE data:', line, parseError);
+              console.warn('Failed to parse DeerFlow SSE data:', line, parseError);
             }
           }
         }
@@ -131,11 +143,11 @@ async function* chatStream(
     }
 
   } catch (error) {
-    console.error('❌ Stream error:', error);
+    console.error('❌ DeerFlow API error:', error);
     
     // If it's an abort error, don't yield error - just return
     if (error.name === 'AbortError') {
-      console.log('🛑 Stream aborted by user');
+      console.log('🛑 DeerFlow stream aborted by user');
       return;
     }
     
@@ -143,10 +155,76 @@ async function* chatStream(
     yield {
       type: 'error',
       data: {
-        error: error.message || 'Stream connection failed'
+        error: error.message || 'DeerFlow API connection failed'
       }
     };
   }
+}
+
+// Convert DeerFlow API events to our internal format
+function convertDeerFlowEvent(deerFlowEvent: any): any | null {
+  // DeerFlow sends events in a different format, we need to convert them
+  // to match our expected { type, data } structure
+  
+  console.log('🔄 Converting DeerFlow event:', deerFlowEvent);
+  
+  // Handle different DeerFlow event types based on the API documentation
+  if (deerFlowEvent.event) {
+    switch (deerFlowEvent.event) {
+      case 'message_start':
+        return {
+          type: 'message_start',
+          data: {
+            id: deerFlowEvent.message?.id || crypto.randomUUID(),
+            thread_id: deerFlowEvent.message?.thread_id,
+            role: deerFlowEvent.message?.role || 'assistant',
+            agent: deerFlowEvent.message?.metadata?.agent,
+            content: deerFlowEvent.message?.content || ''
+          }
+        };
+        
+      case 'message_chunk':
+        return {
+          type: 'message_chunk',
+          data: {
+            id: deerFlowEvent.message?.id,
+            thread_id: deerFlowEvent.message?.thread_id,
+            content: deerFlowEvent.delta?.content || deerFlowEvent.content || '',
+            reasoning_content: deerFlowEvent.delta?.reasoning_content
+          }
+        };
+        
+      case 'message_end':
+        return {
+          type: 'message_end',
+          data: {
+            id: deerFlowEvent.message?.id,
+            thread_id: deerFlowEvent.message?.thread_id,
+            isStreaming: false,
+            finish_reason: deerFlowEvent.message?.finish_reason,
+            options: deerFlowEvent.message?.options
+          }
+        };
+        
+      default:
+        // For other events, pass them through with minimal transformation
+        return {
+          type: deerFlowEvent.event,
+          data: deerFlowEvent.data || deerFlowEvent
+        };
+    }
+  }
+  
+  // If it's already in our expected format, pass it through
+  if (deerFlowEvent.type && deerFlowEvent.data) {
+    return deerFlowEvent;
+  }
+  
+  // For unknown formats, wrap in a generic event
+  return {
+    type: 'unknown',
+    data: deerFlowEvent
+  };
 }
 
 /**
