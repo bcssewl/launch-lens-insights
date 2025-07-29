@@ -163,68 +163,96 @@ async function* chatStream(
 
 // Convert DeerFlow API events to our internal format
 function convertDeerFlowEvent(deerFlowEvent: any): any | null {
-  // DeerFlow sends events in a different format, we need to convert them
-  // to match our expected { type, data } structure
-  
   console.log('🔄 Converting DeerFlow event:', deerFlowEvent);
   
-  // Handle different DeerFlow event types based on the API documentation
-  if (deerFlowEvent.event) {
-    switch (deerFlowEvent.event) {
-      case 'message_start':
-        return {
-          type: 'message_start',
-          data: {
-            id: deerFlowEvent.message?.id || crypto.randomUUID(),
-            thread_id: deerFlowEvent.message?.thread_id,
-            role: deerFlowEvent.message?.role || 'assistant',
-            agent: deerFlowEvent.message?.metadata?.agent,
-            content: deerFlowEvent.message?.content || ''
-          }
-        };
-        
-      case 'message_chunk':
-        return {
-          type: 'message_chunk',
-          data: {
-            id: deerFlowEvent.message?.id,
-            thread_id: deerFlowEvent.message?.thread_id,
-            content: deerFlowEvent.delta?.content || deerFlowEvent.content || '',
-            reasoning_content: deerFlowEvent.delta?.reasoning_content
-          }
-        };
-        
-      case 'message_end':
-        return {
-          type: 'message_end',
-          data: {
-            id: deerFlowEvent.message?.id,
-            thread_id: deerFlowEvent.message?.thread_id,
-            isStreaming: false,
-            finish_reason: deerFlowEvent.message?.finish_reason,
-            options: deerFlowEvent.message?.options
-          }
-        };
-        
-      default:
-        // For other events, pass them through with minimal transformation
-        return {
-          type: deerFlowEvent.event,
-          data: deerFlowEvent.data || deerFlowEvent
-        };
+  // DeerFlow API sends different event types than our internal format
+  // We need to map them correctly based on the API docs
+  
+  // Handle simple text content
+  if (typeof deerFlowEvent === 'string') {
+    return {
+      type: 'message_chunk',
+      data: {
+        id: nanoid(),
+        content: deerFlowEvent,
+        role: 'assistant'
+      }
+    };
+  }
+  
+  // Handle structured events
+  if (typeof deerFlowEvent === 'object' && deerFlowEvent !== null) {
+    // If it has type/event field, handle based on that
+    const eventType = deerFlowEvent.type || deerFlowEvent.event;
+    
+    if (eventType) {
+      switch (eventType) {
+        case 'content':
+        case 'message':
+        case 'text':
+          return {
+            type: 'message_chunk',
+            data: {
+              id: deerFlowEvent.id || nanoid(),
+              content: deerFlowEvent.content || deerFlowEvent.text || '',
+              role: 'assistant',
+              agent: deerFlowEvent.agent
+            }
+          };
+          
+        case 'thinking':
+        case 'reasoning':
+          return {
+            type: 'message_chunk',
+            data: {
+              id: deerFlowEvent.id || nanoid(),
+              reasoning_content: deerFlowEvent.content || deerFlowEvent.text || '',
+              role: 'assistant'
+            }
+          };
+          
+        case 'tool_call':
+          return {
+            type: 'tool_call',
+            data: deerFlowEvent.data || deerFlowEvent
+          };
+          
+        case 'done':
+        case 'complete':
+          return {
+            type: 'message_end',
+            data: {
+              id: deerFlowEvent.id || nanoid(),
+              finish_reason: 'stop'
+            }
+          };
+          
+        default:
+          // Pass through unknown events
+          return {
+            type: eventType,
+            data: deerFlowEvent.data || deerFlowEvent
+          };
+      }
+    }
+    
+    // If no type field, treat as content
+    if (deerFlowEvent.content || deerFlowEvent.text) {
+      return {
+        type: 'message_chunk',
+        data: {
+          id: deerFlowEvent.id || nanoid(),
+          content: deerFlowEvent.content || deerFlowEvent.text || '',
+          role: 'assistant',
+          agent: deerFlowEvent.agent
+        }
+      };
     }
   }
   
-  // If it's already in our expected format, pass it through
-  if (deerFlowEvent.type && deerFlowEvent.data) {
-    return deerFlowEvent;
-  }
-  
-  // For unknown formats, wrap in a generic event
-  return {
-    type: 'unknown',
-    data: deerFlowEvent
-  };
+  // For unknown formats, return null to skip
+  console.warn('⚠️ Unknown DeerFlow event format:', deerFlowEvent);
+  return null;
 }
 
 /**
@@ -296,12 +324,13 @@ export async function sendMessage(
       // STEP 3: Handle tool call results (find existing message)
       if (type === "tool_call_result") {
         message = findMessageByToolCallId(data.tool_call_id);
-      } else if (!existsMessage(messageId)) {
+      } else if (!messageId || !existsMessage(messageId)) {
         // STEP 4: Create new assistant message
+        const newMessageId = messageId || nanoid();
         message = {
-          id: messageId,
-          threadId: data.thread_id,
-          agent: data.agent,
+          id: newMessageId,
+          threadId: data.thread_id || currentThreadId,
+          agent: data.agent || 'assistant',
           role: data.role || 'assistant',
           content: "",
           contentChunks: [],
@@ -313,6 +342,7 @@ export async function sendMessage(
           ...(data.options && { options: data.options })
         };
         appendMessage(message);
+        messageId = newMessageId;
       }
       
       // STEP 5: Merge streaming event into message
