@@ -42,7 +42,7 @@ const getChatStreamSettings = (): ChatSettings => ({
   maxPlanIterations: 3,
   maxStepNum: 10,
   maxSearchResults: 10,
-  reportStyle: 'comprehensive',
+  reportStyle: 'academic',
   mcpSettings: {}
 });
 
