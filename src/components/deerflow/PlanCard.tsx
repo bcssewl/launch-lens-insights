@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Brain, Play, CheckCircle, Clock, Loader2 } from 'lucide-react';
+import { Brain, Play, CheckCircle, Clock, Loader2, Search, Cog, AlertCircle, ChevronDown, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DeerMessage } from '@/stores/deerFlowMessageStore';
 import { motion } from 'motion/react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { useDeerFlowMessageStore } from '@/stores/deerFlowMessageStore';
 
-// ADD greeting messages array (matching original):
+// Greeting messages array matching original DeerFlow
 const GREETINGS = [
   "Perfect",
   "Great", 
@@ -17,14 +19,20 @@ const GREETINGS = [
   "Awesome"
 ];
 
-interface PlanData {
-  title?: string;
-  thought?: string;  // ADD: reasoning content
-  steps?: { 
-    title?: string; 
-    description?: string; 
-  }[];  // CHANGE: from string[] to object[]
-  // Remove topics, approach, deliverable - these aren't in the original format
+// Exact API data structures matching DeerFlow backend
+interface Step {
+  need_web_search: boolean;        // Note: API uses "need_web_search", not "need_search"
+  title: string;
+  description: string;
+  step_type: "research" | "processing";
+}
+
+interface Plan {
+  locale: string;                  // e.g. "en-US", "zh-CN"
+  has_enough_context: boolean;
+  thought: string;                 // Planner's reasoning about the task
+  title: string;                   // Research plan title
+  steps: Step[];                   // Array of research/processing steps
 }
 
 interface PlanCardProps {
@@ -35,17 +43,45 @@ interface PlanCardProps {
 }
 
 export const PlanCard = ({ message, onStartResearch, onSendMessage, isExecuting = false }: PlanCardProps) => {
-  const [planData, setPlanData] = useState<PlanData | null>(null);
+  const [planData, setPlanData] = useState<Plan | null>(null);
   const [isCompleted, setIsCompleted] = useState(false);
-
+  const [isErrorExpanded, setIsErrorExpanded] = useState(false);
+  const [parseError, setParseError] = useState<string | null>(null);
+  
+  // Parse plan data from message content
   useEffect(() => {
+    if (!message?.content) {
+      setPlanData(null);
+      setParseError("No content available");
+      return;
+    }
+
     try {
-      // Parse JSON content exactly like original DeerFlow
-      const parsed = JSON.parse(message.content || '{}');
+      // Handle streamed content - try direct JSON parse first
+      let content = message.content.trim();
+      
+      // If content starts with text before JSON, try to extract JSON block
+      if (!content.startsWith('{')) {
+        const jsonMatch = content.match(/```json\s*(\{.*?\})\s*```/s) || 
+                         content.match(/(\{.*\})/s);
+        if (jsonMatch) {
+          content = jsonMatch[1];
+        }
+      }
+      
+      const parsed = JSON.parse(content) as Plan;
+      
+      // Validate required fields
+      if (!parsed.title || !Array.isArray(parsed.steps)) {
+        throw new Error("Invalid plan structure: missing title or steps");
+      }
+      
       setPlanData(parsed);
+      setParseError(null);
       console.log('📋 Parsed plan data:', parsed);
     } catch (error) {
       console.error('❌ Failed to parse planner content:', error);
+      setParseError(`JSON parsing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setPlanData(null);
     }
   }, [message.content]);
@@ -74,27 +110,79 @@ export const PlanCard = ({ message, onStartResearch, onSendMessage, isExecuting 
     }
   };
 
-  // REMOVE the fallback markdown parsing - if JSON fails, show error state
-  if (!planData || (!planData.title && !planData.steps)) {
+  // Error state with collapsible raw content
+  if (parseError) {
     return (
-      <Card className="w-full border-red-200 bg-red-50/50 dark:bg-red-950/20">
-        <CardContent className="p-6">
-          <div className="text-center">
-            <h3 className="text-lg font-medium text-red-800 dark:text-red-200 mb-2">
-              Plan Parsing Error
-            </h3>
-            <p className="text-sm text-red-600 dark:text-red-400">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.3 }}
+      >
+        <Card className="border-red-200 bg-red-50/50">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-red-500" />
+              <span className="font-semibold text-red-700">Plan Parsing Error</span>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-red-600">
               Unable to parse research plan. Expected JSON format.
             </p>
-            <details className="mt-2 text-xs">
-              <summary>Raw content:</summary>
-              <pre className="mt-1 p-2 bg-red-100 dark:bg-red-900/30 rounded">
-                {message.content}
-              </pre>
-            </details>
-          </div>
-        </CardContent>
-      </Card>
+            
+            <Collapsible open={isErrorExpanded} onOpenChange={setIsErrorExpanded}>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" size="sm" className="w-full justify-between text-red-600">
+                  View Raw Content
+                  {isErrorExpanded ? (
+                    <ChevronDown className="h-4 w-4" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4" />
+                  )}
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-2">
+                <div className="rounded border bg-red-100/50 p-3">
+                  <p className="text-xs font-medium text-red-700 mb-1">Error:</p>
+                  <p className="text-xs text-red-600 mb-3">{parseError}</p>
+                  <p className="text-xs font-medium text-red-700 mb-1">Raw Content:</p>
+                  <pre className="text-xs text-red-600 whitespace-pre-wrap break-words">
+                    {message.content}
+                  </pre>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          </CardContent>
+        </Card>
+      </motion.div>
+    );
+  }
+
+  // Loading state while parsing or if no plan data yet
+  if (!planData) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.3 }}
+      >
+        <Card className="border-blue-200 bg-blue-50/50">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <Brain className="h-5 w-5 text-blue-600" />
+              <span className="font-semibold text-blue-700">Research Plan</span>
+              <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+                Generating...
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
     );
   }
 
@@ -146,13 +234,31 @@ export const PlanCard = ({ message, onStartResearch, onSendMessage, isExecuting 
         </CardHeader>
         
         <CardContent className="space-y-4">
-          {/* Show reasoning/thought content */}
+          {/* Metadata */}
+          {(planData.locale || planData.has_enough_context !== undefined) && (
+            <div className="flex flex-wrap gap-2 text-xs">
+              {planData.locale && (
+                <Badge variant="outline" className="border-blue-200 text-blue-700">
+                  {planData.locale}
+                </Badge>
+              )}
+              <Badge 
+                variant="outline" 
+                className={`${planData.has_enough_context 
+                  ? 'border-green-200 text-green-700' 
+                  : 'border-orange-200 text-orange-700'
+                }`}
+              >
+                {planData.has_enough_context ? 'Sufficient Context' : 'Additional Context Needed'}
+              </Badge>
+            </div>
+          )}
+
+          {/* Reasoning Section */}
           {planData.thought && (
-            <div className="p-3 bg-blue-100/50 dark:bg-blue-950/30 rounded-lg">
-              <h5 className="font-medium text-sm text-blue-900 dark:text-blue-200 mb-1">
-                Reasoning:
-              </h5>
-              <p className="text-sm text-blue-800 dark:text-blue-300">
+            <div className="rounded-lg bg-blue-100/50 p-3 border border-blue-200/50 dark:bg-blue-950/30 dark:border-blue-800/50">
+              <p className="text-xs font-semibold text-blue-800 dark:text-blue-200 mb-2">Reasoning:</p>
+              <p className="text-sm text-blue-700 dark:text-blue-300 leading-relaxed">
                 {planData.thought}
               </p>
             </div>
@@ -176,18 +282,42 @@ export const PlanCard = ({ message, onStartResearch, onSendMessage, isExecuting 
                     <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-200 text-blue-800 dark:bg-blue-800 dark:text-blue-200 flex items-center justify-center text-xs font-medium">
                       {index + 1}
                     </div>
-                    <div className="flex-1">
-                      {step.title && (
-                        <h6 className="font-medium text-sm text-foreground mb-1">
-                          {step.title}
-                        </h6>
-                      )}
-                      {step.description && (
-                        <p className="text-sm text-muted-foreground">
-                          {step.description}
-                        </p>
-                      )}
-                    </div>
+                     <div className="flex-1 space-y-2">
+                       {/* Step title */}
+                       <h6 className="font-medium text-sm text-blue-900 dark:text-blue-100 leading-tight">
+                         {step.title}
+                       </h6>
+                       
+                       {/* Step description */}
+                       <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
+                         {step.description}
+                       </p>
+                       
+                       {/* Step metadata badges */}
+                       <div className="flex flex-wrap gap-1.5">
+                         <Badge 
+                           variant="outline" 
+                           className={`text-xs ${
+                             step.step_type === 'research' 
+                               ? 'border-purple-200 text-purple-700 bg-purple-50 dark:border-purple-700 dark:text-purple-300 dark:bg-purple-950/30'
+                               : 'border-gray-200 text-gray-700 bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:bg-gray-950/30'
+                           }`}
+                         >
+                           <Cog className="w-3 h-3 mr-1" />
+                           {step.step_type}
+                         </Badge>
+                         
+                         {step.need_web_search && (
+                           <Badge 
+                             variant="outline" 
+                             className="text-xs border-green-200 text-green-700 bg-green-50 dark:border-green-700 dark:text-green-300 dark:bg-green-950/30"
+                           >
+                             <Search className="w-3 h-3 mr-1" />
+                             Web Search
+                           </Badge>
+                         )}
+                       </div>
+                     </div>
                   </motion.div>
                 ))}
               </div>
