@@ -45,9 +45,27 @@ export const ToolCallDisplay = ({ toolCalls, className = "" }: ToolCallDisplayPr
     );
   }
 
+  // Filter out incomplete tool calls - only display those with required properties
+  const validToolCalls = toolCalls.filter(toolCall => 
+    toolCall && 
+    toolCall.id && 
+    toolCall.name && 
+    typeof toolCall.name === 'string'
+  );
+
+  if (validToolCalls.length === 0) {
+    return (
+      <div className={`text-center text-muted-foreground py-8 ${className}`}>
+        <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
+        <p>Tool calls in progress...</p>
+        <p className="text-sm">Waiting for complete tool information</p>
+      </div>
+    );
+  }
+
   return (
     <div className={`space-y-4 ${className}`}>
-      {toolCalls.map((toolCall) => (
+      {validToolCalls.map((toolCall) => (
         <ToolCallCard key={toolCall.id} toolCall={toolCall} />
       ))}
     </div>
@@ -62,12 +80,14 @@ const ToolCallCard = ({ toolCall }: ToolCallCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isArgsExpanded, setIsArgsExpanded] = useState(false);
 
-  // Get tool type from name for icon selection
-  const getToolType = (name: string): string => {
-    if (name.includes('search') || name.includes('github')) return 'web-search';
-    if (name.includes('crawl') || name.includes('visit')) return 'crawl';
-    if (name.includes('python') || name.includes('code')) return 'python';
-    if (name.includes('retriever')) return 'retriever';
+  // Get tool type from name for icon selection with defensive checks
+  const getToolType = (name: string | undefined): string => {
+    if (!name || typeof name !== 'string') return 'generic';
+    const nameLower = name.toLowerCase();
+    if (nameLower.includes('search') || nameLower.includes('github')) return 'web-search';
+    if (nameLower.includes('crawl') || nameLower.includes('visit')) return 'crawl';
+    if (nameLower.includes('python') || nameLower.includes('code')) return 'python';
+    if (nameLower.includes('retriever')) return 'retriever';
     return 'generic';
   };
 
@@ -240,7 +260,7 @@ const ToolCallCard = ({ toolCall }: ToolCallCardProps) => {
           <div className="flex items-center space-x-2">
             {toolIcon}
             <div>
-              <h4 className="font-medium text-sm">{toolCall.name}</h4>
+              <h4 className="font-medium text-sm">{toolCall.name || 'Unknown Tool'}</h4>
               <p className="text-xs text-muted-foreground">Tool execution</p>
             </div>
           </div>
@@ -280,7 +300,7 @@ const ToolCallCard = ({ toolCall }: ToolCallCardProps) => {
         
         {/* Timestamp */}
         <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>Tool: {toolCall.name}</span>
+          <span>Tool: {toolCall.name || 'Unknown'}</span>
           <span>{statusInfo.status}</span>
         </div>
       </CardContent>

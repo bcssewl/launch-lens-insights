@@ -127,12 +127,12 @@ export function mergeMessage(message: DeerMessage, event: StreamEvent): DeerMess
     }
   }
   
-  // Handle tool calls like original
+  // Handle tool calls like original - only create tool calls if they have a name
   if (event.event === "tool_calls" || event.event === "tool_call_chunks") {
     const toolCalls = result.toolCalls || [];
     
-    if (event.event === "tool_calls") {
-      // Complete tool call
+    if (event.event === "tool_calls" && event.data.name) {
+      // Complete tool call - only if it has a name
       const existingIndex = toolCalls.findIndex(tc => tc.id === event.data.id);
       if (existingIndex >= 0) {
         toolCalls[existingIndex] = {
