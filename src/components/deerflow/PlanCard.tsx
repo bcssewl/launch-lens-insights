@@ -7,8 +7,6 @@ import { Brain, Play, Loader2, Search, Settings, ChevronDown, ChevronUp, AlertCi
 import { motion } from 'motion/react';
 import { DeerMessage } from '@/stores/deerFlowMessageStore';
 import { cn } from '@/lib/utils';
-import { parse } from 'best-effort-json-parser';
-
 // Greeting messages array matching original DeerFlow
 const GREETINGS = [
   "Perfect",
@@ -35,13 +33,15 @@ interface Plan {
   steps: Step[];                   // Array of research/processing steps
 }
 
-// Robust JSON parsing function from original DeerFlow
+// Custom robust JSON parsing that handles partial JSON, markdown blocks, and malformed content
 function parseJSON<T>(json: string | null | undefined, fallback: T): T {
   if (!json) {
     return fallback;
   }
+  
   try {
-    const raw = json
+    // Clean up markdown code blocks and whitespace
+    let cleaned = json
       .trim()
       .replace(/^```json\s*/, "")
       .replace(/^```js\s*/, "")
@@ -49,8 +49,34 @@ function parseJSON<T>(json: string | null | undefined, fallback: T): T {
       .replace(/^```plaintext\s*/, "")
       .replace(/^```\s*/, "")
       .replace(/\s*```$/, "");
-    return parse(raw) as T;
-  } catch {
+    
+    // Handle incomplete/streaming JSON by attempting to close it
+    cleaned = cleaned.trim();
+    if (cleaned && !cleaned.endsWith('}') && !cleaned.endsWith(']')) {
+      // Try to find the last complete object/array
+      let openBraces = 0;
+      let openBrackets = 0;
+      let lastValidIndex = -1;
+      
+      for (let i = 0; i < cleaned.length; i++) {
+        if (cleaned[i] === '{') openBraces++;
+        if (cleaned[i] === '}') openBraces--;
+        if (cleaned[i] === '[') openBrackets++;
+        if (cleaned[i] === ']') openBrackets--;
+        
+        if (openBraces === 0 && openBrackets === 0) {
+          lastValidIndex = i;
+        }
+      }
+      
+      if (lastValidIndex > -1) {
+        cleaned = cleaned.substring(0, lastValidIndex + 1);
+      }
+    }
+    
+    return JSON.parse(cleaned) as T;
+  } catch (error) {
+    // Silent fallback - don't log errors for partial content during streaming
     return fallback;
   }
 }
