@@ -103,16 +103,14 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
       .filter((message): message is DeerMessage => {
         if (!message) return false;
         
-        // Original DeerFlow logic: show main chat types + startOfResearch
+        // Show main chat types only
         return (
           message.role === 'user' ||
           message.agent === 'coordinator' ||
-          message.agent === 'planner' ||
-          message.agent === 'podcast' ||
-          researchIds.includes(message.id) // ADD THIS: startOfResearch logic
+          message.agent === 'planner'
         );
       });
-  }, [safeMessageIds, getMessage, researchIds]); // ADD researchIds dependency
+  }, [safeMessageIds, getMessage]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -183,7 +181,12 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
           {/* Render visible messages */}
           {visibleMessages.map((message, index) => {
             const isPlanner = message.agent === 'planner';
-            const isStartOfResearch = researchIds.includes(message.id); // First researcher message
+            
+            // Check if this planner message has an associated research session
+            const hasResearchSession = Array.from(researchPlanIds.entries())
+              .some(([_, planId]) => planId === message.id);
+            
+            console.log('🔄 Rendering message:', message.id, 'Agent:', message.agent, 'Has research:', hasResearchSession);
             
             return (
               <MessageEntryAnimation key={message.id} index={index}>
@@ -203,18 +206,26 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
                     <PlanCard 
                       message={message}
                       onStartResearch={handleStartResearch}
-                      onSendMessage={handleSendMessage}  // ADD
+                      onSendMessage={handleSendMessage}
                       isExecuting={ongoingResearchId !== null}
-                    />
-                  ) : isStartOfResearch ? (
-                    <ResearchCard 
-                      researchId={message.id} // Use the researcher message ID
-                      title={getResearchTitle(message.id)}
                     />
                   ) : (
                     <MessageItem messageId={message.id} />
                   )}
                 </ErrorBoundary>
+              </MessageEntryAnimation>
+            );
+          })}
+
+          {/* Show ResearchCard for active research sessions */}
+          {researchIds.map((researchId) => {
+            const researchTitle = getResearchTitle(researchId);
+            return (
+              <MessageEntryAnimation key={`research-${researchId}`} index={visibleMessages.length}>
+                <ResearchCard 
+                  researchId={researchId}
+                  title={researchTitle}
+                />
               </MessageEntryAnimation>
             );
           })}
