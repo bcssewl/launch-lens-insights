@@ -23,15 +23,15 @@ import remarkGfm from 'remark-gfm';
 
 interface ReportTabProps {
   researchId: string;
-  reportMessageId: string | null;
 }
 
-export const ReportTab = ({ researchId, reportMessageId }: ReportTabProps) => {
+export const ReportTab = ({ researchId }: ReportTabProps) => {
   const { toast } = useToast();
-  const { getMessage, updateMessage } = useDeerFlowMessageStore();
+  const { researchReportIds, getMessage, updateMessage } = useDeerFlowMessageStore();
   
-  // Get the report message if it exists
-  const reportMessage = reportMessageId ? useMessage(reportMessageId) : null;
+  // Get report message ID from research session mapping
+  const reportMessageId = researchReportIds.get(researchId);
+  const reportMessage = reportMessageId ? getMessage(reportMessageId) : null;
   
   // State management
   const [isEditing, setIsEditing] = useState(false);

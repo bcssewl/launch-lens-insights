@@ -416,7 +416,6 @@ export const ResearchPanel = () => {
             {openResearchId ? (
               <NewReportTab 
                 researchId={openResearchId} 
-                reportMessageId={getReporterMessageId(openResearchId)}
               />
             ) : (
               <div className="flex items-center justify-center h-64 text-center">

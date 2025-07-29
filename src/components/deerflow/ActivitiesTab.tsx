@@ -345,32 +345,31 @@ const ToolCallCard = ({ toolCall, config }: { toolCall: ToolCall; config: any })
 };
 
 export const ActivitiesTab = ({ researchId }: ActivitiesTabProps) => {
-  const { getMessagesByThread, getMessage } = useDeerFlowMessageStore();
+  const { researchActivityIds, getMessage } = useDeerFlowMessageStore();
   
-  // Get research message to find thread
-  const researchMessage = getMessage(researchId);
-  
-  // Get all research activity messages
+  // Get research activity messages using correct mapping logic
   const activityToolCalls = useMemo(() => {
-    if (!researchMessage?.threadId) return [];
+    if (!researchId) return [];
     
-    const threadMessages = getMessagesByThread(researchMessage.threadId);
-    const researchMessages = threadMessages.filter(msg => 
-      msg.agent === 'researcher' || 
-      msg.agent === 'coder' ||
-      (msg.toolCalls && msg.toolCalls.length > 0)
-    );
+    // Get activity message IDs for this research session
+    const activityIds = researchActivityIds.get(researchId) || [];
     
-    // Extract all tool calls from research messages
+    // Get all tool calls from activity messages (excluding the planner message)
     const allToolCalls: ToolCall[] = [];
-    researchMessages.forEach(message => {
-      if (message.toolCalls) {
+    
+    activityIds.forEach((messageId, index) => {
+      // Skip first message (planner) - index 0
+      if (index === 0) return;
+      
+      const message = getMessage(messageId);
+      if (message?.toolCalls) {
         allToolCalls.push(...message.toolCalls);
       }
     });
     
-    return allToolCalls;
-  }, [researchMessage, getMessagesByThread]);
+    // Sort by timestamp for chronological order
+    return allToolCalls.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+  }, [researchId, researchActivityIds, getMessage]);
 
   // Group tool calls by type
   const groupedToolCalls = useMemo(() => {
