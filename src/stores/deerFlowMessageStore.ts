@@ -243,23 +243,32 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
 
     console.log('📝 addMessageWithId created:', message.id, 'Thread:', threadId, 'Agent:', message.agent);
     
-    // UPDATE: Set state first
+    // Set state first
     set({ 
       messageIds: newMessageIds,
       messageMap: newMessageMap,
       threadMessageIds: newThreadMessageIds
     });
     
-    // NEW: Auto-handle research session management
+    // Automated research session management
     if (message.agent === 'researcher' || message.agent === 'coder' || message.agent === 'reporter') {
-      console.log('🔬 DEBUG: Research activity detected:', message.id, 'Agent:', message.agent);
+      console.log('🔬 Auto-research trigger:', message.id, 'Agent:', message.agent);
       const store = get();
       const researchId = store.autoStartResearchOnFirstActivity(message);
       
-      // If we have an ongoing research, add this message as an activity
+      // Add to existing research session if auto-start didn't create one
       if (!researchId && store.ongoingResearchId) {
-        console.log('🔬 DEBUG: Adding to existing research session:', store.ongoingResearchId);
+        console.log('🔬 Adding to ongoing research:', store.ongoingResearchId);
         store.addResearchActivity(store.ongoingResearchId, message.id);
+      }
+      
+      // Handle reporter completion - auto-close research and switch to report tab
+      if (message.agent === 'reporter' && !message.isStreaming) {
+        console.log('📄 Reporter finished, completing research session');
+        const activeResearchId = store.ongoingResearchId || researchId;
+        if (activeResearchId) {
+          store.setResearchReport(activeResearchId, message.id);
+        }
       }
     }
   },
