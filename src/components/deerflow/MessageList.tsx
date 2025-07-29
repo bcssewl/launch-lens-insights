@@ -1,8 +1,33 @@
-import { useEffect, useRef } from "react";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { useDeerFlowStore } from "@/stores/deerFlowStore";
-import { MessageItem } from "./MessageItem";
-import { ConversationStarter } from "./ConversationStarter";
+import { useEffect, useRef, useState } from 'react';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { useDeerFlowStore } from '@/stores/deerFlowStore';
+import { MessageItem } from './MessageItem';
+import { ConversationStarter } from './ConversationStarter';
+import { cn } from '@/lib/utils';
+
+/**
+ * Message entry animation component using platform's timing
+ */
+const MessageEntryAnimation = ({ children, index }: { children: React.ReactNode; index: number }) => {
+  const [isVisible, setIsVisible] = useState(false);
+  
+  useEffect(() => {
+    // Stagger animation using platform's timing
+    const delay = index * 100; // Platform's stagger delay
+    setTimeout(() => setIsVisible(true), delay);
+  }, [index]);
+  
+  return (
+    <div className={cn(
+      // Use platform's animation classes
+      "transition-all duration-300 ease-out", // Standard transition
+      !isVisible && "opacity-0 transform translate-y-4", // Entry state
+      isVisible && "opacity-100 transform translate-y-0" // Final state
+    )}>
+      {children}
+    </div>
+  );
+};
 
 interface MessageListProps {
   onSendMessage?: (message: string) => void;
@@ -28,21 +53,29 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
     }
   };
 
+  if (messages.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <ConversationStarter onSendMessage={handleSendMessage} />
+      </div>
+    );
+  }
+
   return (
-    <div className="h-full">
-      <ScrollArea ref={scrollAreaRef} className="h-full px-4">
-        <div className="py-4 pb-20">
-          {messages.length === 0 ? (
-            <ConversationStarter onSendMessage={handleSendMessage} />
-          ) : (
-            <div className="space-y-4 max-w-4xl mx-auto">
-              {messages.map((message) => (
-                <MessageItem key={message.id} message={message} />
-              ))}
-            </div>
-          )}
-        </div>
-      </ScrollArea>
-    </div>
+    <ScrollArea ref={scrollAreaRef} className="h-full">
+      <div className={cn(
+        // Use existing content container styling
+        "w-full max-w-none", // Override prose max-width
+        "space-y-6 sm:space-y-8", // Platform's message spacing
+        "py-4 sm:py-6 lg:py-8", // Platform's container padding
+        "px-4 sm:px-6 lg:px-8" // Platform's horizontal padding
+      )}>
+        {messages.map((message, index) => (
+          <MessageEntryAnimation key={message.id} index={index}>
+            <MessageItem message={message} />
+          </MessageEntryAnimation>
+        ))}
+      </div>
+    </ScrollArea>
   );
 };
