@@ -64,14 +64,16 @@ export const InputBox = ({ onSendMessage }: InputBoxProps) => {
   }, [isRecording]);
 
   return (
-    <div className={cn(
-      // Use platform's input container styling
-      "relative w-full max-w-4xl mx-auto",
-      "bg-background border border-border rounded-lg",
-      "transition-shadow duration-200",
-      "focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary/40"
-    )}>
-      <div className="flex items-end gap-2 p-3">
+    <div className="relative w-full max-w-4xl mx-auto">
+      <div className={cn(
+        // Use platform's input container styling with Launch Lens focus ring
+        "relative w-full",
+        "bg-background border border-border rounded-lg",
+        "transition-all duration-300 ease-out",
+        "hover:shadow-md",
+        "focus-within:ring-1 focus-within:ring-ring focus-within:border-ring"
+      )}>
+        <div className="flex items-end gap-2 p-3">
         {/* Voice recording button */}
         <Button
           variant="ghost"
@@ -92,7 +94,7 @@ export const InputBox = ({ onSendMessage }: InputBoxProps) => {
           value={input}
           onChange={handleInputChange}
           onKeyPress={handleKeyPress}
-          placeholder="Ask me anything about your research..."
+          placeholder={isStreaming ? "DeerFlow is thinking..." : "Ask me anything about your research..."}
           disabled={isStreaming}
           className={cn(
             "flex-1 min-h-[40px] max-h-[120px] resize-none",
@@ -118,15 +120,14 @@ export const InputBox = ({ onSendMessage }: InputBoxProps) => {
             <Send className="w-4 h-4" />
           )}
         </Button>
+        </div>
       </div>
 
-      {/* Status indicator */}
+      {/* Streaming status indicator below input */}
       {isStreaming && (
-        <div className="absolute -top-8 left-3 text-xs text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-            DeerFlow is thinking...
-          </div>
+        <div className="mt-2 flex items-center justify-center gap-2 text-xs text-blue-600">
+          <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+          <span className="font-medium">DeerFlow is analyzing...</span>
         </div>
       )}
     </div>
