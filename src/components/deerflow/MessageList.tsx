@@ -7,6 +7,7 @@ import { ResearchCard } from './ResearchCard';
 import { PlanCard } from './PlanCard';
 import { ConversationStarter } from './ConversationStarter';
 import { PodcastCard } from './PodcastCard';
+import { MessageContainer } from './AnimatedContainers';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -38,26 +39,6 @@ const LoadingAnimation = () => (
   </div>
 );
 
-/**
- * Message entry animation component with staggered animations
- */
-const MessageEntryAnimation = ({ children, index }: { children: React.ReactNode; index: number }) => {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 24 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -24 }}
-      transition={{
-        duration: 0.4,
-        ease: "easeOut",
-        delay: index * 0.1 // Stagger animation
-      }}
-      layout
-    >
-      {children}
-    </motion.div>
-  );
-};
 
 /**
  * Helper function to determine if a message should start a research session display
@@ -218,7 +199,7 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
             console.log('🔄 Rendering message:', message.id, 'Agent:', message.agent, 'Has research:', hasResearchSession);
             
             return (
-              <MessageEntryAnimation key={message.id} index={index}>
+              <MessageContainer key={message.id} index={index}>
                 <ErrorBoundary
                   fallback={
                     <motion.div 
@@ -244,20 +225,20 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
                     <MessageItem messageId={message.id} />
                   )}
                 </ErrorBoundary>
-              </MessageEntryAnimation>
+              </MessageContainer>
             );
           })}
 
           {/* Show ResearchCard for active research sessions */}
-          {researchIds.map((researchId) => {
+          {researchIds.map((researchId, index) => {
             const researchTitle = getResearchTitle(researchId);
             return (
-              <MessageEntryAnimation key={`research-${researchId}`} index={visibleMessages.length}>
+              <MessageContainer key={`research-${researchId}`} index={visibleMessages.length + index}>
                 <ResearchCard 
                   researchId={researchId}
                   title={researchTitle}
                 />
-              </MessageEntryAnimation>
+              </MessageContainer>
             );
           })}
 

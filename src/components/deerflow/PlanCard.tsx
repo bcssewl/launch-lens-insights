@@ -7,6 +7,7 @@ import { Brain, Play, Loader2, Search, Settings, ChevronDown, ChevronUp, AlertCi
 import { motion } from 'motion/react';
 import { DeerMessage } from '@/stores/deerFlowMessageStore';
 import { AnimatedMarkdown } from './AnimatedMarkdown';
+import { PlanCardContainer, PlanStep } from './AnimatedContainers';
 import { cn } from '@/lib/utils';
 // Greeting messages array matching original DeerFlow
 const GREETINGS = [
@@ -187,11 +188,7 @@ export const PlanCard = ({ message, onStartResearch, onSendMessage, isExecuting 
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.3, ease: "easeOut" }}
-    >
+    <PlanCardContainer isStreaming={message.isStreaming}>
       <Card className={cn(
         "w-full transition-all duration-300 hover:shadow-lg",
         "border-blue-200 bg-blue-50/50 dark:bg-blue-950/20 dark:border-blue-800/50",
@@ -276,53 +273,44 @@ export const PlanCard = ({ message, onStartResearch, onSendMessage, isExecuting 
               </h5>
               <div className="space-y-3">
                 {planData.steps.map((step, index) => (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3, delay: index * 0.1 }}
-                    className="flex items-start gap-3 p-3 rounded-md bg-background/50 border border-border/50"
-                  >
-                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-200 text-blue-800 dark:bg-blue-800 dark:text-blue-200 flex items-center justify-center text-xs font-medium">
-                      {index + 1}
-                    </div>
+                  <PlanStep key={index} index={index} className="flex items-start gap-3 p-3 rounded-md bg-background/50 border border-border/50">
                      <div className="flex-1 space-y-2">
-                       {/* Step title */}
-                       <h6 className="font-medium text-sm text-blue-900 dark:text-blue-100 leading-tight">
-                         {step.title}
-                       </h6>
-                       
-                       {/* Step description */}
-                       <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
-                         {step.description}
-                       </p>
-                       
-                       {/* Step metadata badges */}
-                       <div className="flex flex-wrap gap-1.5">
-                          <Badge 
-                            variant="outline" 
-                            className={`text-xs ${
-                              step.step_type === 'research' 
-                                ? 'border-purple-200 text-purple-700 bg-purple-50 dark:border-purple-700 dark:text-purple-300 dark:bg-purple-950/30'
-                                : 'border-gray-200 text-gray-700 bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:bg-gray-950/30'
-                            }`}
-                          >
-                            <Settings className="w-3 h-3 mr-1" />
-                            {step.step_type}
-                          </Badge>
-                         
-                         {step.need_web_search && (
+                        {/* Step title */}
+                        <h6 className="font-medium text-sm text-blue-900 dark:text-blue-100 leading-tight">
+                          {step.title}
+                        </h6>
+                        
+                        {/* Step description */}
+                        <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
+                          {step.description}
+                        </p>
+                        
+                        {/* Step metadata badges */}
+                        <div className="flex flex-wrap gap-1.5">
                            <Badge 
                              variant="outline" 
-                             className="text-xs border-green-200 text-green-700 bg-green-50 dark:border-green-700 dark:text-green-300 dark:bg-green-950/30"
+                             className={`text-xs ${
+                               step.step_type === 'research' 
+                                 ? 'border-purple-200 text-purple-700 bg-purple-50 dark:border-purple-700 dark:text-purple-300 dark:bg-purple-950/30'
+                                 : 'border-gray-200 text-gray-700 bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:bg-gray-950/30'
+                             }`}
                            >
-                             <Search className="w-3 h-3 mr-1" />
-                             Web Search
+                             <Settings className="w-3 h-3 mr-1" />
+                             {step.step_type}
                            </Badge>
-                         )}
-                       </div>
-                     </div>
-                  </motion.div>
+                          
+                          {step.need_web_search && (
+                            <Badge 
+                              variant="outline" 
+                              className="text-xs border-green-200 text-green-700 bg-green-50 dark:border-green-700 dark:text-green-300 dark:bg-green-950/30"
+                            >
+                              <Search className="w-3 h-3 mr-1" />
+                              Web Search
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                  </PlanStep>
                 ))}
               </div>
             </div>
@@ -384,6 +372,6 @@ export const PlanCard = ({ message, onStartResearch, onSendMessage, isExecuting 
           </motion.div>
         </CardContent>
       </Card>
-    </motion.div>
+    </PlanCardContainer>
   );
 };
