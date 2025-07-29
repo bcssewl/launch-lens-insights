@@ -42,6 +42,8 @@ export const useStreamingChat = () => {
     const userMsg: Omit<DeerMessage, 'id' | 'timestamp'> = {
       role: 'user',
       content: userMessage.trim(),
+      threadId: currentThreadId,
+      contentChunks: [],
       isStreaming: false,
     };
     
@@ -53,7 +55,7 @@ export const useStreamingChat = () => {
         ...messages.map(msg => ({
           role: msg.role,
           content: msg.content,
-          agent: msg.metadata?.agent
+          agent: msg.agent
         })),
         {
           role: 'user',
@@ -90,7 +92,7 @@ export const useStreamingChat = () => {
         ...messages.map(msg => ({
           role: msg.role,
           content: msg.content,
-          agent: msg.metadata?.agent
+          agent: msg.agent
         }))
       ],
       resources: [],
@@ -167,12 +169,10 @@ export const useStreamingChat = () => {
         const podcastMessage: Omit<DeerMessage, 'id' | 'timestamp'> = {
           role: 'assistant',
           content: `Podcast generated from the content`,
+          threadId: currentThreadId,
+          contentChunks: [],
           isStreaming: false,
-          metadata: {
-            agent: 'podcast',
-            title: 'Generated Podcast',
-            audioUrl: data.audio_url,
-          }
+          agent: 'podcast'
         };
         
         addMessage(podcastMessage);

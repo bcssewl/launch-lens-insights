@@ -6,7 +6,7 @@
 import { useState, useRef, useCallback, useMemo } from 'react';
 import { useDeerFlowStore } from '@/stores/deerFlowStore';
 import { useDeerFlowMessageStore } from '@/stores/deerFlowMessageStore';
-import { mergeMessage, finalizeMessage, StreamEvent } from '@/utils/mergeMessage';
+import { mergeMessage, createCompleteMessage, StreamEvent } from '@/utils/mergeMessage';
 import { DeerMessage } from '@/stores/deerFlowMessageStore';
 import { useEventStream } from '@/hooks/useEventStream';
 import { useToast } from '@/hooks/use-toast';
@@ -128,7 +128,9 @@ export const useEnhancedDeerStreaming = () => {
     // Add user message first
     addMessage({
       role: 'user',
-      content: question
+      content: question,
+      threadId: currentThreadId,
+      contentChunks: []
     });
 
     // Prepare request body using settings from store with options override
@@ -158,14 +160,12 @@ export const useEnhancedDeerStreaming = () => {
           // Initialize the partial message and refs
           currentPartialMessageRef.current = mergeMessage(null, event);
           
-          const initialMessage = finalizeMessage(currentPartialMessageRef.current, messageIdRef.current);
+          const initialMessage = createCompleteMessage(currentPartialMessageRef.current);
           addMessageWithId({
             ...initialMessage,
-            isStreaming: true,
-            metadata: {
-              ...initialMessage.metadata,
-              threadId: currentThreadId
-            }
+            id: messageIdRef.current,
+            threadId: currentThreadId,
+            isStreaming: true
           });
         } else {
           // Process subsequent events immediately
@@ -175,7 +175,7 @@ export const useEnhancedDeerStreaming = () => {
 
       // Finalize message when streaming completes
       if (messageIdRef.current && currentPartialMessageRef.current) {
-        const finalMessage = finalizeMessage(currentPartialMessageRef.current, messageIdRef.current);
+        const finalMessage = createCompleteMessage(currentPartialMessageRef.current);
         updateMessage(messageIdRef.current, {
           ...finalMessage,
           isStreaming: false
@@ -194,14 +194,16 @@ export const useEnhancedDeerStreaming = () => {
         updateMessage(messageIdRef.current, {
           content: errorContent + `\n\n❌ Error: ${errorMessage}`,
           isStreaming: false,
-          finishReason: 'error'
+          finishReason: 'interrupt'
         });
       } else {
         // Add error message if no message was created
         addMessage({
           role: 'assistant',
           content: `❌ Error: ${errorMessage}`,
-          finishReason: 'error'
+          threadId: currentThreadId,
+          contentChunks: [],
+          finishReason: 'interrupt'
         });
       }
     } finally {

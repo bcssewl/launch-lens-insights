@@ -6,7 +6,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { useDeerFlowStore } from '@/stores/deerFlowStore';
 import { DeerMessage } from '@/stores/deerFlowMessageStore';
-import { mergeMessage, finalizeMessage, StreamEvent } from '@/utils/mergeMessage';
+import { mergeMessage, createCompleteMessage, StreamEvent } from '@/utils/mergeMessage';
 import { useToast } from '@/hooks/use-toast';
 import { useLiveActivityTracker } from '@/hooks/useLiveActivityTracker';
 import { useMemoryOptimization } from '@/hooks/useMemoryOptimization';
@@ -124,7 +124,7 @@ export const useEnhancedStreaming = () => {
           if (dataStr === '[DONE]') {
             // Stream completed
             if (currentMessage) {
-              const finalMessage = finalizeMessage(currentMessage, currentMessageIdRef.current!);
+              const finalMessage = createCompleteMessage(currentMessage);
               
               if (existsMessage(currentMessageIdRef.current!)) {
                 updateMessage(currentMessageIdRef.current!, finalMessage);
@@ -155,11 +155,8 @@ export const useEnhancedStreaming = () => {
               const tempMessage = {
                 ...currentMessage,
                 id: currentMessageIdRef.current,
-                timestamp: new Date(),
-                metadata: {
-                  ...currentMessage.metadata,
-                  threadId: currentThreadId
-                }
+                threadId: currentThreadId,
+                timestamp: new Date()
               } as DeerMessage;
 
               if (existsMessage(currentMessageIdRef.current)) {
@@ -231,9 +228,8 @@ export const useEnhancedStreaming = () => {
             timestamp: new Date(),
             isStreaming: false,
             finishReason: 'interrupt',
-            metadata: {
-              threadId: currentThreadId
-            }
+            threadId: currentThreadId,
+            contentChunks: []
           };
 
           if (existsMessage(currentMessageIdRef.current)) {
