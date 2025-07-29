@@ -5,6 +5,7 @@
 
 import { nanoid } from 'nanoid';
 import { useDeerFlowMessageStore } from '@/stores/deerFlowMessageStore';
+import { useDeerFlowSettingsStore } from '@/stores/deerFlowSettingsStore';
 import { mergeMessage } from './mergeMessage';
 import { toast } from '@/hooks/use-toast';
 
@@ -34,17 +35,25 @@ interface StreamOptions {
   abortSignal?: AbortSignal;
 }
 
-// Mock chat settings - replace with real settings implementation
-const getChatStreamSettings = (): ChatSettings => ({
-  autoAcceptedPlan: false,
-  enableDeepThinking: false,
-  enableBackgroundInvestigation: true,
-  maxPlanIterations: 3,
-  maxStepNum: 10,
-  maxSearchResults: 10,
-  reportStyle: 'academic',
-  mcpSettings: {}
-});
+// Get real chat settings from the store
+const getChatStreamSettings = (): ChatSettings => {
+  const { settings } = useDeerFlowSettingsStore.getState();
+  
+  console.log('📋 Using DeerFlow settings:', settings);
+  
+  return {
+    autoAcceptedPlan: settings.autoAcceptedPlan,
+    enableDeepThinking: settings.deepThinking,
+    enableBackgroundInvestigation: settings.backgroundInvestigation,
+    maxPlanIterations: settings.maxPlanIterations,
+    maxStepNum: settings.maxStepNum,
+    maxSearchResults: settings.maxSearchResults,
+    reportStyle: settings.reportStyle,
+    mcpSettings: {
+      servers: settings.mcpServers.filter(server => server.enabled)
+    }
+  };
+};
 
 // Real DeerFlow API call using the actual backend service
 async function* chatStream(
