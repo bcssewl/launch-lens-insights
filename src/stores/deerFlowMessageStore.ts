@@ -49,7 +49,17 @@ interface DeerFlowMessageState {
   currentPrompt: string;
   streamingMessageId: string | null;
   
-  // Research panel state
+  // Research session tracking
+  researchIds: string[];
+  researchActivityIds: Map<string, string[]>; // researchId -> messageIds
+  researchReportIds: Map<string, string>; // researchId -> reportMessageId
+  researchPlanIds: Map<string, string>; // researchId -> planMessageId
+  
+  // Active research management
+  ongoingResearchId: string | null;
+  openResearchId: string | null;
+  
+  // Research panel state (legacy compatibility)
   researchPanelState: {
     isOpen: boolean;
     openResearchId: string | null;
@@ -80,14 +90,26 @@ interface DeerFlowMessageActions {
   getMessagesByThread: (threadId: string) => DeerMessage[];
   getAllMessages: () => DeerMessage[];
   
+  // Research session management
+  startResearch: (plannerMessageId: string) => string;
+  addResearchActivity: (researchId: string, messageId: string) => void;
+  setResearchReport: (researchId: string, reportMessageId: string) => void;
+  getResearchStatus: (researchId: string) => 'researching' | 'generating-report' | 'completed' | 'unknown';
+  getResearchTitle: (researchId: string) => string;
+  getCurrentResearchId: () => string | null;
+  
+  // Research panel management
+  openResearchPanel: (researchId: string, tab?: 'activities' | 'report') => void;
+  closeResearchPanel: () => void;
+  switchResearchTab: (tab: 'activities' | 'report') => void;
+  
   // Legacy compatibility - computed properties
   messages: DeerMessage[];
   
   // Legacy compatibility - no-op methods  
   getThreadContext: (threadId: string) => { plannerIndicatedDirectAnswer: boolean; expectingReporterDirectAnswer: boolean };
   
-  
-  // Simplified React panel management
+  // Simplified React panel management (legacy)
   setResearchPanel: (isOpen: boolean, messageId?: string, tab?: 'activities' | 'report') => void;
   setReportContent: (content: string) => void;
   setCurrentPrompt: (prompt: string) => void;
@@ -105,12 +127,26 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
   isResponding: false,
   currentPrompt: '',
   streamingMessageId: null,
+  
+  // Research session tracking
+  researchIds: [],
+  researchActivityIds: new Map(),
+  researchReportIds: new Map(),
+  researchPlanIds: new Map(),
+  
+  // Active research management
+  ongoingResearchId: null,
+  openResearchId: null,
+  
+  // Research panel state (legacy compatibility)
   researchPanelState: {
     isOpen: false,
     openResearchId: null,
     activeTab: 'activities'
   },
   reportContent: '',
+  
+  // Error state
   error: {
     message: null,
     type: null,
@@ -279,8 +315,132 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
     }));
   },
   
-  
-  setReportContent: (content) => set({ reportContent: content })
+  setReportContent: (content) => set({ reportContent: content }),
+
+  // Research session management
+  startResearch: (plannerMessageId) => {
+    const researchId = nanoid();
+    const { researchIds, researchPlanIds, researchActivityIds } = get();
+    
+    // Initialize research session
+    set({
+      researchIds: [...researchIds, researchId],
+      researchPlanIds: new Map(researchPlanIds).set(researchId, plannerMessageId),
+      researchActivityIds: new Map(researchActivityIds).set(researchId, [plannerMessageId]),
+      ongoingResearchId: researchId,
+      openResearchId: researchId,
+      researchPanelState: {
+        isOpen: true,
+        openResearchId: researchId,
+        activeTab: 'activities'
+      }
+    });
+    
+    console.log('🔬 Started research session:', researchId);
+    return researchId;
+  },
+
+  addResearchActivity: (researchId, messageId) => {
+    const { researchActivityIds } = get();
+    const newActivityIds = new Map(researchActivityIds);
+    const currentActivities = newActivityIds.get(researchId) || [];
+    newActivityIds.set(researchId, [...currentActivities, messageId]);
+    
+    set({ researchActivityIds: newActivityIds });
+    console.log('🔍 Added research activity:', messageId, 'to research:', researchId);
+  },
+
+  setResearchReport: (researchId, reportMessageId) => {
+    const { researchReportIds } = get();
+    
+    set({
+      researchReportIds: new Map(researchReportIds).set(researchId, reportMessageId),
+      researchPanelState: {
+        isOpen: true,
+        openResearchId: researchId,
+        activeTab: 'report'
+      },
+      ongoingResearchId: null // Mark research as complete
+    });
+    
+    console.log('📄 Set research report:', reportMessageId, 'for research:', researchId);
+  },
+
+  getResearchStatus: (researchId) => {
+    const { researchReportIds, ongoingResearchId, getMessage } = get();
+    const reportId = researchReportIds.get(researchId);
+    const isOngoing = ongoingResearchId === researchId;
+    
+    if (reportId) {
+      const reportMessage = getMessage(reportId);
+      if (reportMessage?.isStreaming) {
+        return 'generating-report';
+      }
+      return 'completed';
+    }
+    
+    if (isOngoing) {
+      return 'researching';
+    }
+    
+    return 'unknown';
+  },
+
+  getResearchTitle: (researchId) => {
+    const { researchPlanIds, getMessage } = get();
+    const planId = researchPlanIds.get(researchId);
+    
+    if (planId) {
+      const planMessage = getMessage(planId);
+      try {
+        const planData = JSON.parse(planMessage?.content || '{}');
+        return planData.title || 'Deep Research';
+      } catch {
+        return planMessage?.content?.slice(0, 50) || 'Deep Research';
+      }
+    }
+    return 'Deep Research';
+  },
+
+  getCurrentResearchId: () => {
+    return get().ongoingResearchId;
+  },
+
+  // Research panel management
+  openResearchPanel: (researchId, tab = 'activities') => {
+    set({
+      openResearchId: researchId,
+      researchPanelState: {
+        isOpen: true,
+        openResearchId: researchId,
+        activeTab: tab
+      }
+    });
+    console.log('🔗 Opened research panel:', researchId, 'tab:', tab);
+  },
+
+  closeResearchPanel: () => {
+    set({
+      openResearchId: null,
+      researchPanelState: {
+        isOpen: false,
+        openResearchId: null,
+        activeTab: 'activities'
+      }
+    });
+    console.log('❌ Closed research panel');
+  },
+
+  switchResearchTab: (tab) => {
+    const { researchPanelState } = get();
+    set({
+      researchPanelState: {
+        ...researchPanelState,
+        activeTab: tab
+      }
+    });
+    console.log('🔄 Switched research tab to:', tab);
+  }
 }));
 
 /**

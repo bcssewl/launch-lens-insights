@@ -46,7 +46,12 @@ export const useEnhancedDeerStreaming = () => {
     setIsResponding,
     setResearchPanel,
     setReportContent,
-    currentThreadId
+    currentThreadId,
+    // Research session management
+    startResearch,
+    addResearchActivity,
+    setResearchReport,
+    getCurrentResearchId
   } = useDeerFlowMessageStore();
 
   const { settings } = useDeerFlowStore();
@@ -113,15 +118,34 @@ export const useEnhancedDeerStreaming = () => {
 
     console.log('✨ Message updated successfully for ID:', messageId);
 
-    // Handle UI updates based on agent
+    // Research session management
     if (event.event === 'message_chunk' && data.agent) {
       switch (data.agent) {
         case 'planner':
-        case 'researcher':
-        case 'coder':
+          // Start new research session for planner messages
+          const researchId = startResearch(messageId);
+          console.log('🔬 Started research session:', researchId, 'for planner:', messageId);
           setResearchPanel(true, messageId, 'activities');
           break;
+          
+        case 'researcher':
+        case 'coder':
+          // Add to current research activities
+          const currentResearchId = getCurrentResearchId();
+          if (currentResearchId) {
+            addResearchActivity(currentResearchId, messageId);
+            console.log('🔍 Added activity:', messageId, 'to research:', currentResearchId);
+          }
+          setResearchPanel(true, messageId, 'activities');
+          break;
+          
         case 'reporter':
+          // Assign as research report
+          const reportResearchId = getCurrentResearchId();
+          if (reportResearchId) {
+            setResearchReport(reportResearchId, messageId);
+            console.log('📄 Set research report:', messageId, 'for research:', reportResearchId);
+          }
           setResearchPanel(true, messageId, 'report');
           break;
       }
@@ -134,7 +158,7 @@ export const useEnhancedDeerStreaming = () => {
     }
 
     setEventCount(prev => prev + 1);
-  }, [getMessage, addMessageWithId, updateMessage, setResearchPanel, setReportContent, currentThreadId]);
+  }, [getMessage, addMessageWithId, updateMessage, setResearchPanel, setReportContent, currentThreadId, startResearch, addResearchActivity, setResearchReport, getCurrentResearchId]);
 
   // Simplified error handling without currentMessageId fallback
   const handleError = useCallback((error: Error) => {

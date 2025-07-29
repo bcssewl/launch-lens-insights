@@ -16,40 +16,29 @@ export const ResearchCard = ({ researchId, title, onToggleResearch }: ResearchCa
   const message = useMessage(researchId);
   const { 
     researchPanelState, 
-    setResearchPanel,
-    getMessagesByThread 
+    openResearchPanel,
+    closeResearchPanel,
+    getResearchStatus,
+    getResearchTitle
   } = useDeerFlowMessageStore();
   
-  const [researchStatus, setResearchStatus] = useState<'researching' | 'generating' | 'completed'>('researching');
   const [isAnimating, setIsAnimating] = useState(true);
 
-  // Monitor research progress by checking related messages
+  // Get research status and title from the store
+  const researchStatus = getResearchStatus(researchId);
+  const researchTitle = getResearchTitle(researchId);
+
+  // Update animation based on research status
   useEffect(() => {
-    if (!message?.threadId) return;
-
-    const threadMessages = getMessagesByThread(message.threadId);
-    const hasReporter = threadMessages.some(msg => msg.agent === 'reporter');
-    const hasCompletedReport = threadMessages.some(msg => 
-      msg.agent === 'reporter' && !msg.isStreaming
-    );
-
-    if (hasCompletedReport) {
-      setResearchStatus('completed');
-      setIsAnimating(false);
-    } else if (hasReporter) {
-      setResearchStatus('generating');
-      setIsAnimating(true);
-    } else {
-      setResearchStatus('researching');
-      setIsAnimating(true);
-    }
-  }, [message, getMessagesByThread]);
+    const shouldAnimate = researchStatus === 'researching' || researchStatus === 'generating-report';
+    setIsAnimating(shouldAnimate);
+  }, [researchStatus]);
 
   const handleToggle = () => {
     if (researchPanelState.isOpen) {
-      setResearchPanel(false);
+      closeResearchPanel();
     } else {
-      setResearchPanel(true, researchId, 'activities');
+      openResearchPanel(researchId, 'activities');
     }
     onToggleResearch?.();
   };
@@ -58,7 +47,7 @@ export const ResearchCard = ({ researchId, title, onToggleResearch }: ResearchCa
     switch (researchStatus) {
       case 'researching':
         return 'Researching...';
-      case 'generating':
+      case 'generating-report':
         return 'Generating Report...';
       case 'completed':
         return 'Report Generated';
@@ -71,7 +60,7 @@ export const ResearchCard = ({ researchId, title, onToggleResearch }: ResearchCa
     switch (researchStatus) {
       case 'researching':
         return <Search className="h-4 w-4" />;
-      case 'generating':
+      case 'generating-report':
         return <PenTool className="h-4 w-4" />;
       case 'completed':
         return <FileText className="h-4 w-4" />;
@@ -80,7 +69,7 @@ export const ResearchCard = ({ researchId, title, onToggleResearch }: ResearchCa
     }
   };
 
-  const displayTitle = title || message?.content?.slice(0, 50) || 'Research Session';
+  const displayTitle = title || researchTitle || message?.content?.slice(0, 50) || 'Research Session';
 
   return (
     <Card className={cn(
@@ -146,8 +135,8 @@ export const ResearchCard = ({ researchId, title, onToggleResearch }: ResearchCa
 
         {/* Completion Badge */}
         {researchStatus === 'completed' && (
-          <div className="mt-2 flex items-center gap-1 text-xs text-success">
-            <div className="w-2 h-2 bg-success rounded-full animate-pulse" />
+          <div className="mt-2 flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+            <div className="w-2 h-2 bg-green-600 dark:bg-green-400 rounded-full animate-pulse" />
             <span>Research complete - Click to view full report</span>
           </div>
         )}
