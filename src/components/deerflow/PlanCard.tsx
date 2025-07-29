@@ -2,17 +2,19 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Brain, Play, CheckCircle, Clock } from 'lucide-react';
+import { Brain, Play, CheckCircle, Clock, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DeerMessage } from '@/stores/deerFlowMessageStore';
 import { motion } from 'motion/react';
 
 interface PlanData {
   title?: string;
-  steps?: string[];
-  topics?: string[];
-  approach?: string;
-  deliverable?: string;
+  thought?: string;  // ADD: reasoning content
+  steps?: { 
+    title?: string; 
+    description?: string; 
+  }[];  // CHANGE: from string[] to object[]
+  // Remove topics, approach, deliverable - these aren't in the original format
 }
 
 interface PlanCardProps {
@@ -27,18 +29,13 @@ export const PlanCard = ({ message, onStartResearch, isExecuting = false }: Plan
 
   useEffect(() => {
     try {
+      // Parse JSON content exactly like original DeerFlow
       const parsed = JSON.parse(message.content || '{}');
       setPlanData(parsed);
-    } catch {
-      // If parsing fails, extract from markdown-like content
-      const content = message.content || '';
-      const titleMatch = content.match(/^#\s*(.+)/m);
-      const stepsMatch = content.match(/(?:Steps?|Plan):\s*\n((?:\d+\.\s*.+\n?)+)/i);
-      
-      setPlanData({
-        title: titleMatch?.[1] || 'Research Plan',
-        steps: stepsMatch?.[1]?.split('\n').filter(step => step.trim()).map(step => step.replace(/^\d+\.\s*/, '')) || [],
-      });
+      console.log('📋 Parsed plan data:', parsed);
+    } catch (error) {
+      console.error('❌ Failed to parse planner content:', error);
+      setPlanData(null);
     }
   }, [message.content]);
 
@@ -53,14 +50,24 @@ export const PlanCard = ({ message, onStartResearch, isExecuting = false }: Plan
     }
   };
 
-  if (!planData) {
+  // REMOVE the fallback markdown parsing - if JSON fails, show error state
+  if (!planData || (!planData.title && !planData.steps)) {
     return (
-      <Card className="w-full border-blue-200 bg-blue-50/50 dark:bg-blue-950/20 animate-pulse">
+      <Card className="w-full border-red-200 bg-red-50/50 dark:bg-red-950/20">
         <CardContent className="p-6">
-          <div className="space-y-3">
-            <div className="h-4 bg-blue-200 dark:bg-blue-800 rounded w-3/4"></div>
-            <div className="h-3 bg-blue-200 dark:bg-blue-800 rounded w-full"></div>
-            <div className="h-3 bg-blue-200 dark:bg-blue-800 rounded w-2/3"></div>
+          <div className="text-center">
+            <h3 className="text-lg font-medium text-red-800 dark:text-red-200 mb-2">
+              Plan Parsing Error
+            </h3>
+            <p className="text-sm text-red-600 dark:text-red-400">
+              Unable to parse research plan. Expected JSON format.
+            </p>
+            <details className="mt-2 text-xs">
+              <summary>Raw content:</summary>
+              <pre className="mt-1 p-2 bg-red-100 dark:bg-red-900/30 rounded">
+                {message.content}
+              </pre>
+            </details>
           </div>
         </CardContent>
       </Card>
@@ -115,84 +122,55 @@ export const PlanCard = ({ message, onStartResearch, isExecuting = false }: Plan
         </CardHeader>
         
         <CardContent className="space-y-4">
-          {planData.title && (
-            <div>
-              <h4 className="font-semibold text-lg text-foreground mb-2">
-                {planData.title}
-              </h4>
-            </div>
-          )}
-
-          {planData.approach && (
+          {/* Show reasoning/thought content */}
+          {planData.thought && (
             <div className="p-3 bg-blue-100/50 dark:bg-blue-950/30 rounded-lg">
               <h5 className="font-medium text-sm text-blue-900 dark:text-blue-200 mb-1">
-                Approach:
+                Reasoning:
               </h5>
               <p className="text-sm text-blue-800 dark:text-blue-300">
-                {planData.approach}
+                {planData.thought}
               </p>
             </div>
           )}
           
+          {/* Show steps with proper object structure */}
           {planData.steps && planData.steps.length > 0 && (
             <div>
               <h5 className="font-medium text-sm text-muted-foreground mb-2">
                 Research Steps:
               </h5>
-              <div className="space-y-2">
-                {planData.steps.map((step: string, index: number) => (
+              <div className="space-y-3">
+                {planData.steps.map((step, index) => (
                   <motion.div
                     key={index}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.3, delay: index * 0.1 }}
-                    className="flex items-start gap-3 p-2 rounded-md bg-background/50"
+                    className="flex items-start gap-3 p-3 rounded-md bg-background/50 border border-border/50"
                   >
-                    <div className={cn(
-                      "flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium",
-                      "bg-blue-200 text-blue-800 dark:bg-blue-800 dark:text-blue-200"
-                    )}>
+                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-200 text-blue-800 dark:bg-blue-800 dark:text-blue-200 flex items-center justify-center text-xs font-medium">
                       {index + 1}
                     </div>
-                    <span className="text-sm text-foreground leading-relaxed">
-                      {step}
-                    </span>
+                    <div className="flex-1">
+                      {step.title && (
+                        <h6 className="font-medium text-sm text-foreground mb-1">
+                          {step.title}
+                        </h6>
+                      )}
+                      {step.description && (
+                        <p className="text-sm text-muted-foreground">
+                          {step.description}
+                        </p>
+                      )}
+                    </div>
                   </motion.div>
                 ))}
               </div>
             </div>
           )}
-
-          {planData.topics && planData.topics.length > 0 && (
-            <div>
-              <h5 className="font-medium text-sm text-muted-foreground mb-2">
-                Key Topics:
-              </h5>
-              <div className="flex flex-wrap gap-2">
-                {planData.topics.map((topic: string, index: number) => (
-                  <Badge
-                    key={index}
-                    variant="outline"
-                    className="bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-950/20 dark:border-blue-800 dark:text-blue-300"
-                  >
-                    {topic}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {planData.deliverable && (
-            <div className="p-3 bg-green-100/50 dark:bg-green-950/30 rounded-lg">
-              <h5 className="font-medium text-sm text-green-900 dark:text-green-200 mb-1">
-                Expected Deliverable:
-              </h5>
-              <p className="text-sm text-green-800 dark:text-green-300">
-                {planData.deliverable}
-              </p>
-            </div>
-          )}
           
+          {/* Start Research Button */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -201,17 +179,12 @@ export const PlanCard = ({ message, onStartResearch, isExecuting = false }: Plan
             <Button 
               onClick={handleStartResearch}
               disabled={isExecuting}
-              className={cn(
-                "w-full transition-all duration-200",
-                "bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600",
-                "text-white shadow-md hover:shadow-lg",
-                "disabled:opacity-50 disabled:cursor-not-allowed"
-              )}
+              className="w-full"
             >
               {isExecuting ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                  Executing Research...
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Research In Progress...
                 </>
               ) : (
                 <>
