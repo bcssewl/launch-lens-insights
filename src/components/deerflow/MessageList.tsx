@@ -3,6 +3,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useMessageIds } from '@/hooks/useOptimizedMessages';
 import { MessageItem } from './MessageItem';
 import { ConversationStarter } from './ConversationStarter';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { cn } from '@/lib/utils';
 
 /**
@@ -38,6 +39,9 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
   const messageIds = useMessageIds();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
+  // Defensive coding: ensure messageIds is always an array
+  const safeMessageIds = Array.isArray(messageIds) ? messageIds : [];
+
   // Auto-scroll to bottom when new messages arrive - use stable dependencies
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -46,7 +50,7 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
         scrollElement.scrollTop = scrollElement.scrollHeight;
       }
     }
-  }, [messageIds.length, messageIds[messageIds.length - 1]]);
+  }, [safeMessageIds.length]);
 
   const handleSendMessage = (message: string) => {
     if (onSendMessage) {
@@ -71,9 +75,17 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
         "py-4 sm:py-6 lg:py-8", // Platform's container padding
         "px-4 sm:px-6 lg:px-8" // Platform's horizontal padding
       )}>
-        {messageIds.map((messageId, index) => (
+        {safeMessageIds.map((messageId, index) => (
           <MessageEntryAnimation key={messageId} index={index}>
-            <MessageItem messageId={messageId} />
+            <ErrorBoundary
+              fallback={
+                <div className="animate-pulse bg-muted/20 rounded-lg h-16 p-4 flex items-center justify-center">
+                  <span className="text-muted-foreground text-sm">Message failed to load</span>
+                </div>
+              }
+            >
+              <MessageItem messageId={messageId} />
+            </ErrorBoundary>
           </MessageEntryAnimation>
         ))}
       </div>

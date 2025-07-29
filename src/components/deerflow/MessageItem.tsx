@@ -85,10 +85,22 @@ export const MessageItem = React.memo(({ messageId }: { messageId: string }) => 
   const message = useMessage(messageId);
   const { openResearchPanel } = useResearchPanel();
   
-  if (!message) return null;
+  // Defensive coding: Handle loading state with skeleton
+  if (!message) {
+    return (
+      <div className="animate-pulse bg-muted/20 rounded-lg h-16 p-4 flex items-center gap-3">
+        <div className="w-8 h-8 bg-muted/40 rounded-full" />
+        <div className="flex-1 space-y-2">
+          <div className="h-3 bg-muted/40 rounded w-1/4" />
+          <div className="h-3 bg-muted/40 rounded w-3/4" />
+        </div>
+      </div>
+    );
+  }
   
+  // Defensive coding: ensure agent display has required properties
   const agentDisplay = getAgentDisplay(message.agent, message.role);
-  const IconComponent = agentDisplay.icon;
+  const IconComponent = agentDisplay?.icon || Bot;
   
   // Handle click for research panel
   const handleClick = () => {

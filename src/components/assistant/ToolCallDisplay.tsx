@@ -84,6 +84,8 @@ const ToolCallCard = ({ toolCall }: ToolCallCardProps) => {
   const getToolType = (name: string | undefined): string => {
     if (!name || typeof name !== 'string') return 'generic';
     const nameLower = name.toLowerCase();
+    // Defensive checks for string methods
+    if (!nameLower?.includes) return 'generic';
     if (nameLower.includes('search') || nameLower.includes('github')) return 'web-search';
     if (nameLower.includes('crawl') || nameLower.includes('visit')) return 'crawl';
     if (nameLower.includes('python') || nameLower.includes('code')) return 'python';
@@ -106,9 +108,9 @@ const ToolCallCard = ({ toolCall }: ToolCallCardProps) => {
     }
   };
 
-  const getStatusInfo = (toolCall: ToolCall) => {
-    const hasResult = toolCall.result !== undefined && toolCall.result !== null;
-    const hasError = !!toolCall.error;
+  const getStatusInfo = (toolCall: Partial<ToolCall>) => {
+    const hasResult = toolCall?.result !== undefined && toolCall?.result !== null;
+    const hasError = !!toolCall?.error;
     
     if (hasError) {
       return {
@@ -134,9 +136,11 @@ const ToolCallCard = ({ toolCall }: ToolCallCardProps) => {
     };
   };
 
-  const toolType = getToolType(toolCall.name);
+  // Defensive coding: Add null checks for tool call properties
+  const toolName = toolCall?.name || 'Unknown Tool';
+  const toolType = getToolType(toolCall?.name);
   const toolIcon = getToolIcon(toolType);
-  const statusInfo = getStatusInfo(toolCall);
+  const statusInfo = getStatusInfo(toolCall || {});
 
   const handleCopyResult = () => {
     if (toolCall.result) {
@@ -182,7 +186,7 @@ const ToolCallCard = ({ toolCall }: ToolCallCardProps) => {
               <Copy className="h-3 w-3" />
             </Button>
           </div>
-          {result.map((item: any, index: number) => (
+          {Array.isArray(result) && result.map((item: any, index: number) => (
             <Card key={index} className="border-muted/50">
               <CardContent className="p-3">
                 <div className="flex gap-3">
@@ -273,7 +277,7 @@ const ToolCallCard = ({ toolCall }: ToolCallCardProps) => {
 
       <CardContent className="pt-0">
         {/* Tool Arguments */}
-        {toolCall.args && Object.keys(toolCall.args).length > 0 && (
+        {toolCall?.args && typeof toolCall.args === 'object' && Object.keys(toolCall.args || {}).length > 0 && (
           <Collapsible open={isArgsExpanded} onOpenChange={setIsArgsExpanded}>
             <CollapsibleTrigger asChild>
               <Button variant="ghost" size="sm" className="w-full justify-start p-0 h-auto text-xs">
