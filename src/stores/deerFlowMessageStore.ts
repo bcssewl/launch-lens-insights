@@ -39,6 +39,8 @@ export interface DeerMessage {
   reasoningContent?: string;
   reasoningContentChunks?: string[];
   agent?: string;
+  options?: FeedbackOption[];
+  interruptFeedback?: string;
 }
 
 

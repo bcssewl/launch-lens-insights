@@ -136,14 +136,23 @@ export const PlanCard = ({ message, onStartResearch, onSendMessage, isExecuting 
     shouldShowLoading: !isCompleted || !isValidPlan
   });
 
+  const handleOptionClick = (option: { text: string; value: string }) => {
+    if (option.value === "accepted") {
+      const greeting = GREETINGS[Math.floor(Math.random() * GREETINGS.length)];
+      onSendMessage?.(`${greeting}! Let's start.`, { interruptFeedback: "accepted" });
+      // Research session will auto-start via the store's automated management
+    } else {
+      // Handle other options like "modify", "reject", etc.
+      onSendMessage?.(option.text, { interruptFeedback: option.value });
+    }
+  };
+
   const handleStartResearch = () => {
-    // Send acceptance message with interrupt feedback
+    // Fallback for when no interrupt options are provided
     const greeting = GREETINGS[Math.floor(Math.random() * GREETINGS.length)];
     const acceptanceMessage = `${greeting}! Let's get started.`;
     
     onSendMessage?.(acceptanceMessage, { interruptFeedback: "accepted" });
-    
-    // Start research session
     onStartResearch?.(message.id);
   };
 
@@ -312,29 +321,59 @@ export const PlanCard = ({ message, onStartResearch, onSendMessage, isExecuting 
             </div>
           )}
           
-          {/* Start Research Button */}
+          {/* Dynamic Interrupt Options or Fallback Button */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.2 }}
+            transition={{ duration: 0.3, delay: 0.3 }}
           >
-            <Button 
-              onClick={handleStartResearch}
-              disabled={isExecuting}
-              className="w-full"
-            >
-              {isExecuting ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Research In Progress...
-                </>
-              ) : (
-                <>
-                  <Play className="w-4 h-4 mr-2" />
-                  Start Research
-                </>
-              )}
-            </Button>
+            {message.options && message.options.length > 0 ? (
+              // Dynamic interrupt options from backend
+              <div className="flex flex-wrap gap-2">
+                {message.options.map((option) => (
+                  <motion.div
+                    key={option.value}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.2, delay: 0.1 }}
+                  >
+                    <Button
+                      onClick={() => handleOptionClick(option)}
+                      variant={option.value === "accepted" ? "default" : "outline"}
+                      disabled={isExecuting}
+                      className={cn(
+                        "transition-all duration-200",
+                        option.value === "accepted" 
+                          ? "bg-blue-600 hover:bg-blue-700 text-white" 
+                          : "border-blue-200 text-blue-700 hover:bg-blue-50 dark:border-blue-700 dark:text-blue-300 dark:hover:bg-blue-950/30"
+                      )}
+                    >
+                      {option.value === "accepted" && <Play className="w-4 h-4 mr-2" />}
+                      {option.text}
+                    </Button>
+                  </motion.div>
+                ))}
+              </div>
+            ) : (
+              // Fallback button when no interrupt options are provided
+              <Button 
+                onClick={handleStartResearch}
+                disabled={isExecuting}
+                className="w-full"
+              >
+                {isExecuting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Research In Progress...
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-4 h-4 mr-2" />
+                    Accept Plan
+                  </>
+                )}
+              </Button>
+            )}
           </motion.div>
         </CardContent>
       </Card>
