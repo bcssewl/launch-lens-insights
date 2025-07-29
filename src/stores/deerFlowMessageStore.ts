@@ -13,6 +13,8 @@ export interface ToolCall {
   argsChunks?: string[];
   result?: any;
   error?: string;
+  status?: 'running' | 'completed' | 'error';
+  timestamp?: number;
 }
 
 export interface FeedbackOption {

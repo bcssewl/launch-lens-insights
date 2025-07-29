@@ -56,8 +56,6 @@ export const useDeerFlowStore = () => {
     updateMessage: messageStore.updateMessage,
     clearMessages: messageStore.clearMessages,
     getMessagesByThread: messageStore.getMessagesByThread,
-    addResearchActivity: messageStore.addResearchActivity,
-    updateResearchActivity: messageStore.updateResearchActivity,
     setReportContent: messageStore.setReportContent,
     createResearchSession: messageStore.createResearchSession,
     getResearchSession: messageStore.getResearchSession,

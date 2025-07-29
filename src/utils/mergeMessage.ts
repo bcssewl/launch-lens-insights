@@ -358,12 +358,22 @@ function mergeToolCallImmutable(
     // Replace existing tool call immutably
     return existingToolCalls.map((tc, index) => 
       index === existingIndex 
-        ? { ...tc, ...newToolCall }
+        ? { 
+            ...tc, 
+            ...newToolCall,
+            status: 'running',
+            timestamp: tc.timestamp || Date.now()
+          }
         : tc
     );
   } else {
-    // Add new tool call immutably
-    return [...existingToolCalls, newToolCall];
+    // Add new tool call immutably with initial status
+    const toolCall: ToolCall = {
+      ...newToolCall,
+      status: 'running',
+      timestamp: Date.now()
+    };
+    return [...existingToolCalls, toolCall];
   }
 }
 
@@ -438,7 +448,9 @@ function mergeToolCallResultImmutable(
         ? {
             ...tc,
             result: resultData.result,
-            error: resultData.error
+            error: resultData.error,
+            status: resultData.error ? 'error' : 'completed',
+            timestamp: tc.timestamp || Date.now()
           }
         : tc
     );
