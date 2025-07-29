@@ -91,21 +91,50 @@ interface PlanCardProps {
 export const PlanCard = ({ message, onStartResearch, onSendMessage, isExecuting = false }: PlanCardProps) => {
   // Parse plan data using robust parseJSON function (matching original DeerFlow)
   const planData = useMemo(() => {
-    return parseJSON<Plan>(message.content ?? "", {} as Plan);
-  }, [message.content]);
+    const parsed = parseJSON<Plan>(message.content ?? "", {} as Plan);
+    
+    // Debug logging
+    console.log('🎯 PlanCard Debug:', {
+      messageId: message.id,
+      messageAgent: message.agent,
+      isStreaming: message.isStreaming,
+      contentLength: message.content?.length || 0,
+      rawContent: message.content,
+      parsedData: parsed,
+      hasSteps: parsed?.steps?.length > 0,
+      hasTitle: !!parsed?.title,
+      hasThought: !!parsed?.thought
+    });
+    
+    return parsed;
+  }, [message.content, message.id, message.agent, message.isStreaming]);
 
   // Status tracking
   const [isCompleted, setIsCompleted] = useState(false);
 
   // Update completion status based on streaming
   useEffect(() => {
-    setIsCompleted(!message.isStreaming && message.content.length > 0);
-  }, [message.isStreaming, message.content.length]);
+    const completed = !message.isStreaming && message.content.length > 0;
+    setIsCompleted(completed);
+    console.log('🎯 PlanCard Completion Status:', {
+      messageId: message.id,
+      isStreaming: message.isStreaming,
+      contentLength: message.content.length,
+      isCompleted: completed
+    });
+  }, [message.isStreaming, message.content.length, message.id]);
 
-  // Validate plan structure (graceful degradation)
+  // Validate plan structure (more lenient validation)
   const isValidPlan = planData && 
     typeof planData === 'object' && 
-    ('steps' in planData || 'title' in planData || 'thought' in planData);
+    (planData.steps?.length > 0 || planData.title || planData.thought);
+    
+  console.log('🎯 PlanCard Validation:', {
+    messageId: message.id,
+    isValidPlan,
+    isCompleted,
+    shouldShowLoading: !isCompleted || !isValidPlan
+  });
 
   const handleStartResearch = () => {
     // Send acceptance message with interrupt feedback
