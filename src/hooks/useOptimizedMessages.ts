@@ -12,14 +12,16 @@ import type { DeerMessage } from '@/stores/deerFlowMessageStore';
  * Only re-renders when the specific thread's messages change
  */
 export const useMessageList = (threadId?: string) => {
-  return useDeerFlowMessageStore(useCallback((state) => {
-    if (threadId) {
-      return state.getMessagesByThread(threadId);
-    }
-    
-    // Return messages for current thread
-    return state.getMessagesByThread(state.currentThreadId);
-  }, [threadId]));
+  // Use stable reference with proper dependency array
+  const selector = useCallback((state) => {
+    const targetThreadId = threadId || state.currentThreadId;
+    return state.getMessagesByThread(targetThreadId);
+  }, [threadId]);
+  
+  // Memoize the result to stabilize array reference
+  const messages = useDeerFlowMessageStore(selector);
+  
+  return useMemo(() => messages, [messages]);
 };
 
 /**
