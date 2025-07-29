@@ -1,6 +1,7 @@
 import DashboardLayout from '@/layouts/DashboardLayout';
 import { useDeerFlowMessageStore } from '@/stores/deerFlowMessageStore';
 import { useDeerFlowKeyboard } from '@/hooks/useDeerFlowKeyboard';
+import { useEnhancedDeerStreaming } from '@/hooks/useEnhancedDeerStreaming';
 import { DeerFlowHeader } from '@/components/deerflow/DeerFlowHeader';
 import { MessageList } from '@/components/deerflow/MessageList';
 import { InputBox } from '@/components/deerflow/InputBox';
@@ -64,9 +65,16 @@ export default function DeerFlowPage() {
  */
 const DesktopDeerFlowLayout = () => {
   const { researchPanelState } = useDeerFlowMessageStore();
+  const { startDeerFlowStreaming } = useEnhancedDeerStreaming();
   
   // Enable keyboard navigation
   useDeerFlowKeyboard();
+  
+  const handleSendMessage = (message: string, options?: { interruptFeedback?: string }) => {
+    startDeerFlowStreaming(message, {
+      interruptFeedback: options?.interruptFeedback
+    });
+  };
   
   const doubleColumnMode = researchPanelState.isOpen;
 
@@ -100,7 +108,7 @@ const DesktopDeerFlowLayout = () => {
               
               {/* Input area - Fixed at bottom */}
               <div className="flex-shrink-0 border-t bg-background/95 backdrop-blur-sm pt-4">
-                <InputBox />
+                <InputBox onSendMessage={handleSendMessage} />
               </div>
             </div>
 
@@ -155,9 +163,16 @@ const DesktopDeerFlowLayout = () => {
  */
 const MobileDeerFlowLayout = () => {
   const { researchPanelState, closeResearchPanel } = useDeerFlowMessageStore();
+  const { startDeerFlowStreaming } = useEnhancedDeerStreaming();
   
   // Enable keyboard navigation on mobile too
   useDeerFlowKeyboard();
+
+  const handleSendMessage = (message: string, options?: { interruptFeedback?: string }) => {
+    startDeerFlowStreaming(message, {
+      interruptFeedback: options?.interruptFeedback
+    });
+  };
 
   return (
     <DashboardLayout>
@@ -179,7 +194,7 @@ const MobileDeerFlowLayout = () => {
           
           {/* Mobile input - Fixed at bottom */}
           <div className="flex-shrink-0 border-t bg-background/95 backdrop-blur-sm p-4">
-            <InputBox />
+            <InputBox onSendMessage={handleSendMessage} />
           </div>
 
           {/* Research panel as full-screen modal on mobile with enhanced animations */}

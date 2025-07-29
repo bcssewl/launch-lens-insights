@@ -6,7 +6,7 @@ import { useEnhancedDeerStreaming } from '@/hooks/useEnhancedDeerStreaming';
 import { cn } from '@/lib/utils';
 
 interface InputBoxProps {
-  onSendMessage?: (message: string) => void;
+  onSendMessage?: (message: string, options?: { interruptFeedback?: string }) => void;
 }
 
 export const InputBox = ({ onSendMessage }: InputBoxProps) => {
@@ -15,12 +15,14 @@ export const InputBox = ({ onSendMessage }: InputBoxProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { startDeerFlowStreaming, stopStreaming, isStreaming } = useEnhancedDeerStreaming();
 
-  const handleSendMessage = useCallback(async (message: string) => {
+  const handleSendMessage = useCallback(async (message: string, options?: { interruptFeedback?: string }) => {
     if (onSendMessage) {
-      onSendMessage(message);
+      onSendMessage(message, options);
     } else {
-      // Use the enhanced DeerFlow streaming
-      await startDeerFlowStreaming(message);
+      // Use streaming hook with options
+      await startDeerFlowStreaming(message, {
+        interruptFeedback: options?.interruptFeedback
+      });
     }
   }, [onSendMessage, startDeerFlowStreaming]);
 
