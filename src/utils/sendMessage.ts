@@ -57,6 +57,8 @@ const getChatStreamSettings = (): ChatSettings => {
       };
     }
     
+    const enabledMcpServers = settings.mcpServers.filter(server => server.enabled);
+    
     const mappedSettings = {
       autoAcceptedPlan: settings.autoAcceptedPlan,
       enableDeepThinking: settings.deepThinking,
@@ -65,9 +67,12 @@ const getChatStreamSettings = (): ChatSettings => {
       maxStepNum: settings.maxStepNum,
       maxSearchResults: settings.maxSearchResults,
       reportStyle: settings.reportStyle,
-      mcpSettings: {
-        servers: settings.mcpServers.filter(server => server.enabled)
-      }
+      // Only include MCP settings if there are enabled servers
+      ...(enabledMcpServers.length > 0 ? {
+        mcpSettings: { servers: enabledMcpServers }
+      } : {
+        mcpSettings: {}
+      })
     };
     
     console.log('📋 Mapped settings for API:', mappedSettings);
