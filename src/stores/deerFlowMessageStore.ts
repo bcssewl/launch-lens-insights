@@ -197,16 +197,22 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
   },
 
   updateMessage: (messageId, updates) => {
-    const { messageMap } = get();
+    console.log('🔄 updateMessage called:', messageId, updates);
+    const { messageMap, messageIds, threadMessageIds } = get();
     const existingMessage = messageMap.get(messageId);
     
     if (existingMessage) {
       const newMessageMap = new Map(messageMap);
       newMessageMap.set(messageId, { ...existingMessage, ...updates });
+      
+      // CRITICAL: Force array reference changes to trigger re-renders
       set({ 
         messageMap: newMessageMap,
-        messageCache: new Map() // Clear cache
+        messageIds: [...messageIds], // New array reference
+        threadMessageIds: new Map(threadMessageIds), // New Map reference
+        messageCache: new Map() // Clear cache completely
       });
+      console.log('✅ updateMessage completed, triggering re-render');
     }
   },
 
@@ -230,15 +236,28 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
   },
 
   getMessagesByThread: (threadId) => {
-    const { messageMap, threadMessageIds, messageCache } = get();
+    console.log('🔍 getMessagesByThread called:', threadId);
+    const { messageMap, threadMessageIds, messageCache, isResponding } = get();
     
-    // Generate cache key based on threadId + data sizes
+    // Skip caching entirely during streaming for immediate updates
+    if (isResponding) {
+      const threadMessages = threadMessageIds.get(threadId) || [];
+      const result = threadMessages
+        .map(id => messageMap.get(id))
+        .filter((msg): msg is DeerMessage => msg !== undefined)
+        .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+      console.log('📋 Returning messages (streaming mode):', result.length);
+      return result;
+    }
+    
+    // Use caching only when not actively streaming
     const threadMessages = threadMessageIds.get(threadId) || [];
     const cacheKey = `${threadId}-${messageMap.size}-${threadMessages.length}`;
     
     // Check if we have a cached result
     const cached = messageCache.get(cacheKey);
     if (cached) {
+      console.log('📋 Returning cached messages:', cached.length);
       return cached;
     }
     
@@ -253,6 +272,7 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
     newCache.set(cacheKey, messages);
     set({ messageCache: newCache });
     
+    console.log('📋 Returning messages (cached):', messages.length);
     return messages;
   },
 
