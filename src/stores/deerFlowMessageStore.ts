@@ -85,17 +85,22 @@ interface DeerFlowMessageActions {
   createNewThread: (forceDifferent?: boolean) => string;
   setCurrentThread: (threadId: string) => void;
   
-  // Message actions with Map-based storage
+  // Message actions with exact DeerFlow behavior
   addMessage: (message: Omit<DeerMessage, 'id' | 'timestamp'>) => void;
   addMessageWithId: (message: DeerMessage) => void;
+  appendMessage: (message: DeerMessage) => void; // NEW: Main entry point from original DeerFlow
   existsMessage: (messageId: string) => boolean;
   updateMessage: (messageId: string, updates: Partial<DeerMessage>) => void;
   getMessage: (messageId: string) => DeerMessage | undefined;
+  findMessageByToolCallId: (toolCallId: string) => DeerMessage | undefined; // NEW: Tool call lookup
   clearMessages: () => void;
   getMessagesByThread: (threadId: string) => DeerMessage[];
   getAllMessages: () => DeerMessage[];
   
-  // Research session management
+  // Research session management - DeerFlow exact behavior
+  appendResearch: (researchId: string) => void; // NEW: Auto-create research session
+  appendResearchActivity: (message: DeerMessage) => void; // NEW: Auto-add to research
+  openResearch: (researchId: string | null) => void; // NEW: Auto-open research panel
   autoStartResearchOnFirstActivity: (message: DeerMessage) => string | null;
   startResearch: (plannerMessageId: string) => string | null;
   addResearchActivity: (researchId: string, messageId: string) => void;
@@ -227,6 +232,102 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
     });
   },
 
+  // EXACT DeerFlow appendMessage behavior (main entry point)
+  appendMessage: (message: DeerMessage) => {
+    // STEP 1: Auto-create research session for research agents
+    if (
+      message.agent === "coder" ||
+      message.agent === "reporter" ||
+      message.agent === "researcher"
+    ) {
+      const currentOngoing = get().ongoingResearchId;
+      if (!currentOngoing) {
+        const id = message.id;
+        get().appendResearch(id);
+        get().openResearch(id);
+      }
+      get().appendResearchActivity(message);
+    }
+    
+    // STEP 2: Add message to store
+    get().addMessageWithId(message);
+  },
+
+  // Helper function: appendResearch (from original lines 220-240)
+  appendResearch: (researchId: string) => {
+    let planMessage: DeerMessage | undefined;
+    const reversedMessageIds = [...get().messageIds].reverse();
+    
+    for (const messageId of reversedMessageIds) {
+      const message = get().getMessage(messageId);
+      if (message?.agent === "planner") {
+        planMessage = message;
+        break;
+      }
+    }
+    
+    if (!planMessage) {
+      console.warn('No planner message found for research session');
+      return;
+    }
+    
+    const messageIds = [researchId];
+    messageIds.unshift(planMessage.id);
+    
+    set({
+      ongoingResearchId: researchId,
+      researchIds: [...get().researchIds, researchId],
+      researchPlanIds: new Map(get().researchPlanIds).set(researchId, planMessage.id),
+      researchActivityIds: new Map(get().researchActivityIds).set(researchId, messageIds),
+    });
+  },
+
+  // Helper function: appendResearchActivity
+  appendResearchActivity: (message: DeerMessage) => {
+    const researchId = get().ongoingResearchId;
+    if (researchId) {
+      const researchActivityIds = get().researchActivityIds;
+      const current = researchActivityIds.get(researchId) || [];
+      if (!current.includes(message.id)) {
+        set({
+          researchActivityIds: new Map(researchActivityIds).set(researchId, [
+            ...current,
+            message.id,
+          ]),
+        });
+      }
+      if (message.agent === "reporter") {
+        set({
+          researchReportIds: new Map(get().researchReportIds).set(researchId, message.id),
+        });
+      }
+    }
+  },
+
+  // Tool Call ID Lookup (Lines 170-180 from original)
+  findMessageByToolCallId: (toolCallId: string) => {
+    return Array.from(get().messageMap.values())
+      .reverse()
+      .find((message) => {
+        if (message.toolCalls) {
+          return message.toolCalls.some((toolCall) => toolCall.id === toolCallId);
+        }
+        return false;
+      });
+  },
+
+  // Auto-Open Research Panel (Lines 250-270 from original)
+  openResearch: (researchId: string | null) => {
+    set({ 
+      openResearchId: researchId,
+      researchPanelState: {
+        isOpen: researchId !== null,
+        openResearchId: researchId,
+        activeTab: 'activities'
+      }
+    });
+  },
+
   addMessageWithId: (message) => {
     const { messageMap, threadMessageIds, messageIds, currentThreadId } = get();
     const threadId = message.threadId || currentThreadId;
@@ -283,19 +384,24 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
   },
 
   updateMessage: (messageId, updates) => {
-    console.log('🔄 updateMessage called:', messageId, updates);
-    const { messageMap } = get();
+    const { messageMap, ongoingResearchId } = get();
     const existingMessage = messageMap.get(messageId);
     
     if (existingMessage) {
-      const newMessageMap = new Map(messageMap);
-      newMessageMap.set(messageId, { ...existingMessage, ...updates });
+      const updatedMessage = { ...existingMessage, ...updates };
       
-      // Enhanced Map reference replacement for React reactivity
-      set({ 
-        messageMap: newMessageMap
-      });
-      console.log('✅ updateMessage completed, Map reference replaced for reactivity');
+      // Auto-close research session when reporter finishes
+      if (
+        ongoingResearchId &&
+        updatedMessage.agent === "reporter" &&
+        !updatedMessage.isStreaming
+      ) {
+        set({ ongoingResearchId: null });
+      }
+      
+      const newMessageMap = new Map(messageMap);
+      newMessageMap.set(messageId, updatedMessage);
+      set({ messageMap: newMessageMap });
     }
   },
 

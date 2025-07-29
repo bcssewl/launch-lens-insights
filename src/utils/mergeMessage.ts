@@ -86,98 +86,68 @@ export type StreamEvent =
   | GenericEvent<ErrorData> & { event: 'error' }
 
 /**
- * Merges streaming events into a message object with simplified structure
+ * Merges streaming events into a message object with DeerFlow exact behavior
  */
-export function mergeMessage(message: DeerMessage, event: StreamEvent): DeerMessage {
-  const result = { ...message };
+export function mergeMessage(message: DeerMessage, event: any): Partial<DeerMessage> {
+  const { type, data } = event;
+  const result: Partial<DeerMessage> = {};
   
-  if (event.event === "message_chunk") {
-    // Handle content like original
-    if (event.data.content) {
-      result.content += event.data.content;
-      result.contentChunks.push(event.data.content);
-    }
-    
-    // Handle reasoning content like original
-    if (event.data.reasoning_content) {
-      result.reasoningContent = (result.reasoningContent ?? "") + event.data.reasoning_content;
-      result.reasoningContentChunks = result.reasoningContentChunks ?? [];
-      result.reasoningContentChunks.push(event.data.reasoning_content);
-    }
-    
-    // Update agent if provided
-    if (event.data.agent) {
-      result.agent = event.data.agent;
-    }
-  }
-  
-  // Handle finish reason like original
-  if (event.data.finish_reason) {
-    result.finishReason = event.data.finish_reason;
-    result.isStreaming = false;
-    
-    // Process tool call args like original
-    if (result.toolCalls) {
-      result.toolCalls.forEach((toolCall) => {
-        if (toolCall.argsChunks?.length) {
-          toolCall.args = JSON.parse(toolCall.argsChunks.join(""));
-          delete toolCall.argsChunks;
-        }
-      });
-    }
-  }
-  
-  // Handle tool calls like original - only create tool calls if they have a name
-  if (event.event === "tool_calls" || event.event === "tool_call_chunks") {
-    const toolCalls = result.toolCalls || [];
-    
-    if (event.event === "tool_calls" && event.data.name) {
-      // Complete tool call - only if it has a name
-      const existingIndex = toolCalls.findIndex(tc => tc.id === event.data.id);
-      if (existingIndex >= 0) {
-        toolCalls[existingIndex] = {
-          ...toolCalls[existingIndex],
-          ...event.data,
-          status: 'running',
-          timestamp: Date.now()
-        };
-      } else {
-        toolCalls.push({
-          ...event.data,
-          status: 'running',
-          timestamp: Date.now(),
-          argsChunks: []
-        });
+  // Handle different event types from sendMessage stream
+  switch (type) {
+    case 'message_start':
+      // Initialize message properties
+      result.id = data.id;
+      result.threadId = data.thread_id;
+      result.role = data.role || 'assistant';
+      result.agent = data.agent;
+      result.content = data.content || '';
+      result.contentChunks = [];
+      result.isStreaming = true;
+      result.timestamp = new Date();
+      if (data.options) {
+        result.options = data.options;
       }
-    } else if (event.event === "tool_call_chunks") {
-      // Tool call chunk
-      const existingIndex = toolCalls.findIndex(tc => tc.id === event.data.id);
-      if (existingIndex >= 0) {
-        const toolCall = toolCalls[existingIndex];
-        const argsChunks = [...(toolCall.argsChunks || [])];
-        
-        if (event.data.name) {
-          toolCall.name = event.data.name;
-        }
-        
-        if (event.data.args) {
-          argsChunks.push(event.data.args);
-          toolCall.argsChunks = argsChunks;
-          
-          // Try to parse complete args
-          try {
-            const completeArgs = JSON.parse(argsChunks.join(''));
-            toolCall.args = completeArgs;
-          } catch (e) {
-            // Args not complete yet
-          }
-        }
-        
-        toolCalls[existingIndex] = toolCall;
+      break;
+      
+    case 'message_chunk':
+      // Accumulate content chunks
+      if (data.content) {
+        result.content = (message.content || '') + data.content;
+        result.contentChunks = [...(message.contentChunks || []), data.content];
       }
-    }
-    
-    result.toolCalls = toolCalls;
+      
+      // Handle reasoning content
+      if (data.reasoning_content) {
+        result.reasoningContent = (message.reasoningContent || '') + data.reasoning_content;
+        result.reasoningContentChunks = [...(message.reasoningContentChunks || []), data.reasoning_content];
+      }
+      break;
+      
+    case 'message_end':
+      // Finalize message
+      result.isStreaming = false;
+      result.finishReason = data.finish_reason || 'stop';
+      if (data.options) {
+        result.options = data.options;
+      }
+      break;
+      
+    case 'tool_call_result':
+      // Handle tool call results
+      if (message.toolCalls) {
+        const updatedToolCalls = message.toolCalls.map(tc => 
+          tc.id === data.tool_call_id 
+            ? { ...tc, result: data.result, status: 'completed' as const }
+            : tc
+        );
+        result.toolCalls = updatedToolCalls;
+      }
+      break;
+      
+    default:
+      // Handle other event types as needed
+      console.log('🔄 Unhandled event type:', type, data);
+      break;
   }
   
   return result;
