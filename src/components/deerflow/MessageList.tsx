@@ -142,11 +142,10 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
   };
 
   const handleStartResearch = (planId: string) => {
-    // Create research session manually from planner
-    const researchId = startResearch(planId); // Now works with planner ID
-    if (researchId) {
-      openResearchPanel(researchId, 'activities');
-    }
+    // NOTE: Research session creation is now handled by streaming response
+    // This function is kept for legacy compatibility but does minimal work
+    console.log('📋 Plan research requested for:', planId);
+    // Research state will be managed by the streaming response events
   };
 
   // Show conversation starter if no messages

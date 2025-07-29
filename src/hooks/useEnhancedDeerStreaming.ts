@@ -192,14 +192,15 @@ export const useEnhancedDeerStreaming = () => {
   const handleError = useCallback((error: Error) => {
     console.error('❌ DeerFlow streaming error:', error);
     
+    // Reset research state on error to allow retry
+    const messageStore = useDeerFlowMessageStore.getState();
+    messageStore.resetOngoingResearch();
+    
     toast({
-      title: "Connection Error", 
-      description: error.message || "Failed to connect to DeerFlow. Please try again.",
+      title: "Connection Error",
+      description: error.message || "Failed to connect to DeerFlow API. You can try starting the research again.",
       variant: "destructive",
     });
-
-    // Error handling is now handled per-message in processEvent
-    // No global currentMessageId to update
   }, [toast]);
 
   const startDeerFlowStreaming = useCallback(async (
@@ -371,6 +372,12 @@ export const useEnhancedDeerStreaming = () => {
       console.log(`✅ DeerFlow streaming completed successfully - processed ${eventCount} events`);
 
     } catch (error) {
+      console.error('❌ DeerFlow streaming failed:', error);
+      
+      // Reset research state on API failure
+      const messageStore = useDeerFlowMessageStore.getState();
+      messageStore.resetOngoingResearch();
+      
       handleError(error as Error);
     } finally {
       setIsStreaming(false);

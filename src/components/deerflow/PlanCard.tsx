@@ -66,11 +66,9 @@ export const PlanCard = ({ message, onStartResearch, onSendMessage, isExecuting 
       });
       
       console.log('📤 Sent plan acceptance:', acceptanceMessage);
-    }
-    
-    // Also start local research session
-    if (onStartResearch) {
-      onStartResearch(message.id);
+      
+      // DON'T create research session here - let the streaming response handle it
+      // This prevents the button from getting stuck if the API call fails
     }
   };
 

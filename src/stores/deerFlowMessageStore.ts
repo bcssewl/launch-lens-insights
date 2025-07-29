@@ -106,6 +106,7 @@ interface DeerFlowMessageActions {
   openResearchPanel: (researchId: string, tab?: 'activities' | 'report') => void;
   closeResearchPanel: () => void;
   switchResearchTab: (tab: 'activities' | 'report') => void;
+  resetOngoingResearch: () => void;
   
   // Legacy compatibility - computed properties
   messages: DeerMessage[];
@@ -523,6 +524,14 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
       }
     });
     console.log('🔄 Switched research tab to:', tab);
+  },
+
+  resetOngoingResearch: () => {
+    set({
+      ongoingResearchId: null,
+      isResponding: false
+    });
+    console.log('🔄 Reset ongoing research state - button should be clickable again');
   }
 }));
 
