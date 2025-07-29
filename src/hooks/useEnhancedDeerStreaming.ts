@@ -37,211 +37,124 @@ export const useEnhancedDeerStreaming = () => {
   const [isStreaming, setIsStreaming] = useState(false);
   const [currentMessageId, setCurrentMessageId] = useState<string | null>(null);
   const [eventCount, setEventCount] = useState(0);
-  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>({
-    status: 'disconnected',
-    retryCount: 0
-  });
   
-  const currentPartialMessageRef = useRef<Partial<DeerMessage> | null>(null);
-  const messageIdRef = useRef<string | null>(null);
-  const currentRetryRef = useRef<number>(0);
-  const currentRequestRef = useRef<string | null>(null);
-  
-  // Retry configuration
-  const retryConfig: RetryConfig = {
-    maxRetries: 3,
-    baseDelay: 1000,
-    maxDelay: 8000
-  };
-  
-  const storeActions = useDeerFlowStore();
   const {
     addMessage,
     updateMessage,
     existsMessage,
-    addMessageWithId,
     getMessage,
     setIsResponding,
     setResearchPanel,
     setReportContent,
     currentThreadId
   } = useDeerFlowMessageStore();
-  
-  const { settings } = storeActions;
+
+  const { settings } = useDeerFlowStore();
   const { toast } = useToast();
 
-  // Elegant React streaming with immediate event processing
-  const processStreamEvent = useCallback((event: StreamEvent) => {
-    if (!currentPartialMessageRef.current || !messageIdRef.current) return;
-
-    try {
-      // Direct message update using React state patterns
-      if (currentPartialMessageRef.current.id) {
-        currentPartialMessageRef.current = mergeMessage(currentPartialMessageRef.current as DeerMessage, event);
-      }
-
-      // Update store immediately (React 18 batches automatically)
-      if (existsMessage(messageIdRef.current)) {
-        const existingMessage = getMessage(messageIdRef.current);
-        if (existingMessage) {
-          const updated = mergeMessage(existingMessage, event);
-          updateMessage(messageIdRef.current, updated);
-        }
-      }
-
-      // Handle agent-based UI updates with immediate responsiveness
-      if ('event' in event && event.event === 'message_chunk') {
-        const agent = event.data.agent;
-        const messageId = messageIdRef.current;
-        
-        if (agent && messageId) {
-          switch (agent) {
-            case 'planner':
-            case 'researcher':
-            case 'coder':
-              setResearchPanel(true, messageId, 'activities');
-              break;
-            case 'reporter':
-              setResearchPanel(true, messageId, 'report');
-              break;
-          }
-        }
-      }
-
-      // Handle report generation with immediate panel updates
-      if ('event' in event && event.event === 'report_generated') {
-        const messageId = messageIdRef.current;
-        setReportContent(event.data.content);
-        if (messageId) {
-          setResearchPanel(true, messageId, 'report');
-        }
-      }
-
-      setEventCount(prev => prev + 1);
-    } catch (error) {
-      console.warn('Error processing stream event:', error);
-      toast({
-        title: "Processing Error",
-        description: `Failed to process stream event: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        variant: "destructive",
-      });
-    }
-  }, [existsMessage, updateMessage, setResearchPanel, setReportContent, toast]);
-
-  // Enhanced error handling with retry logic
-  const handleStreamError = useCallback((error: Error, isRetryable: boolean = true) => {
-    const errorMessage = error.message || 'Unknown streaming error';
+  // Simple event processing like original
+  const processEvent = useCallback((event: StreamEvent) => {
+    const data = 'data' in event ? event.data : event;
+    const messageId = data.id || data.message_id || currentMessageId;
     
-    setConnectionStatus(prev => ({
-      ...prev,
-      status: 'error',
-      lastError: errorMessage
-    }));
+    if (!messageId) return;
 
-    // Check if we should retry
-    if (isRetryable && currentRetryRef.current < retryConfig.maxRetries) {
-      const retryDelay = Math.min(
-        retryConfig.baseDelay * Math.pow(2, currentRetryRef.current),
-        retryConfig.maxDelay
-      );
+    // Get existing message
+    const existingMessage = getMessage(messageId);
+    if (!existingMessage) return;
 
-      toast({
-        title: "Connection Issue",
-        description: `Retrying in ${retryDelay / 1000}s... (Attempt ${currentRetryRef.current + 1}/${retryConfig.maxRetries})`,
-        variant: "destructive",
-      });
+    // Update message with new event data
+    const updatedMessage = mergeMessage(existingMessage, event);
+    updateMessage(messageId, updatedMessage);
 
-      setTimeout(() => {
-        currentRetryRef.current++;
-        if (currentRequestRef.current) {
-          // Retry the request
-          retryCurrentRequest();
-        }
-      }, retryDelay);
-    } else {
-      // Max retries reached or non-retryable error
-      toast({
-        title: "Connection Failed",
-        description: `${errorMessage}. Please check your connection and try again.`,
-        variant: "destructive",
-      });
-
-      // Reset state
-      setIsStreaming(false);
-      setIsResponding(false);
-      currentRetryRef.current = 0;
+    // Handle UI updates based on agent
+    if (event.event === 'message_chunk' && data.agent) {
+      switch (data.agent) {
+        case 'planner':
+        case 'researcher':
+        case 'coder':
+          setResearchPanel(true, messageId, 'activities');
+          break;
+        case 'reporter':
+          setResearchPanel(true, messageId, 'report');
+          break;
+      }
     }
-  }, [toast, retryConfig]);
 
-  // Retry mechanism
-  const retryCurrentRequest = useCallback(async () => {
-    if (!currentRequestRef.current) return;
-
-    setConnectionStatus(prev => ({
-      ...prev,
-      status: 'connecting',
-      retryCount: currentRetryRef.current
-    }));
-
-    try {
-      // Implement retry logic here
-      // This would re-execute the streaming request
-      console.log(`🔄 Retrying DeerFlow request (attempt ${currentRetryRef.current + 1})`);
-    } catch (error) {
-      handleStreamError(error as Error);
+    // Handle report generation
+    if (event.event === 'report_generated') {
+      setReportContent(event.data.content);
+      setResearchPanel(true, messageId, 'report');
     }
-  }, [handleStreamError]);
 
-  // Create streaming configuration for useEventStream
-  const streamUrl = 'https://deer-flow-wrappers.up.railway.app/api/chat/stream';
-  const streamOptions = useMemo(() => ({
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  }), []);
-  
-  const { startStream, stopStream, isStreaming: streamActive, error: streamError } = useEventStream(streamUrl, streamOptions);
+    setEventCount(prev => prev + 1);
+  }, [currentMessageId, getMessage, updateMessage, setResearchPanel, setReportContent]);
+
+  // Simple error handling like original
+  const handleError = useCallback((error: Error) => {
+    console.error('❌ DeerFlow streaming error:', error);
+    
+    toast({
+      title: "Connection Error",
+      description: error.message || "Failed to connect to DeerFlow. Please try again.",
+      variant: "destructive",
+    });
+
+    if (currentMessageId) {
+      const existingMessage = getMessage(currentMessageId);
+      if (existingMessage) {
+        updateMessage(currentMessageId, {
+          ...existingMessage,
+          content: (existingMessage.content || '') + `\n\n❌ Connection error. Please try again.`,
+          isStreaming: false,
+          finishReason: 'interrupt'
+        });
+      }
+    }
+  }, [currentMessageId, getMessage, updateMessage, toast]);
 
   const startDeerFlowStreaming = useCallback(async (
     question: string,
     options: DeerStreamingOptions = {}
   ) => {
-    if (isStreaming) {
-      console.warn('🦌 DeerFlow is already streaming');
-      return;
-    }
-
-    // Reset retry counter for new request
-    currentRetryRef.current = 0;
-    setConnectionStatus({
-      status: 'connecting',
-      retryCount: 0
-    });
-
+    if (isStreaming) return;
+    
     setIsStreaming(true);
     setIsResponding(true);
     setEventCount(0);
     
-    // Reset refs
-    currentPartialMessageRef.current = null;
-    messageIdRef.current = null;
-    
     console.log('🦌 Starting DeerFlow streaming for:', question);
 
-    // Add user message first
+    // Add user message (like original)
     addMessage({
       role: 'user',
       content: question,
       threadId: currentThreadId,
-      contentChunks: []
+      contentChunks: [question]
     });
 
-    // Prepare request body using settings from store with options override
+    // Create assistant message
+    const assistantMessageId = crypto.randomUUID();
+    setCurrentMessageId(assistantMessageId);
+    
+    const initialMessage = {
+      role: 'assistant' as const,
+      content: '',
+      threadId: currentThreadId,
+      contentChunks: [],
+      isStreaming: true
+    };
+    
+    addMessage(initialMessage);
+    
+    // Get the created message ID
+    const messages = useDeerFlowMessageStore.getState().messageIds;
+    const createdId = messages[messages.length - 1];
+    setCurrentMessageId(createdId);
+
+    // Prepare request body
     const requestBody = JSON.stringify({
-      messages: [
-        { role: "user", content: question }
-      ],
+      messages: [{ role: "user", content: question }],
       debug: true,
       thread_id: currentThreadId,
       max_plan_iterations: options.maxPlanIterations ?? settings.maxPlanIterations,
@@ -253,138 +166,136 @@ export const useEnhancedDeerStreaming = () => {
       enable_deep_thinking: options.enableDeepThinking ?? settings.deepThinking
     });
 
-    // Store current request for retry purposes
-    currentRequestRef.current = requestBody;
-
+    // Simple streaming like original - no complex initialization
     try {
-      // Set connection status to connected
-      setConnectionStatus({
-        status: 'connected',
-        retryCount: currentRetryRef.current
+      const response = await fetch('https://deer-flow-wrappers.up.railway.app/api/chat/stream', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: requestBody
       });
 
-      // Use the stream hook with dynamic body
-      await startStream((event) => {
-        const data = 'data' in event ? event.data : event;
-        const messageId = data.id || data.message_id || crypto.randomUUID(); // Use API-provided ID or generate one
-        
-        // Create message if doesn't exist (like original)
-        if (!existsMessage(messageId)) {
-          const initialMessage = {
-            id: messageId,
-            threadId: data.thread_id || currentThreadId,
-            agent: data.agent,
-            role: data.role || 'assistant',
-            content: '',
-            contentChunks: [],
-            reasoningContent: '',
-            reasoningContentChunks: [],
-            timestamp: new Date(),
-            isStreaming: true
-          };
-          
-          addMessageWithId(initialMessage);
-          messageIdRef.current = messageId;
-          setCurrentMessageId(messageId);
-        }
-        
-        // Always process every event (like original)
-        const existingMessage = getMessage(messageId);
-        if (existingMessage) {
-          const updatedMessage = mergeMessage(existingMessage, event);
-          updateMessage(messageId, updatedMessage);
-        }
-      }, requestBody); // Pass request body to the stream
-
-      // Finalize message when streaming completes
-      if (messageIdRef.current) {
-        updateMessage(messageIdRef.current, {
-          isStreaming: false
-        });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      // Reset retry counter on success
-      currentRetryRef.current = 0;
-      setConnectionStatus({
-        status: 'connected',
-        retryCount: 0
-      });
+      if (!response.body) {
+        throw new Error('No response body available');
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        
+        if (done) break;
+        
+        // Decode chunk and add to buffer
+        const chunk = decoder.decode(value, { stream: true });
+        buffer += chunk;
+        
+        // Process complete events from buffer
+        const lines = buffer.split('\n\n');
+        buffer = lines.pop() || ''; // Keep incomplete part in buffer
+        
+        for (const eventBlock of lines) {
+          if (eventBlock.trim()) {
+            const lines = eventBlock.split('\n');
+            let currentEvent = 'message';
+            let currentData: string | null = null;
+            
+            for (const line of lines) {
+              const colonIndex = line.indexOf(': ');
+              if (colonIndex === -1) continue;
+              
+              const key = line.slice(0, colonIndex);
+              const value = line.slice(colonIndex + 2);
+              
+              if (key === 'event') {
+                currentEvent = value;
+              } else if (key === 'data') {
+                currentData = value;
+              }
+            }
+            
+            // Process event if we have data
+            if (currentData !== null && currentData !== '[DONE]') {
+              try {
+                const event = {
+                  event: currentEvent as any,
+                  data: JSON.parse(currentData)
+                };
+                
+                // Process every event the same way (like original)
+                processEvent(event);
+              } catch (error) {
+                console.warn('Failed to parse SSE data:', currentData);
+              }
+            }
+          }
+        }
+      }
+
+      // Mark message as complete
+      if (assistantMessageId) {
+        const finalMessage = getMessage(assistantMessageId);
+        if (finalMessage) {
+          updateMessage(assistantMessageId, {
+            ...finalMessage,
+            isStreaming: false
+          });
+        }
+      }
 
       console.log(`✅ DeerFlow streaming completed successfully - processed ${eventCount} events`);
 
     } catch (error) {
-      console.error('❌ DeerFlow streaming error:', error);
-      
-      // Use enhanced error handling
-      handleStreamError(error as Error);
-      
-      const errorMessage = error instanceof Error ? error.message : 'Unknown streaming error';
-      
-      if (messageIdRef.current) {
-        const errorContent = currentPartialMessageRef.current?.content || '';
-        updateMessage(messageIdRef.current, {
-          content: errorContent + `\n\n❌ Connection error. Please try again.`,
-          isStreaming: false,
-          finishReason: 'interrupt'
-        });
-      } else {
-        // Add error message if no message was created
-        addMessage({
-          role: 'assistant',
-          content: `❌ Connection error: ${errorMessage}. Please try again.`,
-          threadId: currentThreadId,
-          contentChunks: [],
-          finishReason: 'interrupt'
-        });
-      }
+      handleError(error as Error);
     } finally {
       setIsStreaming(false);
       setIsResponding(false);
       setCurrentMessageId(null);
-      
-      // Clear refs
-      currentPartialMessageRef.current = null;
-      messageIdRef.current = null;
     }
   }, [
     isStreaming,
     addMessage,
     updateMessage,
-    existsMessage,
-    addMessageWithId,
+    getMessage,
     setIsResponding,
-    setResearchPanel,
-    setReportContent,
     currentThreadId,
-    processStreamEvent,
+    processEvent,
+    handleError,
     settings,
-    startStream,
-    eventCount,
-    handleStreamError
+    eventCount
   ]);
 
   const stopStreaming = useCallback(() => {
-    stopStream();
     console.log('⏹️ DeerFlow streaming stopped by user');
-  }, [stopStream]);
+    setIsStreaming(false);
+    setIsResponding(false);
+  }, []);
 
-  // Memory cleanup
   const cleanup = useCallback(() => {
     stopStreaming();
-    currentPartialMessageRef.current = null;
-    messageIdRef.current = null;
     setEventCount(0);
+    setCurrentMessageId(null);
   }, [stopStreaming]);
 
-  return useMemo(() => ({
+  return {
     startDeerFlowStreaming,
     stopStreaming,
     cleanup,
     isStreaming,
     currentMessageId,
     eventCount,
-    connectionStatus
-  }), [startDeerFlowStreaming, stopStreaming, cleanup, isStreaming, currentMessageId, eventCount, connectionStatus]);
+    connectionStatus: {
+      status: isStreaming ? 'connected' : 'disconnected',
+      retryCount: 0
+    }
+  };
 };
 
 // Helper function to determine tool type from tool name
