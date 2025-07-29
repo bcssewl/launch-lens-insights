@@ -67,7 +67,7 @@ async function* chatStream(
             }
           ]
         }
-      ] : null,
+      ] : [],
       resources: params.resources || null,
       debug: false,
       thread_id: params.thread_id || "__default__",
@@ -95,8 +95,9 @@ async function* chatStream(
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(`DeerFlow API request failed: ${response.status} ${errorData.detail || response.statusText}`);
+      const errorText = await response.text().catch(() => '');
+      console.error('DeerFlow API error response:', response.status, errorText);
+      throw new Error(`DeerFlow API request failed: ${response.status} - ${errorText || response.statusText}`);
     }
 
     if (!response.body) {
