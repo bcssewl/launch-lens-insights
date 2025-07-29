@@ -11,7 +11,7 @@ import {
   Copy,
   Download,
 } from "lucide-react";
-import { useDeerFlowStore } from "@/stores/deerFlowStore";
+import { useResearchPanel } from "@/hooks/useOptimizedMessages";
 import { useStreamingChat } from "@/hooks/useStreamingChat";
 import ReactMarkdown from "react-markdown";
 import { ToolCallDisplay } from "@/components/assistant/ToolCallDisplay";
@@ -19,24 +19,21 @@ import { Suspense } from "react";
 
 
 export const ResearchPanel = () => {
-  const store = useDeerFlowStore();
   const {
-    isResearchPanelOpen,
-    activeResearchTab,
+    isOpen: isResearchPanelOpen,
+    activeTab: activeResearchTab,
     openResearchId,
-    reportContent,
-    messages,
-    setResearchPanelOpen,
-    setActiveResearchTab,
-    setReportContent,
-  } = store;
-
+    researchMessage,
+    closeResearchPanel,
+    switchTab
+  } = useResearchPanel();
+  
   const { generatePodcast } = useStreamingChat();
+  const [reportContent, setReportContent] = useState('');
   const [isEditingReport, setIsEditingReport] = useState(false);
   const [editableContent, setEditableContent] = useState(reportContent);
 
-  // Get the message that opened the research panel and extract tool calls
-  const researchMessage = openResearchId ? messages.find(m => m.id === openResearchId) : null;
+  // Extract tool calls from the research message
   const toolCalls = researchMessage?.toolCalls || [];
 
   if (!isResearchPanelOpen) return null;
@@ -83,7 +80,7 @@ export const ResearchPanel = () => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setResearchPanelOpen(false)}
+            onClick={closeResearchPanel}
             className="h-8 w-8 p-0"
           >
             <X className="h-4 w-4" />
@@ -94,7 +91,7 @@ export const ResearchPanel = () => {
       <CardContent className="p-0 h-full">
         <Tabs
           value={activeResearchTab}
-          onValueChange={(tab) => setActiveResearchTab(tab as "activities" | "report")}
+          onValueChange={(tab) => switchTab(tab as "activities" | "report")}
           className="h-full flex flex-col"
         >
           <TabsList className="grid w-full grid-cols-2 mx-4 mb-4 mt-4">

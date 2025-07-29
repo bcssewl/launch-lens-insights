@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useDeerFlowStore } from '@/stores/deerFlowStore';
+import { useMessageList } from '@/hooks/useOptimizedMessages';
 import { MessageItem } from './MessageItem';
 import { ConversationStarter } from './ConversationStarter';
 import { cn } from '@/lib/utils';
@@ -34,7 +34,7 @@ interface MessageListProps {
 }
 
 export const MessageList = ({ onSendMessage }: MessageListProps) => {
-  const { messages } = useDeerFlowStore();
+  const messages = useMessageList();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom when new messages arrive
@@ -72,7 +72,7 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
       )}>
         {messages.map((message, index) => (
           <MessageEntryAnimation key={message.id} index={index}>
-            <MessageItem message={message} />
+            <MessageItem messageId={message.id} />
           </MessageEntryAnimation>
         ))}
       </div>

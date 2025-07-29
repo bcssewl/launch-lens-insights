@@ -4,12 +4,15 @@
  */
 
 import { DeerMessage } from '@/stores/deerFlowMessageStore';
+import { useMessage, useResearchPanel } from '@/hooks/useOptimizedMessages';
 import { MessageContent } from './MessageContent';
 import { cn } from '@/lib/utils';
 import { User, Bot, Brain, Search, FileText, Lightbulb, MessageSquare } from 'lucide-react';
+import React from 'react';
 
 interface MessageItemProps {
-  message: DeerMessage;
+  message?: DeerMessage;
+  messageId?: string;
 }
 
 /**
@@ -78,27 +81,50 @@ const getAgentDisplay = (agent?: string, role?: string) => {
   }
 };
 
-export const MessageItem = ({ message }: MessageItemProps) => {
-  const agentDisplay = getAgentDisplay(message.metadata?.agent, message.role);
+export const MessageItem = React.memo(({ message, messageId }: MessageItemProps) => {
+  // Use hook for efficient message updates if messageId provided
+  const hookMessage = useMessage(messageId || '');
+  const { openResearchPanel } = useResearchPanel();
+  
+  // Use either prop message or hook message
+  const currentMessage = message || hookMessage;
+  
+  if (!currentMessage) return null;
+  
+  const agentDisplay = getAgentDisplay(currentMessage.metadata?.agent, currentMessage.role);
   const IconComponent = agentDisplay.icon;
+  
+  // Handle click for research panel
+  const handleClick = () => {
+    if (currentMessage.metadata?.agent === 'planner' || currentMessage.metadata?.agent === 'researcher') {
+      openResearchPanel(currentMessage.id);
+    }
+  };
 
   return (
-    <div className={cn(
-      // Use existing card styling
-      "rounded-lg border border-border",
-      "bg-card text-card-foreground",
-      "shadow-sm hover:shadow-md",
-      "transition-shadow duration-200",
-      
-      // Apply platform's padding scale
-      "p-4 sm:p-6",
-      
-      // Agent-specific styling using platform's color system
-      message.role === 'user' && "ml-8 bg-primary/5 border-primary/20",
-      message.role === 'assistant' && "mr-8",
-      agentDisplay.bgColor && agentDisplay.bgColor,
-      agentDisplay.borderColor && agentDisplay.borderColor
-    )}>
+    <div 
+      className={cn(
+        // Use existing card styling
+        "rounded-lg border border-border",
+        "bg-card text-card-foreground",
+        "shadow-sm hover:shadow-md",
+        "transition-shadow duration-200",
+        
+        // Apply platform's padding scale
+        "p-4 sm:p-6",
+        
+        // Agent-specific styling using platform's color system
+        currentMessage.role === 'user' && "ml-8 bg-primary/5 border-primary/20",
+        currentMessage.role === 'assistant' && "mr-8",
+        agentDisplay.bgColor && agentDisplay.bgColor,
+        agentDisplay.borderColor && agentDisplay.borderColor,
+        
+        // Make clickable for research agents
+        (currentMessage.metadata?.agent === 'planner' || currentMessage.metadata?.agent === 'researcher') && 
+          "cursor-pointer hover:bg-opacity-80"
+      )}
+      onClick={handleClick}
+    >
       {/* Message Header */}
       <div className="flex items-center gap-3 mb-3">
         <div className={cn(
@@ -113,7 +139,7 @@ export const MessageItem = ({ message }: MessageItemProps) => {
             <span className={cn("font-medium text-sm", agentDisplay.color)}>
               {agentDisplay.name}
             </span>
-            {message.isStreaming && (
+            {currentMessage.isStreaming && (
               <div className="flex items-center gap-1">
                 <div className="w-1 h-1 bg-current rounded-full animate-pulse" />
                 <div className="w-1 h-1 bg-current rounded-full animate-pulse [animation-delay:0.2s]" />
@@ -122,17 +148,17 @@ export const MessageItem = ({ message }: MessageItemProps) => {
             )}
           </div>
           <time className="text-xs text-muted-foreground">
-            {message.timestamp.toLocaleTimeString()}
+            {currentMessage.timestamp.toLocaleTimeString()}
           </time>
         </div>
       </div>
 
       {/* Message Content */}
       <MessageContent 
-        content={message.content} 
-        agent={message.metadata?.agent}
-        toolCalls={message.toolCalls}
+        content={currentMessage.content} 
+        agent={currentMessage.metadata?.agent}
+        toolCalls={currentMessage.toolCalls}
       />
     </div>
   );
-};
+});

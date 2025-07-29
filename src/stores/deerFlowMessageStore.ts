@@ -74,20 +74,29 @@ export interface ResearchSession {
 }
 
 interface DeerFlowMessageState {
-  // Simple state management
+  // Optimized Map-based storage
   currentThreadId: string;
-  messageMap: Map<string, DeerMessage>;
-  threadMessages: Map<string, string[]>; // threadId -> messageIds[]
+  messageIds: string[]; // Ordered array for rendering
+  messageMap: Map<string, DeerMessage>; // Fast O(1) lookups
+  threadMessageIds: Map<string, string[]>; // threadId -> messageIds
   isResponding: boolean;
   currentPrompt: string;
+  streamingMessageId: string | null;
   
-  // Simplified React-based panel state
+  // Research panel state
   researchPanelState: {
     isOpen: boolean;
     openResearchId: string | null;
     activeTab: 'activities' | 'report';
   };
   reportContent: string;
+  
+  // Error state
+  error: {
+    message: string | null;
+    type: 'network' | 'stream' | 'validation' | null;
+    recoverable: boolean;
+  };
 }
 
 interface DeerFlowMessageActions {
@@ -130,16 +139,23 @@ type DeerFlowMessageStore = DeerFlowMessageState & DeerFlowMessageActions;
 export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get) => ({
   // Initial state
   currentThreadId: nanoid(),
+  messageIds: [],
   messageMap: new Map(),
-  threadMessages: new Map(),
+  threadMessageIds: new Map(),
   isResponding: false,
   currentPrompt: '',
+  streamingMessageId: null,
   researchPanelState: {
     isOpen: false,
     openResearchId: null,
     activeTab: 'activities'
   },
   reportContent: '',
+  error: {
+    message: null,
+    type: null,
+    recoverable: false
+  },
 
   // Thread management
   createNewThread: () => {
@@ -163,7 +179,7 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
 
   // Message actions with immediate Map updates
   addMessage: (message) => {
-    const { messageMap, threadMessages, currentThreadId } = get();
+    const { messageMap, threadMessageIds, messageIds, currentThreadId } = get();
     const newMessage: DeerMessage = {
       ...message,
       id: nanoid(),
@@ -178,33 +194,40 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
     const newMessageMap = new Map(messageMap);
     newMessageMap.set(newMessage.id, newMessage);
 
-    const newThreadMessages = new Map(threadMessages);
-    const currentMessages = newThreadMessages.get(currentThreadId) || [];
-    newThreadMessages.set(currentThreadId, [...currentMessages, newMessage.id]);
+    const newThreadMessageIds = new Map(threadMessageIds);
+    const currentMessages = newThreadMessageIds.get(currentThreadId) || [];
+    newThreadMessageIds.set(currentThreadId, [...currentMessages, newMessage.id]);
 
     set({ 
+      messageIds: [...messageIds, newMessage.id],
       messageMap: newMessageMap,
-      threadMessages: newThreadMessages
+      threadMessageIds: newThreadMessageIds
     });
   },
 
   addMessageWithId: (message) => {
-    const { messageMap, threadMessages, currentThreadId } = get();
+    const { messageMap, threadMessageIds, messageIds, currentThreadId } = get();
     const threadId = message.metadata?.threadId || currentThreadId;
 
     // Update Map-based storage immediately
     const newMessageMap = new Map(messageMap);
     newMessageMap.set(message.id, message);
 
-    const newThreadMessages = new Map(threadMessages);
-    const currentMessages = newThreadMessages.get(threadId) || [];
+    const newThreadMessageIds = new Map(threadMessageIds);
+    const currentMessages = newThreadMessageIds.get(threadId) || [];
     if (!currentMessages.includes(message.id)) {
-      newThreadMessages.set(threadId, [...currentMessages, message.id]);
+      newThreadMessageIds.set(threadId, [...currentMessages, message.id]);
     }
 
+    // Add to global message list if not present
+    const newMessageIds = messageIds.includes(message.id) 
+      ? messageIds 
+      : [...messageIds, message.id];
+
     set({ 
+      messageIds: newMessageIds,
       messageMap: newMessageMap,
-      threadMessages: newThreadMessages
+      threadMessageIds: newThreadMessageIds
     });
   },
 
@@ -229,8 +252,9 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
 
   clearMessages: () => {
     set({ 
+      messageIds: [],
       messageMap: new Map(),
-      threadMessages: new Map(),
+      threadMessageIds: new Map(),
       reportContent: '',
       researchPanelState: {
         isOpen: false,
@@ -241,8 +265,8 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
   },
 
   getMessagesByThread: (threadId) => {
-    const { messageMap, threadMessages } = get();
-    const messageIds = threadMessages.get(threadId) || [];
+    const { messageMap, threadMessageIds } = get();
+    const messageIds = threadMessageIds.get(threadId) || [];
     return messageIds
       .map(id => messageMap.get(id))
       .filter((msg): msg is DeerMessage => msg !== undefined)
