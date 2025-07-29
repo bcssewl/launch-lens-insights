@@ -59,12 +59,56 @@ async function* chatStream(
   const messageId = nanoid();
   const threadId = params.thread_id;
   
-  // Simulate planner response for testing
-  if (content.toLowerCase().includes('research') || content.toLowerCase().includes('analyze')) {
+  // ALWAYS respond with at least a basic assistant message
+  if (!params.interrupt_feedback) {
+    // Generate basic assistant response for any input
     yield {
       type: 'message_start',
       data: {
         id: messageId,
+        thread_id: threadId,
+        role: 'assistant',
+        content: ''
+      }
+    };
+    
+    let responseContent = '';
+    if (content.toLowerCase().includes('research') || content.toLowerCase().includes('analyze')) {
+      responseContent = 'I can help you with research and analysis. Let me create a comprehensive plan for this.';
+    } else {
+      responseContent = `I understand you're asking about: "${content}". I'm here to help with research, analysis, and answering your questions.`;
+    }
+    
+    // Stream the basic response character by character
+    for (const char of responseContent) {
+      yield {
+        type: 'message_chunk',
+        data: {
+          id: messageId,
+          thread_id: threadId,
+          content: char
+        }
+      };
+      await new Promise(resolve => setTimeout(resolve, 20));
+    }
+    
+    yield {
+      type: 'message_end',
+      data: {
+        id: messageId,
+        thread_id: threadId,
+        isStreaming: false
+      }
+    };
+  }
+  
+  // Simulate planner response for research-related queries
+  if (content.toLowerCase().includes('research') || content.toLowerCase().includes('analyze')) {
+    const plannerMessageId = nanoid();
+    yield {
+      type: 'message_start',
+      data: {
+        id: plannerMessageId,
         thread_id: threadId,
         role: 'assistant',
         agent: 'planner',
@@ -97,7 +141,7 @@ async function* chatStream(
       yield {
         type: 'message_chunk',
         data: {
-          id: messageId,
+          id: plannerMessageId,
           thread_id: threadId,
           content: chunk
         }
@@ -108,7 +152,7 @@ async function* chatStream(
     yield {
       type: 'message_end',
       data: {
-        id: messageId,
+        id: plannerMessageId,
         thread_id: threadId,
         isStreaming: false,
         options: [

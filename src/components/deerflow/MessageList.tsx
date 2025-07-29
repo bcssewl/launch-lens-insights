@@ -104,6 +104,7 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
         // Log all messages and their filtering decisions
         const shouldShow = (
           message.role === 'user' ||
+          message.role === 'assistant' ||
           message.agent === 'coordinator' ||
           message.agent === 'planner' ||
           message.agent === 'podcast'
