@@ -45,7 +45,6 @@ interface DeerFlowMessageState {
   messageIds: string[]; // Ordered array for rendering
   messageMap: Map<string, DeerMessage>; // Fast O(1) lookups
   threadMessageIds: Map<string, string[]>; // threadId -> messageIds
-  messageCache: Map<string, DeerMessage[]>; // Cache for computed message arrays
   isResponding: boolean;
   currentPrompt: string;
   streamingMessageId: string | null;
@@ -103,7 +102,6 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
   messageIds: [],
   messageMap: new Map(),
   threadMessageIds: new Map(),
-  messageCache: new Map(),
   isResponding: false,
   currentPrompt: '',
   streamingMessageId: null,
@@ -158,11 +156,11 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
     const currentMessages = newThreadMessageIds.get(currentThreadId) || [];
     newThreadMessageIds.set(currentThreadId, [...currentMessages, newMessage.id]);
 
+    console.log('📝 addMessage created:', newMessage.id, 'Thread:', currentThreadId);
     set({ 
       messageIds: [...messageIds, newMessage.id],
       messageMap: newMessageMap,
-      threadMessageIds: newThreadMessageIds,
-      messageCache: new Map() // Clear cache
+      threadMessageIds: newThreadMessageIds
     });
   },
 
@@ -185,11 +183,11 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
       ? messageIds 
       : [...messageIds, message.id];
 
+    console.log('📝 addMessageWithId created:', message.id, 'Thread:', threadId, 'Agent:', message.agent);
     set({ 
       messageIds: newMessageIds,
       messageMap: newMessageMap,
-      threadMessageIds: newThreadMessageIds,
-      messageCache: new Map() // Clear cache
+      threadMessageIds: newThreadMessageIds
     });
   },
 
@@ -206,12 +204,11 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
       const newMessageMap = new Map(messageMap);
       newMessageMap.set(messageId, { ...existingMessage, ...updates });
       
-      // Simplified update - individual subscriptions will handle re-renders
+      // Enhanced Map reference replacement for React reactivity
       set({ 
-        messageMap: newMessageMap,
-        messageCache: new Map() // Clear cache
+        messageMap: newMessageMap
       });
-      console.log('✅ updateMessage completed, individual subscriptions will re-render');
+      console.log('✅ updateMessage completed, Map reference replaced for reactivity');
     }
   },
 
@@ -224,7 +221,6 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
       messageIds: [],
       messageMap: new Map(),
       threadMessageIds: new Map(),
-      messageCache: new Map(), // Clear cache
       reportContent: '',
       researchPanelState: {
         isOpen: false,
@@ -232,47 +228,22 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
         activeTab: 'activities'
       }
     });
+    console.log('🧹 Messages cleared');
   },
 
   getMessagesByThread: (threadId) => {
     console.log('🔍 getMessagesByThread called:', threadId);
-    const { messageMap, threadMessageIds, messageCache, isResponding } = get();
+    const { messageMap, threadMessageIds } = get();
     
-    // Skip caching entirely during streaming for immediate updates
-    if (isResponding) {
-      const threadMessages = threadMessageIds.get(threadId) || [];
-      const result = threadMessages
-        .map(id => messageMap.get(id))
-        .filter((msg): msg is DeerMessage => msg !== undefined)
-        .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
-      console.log('📋 Returning messages (streaming mode):', result.length);
-      return result;
-    }
-    
-    // Use caching only when not actively streaming
+    // Always return fresh data - no caching for immediate reactivity
     const threadMessages = threadMessageIds.get(threadId) || [];
-    const cacheKey = `${threadId}-${messageMap.size}-${threadMessages.length}`;
-    
-    // Check if we have a cached result
-    const cached = messageCache.get(cacheKey);
-    if (cached) {
-      console.log('📋 Returning cached messages:', cached.length);
-      return cached;
-    }
-    
-    // Compute the result
-    const messages = threadMessages
+    const result = threadMessages
       .map(id => messageMap.get(id))
       .filter((msg): msg is DeerMessage => msg !== undefined)
       .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
     
-    // Cache the result
-    const newCache = new Map(messageCache);
-    newCache.set(cacheKey, messages);
-    set({ messageCache: newCache });
-    
-    console.log('📋 Returning messages (cached):', messages.length);
-    return messages;
+    console.log('📋 Returning fresh messages:', result.length);
+    return result;
   },
 
   getAllMessages: () => {
