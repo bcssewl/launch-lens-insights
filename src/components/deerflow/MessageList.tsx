@@ -77,7 +77,7 @@ const isResearchStarter = (message: DeerMessage, researchIds: string[], research
 };
 
 interface MessageListProps {
-  onSendMessage?: (message: string) => void;
+  onSendMessage?: (message: string, options?: { interruptFeedback?: string }) => void;
 }
 
 export const MessageList = ({ onSendMessage }: MessageListProps) => {
@@ -136,12 +136,12 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
 
   const handleSendMessage = (message: string, options?: { interruptFeedback?: string }) => {
     if (onSendMessage) {
-      onSendMessage(message);
+      onSendMessage(message, options);
     } else {
       // Fallback: use streaming directly
       startDeerFlowStreaming(message, {
         // Include interrupt feedback for plan acceptance
-        ...(options?.interruptFeedback && { /* add to options */ })
+        ...(options?.interruptFeedback && { interruptFeedback: options.interruptFeedback })
       });
     }
   };

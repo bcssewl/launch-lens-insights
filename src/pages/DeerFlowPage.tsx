@@ -102,7 +102,7 @@ const DesktopDeerFlowLayout = () => {
               {/* Messages area - takes remaining space */}
               <div className="flex-1 overflow-hidden">
                 <ErrorBoundary>
-                  <MessageList />
+                  <MessageList onSendMessage={handleSendMessage} />
                 </ErrorBoundary>
               </div>
               
@@ -187,7 +187,7 @@ const MobileDeerFlowLayout = () => {
           <div className="flex-1 overflow-hidden min-h-0">
             <div className="h-full px-4 py-2">
               <ErrorBoundary>
-                <MessageList />
+                <MessageList onSendMessage={handleSendMessage} />
               </ErrorBoundary>
             </div>
           </div>
