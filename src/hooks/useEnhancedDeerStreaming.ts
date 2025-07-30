@@ -214,9 +214,13 @@ export const useEnhancedDeerStreaming = () => {
     setEventCount(0);
     
     console.log('🦌 Starting DeerFlow streaming for:', question);
+    console.log('🔍 Debug - question:', question);
+    console.log('🔍 Debug - options:', options);
+    console.log('🔍 Debug - options.interruptFeedback:', options.interruptFeedback);
 
     // For interrupt feedback (plan acceptance/editing), don't create a user message
-    const isInterruptFeedback = options.interruptFeedback;
+    const isInterruptFeedback = !!options.interruptFeedback;
+    console.log('🔍 Debug - isInterruptFeedback:', isInterruptFeedback);
     
     if (!isInterruptFeedback) {
       // Add user message only for new questions
@@ -252,6 +256,8 @@ export const useEnhancedDeerStreaming = () => {
       report_style: options.reportStyle ?? settings.reportStyle,
       mcp_settings: mcpSettings
     });
+
+    console.log('🔍 Debug - Final request body:', requestBody);
 
     console.log('📤 Sending to backend with dynamic settings:', {
       thread_id: currentThreadId,
