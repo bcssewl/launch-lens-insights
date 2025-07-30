@@ -40,6 +40,12 @@ export const PlanCard = ({ message, onStartResearch, onSendMessage, isExecuting 
   const [isCompleted, setIsCompleted] = useState(false);
 
   useEffect(() => {
+    // Don't parse if message is still streaming
+    if (message.isStreaming) {
+      console.log('⏳ Message still streaming, waiting for completion...');
+      return;
+    }
+
     // Extract plan data from toolCalls (planner agent stores data there)
     let parsed: PlanData | null = null;
     
@@ -47,25 +53,37 @@ export const PlanCard = ({ message, onStartResearch, onSendMessage, isExecuting 
       const planToolCall = message.toolCalls[0];
       console.log('🔧 Found tool call:', planToolCall);
       
-      if (planToolCall.args) {
-        // Plan data is in the tool call arguments
-        if (typeof planToolCall.args === 'string') {
-          parsed = parseJSON(planToolCall.args, null);
-        } else {
-          parsed = planToolCall.args as PlanData;
+      // Only proceed if tool call has complete arguments
+      if (planToolCall.args && planToolCall.name) {
+        try {
+          // Plan data is in the tool call arguments
+          if (typeof planToolCall.args === 'string') {
+            parsed = parseJSON(planToolCall.args, null);
+          } else {
+            parsed = planToolCall.args as PlanData;
+          }
+          console.log('📋 Successfully extracted plan from toolCalls:', parsed);
+        } catch (error) {
+          console.error('❌ Error parsing plan from toolCalls:', error);
         }
-        console.log('📋 Extracted plan from toolCalls:', parsed);
+      } else {
+        console.log('⏳ Tool call incomplete, args:', planToolCall.args, 'name:', planToolCall.name);
       }
     } else if (message.content) {
       // Fallback to content parsing for backward compatibility
-      parsed = parseJSON(message.content, null);
-      console.log('📋 Fallback parsed from content:', parsed);
+      try {
+        parsed = parseJSON(message.content, null);
+        console.log('📋 Fallback parsed from content:', parsed);
+      } catch (error) {
+        console.error('❌ Error parsing plan from content:', error);
+      }
     }
     
     console.log('Raw content:', message.content);
     console.log('Raw toolCalls:', message.toolCalls);
+    console.log('Is streaming:', message.isStreaming);
     setPlanData(parsed);
-  }, [message.content, message.toolCalls]);
+  }, [message.content, message.toolCalls, message.isStreaming]);
 
   useEffect(() => {
     // Check if research is completed (can be expanded based on your completion logic)
