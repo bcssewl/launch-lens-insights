@@ -93,7 +93,7 @@ export const PlanCard = ({ message, onStartResearch, onSendMessage, isExecuting 
   const handleStartResearch = () => {
     if (onSendMessage) {
       // Send only interrupt feedback, no new user message
-      onSendMessage(undefined, {
+      onSendMessage("", {
         interruptFeedback: "accepted"
       });
       
