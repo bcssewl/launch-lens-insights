@@ -6,6 +6,7 @@ import { Brain, Play, CheckCircle, Clock, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DeerMessage } from '@/stores/deerFlowMessageStore';
 import { motion } from 'motion/react';
+import { parseJSON } from '@/lib/parseJSON';
 
 // ADD greeting messages array (matching original):
 const GREETINGS = [
@@ -39,15 +40,10 @@ export const PlanCard = ({ message, onStartResearch, onSendMessage, isExecuting 
   const [isCompleted, setIsCompleted] = useState(false);
 
   useEffect(() => {
-    try {
-      // Parse JSON content exactly like original DeerFlow
-      const parsed = JSON.parse(message.content || '{}');
-      setPlanData(parsed);
-      console.log('📋 Parsed plan data:', parsed);
-    } catch (error) {
-      console.error('❌ Failed to parse planner content:', error);
-      setPlanData(null);
-    }
+    const parsed = parseJSON(message.content, null);
+    console.log('📋 Parsed plan data:', parsed);
+    console.log('Raw content:', message.content);
+    setPlanData(parsed);
   }, [message.content]);
 
   useEffect(() => {
