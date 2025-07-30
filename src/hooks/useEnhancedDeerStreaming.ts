@@ -215,13 +215,21 @@ export const useEnhancedDeerStreaming = () => {
     
     console.log('🦌 Starting DeerFlow streaming for:', question);
 
-    // Add user message
-    addMessage({
-      role: 'user',
-      content: question,
-      threadId: currentThreadId,
-      contentChunks: [question]
-    });
+    // For interrupt feedback (plan acceptance/editing), don't create a user message
+    const isInterruptFeedback = options.interruptFeedback;
+    
+    if (!isInterruptFeedback) {
+      // Add user message only for new questions
+      addMessage({
+        role: 'user',
+        content: question,
+        threadId: currentThreadId,
+        contentChunks: [question]
+      });
+      console.log('👤 Added user message for new question');
+    } else {
+      console.log('🔄 Interrupt feedback detected, skipping user message creation');
+    }
 
     // Track created message IDs to mark as complete later
     const createdMessageIds = new Set<string>();
@@ -231,7 +239,7 @@ export const useEnhancedDeerStreaming = () => {
     
     // Prepare request body with dynamic settings
     const requestBody = JSON.stringify({
-      messages: [{ role: "user", content: question }],
+      messages: isInterruptFeedback ? [] : [{ role: "user", content: question }],
       debug: true,
       thread_id: currentThreadId,
       interrupt_feedback: options.interruptFeedback,
