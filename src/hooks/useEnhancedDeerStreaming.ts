@@ -137,16 +137,18 @@ export const useEnhancedDeerStreaming = () => {
 
     console.log('✨ Message updated successfully for ID:', messageId);
 
-    // Research session management - CORRECTED TO MATCH ORIGINAL
+    // Research session management - FIXED
     if (event.event === 'message_chunk' && data.agent) {
+      console.log('🔄 Processing message chunk for agent:', data.agent, 'messageId:', messageId);
+      
       switch (data.agent) {
         case 'researcher':
         case 'coder':
-        case 'reporter':
           // Get the updated message
           const currentMessage = getMessage(messageId);
           if (currentMessage) {
-            // Auto-start research session on FIRST researcher/coder/reporter (matching original)
+            console.log('🔬 Processing researcher/coder message:', messageId);
+            // Auto-start research session on FIRST researcher/coder (matching original)
             const researchId = autoStartResearchOnFirstActivity(currentMessage);
             
             if (researchId) {
@@ -163,18 +165,34 @@ export const useEnhancedDeerStreaming = () => {
           }
           break;
           
+        case 'reporter':
+          // Reporter ends the research session AND gets added as an activity
+          const reporterMessage = getMessage(messageId);
+          if (reporterMessage) {
+            console.log('📄 Processing reporter message:', messageId);
+            
+            // First, try to auto-start research if no session exists
+            const researchId = autoStartResearchOnFirstActivity(reporterMessage);
+            
+            if (researchId) {
+              // Research session just started with reporter
+              console.log('🔬 Research session auto-started by reporter:', researchId);
+              setResearchReport(researchId, messageId);
+            } else {
+              // Add to existing research session and mark as report
+              const currentResearchId = getCurrentResearchId();
+              if (currentResearchId) {
+                addResearchActivity(currentResearchId, messageId);
+                setResearchReport(currentResearchId, messageId);
+                console.log('📄 Research completed with report:', messageId);
+              }
+            }
+          }
+          break;
+          
         case 'planner':
           // Planner messages do NOT start research - they just exist for linking
           console.log('📋 Planner message processed, waiting for researcher to start session');
-          break;
-          
-        case 'reporter':
-          // Reporter ends the research session
-          const reportResearchId = getCurrentResearchId();
-          if (reportResearchId) {
-            setResearchReport(reportResearchId, messageId);
-            console.log('📄 Research completed with report:', messageId);
-          }
           break;
       }
     }

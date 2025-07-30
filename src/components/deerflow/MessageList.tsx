@@ -103,21 +103,39 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
 
   // Enhanced message filtering for main chat display
   const visibleMessages = useMemo(() => {
-    return safeMessageIds
+    console.log('🔍 MessageList filtering messages:', {
+      totalMessages: safeMessageIds.length,
+      researchIds: researchIds,
+      ongoingResearchId
+    });
+    
+    const filtered = safeMessageIds
       .map(id => getMessage(id))
       .filter((message): message is DeerMessage => {
         if (!message) return false;
         
-        // Original DeerFlow logic: show main chat types + startOfResearch
-        return (
+        const shouldShow = (
           message.role === 'user' ||
           message.agent === 'coordinator' ||
           message.agent === 'planner' ||
           message.agent === 'podcast' ||
-          researchIds.includes(message.id) // ADD THIS: startOfResearch logic
+          researchIds.includes(message.id) // startOfResearch logic
         );
+        
+        console.log('🔍 Message filtering:', {
+          messageId: message.id,
+          agent: message.agent,
+          role: message.role,
+          isResearchId: researchIds.includes(message.id),
+          shouldShow
+        });
+        
+        return shouldShow;
       });
-  }, [safeMessageIds, getMessage, researchIds]); // ADD researchIds dependency
+      
+    console.log('✅ MessageList visible messages:', filtered.length);
+    return filtered;
+  }, [safeMessageIds, getMessage, researchIds, ongoingResearchId]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
