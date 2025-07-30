@@ -57,15 +57,12 @@ export const PlanCard = ({ message, onStartResearch, onSendMessage, isExecuting 
 
   const handleStartResearch = () => {
     if (onSendMessage) {
-      // Send acceptance message to backend (matching original DeerFlow)
-      const greeting = GREETINGS[Math.floor(Math.random() * GREETINGS.length)];
-      const acceptanceMessage = `${greeting}! Let's get started.`;
-      
-      onSendMessage(acceptanceMessage, {
+      // Send only interrupt feedback, no new user message
+      onSendMessage(undefined, {
         interruptFeedback: "accepted"
       });
       
-      console.log('📤 Sent plan acceptance:', acceptanceMessage);
+      console.log('📤 Sent plan acceptance with interrupt feedback only');
       
       // DON'T create research session here - let the streaming response handle it
       // This prevents the button from getting stuck if the API call fails
