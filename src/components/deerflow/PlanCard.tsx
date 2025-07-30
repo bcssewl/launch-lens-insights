@@ -40,11 +40,32 @@ export const PlanCard = ({ message, onStartResearch, onSendMessage, isExecuting 
   const [isCompleted, setIsCompleted] = useState(false);
 
   useEffect(() => {
-    const parsed = parseJSON(message.content, null);
-    console.log('📋 Parsed plan data:', parsed);
+    // Extract plan data from toolCalls (planner agent stores data there)
+    let parsed: PlanData | null = null;
+    
+    if (message.toolCalls && message.toolCalls.length > 0) {
+      const planToolCall = message.toolCalls[0];
+      console.log('🔧 Found tool call:', planToolCall);
+      
+      if (planToolCall.args) {
+        // Plan data is in the tool call arguments
+        if (typeof planToolCall.args === 'string') {
+          parsed = parseJSON(planToolCall.args, null);
+        } else {
+          parsed = planToolCall.args as PlanData;
+        }
+        console.log('📋 Extracted plan from toolCalls:', parsed);
+      }
+    } else if (message.content) {
+      // Fallback to content parsing for backward compatibility
+      parsed = parseJSON(message.content, null);
+      console.log('📋 Fallback parsed from content:', parsed);
+    }
+    
     console.log('Raw content:', message.content);
+    console.log('Raw toolCalls:', message.toolCalls);
     setPlanData(parsed);
-  }, [message.content]);
+  }, [message.content, message.toolCalls]);
 
   useEffect(() => {
     // Check if research is completed (can be expanded based on your completion logic)
