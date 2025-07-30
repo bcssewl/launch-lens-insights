@@ -66,7 +66,7 @@ export const PlanCard = ({ message, onStartResearch, onSendMessage, isExecuting 
   };
 
   // REMOVE the fallback markdown parsing - if JSON fails, show error state
-  if (!planData || (!planData.title && !planData.steps)) {
+  if (!planData || (!planData.title && !planData.steps) || (planData.steps && planData.steps.length === 0)) {
     return (
       <Card className="w-full border-red-200 bg-red-50/50 dark:bg-red-950/20">
         <CardContent className="p-6">

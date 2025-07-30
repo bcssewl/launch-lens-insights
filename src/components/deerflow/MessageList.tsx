@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useMessageIds } from '@/hooks/useOptimizedMessages';
 import { useDeerFlowMessageStore, DeerMessage } from '@/stores/deerFlowMessageStore';
@@ -40,23 +40,28 @@ const LoadingAnimation = () => (
 /**
  * Message entry animation component with staggered animations
  */
-const MessageEntryAnimation = ({ children, index }: { children: React.ReactNode; index: number }) => {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 24 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -24 }}
-      transition={{
-        duration: 0.4,
-        ease: "easeOut",
-        delay: index * 0.1 // Stagger animation
-      }}
-      layout
-    >
-      {children}
-    </motion.div>
-  );
-};
+const MessageEntryAnimation = React.forwardRef<HTMLDivElement, { children: React.ReactNode; index: number }>(
+  ({ children, index }, ref) => {
+    return (
+      <motion.div
+        ref={ref}
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -24 }}
+        transition={{
+          duration: 0.4,
+          ease: "easeOut",
+          delay: index * 0.1 // Stagger animation
+        }}
+        layout
+      >
+        {children}
+      </motion.div>
+    );
+  }
+);
+
+MessageEntryAnimation.displayName = "MessageEntryAnimation";
 
 /**
  * Helper function to determine if a message should start a research session display
