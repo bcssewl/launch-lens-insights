@@ -364,8 +364,8 @@ export const ResearchPanel = () => {
   if (!isResearchPanelOpen) return null;
 
   return (
-    <Card className="h-full border-l bg-card">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b">
+    <Card className="h-full border-l bg-card flex flex-col">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b flex-shrink-0">
         <h3 className="text-lg font-semibold">Research Panel</h3>
         <div className="flex items-center space-x-2">
           <Button
@@ -379,13 +379,13 @@ export const ResearchPanel = () => {
         </div>
       </CardHeader>
 
-      <CardContent className="p-0 h-full">
+      <CardContent className="p-0 flex flex-col flex-1 min-h-0">
         <Tabs
           value={activeResearchTab}
           onValueChange={(tab) => switchTab(tab as "activities" | "report")}
           className="h-full flex flex-col"
         >
-          <TabsList className="grid w-full grid-cols-2 mx-4 mb-4 mt-4">
+          <TabsList className="grid w-full grid-cols-2 mx-4 mb-4 mt-4 flex-shrink-0">
             <TabsTrigger value="activities" className="flex items-center space-x-1">
               <Activity className="h-4 w-4" />
               <span>Activities ({toolCalls.length})</span>
@@ -396,9 +396,16 @@ export const ResearchPanel = () => {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="activities" className="flex-1">
+          <TabsContent 
+            value="activities" 
+            className="h-full min-h-0 flex-grow overflow-hidden mx-4"
+            forceMount
+            hidden={activeResearchTab !== "activities"}
+          >
             {openResearchId ? (
-              <ActivitiesTab researchId={openResearchId} />
+              <ScrollArea className="h-full">
+                <ActivitiesTab researchId={openResearchId} />
+              </ScrollArea>
             ) : (
               <div className="flex items-center justify-center h-64 text-center">
                 <div>
@@ -412,11 +419,18 @@ export const ResearchPanel = () => {
             )}
           </TabsContent>
 
-          <TabsContent value="report" className="flex-1">
+          <TabsContent 
+            value="report" 
+            className="h-full min-h-0 flex-grow overflow-hidden mx-4"
+            forceMount
+            hidden={activeResearchTab !== "report"}
+          >
             {openResearchId ? (
-              <NewReportTab 
-                researchId={openResearchId} 
-              />
+              <ScrollArea className="h-full">
+                <NewReportTab 
+                  researchId={openResearchId} 
+                />
+              </ScrollArea>
             ) : (
               <div className="flex items-center justify-center h-64 text-center">
                 <div>

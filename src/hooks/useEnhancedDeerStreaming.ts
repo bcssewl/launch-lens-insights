@@ -17,7 +17,7 @@ interface DeerStreamingOptions {
   maxSearchResults?: number;
   autoAcceptedPlan?: boolean;
   enableBackgroundInvestigation?: boolean;
-  reportStyle?: 'academic' | 'casual' | 'detailed';
+  reportStyle?: 'academic' | 'popular_science' | 'news' | 'social_media';
   enableDeepThinking?: boolean;
   interruptFeedback?: string; // ADD interruptFeedback
 }
@@ -37,13 +37,16 @@ interface RetryConfig {
 export const useEnhancedDeerStreaming = () => {
   const [isStreaming, setIsStreaming] = useState(false);
   const [eventCount, setEventCount] = useState(0);
+  const abortControllerRef = useRef<AbortController | null>(null);
   
   const {
     addMessage,
     addMessageWithId,
-    updateMessage,
+    updateMessage, // DeerFlow-style: updateMessage(message)
+    updateMessageById, // Legacy: updateMessageById(id, updates)
     existsMessage,
     getMessage,
+    findMessageByToolCallId,
     setIsResponding,
     setResearchPanel,
     setReportContent,
@@ -86,7 +89,26 @@ export const useEnhancedDeerStreaming = () => {
 
     const data = event.data;
     
-    // Extract message ID from API data - this is required
+    // Special handling for tool_call_result events like DeerFlow
+    const eventType = (event as any).event || (event as any).type;
+    if (eventType === 'tool_call_result') {
+      const eventData = event.data || event;
+      console.log('🔧 Processing tool_call_result for tool_call_id:', eventData.tool_call_id);
+      
+      // Find message by tool call ID (like DeerFlow does)
+      const targetMessage = findMessageByToolCallId(eventData.tool_call_id);
+      if (targetMessage) {
+        console.log('🔧 Found message with tool call:', targetMessage.id);
+        const updatedMessage = mergeMessage(targetMessage, event);
+        updateMessage(updatedMessage); // DeerFlow-style call
+        console.log('✨ Tool call result updated for message:', targetMessage.id);
+      } else {
+        console.error('❌ No message found with tool_call_id:', eventData.tool_call_id);
+      }
+      return;
+    }
+    
+    // Extract message ID from API data - this is required for other events
     const messageId = data.id || data.message_id;
     
     if (!messageId) {
@@ -94,13 +116,19 @@ export const useEnhancedDeerStreaming = () => {
       return;
     }
 
-    console.log('🔄 Processing event for message ID:', messageId, 'Event:', event.event);
+    // Debug logging - reduced to prevent console spam
+    if (process.env.NODE_ENV === 'development') {
+      // Only log important events, not every chunk
+      if (eventType !== 'message_chunk') {
+        console.log('🔄 Processing event for message ID:', messageId, 'Event:', eventType);
+      }
+    }
 
     // Get message from store - if it doesn't exist, that's an error
     const existingMessage = getMessage(messageId);
     
     if (!existingMessage) {
-      console.error('❌ Message not found in store for ID:', messageId, 'Event:', event.event);
+      console.error('❌ Message not found in store for ID:', messageId, 'Event:', eventType);
       
       // Create message on-demand for robustness
       const newMessage = {
@@ -128,83 +156,32 @@ export const useEnhancedDeerStreaming = () => {
       
       // Continue with the newly created message
       const updatedMessage = mergeMessage(createdMessage, event);
-      updateMessage(messageId, updatedMessage);
+      updateMessage(updatedMessage); // DeerFlow-style call
     } else {
       // Normal case: merge event with existing message
       const updatedMessage = mergeMessage(existingMessage, event);
-      updateMessage(messageId, updatedMessage);
+      updateMessage(updatedMessage); // DeerFlow-style call
     }
 
     console.log('✨ Message updated successfully for ID:', messageId);
 
-    // Research session management - FIXED
-    if (event.event === 'message_chunk' && data.agent) {
-      console.log('🔄 Processing message chunk for agent:', data.agent, 'messageId:', messageId);
-      
-      switch (data.agent) {
-        case 'researcher':
-        case 'coder':
-          // Get the updated message
-          const currentMessage = getMessage(messageId);
-          if (currentMessage) {
-            console.log('🔬 Processing researcher/coder message:', messageId);
-            // Auto-start research session on FIRST researcher/coder (matching original)
-            const researchId = autoStartResearchOnFirstActivity(currentMessage);
-            
-            if (researchId) {
-              // Research session just started
-              console.log('🔬 Research session auto-started:', researchId);
-            } else {
-              // Add to existing research session
-              const currentResearchId = getCurrentResearchId();
-              if (currentResearchId) {
-                addResearchActivity(currentResearchId, messageId);
-                console.log('🔍 Added activity to existing research:', currentResearchId);
-              }
-            }
-          }
-          break;
-          
-        case 'reporter':
-          // Reporter ends the research session AND gets added as an activity
-          const reporterMessage = getMessage(messageId);
-          if (reporterMessage) {
-            console.log('📄 Processing reporter message:', messageId);
-            
-            // First, try to auto-start research if no session exists
-            const researchId = autoStartResearchOnFirstActivity(reporterMessage);
-            
-            if (researchId) {
-              // Research session just started with reporter
-              console.log('🔬 Research session auto-started by reporter:', researchId);
-              setResearchReport(researchId, messageId);
-            } else {
-              // Add to existing research session and mark as report
-              const currentResearchId = getCurrentResearchId();
-              if (currentResearchId) {
-                addResearchActivity(currentResearchId, messageId);
-                setResearchReport(currentResearchId, messageId);
-                console.log('📄 Research completed with report:', messageId);
-              }
-            }
-          }
-          break;
-          
-        case 'planner':
-          // Planner messages do NOT start research - they just exist for linking
-          console.log('📋 Planner message processed, waiting for researcher to start session');
-          break;
+    // Handle reporter completion when streaming finishes (matching DeerFlow)
+    if (event.data.finish_reason && data.agent === 'reporter') {
+      const currentResearchId = getCurrentResearchId();
+      if (currentResearchId) {
+        setResearchReport(currentResearchId, messageId);
+        console.log('📄 Research completed with report:', messageId);
       }
     }
 
     // Handle report generation
-    if (event.event === 'report_generated') {
+    if (eventType === 'report_generated') {
       setReportContent(event.data.content);
       setResearchPanel(true, messageId, 'report');
     }
 
     setEventCount(prev => prev + 1);
-  }, [getMessage, addMessageWithId, updateMessage, setResearchPanel, setReportContent, currentThreadId, startResearch, addResearchActivity, setResearchReport, getCurrentResearchId, autoStartResearchOnFirstActivity]);
+  }, [getMessage, findMessageByToolCallId, addMessageWithId, updateMessage, setResearchPanel, setReportContent, currentThreadId, startResearch, addResearchActivity, setResearchReport, getCurrentResearchId, autoStartResearchOnFirstActivity]);
 
   // Simplified error handling without currentMessageId fallback
   const handleError = useCallback((error: Error) => {
@@ -272,6 +249,7 @@ export const useEnhancedDeerStreaming = () => {
       enable_deep_thinking: options.enableDeepThinking ?? settings.deepThinking,
       enable_background_investigation: options.enableBackgroundInvestigation ?? settings.backgroundInvestigation,
       report_style: options.reportStyle ?? settings.reportStyle,
+      locale: 'en-US', // Force English locale to match DeerFlow
       mcp_settings: mcpSettings
     });
 
@@ -294,98 +272,59 @@ export const useEnhancedDeerStreaming = () => {
     });
 
     // Simple streaming like original - no complex initialization
+    // Create abort controller for this request
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+    
     try {
-      const response = await fetch('https://deer-flow-wrappers.up.railway.app/api/chat/stream', {
+      // Use the fetchStream utility instead of manual parsing
+      const { fetchStream } = await import('@/utils/fetchStream');
+      
+      for await (const sseEvent of fetchStream('https://deer-flow-wrappers.up.railway.app/api/chat/stream', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: requestBody
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      if (!response.body) {
-        throw new Error('No response body available');
-      }
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        
-        if (done) break;
-        
-        // Decode chunk and add to buffer
-        const chunk = decoder.decode(value, { stream: true });
-        buffer += chunk;
-        
-        // Process complete events from buffer
-        const lines = buffer.split('\n\n');
-        buffer = lines.pop() || ''; // Keep incomplete part in buffer
-        
-        for (const eventBlock of lines) {
-          if (eventBlock.trim()) {
-            const lines = eventBlock.split('\n');
-            let currentEvent = 'message';
-            let currentData: string | null = null;
+        body: requestBody,
+        signal: abortController.signal
+      })) {
+        // Process event if we have data
+        if (sseEvent.data !== '[DONE]') {
+          try {
+            const event = {
+              event: sseEvent.event as any,
+              data: JSON.parse(sseEvent.data)
+            };
             
-            for (const line of lines) {
-              const colonIndex = line.indexOf(': ');
-              if (colonIndex === -1) continue;
+            // Extract API message ID from event
+            const apiMessageId = event.data.id || event.data.message_id;
+            
+            // Create message for each unique API message ID (one per agent)
+            if (apiMessageId && !createdMessageIds.has(apiMessageId)) {
+              console.log('📝 Creating message with API ID:', apiMessageId, 'Agent:', event.data.agent);
               
-              const key = line.slice(0, colonIndex);
-              const value = line.slice(colonIndex + 2);
+              const initialMessage = {
+                id: apiMessageId,
+                role: 'assistant' as const,
+                content: '',
+                threadId: currentThreadId,
+                contentChunks: [],
+                reasoningContent: '',
+                reasoningContentChunks: [],
+                timestamp: new Date(),
+                isStreaming: true,
+                agent: event.data.agent
+              };
               
-              if (key === 'event') {
-                currentEvent = value;
-              } else if (key === 'data') {
-                currentData = value;
-              }
+              addMessageWithId(initialMessage);
+              createdMessageIds.add(apiMessageId);
             }
             
-            // Process event if we have data
-            if (currentData !== null && currentData !== '[DONE]') {
-              try {
-                const event = {
-                  event: currentEvent as any,
-                  data: JSON.parse(currentData)
-                };
-                
-                // Extract API message ID from event
-                const apiMessageId = event.data.id || event.data.message_id;
-                
-                // Create message for each unique API message ID (one per agent)
-                if (apiMessageId && !createdMessageIds.has(apiMessageId)) {
-                  console.log('📝 Creating message with API ID:', apiMessageId, 'Agent:', event.data.agent);
-                  
-                  const initialMessage = {
-                    id: apiMessageId,
-                    role: 'assistant' as const,
-                    content: '',
-                    threadId: currentThreadId,
-                    contentChunks: [],
-                    reasoningContent: '',
-                    reasoningContentChunks: [],
-                    timestamp: new Date(),
-                    isStreaming: true,
-                    agent: event.data.agent
-                  };
-                  
-                  addMessageWithId(initialMessage);
-                  createdMessageIds.add(apiMessageId);
-                }
-                
-                // Process event with consistent API ID
-                processEvent(event);
-              } catch (error) {
-                console.warn('Failed to parse SSE data:', currentData);
-              }
-            }
+            // Process event with consistent API ID
+            processEvent(event);
+          } catch (error) {
+            console.warn('Failed to parse SSE data for event:', sseEvent.event, 'Data:', sseEvent.data, 'Error:', error);
+            // Continue processing other events rather than creating error messages
           }
         }
       }
@@ -394,23 +333,40 @@ export const useEnhancedDeerStreaming = () => {
       for (const messageId of createdMessageIds) {
         const finalMessage = getMessage(messageId);
         if (finalMessage) {
-          updateMessage(messageId, {
+          updateMessage({
             ...finalMessage,
             isStreaming: false
-          });
+          }); // DeerFlow-style call
         }
       }
 
       console.log(`✅ DeerFlow streaming completed successfully - processed ${eventCount} events`);
 
     } catch (error) {
+      // Handle abort errors gracefully
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.log('⏹️ DeerFlow streaming was cancelled by user');
+        return;
+      }
+      
       console.error('❌ DeerFlow streaming failed:', error);
       
       // Reset research state on API failure
       const messageStore = useDeerFlowMessageStore.getState();
       messageStore.resetOngoingResearch();
       
-      handleError(error as Error);
+      // Provide user-friendly error messages
+      if (error instanceof Error) {
+        if (error.message.includes('Network connection lost')) {
+          handleError(new Error('Connection lost during research. Please check your internet connection and try again.'));
+        } else if (error.message.includes('Failed to connect')) {
+          handleError(new Error('Unable to connect to research server. Please try again in a few moments.'));
+        } else {
+          handleError(error);
+        }
+      } else {
+        handleError(new Error('An unexpected error occurred during research. Please try again.'));
+      }
     } finally {
       setIsStreaming(false);
       setIsResponding(false);
@@ -432,6 +388,13 @@ export const useEnhancedDeerStreaming = () => {
 
   const stopStreaming = useCallback(() => {
     console.log('⏹️ DeerFlow streaming stopped by user');
+    
+    // Abort the current request if it exists
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    
     setIsStreaming(false);
     setIsResponding(false);
   }, []);

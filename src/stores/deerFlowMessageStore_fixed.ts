@@ -69,7 +69,6 @@ export interface DeerFlowMessageStore {
   isResponding: boolean;
   currentPrompt: string;
   streamingMessageId: string | null;
-  threadMessageIds: Map<string, string[]>; // Legacy compatibility
   researchPanelState: {
     isOpen: boolean;
     openResearchId: string | null;
@@ -142,27 +141,15 @@ function appendMessage(message: DeerMessage, set: any, get: any) {
     if (!ongoingResearchId) {
       const id = message.id;
       appendResearch(id, set, get);
-      set({ openResearchId: id }); // Fixed: use set directly like DeerFlow
+      get().openResearch(id);
     }
     appendResearchActivity(message, set, get);
   }
   
-  set((state: DeerFlowMessageStore) => {
-    // Update core DeerFlow state
-    const newMessages = new Map(state.messages);
-    newMessages.set(message.id, message);
-    
-    // Update legacy threadMessageIds for backward compatibility
-    const newThreadMessageIds = new Map(state.threadMessageIds);
-    const currentMessages = newThreadMessageIds.get(message.threadId) || [];
-    newThreadMessageIds.set(message.threadId, [...currentMessages, message.id]);
-    
-    return {
-      messageIds: [...state.messageIds, message.id],
-      messages: newMessages,
-      threadMessageIds: newThreadMessageIds
-    };
-  });
+  set((state: DeerFlowMessageStore) => ({
+    messageIds: [...state.messageIds, message.id],
+    messages: new Map(state.messages).set(message.id, message),
+  }));
 }
 
 function updateMessage(message: DeerMessage, set: any, get: any) {
@@ -247,7 +234,6 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
   isResponding: false,
   currentPrompt: '',
   streamingMessageId: null,
-  threadMessageIds: new Map<string, string[]>(),
   researchPanelState: {
     isOpen: false,
     openResearchId: null,
@@ -358,7 +344,6 @@ export const useDeerFlowMessageStore = create<DeerFlowMessageStore>()((set, get)
     set({ 
       messageIds: [],
       messages: new Map(),
-      threadMessageIds: new Map(),
       reportContent: '',
       researchPanelState: {
         isOpen: false,

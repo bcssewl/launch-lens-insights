@@ -8,7 +8,7 @@ import { InputBox } from '@/components/deerflow/InputBox';
 import { ResearchPanel } from '@/components/deerflow/ResearchPanel';
 import { DeerFlowSettings } from '@/components/deerflow/DeerFlowSettings';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -66,15 +66,24 @@ export default function DeerFlowPage() {
 const DesktopDeerFlowLayout = () => {
   const { researchPanelState } = useDeerFlowMessageStore();
   const { startDeerFlowStreaming } = useEnhancedDeerStreaming();
+  const [feedback, setFeedback] = useState<{ option: { value: string; text: string } } | null>(null);
   
   // Enable keyboard navigation
   useDeerFlowKeyboard();
   
   const handleSendMessage = (message: string, options?: { interruptFeedback?: string }) => {
     startDeerFlowStreaming(message, {
-      interruptFeedback: options?.interruptFeedback
+      interruptFeedback: options?.interruptFeedback || feedback?.option.value
     });
   };
+
+  const handleFeedback = useCallback((feedback: { option: { value: string; text: string } }) => {
+    setFeedback(feedback);
+  }, []);
+
+  const handleRemoveFeedback = useCallback(() => {
+    setFeedback(null);
+  }, []);
   
   const doubleColumnMode = researchPanelState.isOpen;
 
@@ -102,13 +111,17 @@ const DesktopDeerFlowLayout = () => {
               {/* Messages area - takes remaining space */}
               <div className="flex-1 overflow-hidden">
                 <ErrorBoundary>
-                  <MessageList onSendMessage={handleSendMessage} />
+                  <MessageList onSendMessage={handleSendMessage} onFeedback={handleFeedback} />
                 </ErrorBoundary>
               </div>
               
               {/* Input area - Fixed at bottom */}
               <div className="flex-shrink-0 border-t bg-background/95 backdrop-blur-sm pt-4">
-                <InputBox onSendMessage={handleSendMessage} />
+                <InputBox 
+                  onSend={handleSendMessage} 
+                  feedback={feedback}
+                  onRemoveFeedback={handleRemoveFeedback}
+                />
               </div>
             </div>
 
@@ -164,15 +177,24 @@ const DesktopDeerFlowLayout = () => {
 const MobileDeerFlowLayout = () => {
   const { researchPanelState, closeResearchPanel } = useDeerFlowMessageStore();
   const { startDeerFlowStreaming } = useEnhancedDeerStreaming();
+  const [feedback, setFeedback] = useState<{ option: { value: string; text: string } } | null>(null);
   
   // Enable keyboard navigation on mobile too
   useDeerFlowKeyboard();
 
   const handleSendMessage = (message: string, options?: { interruptFeedback?: string }) => {
     startDeerFlowStreaming(message, {
-      interruptFeedback: options?.interruptFeedback
+      interruptFeedback: options?.interruptFeedback || feedback?.option.value
     });
   };
+
+  const handleFeedback = useCallback((feedback: { option: { value: string; text: string } }) => {
+    setFeedback(feedback);
+  }, []);
+
+  const handleRemoveFeedback = useCallback(() => {
+    setFeedback(null);
+  }, []);
 
   return (
     <DashboardLayout>
@@ -187,14 +209,18 @@ const MobileDeerFlowLayout = () => {
           <div className="flex-1 overflow-hidden min-h-0">
             <div className="h-full px-4 py-2">
               <ErrorBoundary>
-                <MessageList onSendMessage={handleSendMessage} />
+                <MessageList onSendMessage={handleSendMessage} onFeedback={handleFeedback} />
               </ErrorBoundary>
             </div>
           </div>
           
           {/* Mobile input - Fixed at bottom */}
           <div className="flex-shrink-0 border-t bg-background/95 backdrop-blur-sm p-4">
-            <InputBox onSendMessage={handleSendMessage} />
+            <InputBox 
+              onSend={handleSendMessage} 
+              feedback={feedback}
+              onRemoveFeedback={handleRemoveFeedback}
+            />
           </div>
 
           {/* Research panel as full-screen modal on mobile with enhanced animations */}

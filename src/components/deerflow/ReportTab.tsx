@@ -3,16 +3,15 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useDeerFlowMessageStore } from '@/stores/deerFlowMessageStore';
-import { useMessage } from '@/hooks/useOptimizedMessages';
 import { useToast } from '@/hooks/use-toast';
 import { 
   FileText, 
   Headphones, 
   Pencil, 
-  Undo2, 
   Copy, 
   Check, 
   Download,
+  FileDown,
   Loader2,
   Save,
   X
@@ -20,6 +19,10 @@ import {
 import { cn } from '@/lib/utils';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { LoadingAnimation } from './LoadingAnimation';
+import ReportEditor from '../editor';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 interface ReportTabProps {
   researchId: string;
@@ -38,6 +41,7 @@ export const ReportTab = ({ researchId }: ReportTabProps) => {
   const [editableContent, setEditableContent] = useState('');
   const [copied, setCopied] = useState(false);
   const [isGeneratingPodcast, setIsGeneratingPodcast] = useState(false);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   
   // Get report content and status
   const reportContent = reportMessage?.content || '';
@@ -107,6 +111,136 @@ export const ReportTab = ({ researchId }: ReportTabProps) => {
     }
   };
 
+  // Download report as PDF
+  const downloadReportAsPDF = async () => {
+    setIsGeneratingPDF(true);
+    try {
+      // Create a temporary container for PDF generation
+      const tempContainer = document.createElement('div');
+      tempContainer.style.position = 'absolute';
+      tempContainer.style.left = '-9999px';
+      tempContainer.style.top = '0';
+      tempContainer.style.width = '800px';
+      tempContainer.style.backgroundColor = 'white';
+      tempContainer.style.padding = '40px';
+      tempContainer.style.fontFamily = 'system-ui, -apple-system, sans-serif';
+      tempContainer.style.lineHeight = '1.6';
+      tempContainer.style.color = '#000';
+      
+      // Create title
+      const title = document.createElement('h1');
+      title.textContent = 'Research Report';
+      title.style.fontSize = '24px';
+      title.style.marginBottom = '20px';
+      title.style.fontWeight = 'bold';
+      tempContainer.appendChild(title);
+      
+      // Add timestamp
+      const timestampElement = document.createElement('p');
+      timestampElement.textContent = `Generated on: ${new Date().toLocaleString()}`;
+      timestampElement.style.fontSize = '12px';
+      timestampElement.style.color = '#666';
+      timestampElement.style.marginBottom = '30px';
+      tempContainer.appendChild(timestampElement);
+      
+      // Convert markdown to HTML and add to container
+      const contentDiv = document.createElement('div');
+      contentDiv.innerHTML = reportContent
+        .replace(/^### /gm, '<h3>')
+        .replace(/^## /gm, '<h2>')
+        .replace(/^# /gm, '<h1>')
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/`(.*?)`/g, '<code style="background:#f4f4f4;padding:2px 4px;border-radius:3px;">$1</code>')
+        .replace(/\n\n/g, '</p><p>')
+        .replace(/\n/g, '<br>');
+      
+      // Wrap content in paragraphs
+      contentDiv.innerHTML = '<p>' + contentDiv.innerHTML + '</p>';
+      
+      // Style the content
+      contentDiv.style.fontSize = '14px';
+      contentDiv.style.lineHeight = '1.6';
+      contentDiv.querySelectorAll('h1, h2, h3').forEach(heading => {
+        (heading as HTMLElement).style.marginTop = '20px';
+        (heading as HTMLElement).style.marginBottom = '10px';
+        (heading as HTMLElement).style.fontWeight = 'bold';
+      });
+      contentDiv.querySelectorAll('h1').forEach(h1 => {
+        (h1 as HTMLElement).style.fontSize = '20px';
+      });
+      contentDiv.querySelectorAll('h2').forEach(h2 => {
+        (h2 as HTMLElement).style.fontSize = '18px';
+      });
+      contentDiv.querySelectorAll('h3').forEach(h3 => {
+        (h3 as HTMLElement).style.fontSize = '16px';
+      });
+      contentDiv.querySelectorAll('p').forEach(p => {
+        (p as HTMLElement).style.marginBottom = '12px';
+      });
+      
+      tempContainer.appendChild(contentDiv);
+      document.body.appendChild(tempContainer);
+      
+      // Generate canvas from the content
+      const canvas = await html2canvas(tempContainer, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        width: 800,
+        height: tempContainer.scrollHeight
+      });
+      
+      // Remove temporary container
+      document.body.removeChild(tempContainer);
+      
+      // Create PDF
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+      
+      const imgWidth = 210; // A4 width in mm
+      const pageHeight = 295; // A4 height in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+      
+      // Add first page
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+      
+      // Add additional pages if needed
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+      
+      // Download the PDF
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      const filename = `research-report-${timestamp}.pdf`;
+      pdf.save(filename);
+      
+      toast({
+        title: 'PDF downloaded successfully',
+        duration: 2000,
+      });
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      toast({
+        title: 'Failed to generate PDF',
+        variant: 'destructive',
+        duration: 2000,
+      });
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
+
   // Generate podcast (placeholder for future implementation)
   const generatePodcast = async () => {
     setIsGeneratingPodcast(true);
@@ -146,8 +280,9 @@ export const ReportTab = ({ researchId }: ReportTabProps) => {
 
   // Save edited content
   const saveEdit = () => {
-    if (reportMessageId) {
-      updateMessage(reportMessageId, { content: editableContent });
+    if (reportMessageId && reportMessage) {
+      const updatedMessage = { ...reportMessage, content: editableContent };
+      updateMessage(updatedMessage); // DeerFlow-style call
       setIsEditing(false);
       toast({
         title: 'Report updated successfully',
@@ -168,7 +303,7 @@ export const ReportTab = ({ researchId }: ReportTabProps) => {
   };
 
   // Render empty state
-  if (!reportMessage || reportContent.length === 0) {
+  if (!reportMessage) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-8">
         <FileText className="w-16 h-16 mb-4 opacity-50" />
@@ -179,6 +314,15 @@ export const ReportTab = ({ researchId }: ReportTabProps) => {
       </div>
     );
   }
+
+  // Debug log to check report message
+  console.log('🔍 ReportTab - Report message:', {
+    messageId: reportMessageId,
+    content: reportContent,
+    isStreaming,
+    isCompleted,
+    agent: reportMessage?.agent
+  });
 
   return (
     <div className="flex flex-col h-full">
@@ -233,6 +377,24 @@ export const ReportTab = ({ researchId }: ReportTabProps) => {
                 </TooltipTrigger>
                 <TooltipContent>Download as Markdown</TooltipContent>
               </Tooltip>
+              
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    onClick={downloadReportAsPDF}
+                    disabled={isGeneratingPDF}
+                  >
+                    {isGeneratingPDF ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <FileDown className="w-4 h-4" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Download as PDF</TooltipContent>
+              </Tooltip>
             </div>
           </TooltipProvider>
         )}
@@ -254,29 +416,34 @@ export const ReportTab = ({ researchId }: ReportTabProps) => {
       {/* Content Section */}
       <div className="flex-1 overflow-hidden">
         {isEditing ? (
-          // Edit Mode
+          // Edit Mode - Rich Text Editor
           <div className="h-full p-4">
-            <textarea
-              value={editableContent}
-              onChange={(e) => setEditableContent(e.target.value)}
-              className={cn(
-                "w-full h-full p-4 border rounded-lg",
-                "bg-background text-foreground",
-                "resize-none focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent",
-                "font-mono text-sm leading-relaxed",
-                "transition-colors duration-200"
-              )}
-              placeholder="Edit your research report here..."
+            <ReportEditor
+              content={editableContent}
+              onMarkdownChange={(markdown) => setEditableContent(markdown)}
             />
           </div>
         ) : (
-          // Reading Mode
-          <ScrollArea className="h-full">
-            <div className="p-4">
+          // Reading Mode - matching DeerFlow's simple Markdown approach
+          <div className="h-full">
+            <div className="w-full pt-4 pb-8 px-4">
               <div className="prose prose-lg max-w-none dark:prose-invert">
                 <ReactMarkdown 
                   remarkPlugins={[remarkGfm]}
                   components={{
+                    // Enhanced image component with better error handling
+                    img: ({ src, alt, ...props }) => (
+                      <img
+                        src={src}
+                        alt={alt}
+                        className="max-w-full h-auto rounded-lg border shadow-sm"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                        }}
+                        {...props}
+                      />
+                    ),
                     // Custom link component for better styling
                     a: ({ href, children, ...props }) => (
                       <a
@@ -321,16 +488,11 @@ export const ReportTab = ({ researchId }: ReportTabProps) => {
                   {reportContent}
                 </ReactMarkdown>
                 
-                {/* Streaming indicator */}
-                {isStreaming && (
-                  <div className="flex items-center gap-2 my-8 text-muted-foreground">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span className="text-sm">Generating report...</span>
-                  </div>
-                )}
+                {/* Streaming indicator - matching DeerFlow */}
+                {isStreaming && <LoadingAnimation className="my-12" />}
               </div>
             </div>
-          </ScrollArea>
+          </div>
         )}
       </div>
     </div>

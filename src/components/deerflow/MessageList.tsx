@@ -1,7 +1,12 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useMessageIds } from '@/hooks/useOptimizedMessages';
-import { useDeerFlowMessageStore, DeerMessage } from '@/stores/deerFlowMessageStore';
+import { 
+  useDeerFlowMessageStore, 
+  DeerMessage, 
+  useLastInterruptMessage, 
+  useLastFeedbackMessageId 
+} from '@/stores/deerFlowMessageStore';
 import { MessageItem } from './MessageItem';
 import { ResearchCard } from './ResearchCard';
 import { PlanCard } from './PlanCard';
@@ -78,9 +83,10 @@ const isResearchStarter = (message: DeerMessage, researchIds: string[], research
 
 interface MessageListProps {
   onSendMessage?: (message: string, options?: { interruptFeedback?: string }) => void;
+  onFeedback?: (feedback: { option: { value: string; text: string } }) => void;
 }
 
-export const MessageList = ({ onSendMessage }: MessageListProps) => {
+export const MessageList = ({ onSendMessage, onFeedback }: MessageListProps) => {
   const { startDeerFlowStreaming } = useEnhancedDeerStreaming();
   
   // Store access
@@ -96,6 +102,10 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
     getResearchTitle
   } = useDeerFlowMessageStore();
   
+  // Interrupt message tracking (matching DeerFlow)
+  const interruptMessage = useLastInterruptMessage();
+  const waitingForFeedbackMessageId = useLastFeedbackMessageId();
+  
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   // Defensive coding: ensure messageIds is always an array
@@ -103,11 +113,14 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
 
   // Enhanced message filtering for main chat display
   const visibleMessages = useMemo(() => {
-    console.log('🔍 MessageList filtering messages:', {
-      totalMessages: safeMessageIds.length,
-      researchIds: researchIds,
-      ongoingResearchId
-    });
+    // Debug logging - reduced to prevent excessive console spam
+    if (process.env.NODE_ENV === 'development' && Math.random() < 0.1) { // Only log 10% of filter operations
+      console.log('🔍 MessageList filtering messages:', {
+        totalMessages: safeMessageIds.length,
+        researchIds: researchIds,
+        ongoingResearchId
+      });
+    }
     
     const filtered = safeMessageIds
       .map(id => getMessage(id))
@@ -122,20 +135,31 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
           researchIds.includes(message.id) // startOfResearch logic
         );
         
-        console.log('🔍 Message filtering:', {
-          messageId: message.id,
-          agent: message.agent,
-          role: message.role,
-          isResearchId: researchIds.includes(message.id),
-          shouldShow
-        });
+        // Excessive logging removed - only log on rare occasions for debugging
+        if (process.env.NODE_ENV === 'development' && Math.random() < 0.01) {
+          console.log('🔍 Message filtering:', {
+            messageId: message.id,
+            agent: message.agent,
+            role: message.role,
+            isResearchId: researchIds.includes(message.id),
+            shouldShow
+          });
+        }
         
         return shouldShow;
       });
       
-    console.log('✅ MessageList visible messages:', filtered.length);
+    // Debug logging - reduced frequency
+    if (process.env.NODE_ENV === 'development' && Math.random() < 0.1) {
+      console.log('✅ MessageList visible messages:', filtered.length);
+    }
     return filtered;
   }, [safeMessageIds, getMessage, researchIds, ongoingResearchId]);
+
+  // Check if there are any streaming planner messages
+  const hasStreamingPlanner = useMemo(() => {
+    return visibleMessages.some(msg => msg.agent === 'planner' && msg.isStreaming);
+  }, [visibleMessages]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -160,6 +184,16 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
       startDeerFlowStreaming(message, {
         // Include interrupt feedback for plan acceptance
         ...(options?.interruptFeedback && { interruptFeedback: options.interruptFeedback })
+      });
+    }
+  };
+
+  const handleFeedback = (feedback: { option: { text: string; value: string } }) => {
+    console.log('Plan feedback received:', feedback);
+    // TODO: Implement feedback handling logic similar to DeerFlow
+    if (handleSendMessage) {
+      handleSendMessage("", {
+        interruptFeedback: feedback.option.value
       });
     }
   };
@@ -223,10 +257,11 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
                 >
                   {isPlanner ? (
                     <PlanCard 
-                      message={message}
-                      onStartResearch={handleStartResearch}
-                      onSendMessage={handleSendMessage}  // ADD
-                      isExecuting={ongoingResearchId !== null}
+                      messageId={message.id}
+                      interruptMessage={interruptMessage}
+                      onSendMessage={handleSendMessage}
+                      waitForFeedback={waitingForFeedbackMessageId === message.id}
+                      onFeedback={onFeedback}
                     />
                   ) : isStartOfResearch ? (
                     <ResearchCard 
@@ -241,8 +276,8 @@ export const MessageList = ({ onSendMessage }: MessageListProps) => {
             );
           })}
 
-          {/* Loading indicator when responding */}
-          {isResponding && (
+          {/* Loading indicator when responding - only show when no planner is streaming */}
+          {isResponding && (ongoingResearchId === null) && !hasStreamingPlanner && (
             <motion.div
               key="loading"
               initial={{ opacity: 0, y: 20 }}

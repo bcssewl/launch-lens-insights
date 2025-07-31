@@ -43,8 +43,8 @@ export interface ToolCallChunkData {
 }
 
 export interface ToolCallResultData {
-  id: string;
-  result?: any;
+  tool_call_id: string;
+  content?: string;
   error?: string;
 }
 
@@ -60,6 +60,7 @@ export interface ReasoningData {
 
 export interface InterruptData {
   finish_reason?: 'stop' | 'interrupt' | 'tool_calls';
+  options?: { text: string; value: string }[];
 }
 
 export interface ErrorData {
@@ -91,7 +92,15 @@ export type StreamEvent =
 export function mergeMessage(message: DeerMessage, event: StreamEvent): DeerMessage {
   const result = { ...message };
   
-  if (event.event === "message_chunk") {
+  // Handle both 'event' and 'type' field names for compatibility
+  const eventType = (event as any).event || (event as any).type;
+  
+  // Debug logging - reduced to prevent console spam
+  if (process.env.NODE_ENV === 'development' && eventType !== 'message_chunk') {
+    console.log('🔀 mergeMessage called:', eventType, 'Message ID:', message.id);
+  }
+  
+  if (eventType === "message_chunk") {
     // Handle content like original
     if (event.data.content) {
       result.content += event.data.content;
@@ -128,10 +137,50 @@ export function mergeMessage(message: DeerMessage, event: StreamEvent): DeerMess
   }
   
   // Handle tool calls like original - only create tool calls if they have a name
-  if (event.event === "tool_calls" || event.event === "tool_call_chunks") {
+  if (eventType === "tool_calls" || eventType === "tool_call_chunks") {
+    console.log('🔧 Processing tool call event:', eventType);
     const toolCalls = result.toolCalls || [];
     
-    if (event.event === "tool_calls" && event.data.name) {
+    // Handle DeerFlow-style tool_calls array
+    if (eventType === "tool_calls" && (event.data as any).tool_calls) {
+      console.log('🔧 Processing tool_calls array:', (event.data as any).tool_calls);
+      const toolCallsArray = (event.data as any).tool_calls;
+      if (toolCallsArray[0]?.name) {
+        result.toolCalls = toolCallsArray.map((raw: any) => ({
+          id: raw.id,
+          name: raw.name,
+          args: raw.args,
+          result: undefined,
+          status: 'running',
+          timestamp: Date.now(),
+          argsChunks: []
+        }));
+        console.log('✅ Created tool calls from array:', result.toolCalls);
+      }
+    }
+    
+    // Handle DeerFlow-style tool_call_chunks array  
+    if ((event.data as any).tool_call_chunks) {
+      console.log('🔧 Processing tool_call_chunks array:', (event.data as any).tool_call_chunks);
+      result.toolCalls = result.toolCalls || [];
+      const chunks = (event.data as any).tool_call_chunks || [];
+      for (const chunk of chunks) {
+        if (chunk.id) {
+          const toolCall = result.toolCalls.find((tc: any) => tc.id === chunk.id);
+          if (toolCall) {
+            toolCall.argsChunks = [chunk.args];
+          }
+        } else {
+          const streamingToolCall = result.toolCalls.find((tc: any) => tc.argsChunks?.length);
+          if (streamingToolCall) {
+            streamingToolCall.argsChunks!.push(chunk.args);
+          }
+        }
+      }
+    }
+    
+    // Legacy handling for single tool call events (if no arrays)
+    if (eventType === "tool_calls" && event.data.name && !(event.data as any).tool_calls) {
       // Complete tool call - only if it has a name
       const existingIndex = toolCalls.findIndex(tc => tc.id === event.data.id);
       if (existingIndex >= 0) {
@@ -149,7 +198,7 @@ export function mergeMessage(message: DeerMessage, event: StreamEvent): DeerMess
           argsChunks: []
         });
       }
-    } else if (event.event === "tool_call_chunks") {
+    } else if (eventType === "tool_call_chunks") {
       // Tool call chunk
       const existingIndex = toolCalls.findIndex(tc => tc.id === event.data.id);
       if (existingIndex >= 0) {
@@ -180,6 +229,48 @@ export function mergeMessage(message: DeerMessage, event: StreamEvent): DeerMess
     result.toolCalls = toolCalls;
   }
   
+  // Handle tool call results
+  if (eventType === "tool_call_result") {
+    const toolCalls = result.toolCalls || [];
+    const existingIndex = toolCalls.findIndex(tc => tc.id === event.data.tool_call_id);
+    if (existingIndex >= 0) {
+      const toolCall = toolCalls[existingIndex];
+      toolCall.result = event.data.content || event.data.error;
+      toolCall.status = event.data.error ? 'error' : 'completed';
+      toolCalls[existingIndex] = toolCall;
+      result.toolCalls = toolCalls;
+    }
+  }
+
+  // Handle interrupt events (for plan acceptance/editing) - matching DeerFlow exactly
+  if (eventType === "interrupt") {
+    result.isStreaming = false;
+    result.options = event.data.options;
+    console.log('🛑 Interrupt event processed, options set:', result.options);
+  }
+
+  // Handle finish reason and finalize tool calls (like DeerFlow)
+  if (event.data.finish_reason) {
+    result.finishReason = event.data.finish_reason;
+    result.isStreaming = false;
+    
+    // Parse tool call args when message finishes (like DeerFlow)
+    if (result.toolCalls) {
+      result.toolCalls.forEach((toolCall) => {
+        if (toolCall.argsChunks?.length) {
+          try {
+            toolCall.args = JSON.parse(toolCall.argsChunks.join(""));
+            delete toolCall.argsChunks;
+          } catch (e) {
+            console.warn('Failed to parse tool call args:', toolCall.id, e);
+          }
+        }
+      });
+    }
+    
+    console.log('🏁 Message finished with reason:', result.finishReason, 'Tool calls:', result.toolCalls?.length || 0);
+  }
+
   return result;
 }
 

@@ -22,6 +22,7 @@ interface ChatStreamRequest {
   deep_thinking: boolean;
   background_investigation: boolean;
   report_style: string;
+  locale: string;
 }
 
 export const useStreamingChat = () => {
@@ -52,7 +53,7 @@ export const useStreamingChat = () => {
     // Prepare request data
     const requestData: ChatStreamRequest = {
       messages: [
-        ...messages.map(msg => ({
+        ...Array.from(messages.values()).map(msg => ({
           role: msg.role,
           content: msg.content,
           agent: msg.agent
@@ -70,6 +71,7 @@ export const useStreamingChat = () => {
       deep_thinking: settings.deepThinking,
       background_investigation: settings.backgroundInvestigation,
       report_style: settings.reportStyle,
+      locale: 'en-US', // Force English locale to match DeerFlow
     };
 
     try {
@@ -89,7 +91,7 @@ export const useStreamingChat = () => {
 
     const requestData = {
       messages: [
-        ...messages.map(msg => ({
+        ...Array.from(messages.values()).map(msg => ({
           role: msg.role,
           content: msg.content,
           agent: msg.agent
@@ -104,6 +106,7 @@ export const useStreamingChat = () => {
       background_investigation: settings.backgroundInvestigation,
       report_style: settings.reportStyle,
       interrupt_feedback: feedback,
+      locale: 'en-US', // Force English locale to match DeerFlow
     };
 
     try {

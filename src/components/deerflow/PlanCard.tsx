@@ -1,255 +1,363 @@
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useMemo, useCallback } from 'react';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Brain, Play, CheckCircle, Clock, Loader2 } from 'lucide-react';
+import { Lightbulb, ChevronDown, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { DeerMessage } from '@/stores/deerFlowMessageStore';
+import { DeerMessage, useMessage } from '@/stores/deerFlowMessageStore';
 import { motion } from 'motion/react';
 import { parseJSON } from '@/lib/parseJSON';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { useState, useEffect } from 'react';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
-// ADD greeting messages array (matching original):
 const GREETINGS = [
-  "Perfect",
+  "Cool", 
+  "Sounds great", 
+  "Looks good", 
   "Great", 
-  "Excellent",
-  "Sounds good",
-  "Let's do this",
   "Awesome"
 ];
 
 interface PlanData {
   title?: string;
-  thought?: string;  // ADD: reasoning content
+  thought?: string;
   steps?: { 
     title?: string; 
     description?: string; 
-  }[];  // CHANGE: from string[] to object[]
-  // Remove topics, approach, deliverable - these aren't in the original format
+  }[];
+}
+
+interface InterruptMessage {
+  options?: { value: string; text: string }[];
 }
 
 interface PlanCardProps {
-  message: DeerMessage;
-  onStartResearch?: (planId: string) => void;
-  onSendMessage?: (message: string, options?: { interruptFeedback?: string }) => void; // ADD
-  isExecuting?: boolean;
+  messageId: string;
+  interruptMessage?: InterruptMessage | null;
+  onSendMessage?: (message: string, options?: { interruptFeedback?: string }) => void;
+  waitForFeedback?: boolean;
+  onFeedback?: (feedback: { option: { text: string; value: string } }) => void;
 }
 
-export const PlanCard = ({ message, onStartResearch, onSendMessage, isExecuting = false }: PlanCardProps) => {
-  const [planData, setPlanData] = useState<PlanData | null>(null);
-  const [isCompleted, setIsCompleted] = useState(false);
-
-  useEffect(() => {
-    // Don't parse if message is still streaming
-    if (message.isStreaming) {
-      console.log('⏳ Message still streaming, waiting for completion...');
-      return;
-    }
-
-    // Extract plan data from toolCalls (planner agent stores data there)
-    let parsed: PlanData | null = null;
+// Enhanced Markdown component that handles animated text streaming
+const Markdown = ({ children, animated, className, isThinking = false }: { 
+  children?: string; 
+  animated?: boolean; 
+  className?: string;
+  isThinking?: boolean;
+}) => {
+  if (!children) return null;
+  
+  // For thinking content, preserve line breaks and use simple formatting
+  if (isThinking) {
+    const lines = children.split('\n');
     
-    if (message.toolCalls && message.toolCalls.length > 0) {
-      const planToolCall = message.toolCalls[0];
-      console.log('🔧 Found tool call:', planToolCall);
-      
-      // Only proceed if tool call has complete arguments
-      if (planToolCall.args && planToolCall.name) {
-        try {
-          // Plan data is in the tool call arguments
-          if (typeof planToolCall.args === 'string') {
-            parsed = parseJSON(planToolCall.args, null);
-          } else {
-            parsed = planToolCall.args as PlanData;
-          }
-          console.log('📋 Successfully extracted plan from toolCalls:', parsed);
-        } catch (error) {
-          console.error('❌ Error parsing plan from toolCalls:', error);
-        }
-      } else {
-        console.log('⏳ Tool call incomplete, args:', planToolCall.args, 'name:', planToolCall.name);
-      }
-    } else if (message.content) {
-      // Fallback to content parsing for backward compatibility
-      try {
-        parsed = parseJSON(message.content, null);
-        console.log('📋 Fallback parsed from content:', parsed);
-      } catch (error) {
-        console.error('❌ Error parsing plan from content:', error);
-      }
-    }
-    
-    console.log('Raw content:', message.content);
-    console.log('Raw toolCalls:', message.toolCalls);
-    console.log('Is streaming:', message.isStreaming);
-    setPlanData(parsed);
-  }, [message.content, message.toolCalls, message.isStreaming]);
-
-  useEffect(() => {
-    // Check if research is completed (can be expanded based on your completion logic)
-    setIsCompleted(!message.isStreaming && message.content.length > 0);
-  }, [message.isStreaming, message.content]);
-
-  const handleStartResearch = () => {
-    if (onSendMessage) {
-      // Send only interrupt feedback, no new user message
-      onSendMessage("", {
-        interruptFeedback: "accepted"
-      });
-      
-      console.log('📤 Sent plan acceptance with interrupt feedback only');
-      
-      // DON'T create research session here - let the streaming response handle it
-      // This prevents the button from getting stuck if the API call fails
-    }
-  };
-
-  // REMOVE the fallback markdown parsing - if JSON fails, show error state
-  if (!planData || (!planData.title && !planData.steps) || (planData.steps && planData.steps.length === 0)) {
     return (
-      <Card className="w-full border-red-200 bg-red-50/50 dark:bg-red-950/20">
-        <CardContent className="p-6">
-          <div className="text-center">
-            <h3 className="text-lg font-medium text-red-800 dark:text-red-200 mb-2">
-              Plan Parsing Error
-            </h3>
-            <p className="text-sm text-red-600 dark:text-red-400">
-              Unable to parse research plan. Expected JSON format.
-            </p>
-            <details className="mt-2 text-xs">
-              <summary>Raw content:</summary>
-              <pre className="mt-1 p-2 bg-red-100 dark:bg-red-900/30 rounded">
-                {message.content}
-              </pre>
-            </details>
+      <div 
+        className={cn(
+          "text-sm leading-relaxed whitespace-pre-wrap",
+          animated ? "text-primary" : "text-foreground",
+          className
+        )}
+      >
+        {lines.map((line, index) => (
+          <div key={index} className="mb-1">
+            {line || '\u00A0'} {/* Non-breaking space for empty lines */}
           </div>
-        </CardContent>
-      </Card>
+        ))}
+      </div>
     );
+  }
+  
+  // For plan content, process markdown but maintain purple when streaming
+  const processedContent = children
+    .replace(/^### (.+)$/gm, '<h3 class="text-lg font-semibold mb-2">$1</h3>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>');
+  
+  return (
+    <div 
+      className={cn(
+        "prose dark:prose-invert max-w-none",
+        animated && "text-primary prose-headings:text-primary prose-strong:text-primary",
+        className
+      )}
+      dangerouslySetInnerHTML={{ __html: processedContent }}
+    />
+  );
+};
+
+// Simple loading animation component
+const LoadingAnimation = ({ className }: { className?: string }) => (
+  <div className={cn("flex space-x-1", className)}>
+    <div className="w-1 h-1 bg-current rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+    <div className="w-1 h-1 bg-current rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+    <div className="w-1 h-1 bg-current rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+  </div>
+);
+
+// ThoughtBlock component matching DeerFlow exactly
+const ThoughtBlock = ({ 
+  content, 
+  isStreaming, 
+  hasMainContent 
+}: { 
+  content: string; 
+  isStreaming?: boolean; 
+  hasMainContent?: boolean; 
+}) => {
+  const [isOpen, setIsOpen] = useState(true);
+  const [hasAutoCollapsed, setHasAutoCollapsed] = useState(false);
+
+  useEffect(() => {
+    if (hasMainContent && !hasAutoCollapsed) {
+      setIsOpen(false);
+      setHasAutoCollapsed(true);
+    }
+  }, [hasMainContent, hasAutoCollapsed]);
+
+  if (!content || content.trim() === "") {
+    return null;
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.3, ease: "easeOut" }}
-    >
-      <Card className={cn(
-        "w-full transition-all duration-300 hover:shadow-lg",
-        "border-blue-200 bg-blue-50/50 dark:bg-blue-950/20 dark:border-blue-800/50",
-        "backdrop-blur-sm"
-      )}>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className={cn(
-                "p-2 rounded-lg transition-colors duration-200",
-                "bg-blue-100 dark:bg-blue-900/30"
-              )}>
-                <Brain className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100">
-                  Research Plan
-                </h3>
-                <div className="flex items-center gap-2 mt-1">
-                  {isExecuting ? (
-                    <Badge variant="secondary" className="bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-300">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse mr-1" />
-                      Executing
-                    </Badge>
-                  ) : isCompleted ? (
-                    <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-300">
-                      <CheckCircle className="w-3 h-3 mr-1" />
-                      Ready
-                    </Badge>
-                  ) : (
-                    <Badge variant="secondary" className="bg-gray-100 text-gray-700 dark:bg-gray-950/30 dark:text-gray-300">
-                      <Clock className="w-3 h-3 mr-1" />
-                      Pending
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            </div>
-          </CardTitle>
-        </CardHeader>
-        
-        <CardContent className="space-y-4">
-          {/* Show reasoning/thought content */}
-          {planData.thought && (
-            <div className="p-3 bg-blue-100/50 dark:bg-blue-950/30 rounded-lg">
-              <h5 className="font-medium text-sm text-blue-900 dark:text-blue-200 mb-1">
-                Reasoning:
-              </h5>
-              <p className="text-sm text-blue-800 dark:text-blue-300">
-                {planData.thought}
-              </p>
-            </div>
-          )}
-          
-          {/* Show steps with proper object structure */}
-          {planData.steps && planData.steps.length > 0 && (
-            <div>
-              <h5 className="font-medium text-sm text-muted-foreground mb-2">
-                Research Steps:
-              </h5>
-              <div className="space-y-3">
-                {planData.steps.map((step, index) => (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3, delay: index * 0.1 }}
-                    className="flex items-start gap-3 p-3 rounded-md bg-background/50 border border-border/50"
-                  >
-                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-200 text-blue-800 dark:bg-blue-800 dark:text-blue-200 flex items-center justify-center text-xs font-medium">
-                      {index + 1}
-                    </div>
-                    <div className="flex-1">
-                      {step.title && (
-                        <h6 className="font-medium text-sm text-foreground mb-1">
-                          {step.title}
-                        </h6>
-                      )}
-                      {step.description && (
-                        <p className="text-sm text-muted-foreground">
-                          {step.description}
-                        </p>
-                      )}
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-          )}
-          
-          {/* Start Research Button */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.2 }}
+    <div className="mb-6 w-full">
+      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+        <CollapsibleTrigger asChild>
+          <Button
+            variant="ghost"
+            className={cn(
+              "h-auto w-full justify-start rounded-xl border px-6 py-4 text-left transition-all duration-200",
+              "hover:bg-accent hover:text-accent-foreground",
+              isStreaming
+                ? "border-primary/20 bg-primary/5 shadow-sm"
+                : "border-border bg-card",
+            )}
           >
-            <Button 
-              onClick={handleStartResearch}
-              disabled={isExecuting}
-              className="w-full"
-            >
-              {isExecuting ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Research In Progress...
-                </>
+            <div className="flex w-full items-center gap-3">
+              <Lightbulb
+                size={18}
+                className={cn(
+                  "shrink-0 transition-colors duration-200",
+                  isStreaming ? "text-primary" : "text-muted-foreground",
+                )}
+              />
+              <span
+                className={cn(
+                  "leading-none font-semibold transition-colors duration-200",
+                  isStreaming ? "text-primary" : "text-foreground",
+                )}
+              >
+                Deep Thinking
+              </span>
+              {isStreaming && <LoadingAnimation className="ml-2 scale-75" />}
+              <div className="flex-grow" />
+              {isOpen ? (
+                <ChevronDown
+                  size={16}
+                  className="text-muted-foreground transition-transform duration-200"
+                />
               ) : (
-                <>
-                  <Play className="w-4 h-4 mr-2" />
-                  Start Research
-                </>
+                <ChevronRight
+                  size={16}
+                  className="text-muted-foreground transition-transform duration-200"
+                />
               )}
-            </Button>
-          </motion.div>
-        </CardContent>
-      </Card>
-    </motion.div>
+            </div>
+          </Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-up-2 data-[state=open]:slide-down-2 mt-3">
+          <Card
+            className={cn(
+              "transition-all duration-200",
+              isStreaming ? "border-primary/20 bg-primary/5" : "border-border",
+            )}
+          >
+            <CardContent>
+              <div className="flex h-40 w-full overflow-y-auto">
+                <ScrollArea className="h-full w-full">
+                  <Markdown
+                    className={cn(
+                      "transition-colors duration-200 p-4",
+                      isStreaming ? "text-primary" : "opacity-80",
+                    )}
+                    animated={isStreaming}
+                    isThinking={true}
+                  >
+                    {content}
+                  </Markdown>
+                </ScrollArea>
+              </div>
+            </CardContent>
+          </Card>
+        </CollapsibleContent>
+      </Collapsible>
+    </div>
+  );
+};
+
+export const PlanCard = ({ messageId, interruptMessage, onSendMessage, waitForFeedback, onFeedback }: PlanCardProps) => {
+  // Use reactive message hook for live updates
+  const message = useMessage(messageId);
+  
+  // Return early if message not found
+  if (!message) {
+    return null;
+  }
+
+  const plan = useMemo<PlanData>(() => {
+    return parseJSON(message.content ?? "", {});
+  }, [message.content]);
+
+  const reasoningContent = message.reasoningContent;
+  const hasMainContent = Boolean(
+    message.content && message.content.trim() !== "",
+  );
+
+  // Judge if thinking: has reasoning content but main content is empty or just getting started
+  const isThinking = Boolean(reasoningContent && !hasMainContent);
+
+  // Show plan if we have main content (same as DeerFlow)
+  const shouldShowPlan = hasMainContent;
+
+  // Debug logging
+  // Debug logging - reduced to prevent excessive console spam
+  if (process.env.NODE_ENV === 'development' && Math.random() < 0.01) { // Only log 1% of renders
+    console.log('🧠 PlanCard render (reactive):', {
+      messageId,
+      hasReasoningContent: Boolean(reasoningContent),
+      hasMainContent,
+      isThinking,
+      shouldShowPlan,
+      isStreaming: message.isStreaming,
+      reasoningLength: reasoningContent?.length,
+      contentLength: message.content?.length,
+      reasoningContent: reasoningContent?.substring(0, 50) + (reasoningContent?.length > 50 ? '...' : ''),
+      interruptMessage: interruptMessage ? {
+        hasOptions: Boolean(interruptMessage.options?.length),
+        optionsCount: interruptMessage.options?.length || 0,
+        fullOptions: interruptMessage.options
+      } : 'NO_INTERRUPT_MESSAGE',
+      waitForFeedback,
+      buttonConditions: {
+        notStreaming: !message.isStreaming,
+        hasInterruptOptions: Boolean(interruptMessage?.options?.length),
+        shouldShowButtons: !message.isStreaming && Boolean(interruptMessage?.options?.length)
+      }
+    });
+  }
+
+  const handleAccept = useCallback(async () => {
+    console.log('🚀 handleAccept called - Starting research');
+    if (onSendMessage) {
+      const greeting = `${GREETINGS[Math.floor(Math.random() * GREETINGS.length)]}! ${Math.random() > 0.5 ? "Let's get started." : "Let's start."}`;
+      console.log('🚀 Sending acceptance message:', greeting);
+      onSendMessage(greeting, {
+        interruptFeedback: "accepted",
+      });
+    }
+  }, [onSendMessage]);
+
+  return (
+    <div className={cn("w-full")}>
+      {reasoningContent && (
+        <ThoughtBlock
+          content={reasoningContent}
+          isStreaming={isThinking}
+          hasMainContent={hasMainContent}
+        />
+      )}
+      {shouldShowPlan && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, ease: "easeOut" }}
+        >
+          <Card className="w-full">
+            <CardHeader>
+              <CardTitle className={cn(
+                "transition-colors duration-200",
+                message.isStreaming && "text-primary"
+              )}>
+                <Markdown animated={message.isStreaming} isThinking={false}>
+                  {`### ${
+                    plan.title !== undefined && plan.title !== ""
+                      ? plan.title
+                      : "Deep Research"
+                  }`}
+                </Markdown>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Markdown 
+                className={cn(
+                  "mb-4",
+                  message.isStreaming ? "text-primary" : "opacity-80"
+                )}
+                animated={message.isStreaming}
+                isThinking={false}
+              >
+                {plan.thought}
+              </Markdown>
+              {plan.steps && (
+                <ul className="my-2 flex list-decimal flex-col gap-4 border-l-[2px] pl-8">
+                  {plan.steps.map((step, i) => (
+                    <li key={`step-${i}`}>
+                      <h3 className={cn(
+                        "mb text-lg font-medium",
+                        message.isStreaming && "text-primary"
+                      )}>
+                        <Markdown animated={message.isStreaming} isThinking={false}>
+                          {step.title}
+                        </Markdown>
+                      </h3>
+                      <div className={cn(
+                        "text-sm",
+                        message.isStreaming ? "text-primary/80" : "text-muted-foreground"
+                      )}>
+                        <Markdown animated={message.isStreaming} isThinking={false}>
+                          {step.description}
+                        </Markdown>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+            <CardFooter className="flex justify-end">
+              {!message.isStreaming && interruptMessage?.options?.length && (
+                <motion.div
+                  className="flex gap-2"
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.3 }}
+                >
+                  {interruptMessage.options.map((option) => (
+                    <Button
+                      key={option.value}
+                      variant={
+                        option.value === "accepted" ? "default" : "outline"
+                      }
+                      disabled={!waitForFeedback}
+                      onClick={() => {
+                        if (option.value === "accepted") {
+                          void handleAccept();
+                        } else {
+                          onFeedback?.({
+                            option,
+                          });
+                        }
+                      }}
+                    >
+                      {option.text}
+                    </Button>
+                  ))}
+                </motion.div>
+              )}
+            </CardFooter>
+          </Card>
+        </motion.div>
+      )}
+    </div>
   );
 };

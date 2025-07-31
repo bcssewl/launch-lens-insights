@@ -9,14 +9,18 @@ import { useDeerFlowMessageStore } from '@/stores/deerFlowMessageStore';
 import type { DeerMessage } from '@/stores/deerFlowMessageStore';
 
 /**
- * Message IDs hook following original DeerFlow pattern
+ * Message IDs hook following DeerFlow pattern
  * Returns array of message IDs for efficient individual subscriptions
  */
 export const useMessageIds = (threadId?: string) => {
   return useDeerFlowMessageStore(
     useShallow((state) => {
       const targetThreadId = threadId || state.currentThreadId;
-      return state.threadMessageIds.get(targetThreadId) || [];
+      // Since new store matches DeerFlow exactly, filter messageIds by threadId
+      return state.messageIds.filter(id => {
+        const message = state.messages.get(id);
+        return message?.threadId === targetThreadId;
+      });
     })
   );
 };
@@ -52,26 +56,34 @@ export const useMessage = (messageId: string) => {
  * Provides efficient update functions for streaming content
  */
 export const useStreamingMessage = (messageId: string) => {
-  const { updateMessage, setIsResponding } = useDeerFlowMessageStore();
+  const { updateMessage, getMessage, setIsResponding } = useDeerFlowMessageStore();
   
   const updateStreamingMessage = useCallback((updates: Partial<DeerMessage>) => {
-    // React 18 batches these updates automatically
-    updateMessage(messageId, updates);
+    const existingMessage = getMessage(messageId);
+    if (existingMessage) {
+      const updatedMessage = { ...existingMessage, ...updates };
+      updateMessage(updatedMessage); // DeerFlow-style call
+    }
     
     // Update streaming status
     if (updates.content) {
       setIsResponding(true);
     }
-  }, [messageId, updateMessage, setIsResponding]);
+  }, [messageId, updateMessage, getMessage, setIsResponding]);
   
   const finalizeMessage = useCallback((finalUpdates: Partial<DeerMessage>) => {
-    updateMessage(messageId, {
-      ...finalUpdates,
-      isStreaming: false,
-      finishReason: 'stop'
-    });
+    const existingMessage = getMessage(messageId);
+    if (existingMessage) {
+      const updatedMessage = {
+        ...existingMessage,
+        ...finalUpdates,
+        isStreaming: false,
+        finishReason: 'stop' as const
+      };
+      updateMessage(updatedMessage); // DeerFlow-style call
+    }
     setIsResponding(false);
-  }, [messageId, updateMessage, setIsResponding]);
+  }, [messageId, updateMessage, getMessage, setIsResponding]);
   
   return {
     updateStreamingMessage,
@@ -123,10 +135,16 @@ export const useResearchPanel = () => {
  */
 export const useMessageStats = () => {
   return useDeerFlowMessageStore(useCallback((state) => {
+    // Filter messages for current thread (matching DeerFlow structure)
+    const currentThreadMessages = state.messageIds.filter(id => {
+      const message = state.messages.get(id);
+      return message?.threadId === state.currentThreadId;
+    });
+    
     return {
       totalMessages: state.messageIds.length,
-      currentThreadMessageCount: state.threadMessageIds.get(state.currentThreadId)?.length || 0,
-      threadCount: state.threadMessageIds.size,
+      currentThreadMessageCount: currentThreadMessages.length,
+      threadCount: 1, // DeerFlow uses single thread
       isStreaming: state.isResponding,
       streamingMessageId: state.streamingMessageId,
       hasError: !!state.error.message

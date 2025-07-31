@@ -967,3 +967,117 @@
 .mention:hover {
   background: hsl(var(--accent) / 0.8);
 }
+
+/* Novel Editor Styles */
+.novel-editor-content .ProseMirror {
+  outline: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  line-height: 1.5;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+.novel-editor-content .ProseMirror.is-editor-empty:first-child::before {
+  color: hsl(var(--muted-foreground));
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  font-style: italic;
+}
+
+.novel-editor-content .ProseMirror p {
+  margin: 0;
+  padding: 0;
+}
+
+.novel-editor-content .ProseMirror p:not(:last-child) {
+  margin-bottom: 0.5rem;
+}
+
+.novel-editor-content .ProseMirror strong {
+  font-weight: 600;
+}
+
+.novel-editor-content .ProseMirror em {
+  font-style: italic;
+}
+
+.novel-editor-content .ProseMirror code {
+  background: hsl(var(--muted));
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-size: 0.875em;
+  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
+}
+
+.novel-editor-content .ProseMirror pre {
+  background: hsl(var(--muted));
+  padding: 0.75rem;
+  border-radius: 0.375rem;
+  overflow-x: auto;
+  margin: 0.5rem 0;
+}
+
+.novel-editor-content .ProseMirror pre code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+}
+
+.novel-editor-content .ProseMirror ul,
+.novel-editor-content .ProseMirror ol {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.novel-editor-content .ProseMirror li {
+  margin: 0.25rem 0;
+}
+
+.novel-editor-content .ProseMirror blockquote {
+  border-left: 4px solid hsl(var(--border));
+  padding-left: 1rem;
+  margin: 0.5rem 0;
+  font-style: italic;
+  color: hsl(var(--muted-foreground));
+}
+
+/* Enhanced mention dropdown styles */
+.mention-list {
+  background: hsl(var(--popover));
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.375rem;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  padding: 0.25rem;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 50;
+}
+
+.mention-item {
+  width: 100%;
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  border-radius: 0.25rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: hsl(var(--foreground));
+  transition: background-color 0.15s ease-in-out;
+}
+
+.mention-item:hover,
+.mention-item.selected {
+  background: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+}
+
+.mention-item:focus {
+  outline: none;
+  background: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+}

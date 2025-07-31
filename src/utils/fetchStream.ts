@@ -73,7 +73,21 @@ export async function* fetchStream(
       }
     }
   } catch (error) {
-    throw new Error(`Stream fetch failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    console.error('❌ Stream fetch error:', error);
+    
+    // Provide more specific error messages
+    let errorMessage = 'Unknown error';
+    if (error instanceof Error) {
+      if (error.message.includes('Load failed') || error.message.includes('network')) {
+        errorMessage = 'Network connection lost. Please check your internet connection and try again.';
+      } else if (error.message.includes('fetch')) {
+        errorMessage = 'Failed to connect to server. Please try again.';
+      } else {
+        errorMessage = error.message;
+      }
+    }
+    
+    throw new Error(`Stream fetch failed: ${errorMessage}`);
   } finally {
     // Cleanup resources
     try {
