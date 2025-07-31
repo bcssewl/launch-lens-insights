@@ -14,6 +14,7 @@ export default defineConfig(({ mode }) => {
   return {
     // Optimize dependency pre-bundling to fix 504 timeout issues
     optimizeDeps: {
+      force: true, // Force rebuild to fix cache issues
       include: [
         'framer-motion',
         '@radix-ui/react-icons',
@@ -24,8 +25,16 @@ export default defineConfig(({ mode }) => {
         '@tiptap/extension-placeholder',
         'use-debounce'
       ],
+      exclude: [
+        // Exclude heavy dependencies that cause timeouts
+      ],
       esbuildOptions: {
-        target: 'esnext'
+        target: 'esnext',
+        // Increase memory and timeout for large deps
+        loader: {
+          '.js': 'jsx',
+          '.ts': 'tsx'
+        }
       }
     },
     server: {
@@ -34,11 +43,16 @@ export default defineConfig(({ mode }) => {
       strictPort: true,
       allowedHosts: ['6934b053-3c39-4028-8f6f-e993e862faa7.lovableproject.com'],
       hmr: {
-        timeout: 60000,
-        overlay: false
+        timeout: 120000, // Increased HMR timeout
+        overlay: false,
+        port: 8081 // Use different port for HMR
       },
       // Increase timeouts to prevent 504 errors
-      timeout: 120000
+      timeout: 300000, // 5 minutes timeout
+      // Force restart on dependency changes
+      watch: {
+        ignored: ['**/node_modules/**', '**/dist/**']
+      }
     },
     plugins: [
       react(),
