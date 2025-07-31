@@ -36,7 +36,7 @@ export const useEnhancedStreaming = () => {
   
   // Phase 4: Memory optimization
   const { forceCleanup: cleanupMemory } = useMemoryOptimization(
-    messages,
+    Array.from(messages.values()),
     (preservedMessages) => {
       // This would need to be implemented in the store
       console.log('Memory cleanup triggered, preserved:', preservedMessages.length);
@@ -127,7 +127,7 @@ export const useEnhancedStreaming = () => {
               const finalMessage = createCompleteMessage(currentMessage);
               
               if (existsMessage(currentMessageIdRef.current!)) {
-                updateMessage(currentMessageIdRef.current!, finalMessage);
+                updateMessage(finalMessage);
               } else {
                 addMessageWithId(finalMessage);
               }
@@ -162,7 +162,7 @@ export const useEnhancedStreaming = () => {
               } as DeerMessage;
 
               if (existsMessage(currentMessageIdRef.current)) {
-                updateMessage(currentMessageIdRef.current, tempMessage);
+                updateMessage(tempMessage);
               } else {
                 addMessageWithId(tempMessage);
               }
@@ -235,7 +235,7 @@ export const useEnhancedStreaming = () => {
           };
 
           if (existsMessage(currentMessageIdRef.current)) {
-            updateMessage(currentMessageIdRef.current, errorMsg);
+            updateMessage(errorMsg);
           } else {
             addMessageWithId(errorMsg);
           }

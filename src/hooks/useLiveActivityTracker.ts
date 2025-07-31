@@ -147,7 +147,7 @@ export const useLiveActivityTracker = () => {
         }
         
         case 'tool_call_result': {
-          const resultData = event.data as { id: string; result?: any; error?: string };
+          const resultData = event.data as unknown as { id: string; result?: any; error?: string };
           // Find the most recent tool activity and update it
           setActivities(prev => {
             const toolActivity = [...prev].reverse().find(a => a.type === 'tool' && a.status === 'active');

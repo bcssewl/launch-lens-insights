@@ -66,7 +66,7 @@ export const DeerFlowHeader = () => {
         </Button>
 
         {/* Clear Chat Button - only show if there are messages */}
-        {messages.length > 0 && (
+        {messages.size > 0 && (
           <Button
             variant="ghost"
             size="sm"
