@@ -12,12 +12,33 @@ export default defineConfig(({ mode }) => {
     process.env.VERCEL === '1';
   
   return {
+    // Optimize dependency pre-bundling to fix 504 timeout issues
+    optimizeDeps: {
+      include: [
+        'framer-motion',
+        '@radix-ui/react-icons',
+        '@tiptap/react',
+        '@tiptap/core',
+        '@tiptap/starter-kit',
+        '@tiptap/extension-mention',
+        '@tiptap/extension-placeholder',
+        'use-debounce'
+      ],
+      esbuildOptions: {
+        target: 'esnext'
+      }
+    },
     server: {
       host: "0.0.0.0",
       port: 8080,
       strictPort: true,
       allowedHosts: ['6934b053-3c39-4028-8f6f-e993e862faa7.lovableproject.com'],
-      hmr: false
+      hmr: {
+        timeout: 60000,
+        overlay: false
+      },
+      // Increase timeouts to prevent 504 errors
+      timeout: 120000
     },
     plugins: [
       react(),

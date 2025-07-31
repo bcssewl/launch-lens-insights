@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Lightbulb, ChevronDown, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { DeerMessage, useMessage } from '@/stores/deerFlowMessageStore';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { parseJSON } from '@/lib/parseJSON';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useState, useEffect } from 'react';
