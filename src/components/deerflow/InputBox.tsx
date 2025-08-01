@@ -7,13 +7,11 @@ import { Detective } from "./icons/Detective";
 import { Button } from "@/components/ui/button";
 import NovelMessageInput, { type NovelMessageInputRef, type Resource } from './NovelMessageInput';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useEnhancedDeerStreaming } from "@/hooks/useEnhancedDeerStreaming";
 import { useDeerFlowStore } from "@/stores/deerFlowStore";
 import { enhancePrompt } from "@/services/promptEnhancerService";
@@ -51,6 +49,7 @@ interface InputBoxProps {
   size?: "large" | "normal";
   responding?: boolean;
   feedback?: { option: { value: string; text: string } } | null;
+  dynamicPlaceholder?: string;
   onSend?: (
     message: string,
     options?: {
@@ -60,15 +59,18 @@ interface InputBoxProps {
   ) => void;
   onCancel?: () => void;
   onRemoveFeedback?: () => void;
+  onUserInput?: () => void;
 }
 
 export function InputBox({
   className,
   responding,
   feedback,
+  dynamicPlaceholder,
   onSend,
   onCancel,
   onRemoveFeedback,
+  onUserInput,
 }: InputBoxProps) {
   const { settings, updateSettings } = useDeerFlowStore();
   const { startDeerFlowStreaming, stopStreaming, isStreaming } = useEnhancedDeerStreaming();
@@ -80,7 +82,6 @@ export function InputBox({
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [isEnhanceAnimating, setIsEnhanceAnimating] = useState(false);
   const [currentPrompt, setCurrentPrompt] = useState("");
-  const [isReportStyleOpen, setIsReportStyleOpen] = useState(false);
 
   const handleSendMessage = useCallback(
     async (message: string, resources: Array<any> = []) => {
@@ -194,13 +195,16 @@ export function InputBox({
 
   const handleReportStyleChange = useCallback((style: "academic" | "popular_science" | "news" | "social_media") => {
     updateSettings({ reportStyle: style });
-    setIsReportStyleOpen(false);
   }, [updateSettings]);
 
   return (
     <div
       className={cn(
-        "bg-card relative flex h-full w-full flex-col rounded-[24px] border",
+        "relative flex h-full w-full flex-col rounded-[24px]",
+        // Transparent background with glass effect border
+        "backdrop-blur-xl",
+        "border border-white/20 dark:border-white/10",
+        "shadow-2xl shadow-black/5",
         className,
       )}
       ref={containerRef}
@@ -251,7 +255,7 @@ export function InputBox({
                 {[...Array(6)].map((_, i) => (
                   <motion.div
                     key={i}
-                    className="absolute h-2 w-2 rounded-full bg-blue-400"
+                    className="absolute h-2 w-2 rounded-full bg-purple-400"
                     style={{
                       left: `${20 + i * 12}%`,
                       top: `${30 + (i % 2) * 40}%`,
@@ -276,14 +280,15 @@ export function InputBox({
           ref={inputRef}
           className={cn(
             "border-0 bg-transparent focus-visible:ring-0",
-            "h-24 px-4 pt-5",
+            "min-h-[3rem] max-h-[12rem] px-4 py-3",
             feedback && "pt-9",
             isEnhanceAnimating && "transition-all duration-500",
           )}
           loading={isStreaming}
           onEnter={handleNovelEnter}
           onChange={handleNovelChange}
-          placeholder={isStreaming ? "DeerFlow is thinking..." : "What can I do for you?"}
+          onUserInput={onUserInput}
+          placeholder={isStreaming ? "DeerFlow is thinking..." : (dynamicPlaceholder !== undefined ? dynamicPlaceholder : "What can I do for you?")}
         />
       </div>
       <div className="flex items-center px-4 py-2">
@@ -291,78 +296,73 @@ export function InputBox({
           {/* Deep Thinking Toggle */}
           <Button
             className={cn(
-              "rounded-2xl",
-              settings.deepThinking && "!border-blue-500 !text-blue-600",
+              "rounded-2xl h-8 px-3 text-xs",
+              settings.deepThinking && "!border-purple-500 !text-purple-600",
             )}
             variant="outline"
+            size="sm"
             onClick={() => {
               updateSettings({ deepThinking: !settings.deepThinking });
             }}
           >
-            <Lightbulb className="w-4 h-4" /> Deep Thinking
+            <Lightbulb className="w-3 h-3" /> Deep Thinking
           </Button>
 
           {/* Investigation Toggle */}
           <Button
             className={cn(
-              "rounded-2xl",
-              settings.backgroundInvestigation && "!border-blue-500 !text-blue-600",
+              "rounded-2xl h-8 px-3 text-xs",
+              settings.backgroundInvestigation && "!border-purple-500 !text-purple-600",
             )}
             variant="outline"
+            size="sm"
             onClick={() =>
               updateSettings({ backgroundInvestigation: !settings.backgroundInvestigation })
             }
           >
-            <Detective className="w-4 h-4" /> Investigation
+            <Detective className="w-3 h-3" /> Investigation
           </Button>
 
           {/* Report Style Selector */}
-          <Dialog open={isReportStyleOpen} onOpenChange={setIsReportStyleOpen}>
-            <DialogTrigger asChild>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
               <Button
-                className="!border-blue-500 !text-blue-600 rounded-2xl"
+                className="!border-purple-500 !text-purple-600 rounded-2xl h-8 px-3 text-xs"
                 variant="outline"
+                size="sm"
               >
-                <CurrentStyleIcon className="w-4 h-4" /> {currentStyleConfig.label}
+                <CurrentStyleIcon className="w-3 h-3" /> {currentStyleConfig.label}
               </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
-              <DialogHeader>
-                <DialogTitle>Choose Writing Style</DialogTitle>
-                <DialogDescription>
-                  Select the writing style for your research reports. Different styles are optimized for different audiences and purposes.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-3 py-4">
-                {REPORT_STYLES.map((style) => {
-                  const Icon = style.icon;
-                  const isSelected = settings.reportStyle === style.value;
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-80 p-1">
+              {REPORT_STYLES.map((style) => {
+                const Icon = style.icon;
+                const isSelected = settings.reportStyle === style.value;
 
-                  return (
-                    <button
-                      key={style.value}
-                      className={cn(
-                        "flex items-start gap-3 rounded-lg border p-4 text-left transition-colors hover:bg-accent",
-                        isSelected && "border-blue-500 bg-blue-50 dark:bg-blue-950/20"
-                      )}
-                      onClick={() => handleReportStyleChange(style.value)}
-                    >
-                      <Icon className="mt-0.5 h-5 w-5 flex-shrink-0" />
-                      <div className="flex-1 space-y-1">
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium">{style.label}</p>
-                          {isSelected && <Check className="h-4 w-4 text-blue-600" />}
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          {style.description}
-                        </p>
+                return (
+                  <DropdownMenuItem
+                    key={style.value}
+                    className={cn(
+                      "flex items-start gap-3 rounded-lg p-3 cursor-pointer min-h-[60px]",
+                      isSelected && "bg-purple-50 dark:bg-purple-950/20"
+                    )}
+                    onClick={() => handleReportStyleChange(style.value)}
+                  >
+                    <Icon className="mt-0.5 h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                    <div className="flex-1 space-y-0.5">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-sm">{style.label}</p>
+                        {isSelected && <Check className="h-3 w-3 text-purple-600" />}
                       </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </DialogContent>
-          </Dialog>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        {style.description}
+                      </p>
+                    </div>
+                  </DropdownMenuItem>
+                );
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           {/* Enhance Prompt Button */}
@@ -381,7 +381,7 @@ export function InputBox({
                 <div className="bg-foreground h-3 w-3 animate-bounce rounded-full opacity-70" />
               </div>
             ) : (
-              <MagicWandIcon className="text-blue-600" />
+              <MagicWandIcon className="text-purple-600" />
             )}
           </Button>
           {/* Send/Stop Button */}

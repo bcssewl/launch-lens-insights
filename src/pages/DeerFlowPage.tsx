@@ -10,7 +10,7 @@ import { DeerFlowSettings } from '@/components/deerflow/DeerFlowSettings';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { useState, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 /**
  * Responsive width calculations using platform's breakpoint system
@@ -64,9 +64,12 @@ export default function DeerFlowPage() {
  * Desktop layout using platform's container patterns
  */
 const DesktopDeerFlowLayout = () => {
-  const { researchPanelState } = useDeerFlowMessageStore();
+  const { researchPanelState, messageIds } = useDeerFlowMessageStore();
   const { startDeerFlowStreaming } = useEnhancedDeerStreaming();
   const [feedback, setFeedback] = useState<{ option: { value: string; text: string } } | null>(null);
+  
+  // Check if we're in empty state (no messages)
+  const isEmptyState = messageIds.length === 0;
   
   // Enable keyboard navigation
   useDeerFlowKeyboard();
@@ -90,9 +93,9 @@ const DesktopDeerFlowLayout = () => {
   return (
     <DashboardLayout>
       <ErrorBoundary>
-        <div className="flex flex-col h-full w-full bg-background text-foreground">
+        <div className="flex flex-col h-full w-full text-foreground" style={{ backgroundColor: '#000000' }}>
           {/* Header - Fixed at top */}
-          <div className="flex-shrink-0 border-b bg-background/95 backdrop-blur-sm sticky top-0 z-10">
+          <div className="flex-shrink-0 backdrop-blur-sm sticky top-0 z-10" style={{ backgroundColor: 'rgba(0, 0, 0, 0.95)' }}>
             <DeerFlowHeader />
           </div>
 
@@ -115,14 +118,16 @@ const DesktopDeerFlowLayout = () => {
                 </ErrorBoundary>
               </div>
               
-              {/* Input area - Fixed at bottom */}
-              <div className="flex-shrink-0 border-t bg-background/95 backdrop-blur-sm pt-4">
-                <InputBox 
-                  onSend={handleSendMessage} 
-                  feedback={feedback}
-                  onRemoveFeedback={handleRemoveFeedback}
-                />
-              </div>
+              {/* Input area - Fixed at bottom - Hidden in empty state */}
+              {!isEmptyState && (
+                <div className="flex-shrink-0">
+                  <InputBox 
+                    onSend={handleSendMessage} 
+                    feedback={feedback}
+                    onRemoveFeedback={handleRemoveFeedback}
+                  />
+                </div>
+              )}
             </div>
 
             {/* Research Panel with Enhanced Animations */}
@@ -175,9 +180,12 @@ const DesktopDeerFlowLayout = () => {
  * Mobile layout using platform's mobile patterns
  */
 const MobileDeerFlowLayout = () => {
-  const { researchPanelState, closeResearchPanel } = useDeerFlowMessageStore();
+  const { researchPanelState, closeResearchPanel, messageIds } = useDeerFlowMessageStore();
   const { startDeerFlowStreaming } = useEnhancedDeerStreaming();
   const [feedback, setFeedback] = useState<{ option: { value: string; text: string } } | null>(null);
+  
+  // Check if we're in empty state (no messages)
+  const isEmptyState = messageIds.length === 0;
   
   // Enable keyboard navigation on mobile too
   useDeerFlowKeyboard();
@@ -199,9 +207,9 @@ const MobileDeerFlowLayout = () => {
   return (
     <DashboardLayout>
       <ErrorBoundary>
-        <div className="flex flex-col h-full w-full bg-background">
+        <div className="flex flex-col h-full w-full text-foreground" style={{ backgroundColor: '#000000' }}>
           {/* Mobile header - Fixed at top */}
-          <div className="flex-shrink-0 border-b bg-background/95 backdrop-blur-sm sticky top-0 z-10">
+          <div className="flex-shrink-0 backdrop-blur-sm sticky top-0 z-10" style={{ backgroundColor: 'rgba(0, 0, 0, 0.95)' }}>
             <DeerFlowHeader />
           </div>
           
@@ -214,14 +222,16 @@ const MobileDeerFlowLayout = () => {
             </div>
           </div>
           
-          {/* Mobile input - Fixed at bottom */}
-          <div className="flex-shrink-0 border-t bg-background/95 backdrop-blur-sm p-4">
-            <InputBox 
-              onSend={handleSendMessage} 
-              feedback={feedback}
-              onRemoveFeedback={handleRemoveFeedback}
-            />
-          </div>
+          {/* Mobile input - Fixed at bottom - Hidden in empty state */}
+          {!isEmptyState && (
+            <div className="flex-shrink-0 px-4 pb-4">
+              <InputBox 
+                onSend={handleSendMessage} 
+                feedback={feedback}
+                onRemoveFeedback={handleRemoveFeedback}
+              />
+            </div>
+          )}
 
           {/* Research panel as full-screen modal on mobile with enhanced animations */}
           <AnimatePresence>

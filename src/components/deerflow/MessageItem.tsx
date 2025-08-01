@@ -118,8 +118,8 @@ export const MessageItem = React.memo(({ messageId }: { messageId: string }) => 
         "shadow-sm hover:shadow-md",
         "transition-all duration-300 ease-out",
         
-        // Apply platform's padding scale
-        "p-4 sm:p-6",
+        // Reduced padding for more compact messages
+        "p-2 sm:p-3",
         
         // Streaming animations
         message.isStreaming && [
@@ -143,7 +143,7 @@ export const MessageItem = React.memo(({ messageId }: { messageId: string }) => 
       onClick={handleClick}
     >
       {/* Message Header */}
-      <div className="flex items-center gap-3 mb-3">
+      <div className="flex items-center gap-3 mb-2">
         <div className={cn(
           "flex items-center justify-center w-8 h-8 rounded-full",
           "bg-background border border-border",

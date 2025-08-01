@@ -11,9 +11,10 @@ import { MessageItem } from './MessageItem';
 import { ResearchCard } from './ResearchCard';
 import { PlanCard } from './PlanCard';
 import { ConversationStarter } from './ConversationStarter';
+import DeerFlowEmptyState from './DeerFlowEmptyState';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { cn } from '@/lib/utils';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 import { useEnhancedDeerStreaming } from '@/hooks/useEnhancedDeerStreaming';
 
@@ -205,18 +206,15 @@ export const MessageList = ({ onSendMessage, onFeedback }: MessageListProps) => 
     // Research state will be managed by the streaming response events
   };
 
-  // Show conversation starter if no messages
+  // Show DeerFlow empty state if no messages
   if (visibleMessages.length === 0) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
-        >
-          <ConversationStarter onSendMessage={handleSendMessage} />
-        </motion.div>
-      </div>
+      <DeerFlowEmptyState 
+        onSendMessage={handleSendMessage}
+        onStartChat={() => {
+          // Handle start chat transition
+        }}
+      />
     );
   }
 
@@ -230,8 +228,8 @@ export const MessageList = ({ onSendMessage, onFeedback }: MessageListProps) => 
       aria-live="polite"
     >
       <div className={cn(
-        // Enhanced spacing and responsive design
-        "w-full max-w-none space-y-6 sm:space-y-8",
+        // Enhanced spacing and responsive design - made more compact
+        "w-full max-w-none space-y-4 sm:space-y-5",
         "py-4 sm:py-6 lg:py-8",
         "px-4 sm:px-6 lg:px-8"
       )}>

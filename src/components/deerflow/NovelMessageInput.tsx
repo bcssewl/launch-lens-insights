@@ -25,6 +25,7 @@ export interface NovelMessageInputProps {
   loading?: boolean;
   onChange?: (markdown: string) => void;
   onEnter?: (message: string, resources: Array<Resource>) => void;
+  onUserInput?: () => void;
 }
 
 interface JSONContent {
@@ -91,7 +92,7 @@ function formatItem(item: JSONContent): {
 
 const NovelMessageInput = forwardRef<NovelMessageInputRef, NovelMessageInputProps>(
   (
-    { className, loading, onChange, onEnter, placeholder = "What can I do for you?" }: NovelMessageInputProps,
+    { className, loading, onChange, onEnter, onUserInput, placeholder = "What can I do for you?" }: NovelMessageInputProps,
     ref,
   ) => {
     const { isResponding } = useDeerFlowMessageStore();
@@ -170,13 +171,17 @@ const NovelMessageInput = forwardRef<NovelMessageInputRef, NovelMessageInputProp
       editorProps: {
         attributes: {
           class:
-            'prose prose-sm dark:prose-invert focus:outline-none max-w-full min-h-[40px] max-h-[200px] overflow-y-auto',
+            'prose prose-sm dark:prose-invert focus:outline-none max-w-full min-h-[2rem] max-h-[12rem] overflow-y-auto resize-none',
         },
       },
       onUpdate: ({ editor }) => {
         debouncedUpdates(editor);
+        // Call onUserInput when user starts typing
+        if (onUserInput && editor.getHTML() !== '<p></p>') {
+          onUserInput();
+        }
       },
-    });
+    }, [extensions]);
 
     React.useImperativeHandle(ref, () => ({
       focus: () => {

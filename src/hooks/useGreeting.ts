@@ -42,9 +42,10 @@ export const useGreeting = () => {
     }
   };
 
-  // Extract first name from full name
+  // Extract first name from full name and capitalize first letter
   const extractFirstName = (fullName: string) => {
-    return fullName.split(' ')[0];
+    const firstName = fullName.split(' ')[0];
+    return firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
   };
 
   useEffect(() => {

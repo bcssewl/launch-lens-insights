@@ -1,25 +1,29 @@
 import { Button } from "@/components/ui/button";
-import { Plus, Settings, MessageSquare, Trash2, Languages, Github } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Plus, Settings, MessageSquare, Lightbulb, UserCircle, Settings as SettingsIcon, LogOut } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useDeerFlowStore } from "@/stores/deerFlowStore";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
+
+// Utility function to capitalize first letter
+const capitalizeFirstLetter = (str: string) => {
+  if (!str) return str;
+  return str.charAt(0).toUpperCase() + str.slice(1);
+};
 
 export const DeerFlowHeader = () => {
   const { 
     createNewThread, 
     clearMessages, 
-    messages, 
     isResearchPanelOpen, 
     setResearchPanelOpen, 
     setSettingsOpen 
   } = useDeerFlowStore();
   const { toast } = useToast();
+  const { user, signOut } = useAuth();
 
   const handleNewThread = () => {
     clearMessages();
@@ -32,97 +36,100 @@ export const DeerFlowHeader = () => {
     });
   };
 
+  const handleLogout = async () => {
+    await signOut();
+  };
+
   return (
     <div className={cn(
-      // Use platform's header styling
-      "flex items-center justify-between",
-      "px-4 sm:px-6 lg:px-8 py-4",
-      "border-b border-border bg-background/95 backdrop-blur-sm",
-      "min-h-[60px]" // Ensure consistent header height
+      // Perplexity-style minimal header with perfect center positioning
+      "flex items-center",
+      "px-6 py-4",
+      "h-16",
+      "relative" // Enable absolute positioning for center element
     )}>
-      {/* Left side - Title */}
-      <div className="flex items-center gap-3">
-        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10 text-primary">
-          <MessageSquare className="w-4 h-4" />
+      {/* Left side - Logo */}
+      <div className="flex items-center">
+        <div className="flex items-center space-x-2">
+          <Lightbulb className="h-7 w-7 text-primary flex-shrink-0" />
         </div>
-        <h1 className="text-lg font-semibold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-          DeerFlow Research
-        </h1>
       </div>
 
-      {/* Right side - Actions */}
-      <div className="flex items-center gap-2">
-        {/* Research Panel Toggle */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setResearchPanelOpen(!isResearchPanelOpen)}
-          className={cn(
-            "transition-colors duration-200",
-            isResearchPanelOpen && "bg-muted text-foreground"
-          )}
-        >
-          Research Panel
-        </Button>
-
-        {/* Clear Chat Button - only show if there are messages */}
-        {messages.size > 0 && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleNewThread}
-            className="text-muted-foreground hover:text-destructive"
-          >
-            <Trash2 className="w-4 h-4" />
-            <span className="sr-only">Clear Chat</span>
-          </Button>
-        )}
-
-        {/* New Thread Button */}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleNewThread}
-          className="gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          <span className="hidden sm:inline">New Thread</span>
-        </Button>
-
-        {/* Language Selector */}
+      {/* Middle - User Profile (perfectly centered) */}
+      <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm">
-              <Languages className="h-4 w-4" />
-              <span className="sr-only">Language</span>
-            </Button>
+            <button className="flex items-center space-x-3 p-2 rounded-md hover:bg-surface-elevated transition-colors">
+              <Avatar className="h-8 w-8">
+                <AvatarImage src={user?.user_metadata?.avatar_url} alt="User Avatar" />
+                <AvatarFallback className="bg-primary text-primary-foreground">
+                  {user?.email?.charAt(0).toUpperCase() || 'U'}
+                </AvatarFallback>
+              </Avatar>
+              <span className="text-sm font-medium text-text-primary hidden md:block">
+                {capitalizeFirstLetter(user?.user_metadata?.full_name || user?.email || 'User')}
+              </span>
+            </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem>English</DropdownMenuItem>
-            <DropdownMenuItem>Spanish</DropdownMenuItem>
-            <DropdownMenuItem>French</DropdownMenuItem>
-            <DropdownMenuItem>German</DropdownMenuItem>
+          <DropdownMenuContent side="bottom" align="center" className="w-56 bg-surface-elevated border-border-subtle">
+            <DropdownMenuLabel className="text-text-primary">
+              {capitalizeFirstLetter(user?.user_metadata?.full_name || user?.email || 'User')}
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator className="bg-border-subtle" />
+            <DropdownMenuItem asChild className="text-text-secondary hover:text-text-primary hover:bg-surface-elevated-2">
+              <Link to="/dashboard/profile" className="flex items-center">
+                <UserCircle className="mr-2 h-4 w-4" />
+                <span>Profile</span>
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild className="text-text-secondary hover:text-text-primary hover:bg-surface-elevated-2">
+              <Link to="/dashboard/settings" className="flex items-center">
+                <SettingsIcon className="mr-2 h-4 w-4" />
+                <span>Settings</span>
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild className="text-text-secondary hover:text-text-primary hover:bg-surface-elevated-2">
+              <Link to="/dashboard/billing" className="flex items-center">
+                <Lightbulb className="mr-2 h-4 w-4" />
+                <span>Billing / Upgrade</span>
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator className="bg-border-subtle" />
+            <DropdownMenuItem onClick={handleLogout} className="text-text-secondary hover:text-text-primary hover:bg-surface-elevated-2">
+              <LogOut className="mr-2 h-4 w-4" />
+              <span>Log out</span>
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+      </div>
 
-        {/* GitHub Link */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => window.open("https://github.com", "_blank")}
+      {/* Right side - Action buttons (positioned at the end) */}
+      <div className="ml-auto flex items-center space-x-2">
+        <Button 
+          variant="ghost" 
+          size="icon"
+          onClick={handleNewThread}
+          className="h-9 w-9 rounded-lg hover:bg-muted"
         >
-          <Github className="h-4 w-4" />
-          <span className="sr-only">GitHub</span>
+          <Plus className="h-4 w-4" />
         </Button>
         
-        {/* Settings */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setSettingsOpen(true)}
+        <Button 
+          variant="ghost" 
+          size="icon"
+          onClick={() => setResearchPanelOpen(!isResearchPanelOpen)}
+          className="h-9 w-9 rounded-lg hover:bg-muted"
         >
-          <Settings className="w-4 h-4" />
-          <span className="sr-only">Settings</span>
+          <MessageSquare className="h-4 w-4" />
+        </Button>
+        
+        <Button 
+          variant="ghost" 
+          size="icon"
+          onClick={() => setSettingsOpen(true)}
+          className="h-9 w-9 rounded-lg hover:bg-muted"
+        >
+          <Settings className="h-4 w-4" />
         </Button>
       </div>
     </div>

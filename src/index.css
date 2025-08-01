@@ -977,6 +977,7 @@
   line-height: 1.5;
   word-wrap: break-word;
   white-space: pre-wrap;
+  text-align: left;
 }
 
 .novel-editor-content .ProseMirror.is-editor-empty:first-child::before {
@@ -991,6 +992,7 @@
 .novel-editor-content .ProseMirror p {
   margin: 0;
   padding: 0;
+  text-align: left;
 }
 
 .novel-editor-content .ProseMirror p:not(:last-child) {

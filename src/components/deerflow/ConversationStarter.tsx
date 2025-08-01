@@ -1,4 +1,4 @@
-import { motion } from "motion/react";
+import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { MessageSquare, Search, BarChart3, Lightbulb } from "lucide-react";
 
@@ -68,7 +68,7 @@ export const ConversationStarter = ({ onSendMessage }: ConversationStarterProps)
               whileTap={{ scale: 0.98 }}
             >
               <Card
-                className="cursor-pointer transition-all duration-200 hover:shadow-lg border-muted/50 hover:border-primary/30"
+                className="cursor-pointer transition-all duration-200 hover:shadow-lg border-0 hover:border hover:border-primary/30"
                 onClick={() => onSendMessage(starter.prompt)}
               >
                 <CardContent className="p-6">

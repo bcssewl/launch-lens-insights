@@ -7,8 +7,13 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import QuickActionsDropdown from '@/components/assistant/QuickActionsDropdown';
 import ChatSessionsDropdown from '@/components/assistant/ChatSessionsDropdown';
-import ResearchTypeSelector from '@/components/assistant/ResearchTypeSelector';
 import { Logo } from '@/components/icons';
+
+// Utility function to capitalize first letter
+const capitalizeFirstLetter = (str: string) => {
+  if (!str) return str;
+  return str.charAt(0).toUpperCase() + str.slice(1);
+};
 
 interface ChatSubheaderProps {
   isConfigured: boolean;
@@ -18,8 +23,6 @@ interface ChatSubheaderProps {
   onSessionSelect: (sessionId: string) => void;
   selectedModel: string;
   onModelSelect: (modelId: string) => void;
-  selectedResearchType?: string;
-  onResearchTypeChange?: (type: string) => void;
 }
 
 const ChatSubheader: React.FC<ChatSubheaderProps> = ({
@@ -29,9 +32,7 @@ const ChatSubheader: React.FC<ChatSubheaderProps> = ({
   onClearConversation,
   onSessionSelect,
   selectedModel,
-  onModelSelect,
-  selectedResearchType,
-  onResearchTypeChange
+  onModelSelect
 }) => {
   const { user, signOut } = useAuth();
 
@@ -40,24 +41,14 @@ const ChatSubheader: React.FC<ChatSubheaderProps> = ({
   };
 
   return (
-    <div className="flex items-center justify-between w-full px-6 py-3">
+    <div className="flex items-center w-full px-6 py-3 relative">
       {/* Optivise logo on the left */}
       <div className="flex items-center">
         <Logo className="flex-shrink-0" />
       </div>
       
-      {/* Research Type Selector in the center (only when Algeon is selected) */}
-      <div className="flex items-center">
-        {selectedModel === 'algeon' && onResearchTypeChange && (
-          <ResearchTypeSelector 
-            selectedType={selectedResearchType || 'quick_facts'}
-            onTypeChange={onResearchTypeChange}
-          />
-        )}
-      </div>
-      
-      {/* Profile button on the right side */}
-      <div className="flex items-center">
+      {/* User Profile - Perfectly centered */}
+      <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="flex items-center space-x-3 p-2 rounded-md hover:bg-surface-elevated transition-colors">
@@ -68,13 +59,13 @@ const ChatSubheader: React.FC<ChatSubheaderProps> = ({
                 </AvatarFallback>
               </Avatar>
               <span className="text-sm font-medium text-text-primary hidden md:block">
-                {user?.user_metadata?.full_name || user?.email || 'User'}
+                {capitalizeFirstLetter(user?.user_metadata?.full_name || user?.email || 'User')}
               </span>
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent side="bottom" align="center" className="w-56 bg-surface-elevated border-border-subtle">
             <DropdownMenuLabel className="text-text-primary">
-              {user?.user_metadata?.full_name || user?.email || 'User'}
+              {capitalizeFirstLetter(user?.user_metadata?.full_name || user?.email || 'User')}
             </DropdownMenuLabel>
             <DropdownMenuSeparator className="bg-border-subtle" />
             <DropdownMenuItem asChild className="text-text-secondary hover:text-text-primary hover:bg-surface-elevated-2">
@@ -103,9 +94,9 @@ const ChatSubheader: React.FC<ChatSubheaderProps> = ({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      
-      {/* Control buttons moved to the far right */}
-      <div className="flex items-center space-x-2">
+
+      {/* Control buttons on the right side */}
+      <div className="ml-auto flex items-center space-x-2">
         <QuickActionsDropdown 
           onDownloadChat={onDownloadChat}
           onClearConversation={onClearConversation}
