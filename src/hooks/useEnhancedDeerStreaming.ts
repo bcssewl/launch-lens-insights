@@ -280,7 +280,7 @@ export const useEnhancedDeerStreaming = () => {
       // Use the fetchStream utility instead of manual parsing
       const { fetchStream } = await import('@/utils/fetchStream');
       
-      for await (const sseEvent of fetchStream('https://deer-flow-wrappers.up.railway.app/api/chat/stream', {
+      for await (const sseEvent of fetchStream('https://deerflowfinal-wrappers.up.railway.app/api/chat/stream', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

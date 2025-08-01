@@ -75,7 +75,7 @@ export const useStreamingChat = () => {
     };
 
     try {
-      await startStreaming('https://deer-flow-wrappers.up.railway.app/api/chat/stream', requestData);
+      await startStreaming('https://deerflowfinal-wrappers.up.railway.app/api/chat/stream', requestData);
     } catch (error: any) {
       console.error('Failed to send message:', error);
       toast({
@@ -110,7 +110,7 @@ export const useStreamingChat = () => {
     };
 
     try {
-      await startStreaming('https://deer-flow-wrappers.up.railway.app/api/chat/stream', requestData);
+      await startStreaming('https://deerflowfinal-wrappers.up.railway.app/api/chat/stream', requestData);
     } catch (error: any) {
       console.error('Failed to send feedback:', error);
       toast({
@@ -125,7 +125,7 @@ export const useStreamingChat = () => {
     if (!prompt.trim()) return prompt;
 
     try {
-      const response = await fetch('https://deer-flow-wrappers.up.railway.app/api/prompt/enhance', {
+      const response = await fetch('https://deerflowfinal-wrappers.up.railway.app/api/prompt/enhance', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -154,7 +154,7 @@ export const useStreamingChat = () => {
     if (!content.trim()) return;
 
     try {
-      const response = await fetch('https://deer-flow-wrappers.up.railway.app/api/podcast/generate', {
+      const response = await fetch('https://deerflowfinal-wrappers.up.railway.app/api/podcast/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

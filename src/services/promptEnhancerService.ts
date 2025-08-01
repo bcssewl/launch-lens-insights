@@ -20,7 +20,7 @@ export async function enhancePrompt(prompt: string): Promise<string> {
   if (!prompt.trim()) return prompt;
 
   try {
-    const response = await fetch('https://deer-flow-wrappers.up.railway.app/api/prompt/enhance', {
+    const response = await fetch('https://deerflowfinal-wrappers.up.railway.app/api/prompt/enhance', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
